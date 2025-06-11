@@ -66,10 +66,33 @@ const Categories: React.FC = () => {
         onMenuClick={() => {}}
       />
 
-      <div className="container mx-auto px-4 py-6">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">{t('categories')}</h1>
-          <p className="text-gray-600">
+      <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-6">
+        {/* Advanced Search Bar & Stats */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+          <div className="flex-1 flex items-center gap-2">
+            <input
+              type="text"
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-base focus:ring-2 focus:ring-primary focus:border-primary transition"
+              placeholder={t('searchCategories')}
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <div className="flex flex-wrap gap-2 justify-start sm:justify-end">
+            <span className="inline-flex items-center text-xs bg-primary/10 text-primary font-semibold rounded px-2 py-1">
+              {t('total')}: {categories.length}
+            </span>
+            <span className="inline-flex items-center text-xs bg-gray-200 text-gray-700 font-semibold rounded px-2 py-1">
+              {t('showing')}: {filteredCategories.length}
+            </span>
+          </div>
+        </div>
+
+        <div className="mb-6">
+          <h1 className="text-2xl sm:text-3xl font-bold mb-1 sm:mb-2 text-gray-900">
+            {t('categories')}
+          </h1>
+          <p className="text-gray-600 text-sm sm:text-base">
             {t('browseProductCategories')}
           </p>
         </div>
@@ -81,7 +104,7 @@ const Categories: React.FC = () => {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-6">
             {filteredCategories.map(category => (
               <CategoryCard key={category.id} category={category} />
             ))}
