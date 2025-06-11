@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import * as React from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { useVirtualScroll, VirtualGrid } from '@/utils/virtualScrollUtils';
 

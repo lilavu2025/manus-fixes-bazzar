@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef, memo } from 'react';
+import * as React from "react";
+import { useState, useEffect, useRef, memo } from 'react';
 import { cn } from '@/lib/utils';
 import { getOptimizedImageUrl, supportsWebP, createImageObserver } from '@/utils/imageOptimization';
 import { useImagePreloader } from '@/utils/imagePreloader';

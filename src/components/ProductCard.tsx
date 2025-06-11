@@ -1,5 +1,6 @@
 // مكون كرت المنتج - يعرض معلومات المنتج مع إمكانيات التفاعل
-import React, { useState, memo, useCallback } from 'react';
+import * as React from "react";
+import { useState, memo, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Product } from '@/types/product';
 import { useCart } from '@/hooks/useCart';

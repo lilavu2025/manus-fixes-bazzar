@@ -1,4 +1,5 @@
-import React, { useState, memo, useCallback, useMemo } from 'react';
+import * as React from "react";
+import { useState, memo, useCallback, useMemo } from 'react';
 import { Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetTrigger } from '@/components/ui/sheet';

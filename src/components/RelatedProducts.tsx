@@ -1,4 +1,4 @@
-import React from 'react';
+import * as React from 'react';
 import { useLanguage } from '@/utils/languageContextUtils';
 import ProductCard from '@/components/ProductCard';
 import { Product } from '@/types';

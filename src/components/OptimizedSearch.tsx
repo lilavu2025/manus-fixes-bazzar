@@ -1,4 +1,5 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import * as React from "react";
+import { useState, useCallback, useMemo } from 'react';
 import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { debounce } from '@/utils/performanceOptimizations';
