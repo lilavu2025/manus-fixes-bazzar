@@ -14,48 +14,39 @@ const CategoryCard: React.FC<CategoryCardProps> = ({ category }) => {
   const navigate = useNavigate();
   const { t } = useLanguage();
 
-  // تسجيل بيانات الفئة لغايات التصحيح
-  console.log('Rendering CategoryCard for category:', category);
-
-  // عند الضغط على البطاقة، نوجّه المستخدم لصفحة المنتجات الخاصة بهذه الفئة
   const handleClick = () => {
-    console.log(`Navigating to products page with category ID: ${category.id}`);
     navigate(`/products?category=${category.id}`);
   };
 
   return (
-    <div onClick={handleClick} className="cursor-pointer">
-      {/* البطاقة الرئيسية التي تحتوي على الصورة واسم الفئة */}
-      <Card className="group hover:shadow-xl transition-all duration-300 overflow-hidden border-2 hover:border-primary/20">
-        <div className="relative">
-          {/* صورة الفئة أو صورة بديلة إن لم تتوفر */}
-          <LazyImage
-            src={category.image || '/placeholder.svg'}
-            alt={category.name}
-            className="w-full h-32 object-cover transition-transform duration-300 group-hover:scale-110"
+    // تحديد عرض محدود مع جعل البطاقة متوسطة الحجم على الشاشات الكبيرة
+    <div onClick={handleClick} className="cursor-pointer w-full max-w-xs sm:max-w-sm md:max-w-md mx-auto">
+      <Card className="group hover:shadow-xl transition-all duration-300 border-2 hover:border-primary/20 overflow-hidden rounded-xl">
+        <div className="relative w-full h-32 sm:h-40 md:h-48 bg-gray-100">
+          {/* خلفية الصورة مع containment */}
+          <div
+            className="absolute inset-0 bg-center bg-contain bg-no-repeat"
+            style={{ backgroundImage: `url(${category.image || '/placeholder.svg'})` }}
           />
-          {/* تدرج لوني من الأسفل للأعلى لتحسين ظهور النص */}
+          {/* تدرج لتحسين ظهور النص */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-
-          {/* شارة تُظهر عدد المنتجات ضمن هذه الفئة */}
+          {/* شارة عدد المنتجات */}
           <div className="absolute bottom-2 right-2">
-            <Badge variant="secondary" className="bg-white/90 text-gray-800">
-              {/* نعرض عدد المنتجات داخل الفئة */}
-              {category.count} {category.count === 1 ? 'منتج' : 'منتج'}
+            <Badge variant="secondary" className="bg-white/90 text-gray-800 text-sm sm:text-base">
+              {category.count} {category.count === 1 ? t('product') : t('products')}
             </Badge>
           </div>
         </div>
 
-        {/* محتوى البطاقة: اسم الفئة بالعربية والإنجليزية والعبرية */}
         <CardContent className="p-4 text-center">
-          <h3 className="font-bold text-lg group-hover:text-primary transition-colors">
+          <h3 className="font-bold text-lg sm:text-xl md:text-2xl group-hover:text-primary transition-colors">
             {category.name}
           </h3>
-          <p className="text-sm text-gray-600 mt-1">
+          <p className="text-sm sm:text-base text-gray-600 mt-1 line-clamp-1">
             {category.nameEn}
           </p>
           {category.nameHe && (
-            <p className="text-sm text-gray-600 mt-1">
+            <p className="text-sm sm:text-base text-gray-600 mt-1 line-clamp-1">
               {category.nameHe}
             </p>
           )}

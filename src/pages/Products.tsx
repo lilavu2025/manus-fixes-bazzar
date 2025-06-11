@@ -297,7 +297,7 @@ const Products: React.FC = () => {
             <p className="text-gray-500 text-lg">{t('noProductsFound')}</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-6">
             {filteredProducts.map(product => (
               <ProductCard key={product.id} product={product} />
             ))}

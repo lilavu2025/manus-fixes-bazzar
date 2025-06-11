@@ -76,7 +76,7 @@ const Index = () => {
         onMenuClick={() => {}}
       />
 
-      <main className="container mx-auto px-4 py-6">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Hero Banner */}
         {!searchQuery && !bannersLoading && banners.length > 0 && (
           <section className="mb-12">
@@ -86,7 +86,7 @@ const Index = () => {
 
         {/* Search Results */}
         {searchQuery && (
-          <section className="mb-8">
+          <section className="mb-8 bg-white/80 rounded-xl p-4 shadow-sm">
             <h2 className="text-2xl font-bold mb-6">
               {t('searchResults')} "{searchQuery}"
             </h2>
@@ -95,7 +95,7 @@ const Index = () => {
                 <p className="text-gray-500">{t('noProductsFound')}</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {filteredProducts.map(product => (
                   <ProductCard key={product.id} product={product} />
                 ))}
@@ -106,15 +106,15 @@ const Index = () => {
 
         {/* Categories */}
         {!searchQuery && (
-          <section className="mb-12">
+          <section className="mb-12 bg-white/80 rounded-xl p-4 shadow-sm">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold">{t('categories')}</h2>
-              <Button asChild variant="outline">
+              <Button asChild variant="outline" className="font-bold border-orange-200 text-orange-600 hover:bg-orange-50">
                 <Link to="/categories" aria-label={t('viewAll')}>{t('viewAll')}</Link>
               </Button>
             </div>
             {categoriesLoading ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
                 {[...Array(5)].map((_, i) => (
                   <div key={i} className="bg-white rounded-lg p-4 animate-pulse">
                     <div className="h-20 bg-gray-200 rounded mb-3"></div>
@@ -132,7 +132,7 @@ const Index = () => {
                 <p className="text-gray-500">لا توجد فئات متاحة</p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {categories.slice(0, 5).map(category => (
                   <CategoryCard key={category.id} category={category} />
                 ))}
@@ -143,15 +143,15 @@ const Index = () => {
 
         {/* Featured Products */}
         {!searchQuery && (
-          <section>
+          <section className="bg-white/80 rounded-xl p-4 shadow-sm">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold">{t('featuredProducts')}</h2>
-              <Button asChild variant="outline">
+              <Button asChild variant="outline" className="font-bold border-orange-200 text-orange-600 hover:bg-orange-50">
                 <Link to="/products" aria-label={t('viewAll')}>{t('viewAll')}</Link>
               </Button>
             </div>
             {productsLoading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
                 {[...Array(8)].map((_, i) => (
                   <div key={i} className="bg-white rounded-lg p-4 animate-pulse">
                     <div className="h-48 bg-gray-200 rounded mb-4"></div>
@@ -169,7 +169,7 @@ const Index = () => {
                 </Button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
                 {displayProducts.map(product => (
                   <ProductCard key={product.id} product={product} />
                 ))}
