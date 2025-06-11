@@ -80,7 +80,7 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
         value={inputValue}
         onChange={e => { e.preventDefault(); e.stopPropagation(); handleInputChange(e); }}
         onBlur={e => { e.preventDefault(); e.stopPropagation(); handleInputBlur(); }}
-        className={`w-16 text-center ${isRTL ? 'text-right' : 'text-left'}`}
+        className={`w-12 sm:w-16 text-center ${isRTL ? 'text-right' : 'text-left'}`}
         min={min}
         max={max}
         dir={isRTL ? 'rtl' : 'ltr'}

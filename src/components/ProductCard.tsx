@@ -12,6 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import ProductCardImage from './ProductCard/ProductCardImage';
 import ProductCardContent from './ProductCard/ProductCardContent';
 import ProductCardQuickView from './ProductCard/ProductCardQuickView';
+import ProductCardActions from './ProductCard/ProductCardActions';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Mail, Share2, Copy, MessageCircle } from 'lucide-react';
 
@@ -179,13 +180,22 @@ const ProductCard: React.FC<ProductCardProps> = memo(({ product, onQuickView }) 
   const isFav = isFavorite(product.id);
 
   return (
-    <>
+    <div className="w-full flex justify-center">
       {/* كرت المنتج الرئيسي مع تأثيرات التفاعل */}
       <Card 
-        className="product-card group relative overflow-hidden bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl transition-all duration-300 hover:shadow-xl hover:-translate-y-1 focus-within:ring-2 focus-within:ring-orange-500 focus-within:ring-offset-2 cursor-pointer"
+        className="product-card group relative overflow-hidden bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl transition-all duration-300 hover:shadow-xl hover:-translate-y-1 focus-within:ring-2 focus-within:ring-orange-500 focus-within:ring-offset-2 cursor-pointer mx-auto w-full max-w-xs md:max-w-sm"
         onClick={handleCardClick}
       >
-        {/* صورة المنتج مع أزرار التفاعل */}
+        {/* أزرار التفاعل على أقصى يسار الكرت */}
+        <div className="absolute top-2 left-2 z-20">
+          <ProductCardActions
+            product={product}
+            onQuickView={handleQuickView}
+            onFavorite={handleFavorite}
+            onShare={async () => { setShareOpen((v) => !v); }}
+          />
+        </div>
+        {/* صورة المنتج */}
         <Popover open={shareOpen} onOpenChange={setShareOpen}>
           <ProductCardImage
             product={product}
@@ -194,7 +204,6 @@ const ProductCard: React.FC<ProductCardProps> = memo(({ product, onQuickView }) 
             onFavorite={handleFavorite}
             onShare={async () => { setShareOpen((v) => !v); }}
             isLoading={isLoading}
-            // PopoverTrigger asChild will wrap the share button
           />
           <PopoverContent align="end" className="w-44 p-2 space-y-1 z-50">
             <button className="flex items-center gap-2 w-full px-2 py-1 hover:bg-gray-100 rounded text-sm" onClick={handleShareWhatsapp}>
@@ -245,7 +254,7 @@ const ProductCard: React.FC<ProductCardProps> = memo(({ product, onQuickView }) 
         onFavorite={handleFavorite}
         onShare={async () => { setShareOpen((v) => !v); }}
       />
-    </>
+    </div>
   );
 });
 

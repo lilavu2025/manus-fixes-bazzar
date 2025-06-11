@@ -2,8 +2,6 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Product } from '@/types';
 import ProductCardBadges from './ProductCardBadges';
-import ProductCardActions from './ProductCardActions';
-import LazyImage from '@/components/LazyImage';
 
 export interface ProductCardImageProps {
   product: Product;
@@ -14,34 +12,32 @@ export interface ProductCardImageProps {
   isLoading?: boolean;
 }
 
-const ProductCardImage: React.FC<ProductCardImageProps> = ({ 
-  product, 
+const ProductCardImage: React.FC<ProductCardImageProps> = ({
+  product,
   isFavorite,
-  onQuickView, 
-  onFavorite, 
+  onQuickView,
+  onFavorite,
   onShare,
   isLoading = false,
-}: ProductCardImageProps) => {
+}) => {
   return (
-    <div className="relative overflow-hidden">
-      <Link to={`/product/${product.id}`} className="block">
-        <LazyImage
-          src={product.image}
-          alt={product.name}
-          className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-110"
-          priority={true}
+    // إضافة class "group" لتمكين تأثير hover
+    <div className="relative group bg-white rounded-xl border border-gray-200 aspect-[4/3] h-32 sm:h-40 md:h-48 mx-auto">
+      {/* الخلفية باستخدام background-image لعرض الصورة كاملة داخل الإطار */}
+      <Link
+        to={`/product/${product.id}`}
+        className="block w-full h-full relative"
+      >
+        <div
+          className="w-full h-full bg-center bg-contain bg-no-repeat"
+          style={{ backgroundImage: `url(${product.image})` }}
         />
-        {/* Overlay for clickable area */}
+        {/* Overlay للتأثير على Hover */}
         <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity" />
       </Link>
-      
+
+      {/* الشارات فوق الصورة فقط */}
       <ProductCardBadges product={product} />
-      <ProductCardActions 
-        product={product}
-        onQuickView={onQuickView}
-        onFavorite={onFavorite}
-        onShare={onShare}
-      />
     </div>
   );
 };

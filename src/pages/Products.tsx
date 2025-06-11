@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Filter, X } from 'lucide-react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const Products: React.FC = () => {
   const { t } = useLanguage();
@@ -21,6 +21,7 @@ const Products: React.FC = () => {
   const [priceRange, setPriceRange] = useState<{ min: string; max: string }>({ min: '', max: '' });
   const [showFilters, setShowFilters] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
 
   const { data: categoriesData, loading: categoriesLoading, error: categoriesError } = useCategories();
   const { products, loading: productsLoading, error: productsError, refetch: refetchProducts } = useProductsRealtime();
@@ -35,22 +36,45 @@ const Products: React.FC = () => {
     };
   }, []);
 
+  // عند تحميل الصفحة أو تغيير الرابط: مزامنة selectedCategory مع URL فقط عند التغيير الحقيقي
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const cat = params.get('category');
     if (cat && cat !== selectedCategory) {
       setSelectedCategory(cat);
+    } else if (!cat && selectedCategory !== 'all') {
+      setSelectedCategory('all');
     }
-  }, [location.search, selectedCategory]);
+    // eslint-disable-next-line
+  }, [location.search]);
+
+  // عند تغيير الفئة من الـ Select: حدث الـ URL فقط إذا اختلفت القيمة
+  const handleCategoryChange = (value: string) => {
+    setSelectedCategory(value);
+    const params = new URLSearchParams(location.search);
+    if (value === 'all') {
+      if (params.has('category')) {
+        params.delete('category');
+        navigate({ search: params.toString() }, { replace: true });
+      }
+    } else {
+      if (params.get('category') !== value) {
+        params.set('category', value);
+        navigate({ search: params.toString() }, { replace: true });
+      }
+    }
+  };
 
   // Filter and sort products
   const filteredProducts = productsList
     .filter(product => {
+      // فلترة حسب الفئة
+      const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
       const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                            product.description.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesPrice = (!priceRange.min || product.price >= Number(priceRange.min)) &&
                           (!priceRange.max || product.price <= Number(priceRange.max));
-      return matchesSearch && matchesPrice;
+      return matchesCategory && matchesSearch && matchesPrice;
     })
     .sort((a, b) => {
       switch (sortBy) {
@@ -125,16 +149,36 @@ const Products: React.FC = () => {
         onMenuClick={() => {}}
       />
 
-      <div className="container mx-auto px-4 py-6">
+      <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-6">
+        {/* Advanced Filters & Search Bar */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
+          <div className="flex-1 flex items-center gap-2">
+            <Input
+              type="text"
+              className="w-full"
+              placeholder={t('searchProducts')}
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <div className="flex flex-wrap gap-2 justify-start sm:justify-end">
+            <span className="inline-flex items-center text-xs bg-primary/10 text-primary font-semibold rounded px-2 py-1">
+              {t('total')}: {productsList.length}
+            </span>
+            <span className="inline-flex items-center text-xs bg-gray-200 text-gray-700 font-semibold rounded px-2 py-1">
+              {t('showing')}: {filteredProducts.length}
+            </span>
+          </div>
+        </div>
+
         {/* Page Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2">
           <div>
-            <h1 className="text-3xl font-bold">{t('products')}</h1>
-            <p className="text-gray-600 mt-1">
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{t('products')}</h1>
+            <p className="text-gray-600 text-sm sm:text-base mt-1">
               {filteredProducts.length} {t('products')}
             </p>
           </div>
-          
           <Button
             variant="outline"
             onClick={() => setShowFilters(!showFilters)}
@@ -152,12 +196,12 @@ const Products: React.FC = () => {
 
         {/* Filters */}
         {showFilters && (
-          <div className="bg-white rounded-lg p-6 mb-6 shadow-sm">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-white rounded-lg p-4 sm:p-6 mb-6 shadow-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
               {/* Category Filter */}
               <div>
                 <label className="block text-sm font-medium mb-2">{t('category')}</label>
-                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <Select value={selectedCategory} onValueChange={handleCategoryChange}>
                   <SelectTrigger>
                     <SelectValue placeholder={t('allCategories')} />
                   </SelectTrigger>
@@ -184,7 +228,6 @@ const Products: React.FC = () => {
                     <SelectItem value="newest">{t('newest')}</SelectItem>
                     <SelectItem value="price-low">{t('priceLowHigh')}</SelectItem>
                     <SelectItem value="price-high">{t('priceHighLow')}</SelectItem>
-
                   </SelectContent>
                 </Select>
               </div>
@@ -211,7 +254,7 @@ const Products: React.FC = () => {
               {/* Clear Filters */}
               <div className="flex items-end">
                 <Button
-                  variant="outline"
+                  variant="destructive"
                   onClick={clearFilters}
                   className="w-full gap-2"
                   disabled={activeFiltersCount === 0}
@@ -230,7 +273,7 @@ const Products: React.FC = () => {
             {selectedCategory !== 'all' && (
               <Badge variant="secondary" className="gap-2">
                 {categories.find(c => c.id === selectedCategory)?.name}
-                <X className="h-3 w-3 cursor-pointer" onClick={() => setSelectedCategory('all')} />
+                <X className="h-3 w-3 cursor-pointer" onClick={() => handleCategoryChange('all')} />
               </Badge>
             )}
             {sortBy !== 'default' && (
@@ -254,7 +297,7 @@ const Products: React.FC = () => {
             <p className="text-gray-500 text-lg">{t('noProductsFound')}</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6">
             {filteredProducts.map(product => (
               <ProductCard key={product.id} product={product} />
             ))}
