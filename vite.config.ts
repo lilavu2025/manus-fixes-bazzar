@@ -44,37 +44,7 @@ export default defineConfig(({ mode }) => ({
     },
     rollupOptions: {
       output: {
-        manualChunks: (id) => {
-          // Vendor chunks
-          if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('react-dom')) {
-              return 'vendor';
-            }
-            if (id.includes('react-router')) {
-              return 'router';
-            }
-            if (id.includes('@radix-ui')) {
-              return 'ui';
-            }
-            if (id.includes('@supabase')) {
-              return 'supabase';
-            }
-            if (id.includes('recharts')) {
-              return 'charts';
-            }
-            if (id.includes('lucide-react')) {
-              return 'icons';
-            }
-            return 'vendor-misc';
-          }
-          // Admin chunks
-          if (id.includes('/admin/') || id.includes('AdminDashboard')) {
-            return 'admin';
-          }
-        },
-        chunkFileNames: (chunkInfo) => {
-          return `assets/[name]-[hash].js`;
-        },
+        // manualChunks: (id) => { ... } // تم التعطيل مؤقتًا لحل مشكلة React
       },
     },
     chunkSizeWarningLimit: 500,
