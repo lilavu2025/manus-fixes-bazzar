@@ -297,6 +297,10 @@ export const enTranslations = {
   removeFromFavorites: 'Remove from Favorites',
   addToFavorites: 'Add to Favorites',
   share: 'Share',
+  shareViaWhatsapp: 'Share via WhatsApp',
+  shareViaEmail: 'Share via Email',
+  copyLink: 'Copy Link',
+  shareSystem: 'System Share',
   
   // Cart
   cartEmpty: 'Your cart is empty',

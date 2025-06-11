@@ -56,9 +56,11 @@ const FavoriteButton: React.FC<FavoriteButtonProps> = ({
       size={size}
       variant={variant}
       className={`${className} ${isFav ? 'text-red-500' : ''}`}
-      onClick={(e) => {
+      onClick={e => {
+        e.preventDefault();
+        e.stopPropagation();
         handleFavorite(e);
-        if (onClick) onClick(); // Call onClick prop if provided
+        if (onClick) onClick();
       }}
       aria-label={isFav ? t('removeFromFavorites') : t('addToFavorites')}
     >

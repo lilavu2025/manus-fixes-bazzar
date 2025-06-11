@@ -5,6 +5,7 @@ import { useLanguage } from '@/utils/languageContextUtils';
 import { useAuth } from '@/contexts/useAuth';
 import { Product } from '@/types';
 import FavoriteButton from './FavoriteButton';
+import { PopoverTrigger } from '@/components/ui/popover';
 
 export interface ProductCardActionsProps {
   product: Product;
@@ -27,7 +28,7 @@ const ProductCardActions: React.FC<ProductCardActionsProps> = ({
         size="icon"
         variant="secondary"
         className="h-8 w-8 bg-white/90 hover:bg-white shadow-md"
-        onClick={onQuickView}
+        onClick={e => { e.preventDefault(); e.stopPropagation(); onQuickView(); }}
       >
         <Eye className="h-4 w-4" />
       </Button>
@@ -35,16 +36,18 @@ const ProductCardActions: React.FC<ProductCardActionsProps> = ({
         productId={product.id}
         variant="secondary"
         className="h-8 w-8 bg-white/90 hover:bg-white shadow-md"
-        onClick={onFavorite}
+        onClick={async (e?: React.MouseEvent) => { if (e) { e.preventDefault(); e.stopPropagation(); } await onFavorite(); }}
       />
-      <Button
-        size="icon"
-        variant="secondary"
-        className="h-8 w-8 bg-white/90 hover:bg-white shadow-md"
-        onClick={onShare}
-      >
-        <Share2 className="h-4 w-4" />
-      </Button>
+      <PopoverTrigger asChild>
+        <Button
+          size="icon"
+          variant="secondary"
+          className="h-8 w-8 bg-white/90 hover:bg-white shadow-md"
+          onClick={async e => { e.preventDefault(); e.stopPropagation(); await onShare(); }}
+        >
+          <Share2 className="h-4 w-4" />
+        </Button>
+      </PopoverTrigger>
     </div>
   );
 };

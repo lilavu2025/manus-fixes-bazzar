@@ -69,7 +69,7 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
         size="icon"
         variant="outline"
         className="h-8 w-8"
-        onClick={decrement}
+        onClick={e => { e.preventDefault(); e.stopPropagation(); decrement(); }}
         disabled={quantity <= min}
       >
         <Minus className="h-4 w-4" />
@@ -78,8 +78,8 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
       <Input
         type="number"
         value={inputValue}
-        onChange={handleInputChange}
-        onBlur={handleInputBlur}
+        onChange={e => { e.preventDefault(); e.stopPropagation(); handleInputChange(e); }}
+        onBlur={e => { e.preventDefault(); e.stopPropagation(); handleInputBlur(); }}
         className={`w-16 text-center ${isRTL ? 'text-right' : 'text-left'}`}
         min={min}
         max={max}
@@ -90,7 +90,7 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
         size="icon"
         variant="outline"
         className="h-8 w-8"
-        onClick={increment}
+        onClick={e => { e.preventDefault(); e.stopPropagation(); increment(); }}
         disabled={quantity >= max}
       >
         <Plus className="h-4 w-4" />

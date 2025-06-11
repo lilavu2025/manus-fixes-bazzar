@@ -22,6 +22,7 @@ export interface Category {
   id: string;
   name: string;
   nameEn: string;
+  nameHe?: string;
   image: string;
   icon: string;
   count: number;

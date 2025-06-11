@@ -10,20 +10,33 @@ export function useCategoriesRealtime() {
 
   const fetchCategories = async () => {
     setLoading(true);
-    const { data, error } = await supabase
+    // جلب الفئات
+    const { data: categoriesData, error: categoriesError } = await supabase
       .from('categories')
       .select('*')
       .eq('active', true)
       .order('created_at', { ascending: false });
-    if (error) setError(error as Error);
+    if (categoriesError) setError(categoriesError as Error);
+    // جلب المنتجات
+    const { data: productsData } = await supabase
+      .from('products')
+      .select('id, category_id')
+      .eq('active', true);
+    // حساب عدد المنتجات لكل فئة
+    const productCountMap: Record<string, number> = {};
+    (productsData || []).forEach((p: { category_id: string }) => {
+      if (!productCountMap[p.category_id]) productCountMap[p.category_id] = 0;
+      productCountMap[p.category_id]++;
+    });
     // تحويل البيانات إلى النوع المطلوب في الواجهة
-    const mapped = (data || []).map((c: Database['public']['Tables']['categories']['Row']) => ({
+    const mapped = (categoriesData || []).map((c: Database['public']['Tables']['categories']['Row']) => ({
       id: c.id,
       name: c.name_ar || c.name_en || '',
       nameEn: c.name_en || '',
+      nameHe: c.name_he || '',
       image: c.image,
       icon: c.icon,
-      count: 0, // إذا كان هناك حقل للعدد أضفه هنا
+      count: productCountMap[c.id] || 0,
     }));
     setCategories(mapped);
     setLoading(false);

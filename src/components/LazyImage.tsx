@@ -147,7 +147,7 @@ const LazyImage = memo(function LazyImage({
         sizes={generateSizes()}
         width={width}
         height={height}
-        {...(priority ? { fetchPriority: 'high' } : {})}
+        {...(priority ? { fetchpriority: 'high' } : {})}
       />
       
       {/* Error state */}

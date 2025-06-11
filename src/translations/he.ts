@@ -297,6 +297,10 @@ export const heTranslations = {
   removeFromFavorites: 'הסר מהמועדפים',
   addToFavorites: 'הוסף למועדפים',
   share: 'שתף',
+  shareViaWhatsapp: 'שתף בוואטסאפ',
+  shareViaEmail: 'שתף באימייל',
+  copyLink: 'העתק קישור',
+  shareSystem: 'שיתוף מערכת',
   
   // Cart
   cartEmpty: 'העגלה שלך ריקה',

@@ -46,7 +46,7 @@ const CategoryCard: React.FC<CategoryCardProps> = ({ category }) => {
           </div>
         </div>
 
-        {/* محتوى البطاقة: اسم الفئة بالعربية والإنجليزية */}
+        {/* محتوى البطاقة: اسم الفئة بالعربية والإنجليزية والعبرية */}
         <CardContent className="p-4 text-center">
           <h3 className="font-bold text-lg group-hover:text-primary transition-colors">
             {category.name}
@@ -54,6 +54,11 @@ const CategoryCard: React.FC<CategoryCardProps> = ({ category }) => {
           <p className="text-sm text-gray-600 mt-1">
             {category.nameEn}
           </p>
+          {category.nameHe && (
+            <p className="text-sm text-gray-600 mt-1">
+              {category.nameHe}
+            </p>
+          )}
         </CardContent>
       </Card>
     </div>

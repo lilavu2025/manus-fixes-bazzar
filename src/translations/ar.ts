@@ -284,6 +284,10 @@ export const arTranslations = {
   removeFromFavorites: 'إزالة من المفضلة',
   addToFavorites: 'إضافة للمفضلة',
   share: 'مشاركة',
+  shareViaWhatsapp: 'مشاركة عبر واتساب',
+  shareViaEmail: 'مشاركة عبر الإيميل',
+  copyLink: 'نسخ الرابط',
+  shareSystem: 'مشاركة النظام',
   
   // Cart
   cartEmpty: 'سلة التسوق فارغة',

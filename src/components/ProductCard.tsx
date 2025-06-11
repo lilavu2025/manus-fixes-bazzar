@@ -12,6 +12,8 @@ import { useNavigate } from 'react-router-dom';
 import ProductCardImage from './ProductCard/ProductCardImage';
 import ProductCardContent from './ProductCard/ProductCardContent';
 import ProductCardQuickView from './ProductCard/ProductCardQuickView';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Mail, Share2, Copy, MessageCircle } from 'lucide-react';
 
 // خصائص مكون كرت المنتج
 interface ProductCardProps {
@@ -32,6 +34,7 @@ const ProductCard: React.FC<ProductCardProps> = memo(({ product, onQuickView }) 
   const [quantity, setQuantity] = useState(1);
   const [showQuickView, setShowQuickView] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   
   // الحصول على كمية المنتج في السلة
   const cartQuantity = getItemQuantity(product.id);
@@ -100,38 +103,69 @@ const ProductCard: React.FC<ProductCardProps> = memo(({ product, onQuickView }) 
     }
   }, [user, toggleFavorite, product.id, t, isFavorite]);
 
-  // وظيفة مشاركة المنتج
-  const handleShare = useCallback(async () => {
+  // مشاركة عبر واتساب
+  const handleShareWhatsapp = useCallback((e?: React.MouseEvent) => {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
     const productUrl = `${window.location.origin}/product/${product.id}`;
-    
+    const shareText = encodeURIComponent(`${product.name}\n${product.description}\n${productUrl}`);
+    const whatsappUrl = `https://wa.me/?text=${shareText}`;
+    window.open(whatsappUrl, '_blank');
+    setShareOpen(false);
+  }, [product]);
+
+  // مشاركة عبر الإيميل
+  const handleShareEmail = useCallback((e?: React.MouseEvent) => {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    const productUrl = `${window.location.origin}/product/${product.id}`;
+    const subject = encodeURIComponent(product.name);
+    const body = encodeURIComponent(`${product.description}\n${productUrl}`);
+    window.open(`mailto:?subject=${subject}&body=${body}`);
+    setShareOpen(false);
+  }, [product]);
+
+  // نسخ الرابط
+  const handleCopyLink = useCallback(async (e?: React.MouseEvent) => {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    const productUrl = `${window.location.origin}/product/${product.id}`;
     try {
-      // استخدام واجهة المشاركة الأصلية إذا كانت متاحة
-      if (navigator.share && navigator.canShare) {
+      if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+        await navigator.clipboard.writeText(productUrl);
+        toast.success(t('linkCopied') || 'تم نسخ الرابط');
+      } else {
+        // fallback
+        const tempInput = document.createElement('input');
+        tempInput.value = productUrl;
+        document.body.appendChild(tempInput);
+        tempInput.select();
+        document.execCommand('copy');
+        document.body.removeChild(tempInput);
+        toast.success(t('linkCopied') || 'تم نسخ الرابط');
+      }
+    } catch {
+      toast.error(t('shareError') || 'حدث خطأ في النسخ');
+    }
+    setShareOpen(false);
+  }, [product, t]);
+
+  // مشاركة عبر واجهة النظام (native share)
+  const handleNativeShare = useCallback(async (e?: React.MouseEvent) => {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    const productUrl = `${window.location.origin}/product/${product.id}`;
+    if (navigator.share) {
+      try {
         await navigator.share({
           title: product.name,
           text: product.description,
           url: productUrl
         });
-      } else {
-        // نسخ الرابط إلى الحافظة كبديل
-        await navigator.clipboard.writeText(productUrl);
-        toast.success(t('linkCopied'));
+        toast.success(t('sharedSuccessfully') || 'تمت المشاركة بنجاح');
+      } catch {
+        // تجاهل إغلاق المستخدم
       }
-    } catch (error) {
-      // حل بديل للمتصفحات القديمة
-      try {
-        const textArea = document.createElement('textarea');
-        textArea.value = productUrl;
-        document.body.appendChild(textArea);
-        textArea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textArea);
-        toast.success(t('linkCopied'));
-      } catch (fallbackError) {
-        console.error('خطأ في مشاركة المنتج:', fallbackError);
-        toast.error(t('errorSharing') || 'حدث خطأ في المشاركة');
-      }
+    } else {
+      toast.error(t('shareError') || 'المشاركة غير مدعومة على هذا المتصفح');
     }
+    setShareOpen(false);
   }, [product, t]);
 
   // وظيفة التنقل إلى صفحة تفاصيل المنتج
@@ -150,14 +184,37 @@ const ProductCard: React.FC<ProductCardProps> = memo(({ product, onQuickView }) 
         onClick={handleCardClick}
       >
         {/* صورة المنتج مع أزرار التفاعل */}
-        <ProductCardImage
-          product={product}
-          isFavorite={isFav}
-          onQuickView={handleQuickView}
-          onFavorite={handleFavorite}
-          onShare={handleShare}
-          isLoading={isLoading}
-        />
+        <Popover open={shareOpen} onOpenChange={setShareOpen}>
+          <ProductCardImage
+            product={product}
+            isFavorite={isFav}
+            onQuickView={handleQuickView}
+            onFavorite={handleFavorite}
+            onShare={async () => { setShareOpen((v) => !v); }}
+            isLoading={isLoading}
+            // PopoverTrigger asChild will wrap the share button
+          />
+          <PopoverContent align="end" className="w-44 p-2 space-y-1 z-50">
+            <button className="flex items-center gap-2 w-full px-2 py-1 hover:bg-gray-100 rounded text-sm" onClick={handleShareWhatsapp}>
+              <MessageCircle className="h-4 w-4 text-green-600" />
+              {t('shareViaWhatsapp') || 'واتساب'}
+            </button>
+            <button className="flex items-center gap-2 w-full px-2 py-1 hover:bg-gray-100 rounded text-sm" onClick={handleShareEmail}>
+              <Mail className="h-4 w-4 text-blue-600" />
+              {t('shareViaEmail') || 'إيميل'}
+            </button>
+            <button className="flex items-center gap-2 w-full px-2 py-1 hover:bg-gray-100 rounded text-sm" onClick={handleCopyLink}>
+              <Copy className="h-4 w-4" />
+              {t('copyLink') || 'نسخ الرابط'}
+            </button>
+            {navigator.share && (
+              <button className="flex items-center gap-2 w-full px-2 py-1 hover:bg-gray-100 rounded text-sm" onClick={handleNativeShare}>
+                <Share2 className="h-4 w-4 text-gray-600" />
+                {t('shareSystem') || 'مشاركة النظام'}
+              </button>
+            )}
+          </PopoverContent>
+        </Popover>
         
         {/* محتوى المنتج مع الأزرار */}
         <ProductCardContent
@@ -184,7 +241,7 @@ const ProductCard: React.FC<ProductCardProps> = memo(({ product, onQuickView }) 
         onAddToCart={handleAddToCart}
         onBuyNow={handleBuyNow}
         onFavorite={handleFavorite}
-        onShare={handleShare}
+        onShare={async () => { setShareOpen((v) => !v); }}
       />
     </>
   );

@@ -70,7 +70,11 @@ const ProductCardContent = ({
       {/* Action Buttons */}
       <div className="flex gap-2">
         <Button
-          onClick={onAddToCart}
+          onClick={e => {
+            e.preventDefault();
+            e.stopPropagation();
+            onAddToCart();
+          }}
           disabled={!product.inStock}
           className="flex-1 gap-2 font-semibold"
           variant={cartQuantity > 0 ? "secondary" : "default"}
@@ -79,7 +83,11 @@ const ProductCardContent = ({
           {cartQuantity > 0 ? `${t('inCart')} (${cartQuantity})` : t('addToCart')}
         </Button>
         <Button
-          onClick={onBuyNow}
+          onClick={e => {
+            e.preventDefault();
+            e.stopPropagation();
+            onBuyNow();
+          }}
           disabled={!product.inStock}
           variant="outline"
           className="px-4"

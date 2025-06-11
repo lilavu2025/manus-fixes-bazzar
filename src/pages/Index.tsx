@@ -6,7 +6,8 @@ import BannerCarousel from '@/components/BannerCarousel';
 import CategoryCard from '@/components/CategoryCard';
 import CartSidebar from '@/components/CartSidebar';
 import { Button } from '@/components/ui/button';
-import { useProducts, useCategories, useBanners } from '@/hooks/useSupabaseData';
+import { useProducts, useBanners } from '@/hooks/useSupabaseData';
+import { useCategoriesRealtime } from '@/hooks/useCategoriesRealtime';
 import { useLanguage } from '@/utils/languageContextUtils';
 
 const Index = () => {
@@ -15,11 +16,10 @@ const Index = () => {
   const [searchQuery, setSearchQuery] = useState('');
 
   const { data: bannersData, loading: bannersLoading } = useBanners();
-  const { data: categoriesData, loading: categoriesLoading, error: categoriesError } = useCategories();
+  const { categories, loading: categoriesLoading, error: categoriesError } = useCategoriesRealtime();
   const { data: productsData, loading: productsLoading, error: productsError } = useProducts();
 
   const banners = bannersData?.data ?? [];
-  const categories = categoriesData?.data ?? [];
   const products = productsData?.data ?? [];
 
   // إزالة console.log من الإنتاج
