@@ -1,0 +1,6 @@
+/*
+  SPA fallback for Netlify
+  This file ensures that all routes are redirected to index.html for client-side routing.
+*/
+
+/*    /index.html   200
