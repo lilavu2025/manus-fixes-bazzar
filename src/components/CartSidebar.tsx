@@ -111,7 +111,7 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
                               size="icon"
                               variant="outline"
                               className="h-8 w-8"
-                              onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
+                              onClick={() => updateQuantity(item.id, item.quantity - 1, item.product.id)}
                             >
                               <Minus className="h-3 w-3" />
                             </Button>
@@ -124,7 +124,7 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
                               size="icon"
                               variant="outline"
                               className="h-8 w-8"
-                              onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
+                              onClick={() => updateQuantity(item.id, item.quantity + 1, item.product.id)}
                             >
                               <Plus className="h-3 w-3" />
                             </Button>
@@ -134,7 +134,7 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
                             size="icon"
                             variant="ghost"
                             className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
-                            onClick={() => removeItem(item.product.id)}
+                            onClick={() => removeItem(item.id, item.product.id)}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>

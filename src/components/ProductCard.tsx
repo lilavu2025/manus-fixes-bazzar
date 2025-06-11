@@ -24,7 +24,7 @@ interface ProductCardProps {
 // مكون كرت المنتج مع تحسين الأداء باستخدام memo
 const ProductCard: React.FC<ProductCardProps> = memo(({ product, onQuickView }) => {
   // استخدام الخطافات للوصول للوظائف المختلفة
-  const { addItem, getItemQuantity} = useCart();
+  const { addItem, getItemQuantity, buyNow } = useCart();
   const { toggleFavorite, isFavorite } = useFavorites();
   const { user } = useAuth();
   const { t } = useLanguage();
@@ -61,13 +61,15 @@ const ProductCard: React.FC<ProductCardProps> = memo(({ product, onQuickView }) 
     
     try {
       setIsLoading(true);
-      await addItem(product, quantity);
-      navigate('/checkout', { 
-        state: { 
-          directBuy: true, 
-          product: product, 
-          quantity: quantity 
-        } 
+      await buyNow(product, quantity);
+      // استخدم replace بدلاً من push حتى لا يعود المستخدم للسلة الفارغة
+      navigate('/checkout', {
+        replace: true,
+        state: {
+          directBuy: true,
+          product: product,
+          quantity: quantity
+        }
       });
     } catch (error) {
       console.error('خطأ في عملية الشراء المباشر:', error);
@@ -75,7 +77,7 @@ const ProductCard: React.FC<ProductCardProps> = memo(({ product, onQuickView }) 
     } finally {
       setIsLoading(false);
     }
-  }, [addItem, product, quantity, isLoading, t, navigate]);
+  }, [buyNow, product, quantity, isLoading, t, navigate]);
 
   // وظيفة فتح العرض السريع للمنتج
   const handleQuickView = useCallback(() => {

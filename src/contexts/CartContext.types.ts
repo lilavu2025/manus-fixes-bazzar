@@ -4,8 +4,6 @@ export interface CartItem {
   id: string;
   product: Product;
   quantity: number;
-  selectedSize?: string;
-  selectedColor?: string;
 }
 
 export interface CartState {
@@ -16,9 +14,9 @@ export interface CartState {
 
 export type CartContextType = {
   state: CartState;
-  addItem: (product: Product, quantity?: number, selectedSize?: string, selectedColor?: string) => void;
-  removeItem: (id: string) => void;
-  updateQuantity: (id: string, quantity: number) => void;
+  addItem: (product: Product, quantity?: number) => void;
+  removeItem: (id: string, productId?: string) => void;
+  updateQuantity: (id: string, quantity: number, productId?: string) => void;
   clearCart: () => void;
   isInCart: (productId: string) => boolean;
   getCartItem: (productId: string) => CartItem | undefined;
@@ -27,11 +25,12 @@ export type CartContextType = {
   // Aliases and helpers for compatibility
   cartItems?: CartItem[];
   getTotalPrice?: () => number;
-  buyNow?: (product: Product, quantity?: number, selectedSize?: string, selectedColor?: string) => void;
+  buyNow?: (product: Product, quantity?: number) => void;
+  isLoading?: boolean; // سننقلها للمزود فقط
 };
 
 export type CartAction =
-  | { type: 'ADD_ITEM'; payload: { product: Product; quantity?: number; selectedSize?: string; selectedColor?: string } }
+  | { type: 'ADD_ITEM'; payload: { product: Product; quantity?: number } }
   | { type: 'REMOVE_ITEM'; payload: { id: string } }
   | { type: 'UPDATE_QUANTITY'; payload: { id: string; quantity: number } }
   | { type: 'CLEAR_CART' }

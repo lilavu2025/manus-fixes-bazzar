@@ -10,8 +10,8 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 const cartReducer = (state: CartState, action: CartAction): CartState => {
   switch (action.type) {
     case 'ADD_ITEM': {
-      const { product, quantity = 1, selectedSize, selectedColor } = action.payload;
-      const itemId = `${product.id}-${selectedSize || ''}-${selectedColor || ''}`;
+      const { product, quantity = 1 } = action.payload;
+      const itemId = `${product.id}`;
       
       const existingItem = state.items.find(item => item.id === itemId);
       
@@ -31,8 +31,6 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
           id: itemId,
           product,
           quantity,
-          selectedSize,
-          selectedColor
         };
         
         const updatedItems = [...state.items, newItem];
@@ -87,7 +85,7 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
 const initialState: CartState = {
   items: [],
   total: 0,
-  itemCount: 0
+  itemCount: 0,
 };
 
 /**
@@ -116,8 +114,6 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('cart-error', { detail: error }));
         }
-        // يمكنك أيضاً استخدام toast هنا إذا كان متاحاً
-        // toast.error('تعذر تحميل السلة.');
         console.error('Error fetching cart from Supabase:', error);
         return;
       } else {
@@ -183,7 +179,6 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('cart-error', { detail: error }));
       }
-      // toast.error('حدث خطأ غير متوقع في تحميل السلة.');
       console.error('Exception in fetchCartItems:', error);
     }
   }, [user]);
@@ -240,20 +235,67 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     localStorage.setItem('cart', JSON.stringify(state.items));
   }, [state.items]);
   
-  const addItem = (product: Product, quantity = 1, selectedSize?: string, selectedColor?: string) => {
-    dispatch({ type: 'ADD_ITEM', payload: { product, quantity, selectedSize, selectedColor } });
+  const addItem = async (product: Product, quantity = 1) => {
+    dispatch({ type: 'ADD_ITEM', payload: { product, quantity } });
+    if (user) {
+      const { data: existing, error: fetchError } = await supabase
+        .from('cart')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('product_id', product.id)
+        .maybeSingle();
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        console.error('Error fetching cart item:', fetchError);
+        return;
+      }
+      if (existing) {
+        await supabase
+          .from('cart')
+          .update({ quantity: existing.quantity + quantity })
+          .eq('user_id', user.id)
+          .eq('product_id', product.id);
+      } else {
+        await supabase
+          .from('cart')
+          .insert({
+            user_id: user.id,
+            product_id: product.id,
+            quantity
+          });
+      }
+    }
   };
   
-  const removeItem = (id: string) => {
+  const removeItem = async (id: string, productId?: string) => {
     dispatch({ type: 'REMOVE_ITEM', payload: { id } });
+    if (user && productId) {
+      await supabase
+        .from('cart')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('product_id', productId);
+    }
   };
-  
-  const updateQuantity = (id: string, quantity: number) => {
+
+  const updateQuantity = async (id: string, quantity: number, productId?: string) => {
     dispatch({ type: 'UPDATE_QUANTITY', payload: { id, quantity } });
+    if (user && productId) {
+      await supabase
+        .from('cart')
+        .update({ quantity })
+        .eq('user_id', user.id)
+        .eq('product_id', productId);
+    }
   };
-  
-  const clearCart = () => {
+
+  const clearCart = async () => {
     dispatch({ type: 'CLEAR_CART' });
+    if (user) {
+      await supabase
+        .from('cart')
+        .delete()
+        .eq('user_id', user.id);
+    }
   };
   
   const isInCart = (productId: string) => {
@@ -275,9 +317,9 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const getTotalPrice = () => state.total;
 
   // buyNow: إضافة منتج وبدء الشراء المباشر
-  const buyNow = (product: Product, quantity = 1, selectedSize?: string, selectedColor?: string) => {
-    clearCart();
-    addItem(product, quantity, selectedSize, selectedColor);
+  const buyNow = async (product: Product, quantity = 1) => {
+    await clearCart();
+    await addItem(product, quantity);
   };
 
   const value: CartContextType & {
@@ -285,6 +327,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     cartItems: typeof state.items;
     getTotalPrice: () => number;
     buyNow: typeof buyNow;
+    isLoading: boolean;
   } = {
     ...{
       state,
@@ -304,6 +347,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     cartItems,
     getTotalPrice,
     buyNow,
+    isLoading,
   };
   
   return (
@@ -312,18 +356,4 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     </CartContext.Provider>
   );
 };
-
-/**
- * هوك استخدام السلة useCart
- * @returns كائن سياق السلة CartContextType
- * @throws إذا تم استخدامه خارج CartProvider
- */
-// export const useCart = (): CartContextType => {
-//   const context = useContext(CartContext);
-//   if (!context) {
-//     throw new Error('useCart must be used within a CartProvider');
-//   }
-//   return context;
-// };
-
 export default CartContext;

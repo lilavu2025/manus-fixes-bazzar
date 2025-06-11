@@ -4,16 +4,16 @@ import type { CartContextType } from '@/contexts/CartContext.types';
 import type { Product } from '@/types';
 
 export const useCart = (): CartContextType & {
-  addToCart: (product: Product, quantity?: number, selectedSize?: string, selectedColor?: string) => void;
+  addToCart: (product: Product, quantity?: number) => void;
   cartItems: import('@/contexts/CartContext.types').CartItem[];
   getTotalPrice: () => number;
-  buyNow: (product: Product, quantity?: number, selectedSize?: string, selectedColor?: string) => void;
+  buyNow: (product: Product, quantity?: number) => void;
 } => {
   const context = useContext(CartContext) as CartContextType & {
-    addToCart: (product: Product, quantity?: number, selectedSize?: string, selectedColor?: string) => void;
+    addToCart: (product: Product, quantity?: number) => void;
     cartItems: import('@/contexts/CartContext.types').CartItem[];
     getTotalPrice: () => number;
-    buyNow: (product: Product, quantity?: number, selectedSize?: string, selectedColor?: string) => void;
+    buyNow: (product: Product, quantity?: number) => void;
   };
   if (!context) {
     throw new Error('useCart must be used within a CartProvider');

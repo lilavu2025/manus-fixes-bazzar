@@ -29,7 +29,13 @@ const Checkout: React.FC = () => {
   const location = useLocation();
   const { user } = useAuth();
   const { t, isRTL } = useLanguage();
-  const { cartItems, getTotalPrice, clearCart } = useCart();
+  const { state, cartItems = state.items, getTotalPrice, clearCart, isLoading: cartLoading } = useCart();
+  const [isCartLoading, setIsCartLoading] = useState(true);
+  useEffect(() => {
+    if (state.items.length > 0 || cartItems.length > 0) {
+      setIsCartLoading(false);
+    }
+  }, [state.items, cartItems]);
   const { toast } = useToast();
 
   // Redirect to login if user is not authenticated
@@ -67,7 +73,7 @@ const Checkout: React.FC = () => {
   // تحديد العناصر المراد شراؤها (من السلة أو الشراء المباشر)
   const itemsToCheckout = isDirectBuy && directProduct 
     ? [{ product: directProduct, quantity: directQuantity }]
-    : cartItems;
+    : cartItems && cartItems.length > 0 ? cartItems : state.items;
 
   // حساب السعر الإجمالي
   const totalPrice = isDirectBuy && directProduct
@@ -175,6 +181,18 @@ const Checkout: React.FC = () => {
       navigate('/cart'); // العودة للسلة
     }
   };
+
+  // عرض رسالة انتظار تحميل السلة
+  if (!isDirectBuy && cartLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <ShoppingCart className="h-16 w-16 text-gray-300 mx-auto mb-4 animate-spin" />
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('loadingCart') || 'جاري تحميل السلة...'}</h2>
+        </div>
+      </div>
+    );
+  }
 
   // عرض رسالة السلة الفارغة (فقط إذا لم يكن شراء مباشر)
   if (!isDirectBuy && cartItems.length === 0) {
