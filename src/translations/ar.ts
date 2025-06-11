@@ -491,5 +491,6 @@ export const arTranslations = {
   hideActivityLog: 'إخفاء سجل النشاط',
   activityLog: 'سجل نشاط الأدمن',
   details: 'تفاصيل',
-  date: 'التاريخ'
+  date: 'التاريخ',
+  tracking: 'تتبع الشحن',
 };
