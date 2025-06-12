@@ -963,11 +963,11 @@ const AdminOrders: React.FC = () => {
                         </div>
                       </div>
                       {/* أزرار التفاصيل والمشاركة */}
-                      <div className="flex flex-row gap-2 justify-center items-center mt-4 mb-2">
-                        <Button size="sm" variant="default" className="font-bold flex items-center gap-1 px-4 py-2" onClick={() => setSelectedOrder(order)}>
+                      <div className="flex flex-wrap gap-2 justify-center items-center mt-4 mb-2 w-full">
+                        <Button size="sm" variant="default" className="font-bold flex items-center gap-1 px-3 py-2 min-w-[90px] flex-1 sm:flex-none" onClick={() => setSelectedOrder(order)}>
                           <Eye className="h-4 w-4" /> تفاصيل
                         </Button>
-                        <Button size="sm" variant="outline" className="font-bold flex items-center gap-1 px-4 py-2 border-green-500 text-green-700 hover:bg-green-50" style={{ borderWidth: 2 }}
+                        <Button size="sm" variant="outline" className="font-bold flex items-center gap-1 px-3 py-2 border-green-500 text-green-700 hover:bg-green-50 min-w-[90px] flex-1 sm:flex-none" style={{ borderWidth: 2 }}
                           onClick={() => {
                             const msg = encodeURIComponent(generateWhatsappMessage(order));
                             window.open(`https://wa.me/?text=${msg}`, '_blank');
@@ -976,7 +976,7 @@ const AdminOrders: React.FC = () => {
                           <Copy className="h-4 w-4" /> مشاركة عبر واتساب
                         </Button>
                         {/* زر التعديل */}
-                        <Button size="sm" variant="secondary" className="font-bold flex items-center gap-1 px-4 py-2 border-blue-500 text-blue-700 hover:bg-blue-50" style={{ borderWidth: 2 }}
+                        <Button size="sm" variant="secondary" className="font-bold flex items-center gap-1 px-3 py-2 border-blue-500 text-blue-700 hover:bg-blue-50 min-w-[90px] flex-1 sm:flex-none" style={{ borderWidth: 2 }}
                           onClick={() => {
                             setEditOrderId(order.id);
                             setEditOrderForm({
@@ -996,7 +996,7 @@ const AdminOrders: React.FC = () => {
                           تعديل
                         </Button>
                         {/* زر الحذف */}
-                        <Button size="sm" variant="destructive" className="font-bold flex items-center gap-1 px-4 py-2 border-red-500 text-red-700 hover:bg-red-50" style={{ borderWidth: 2 }}
+                        <Button size="sm" variant="destructive" className="font-bold flex items-center gap-1 px-3 py-2 border-red-500 text-red-700 hover:bg-red-50 min-w-[90px] flex-1 sm:flex-none" style={{ borderWidth: 2 }}
                           onClick={() => {
                             setOrderToDelete(order);
                             setShowDeleteDialog(true);
