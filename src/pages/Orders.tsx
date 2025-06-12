@@ -184,9 +184,9 @@ const Orders: React.FC = () => {
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-gray-400">{t('orderNumber')}</span>
-                        <span className="font-bold text-lg tracking-wider">#{order.id}</span>
+                        <span className="font-bold text-lg tracking-wider">#{order.id.slice(0, 8)}</span>
                         {/* شارة إلغاء الطلب */}
-                        {order.status === 'cancelled' && order.cancelled_by && (
+                        {order.status === 'cancelled' && order.cancelled_by === 'admin' && (
                           <Badge
                             className="ml-0 mt-1 bg-red-100 text-red-800 border-red-200 animate-pulse cursor-pointer text-[11px] px-2 py-0.5 w-fit max-w-[90vw] sm:max-w-xs whitespace-normal break-words overflow-hidden block"
                             style={{ lineHeight: '1.2', fontWeight: 600 }}
@@ -194,8 +194,7 @@ const Orders: React.FC = () => {
                             <span className="inline-flex items-center gap-1">
                               <XCircle className="h-4 w-4 min-w-[16px] min-h-[16px]" />
                               <span className="block">
-                                {order.cancelled_by === 'admin' ? 'أُلغي بواسطة الأدمن' : 'أُلغي بواسطة المستخدم'}
-                                {order.cancelled_by_name ? ` (${order.cancelled_by_name})` : ''}
+                                <span className="block">ألغي الطلب بواسطة الأدمن</span>
                               </span>
                             </span>
                           </Badge>
@@ -210,18 +209,27 @@ const Orders: React.FC = () => {
                       <span>{t('paymentMethod')}: {order.payment_method === 'cash' ? t('cashOnDelivery') : t('creditCard')}</span>
                     </div>
                     {/* شريط الحالة */}
-                    <div className="flex items-center gap-2 mt-2">
-                      {statusSteps.map((step, idx) => (
-                        <React.Fragment key={step.key}>
-                          <div className={`flex flex-col items-center ${idx <= currentStep ? 'text-primary' : 'text-gray-300'}`}>
-                            {step.icon}
-                            <span className="text-xs mt-1">{step.label}</span>
-                          </div>
-                          {idx < statusSteps.length - 1 && (
-                            <div className={`w-6 h-1 rounded-full ${idx < currentStep ? 'bg-primary' : 'bg-gray-200'}`}></div>
-                          )}
-                        </React.Fragment>
-                      ))}
+                    <div className="flex items-center gap-1 mt-2 w-full flex-nowrap" style={{flexWrap:'nowrap'}}>
+                      {statusSteps.map((step, idx) => {
+                        // منطق التلوين:
+                        let colorClass = '';
+                        if (order.status === 'cancelled') {
+                          colorClass = step.key === 'cancelled' ? 'text-red-600 font-bold' : 'text-gray-300';
+                        } else {
+                          colorClass = idx <= currentStep ? 'text-primary font-bold' : 'text-gray-300';
+                        }
+                        return (
+                          <React.Fragment key={step.key}>
+                            <div className={`flex flex-col items-center flex-1 basis-0 min-w-0 ${colorClass}`} style={{maxWidth:'100%'}}>
+                              <span style={{fontSize: 15, lineHeight: 1, display:'block'}}>{step.icon}</span>
+                              <span className="text-[10px] md:text-xs mt-0.5 w-full text-center leading-tight break-keep whitespace-nowrap" style={{fontSize:'clamp(9px,2vw,13px)',lineHeight:1.1,display:'block'}}>{step.label}</span>
+                            </div>
+                            {idx < statusSteps.length - 1 && (
+                              <div className={`h-1 rounded-full flex-shrink-0`} style={{width: 16, background: (order.status === 'cancelled' ? (step.key === 'cancelled' ? '#ef4444' : '#e5e7eb') : (idx < currentStep ? '#2563eb' : '#e5e7eb'))}}></div>
+                            )}
+                          </React.Fragment>
+                        );
+                      })}
                     </div>
                   </CardHeader>
                   <CardContent className="bg-white">
