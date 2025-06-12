@@ -13,7 +13,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 // أنواع الطلب وعناصر الطلب من Supabase
 type OrderItemDB = NonNullable<Tables<'orders'>['order_items']>[number];
 type ProductDB = NonNullable<OrderItemDB['products']>;
-type OrderDB = Tables<'orders'>;
+type OrderDB = Tables<'orders'> & {
+  cancelled_by?: string;
+  cancelled_by_name?: string;
+};
 
 const Orders: React.FC = () => {
   const { t, isRTL } = useLanguage();
@@ -62,12 +65,17 @@ const Orders: React.FC = () => {
   // منطق إلغاء الطلب
   const handleCancelOrder = async (orderId: string) => {
     setCancellingId(orderId);
-    const { error } = await supabase
+    const updateObj: Record<string, unknown> = {
+      status: 'cancelled',
+      cancelled_by: 'user',
+      cancelled_by_name: user?.user_metadata?.full_name || user?.email || 'مستخدم',
+    };
+    const { error: updateError } = await supabase
       .from('orders')
-      .update({ status: 'cancelled' })
+      .update(updateObj)
       .eq('id', orderId);
-    if (!error) {
-      setOrders((prev) => prev.map((o) => o.id === orderId ? { ...o, status: 'cancelled' } : o));
+    if (!updateError) {
+      setOrders((prev) => prev.map((o) => o.id === orderId ? { ...o, status: 'cancelled', cancelled_by: 'user', cancelled_by_name: user?.user_metadata?.full_name || user?.email || 'مستخدم' } : o));
     }
     setCancellingId(null);
   };
@@ -177,6 +185,21 @@ const Orders: React.FC = () => {
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-gray-400">{t('orderNumber')}</span>
                         <span className="font-bold text-lg tracking-wider">#{order.id}</span>
+                        {/* شارة إلغاء الطلب */}
+                        {order.status === 'cancelled' && order.cancelled_by && (
+                          <Badge
+                            className="ml-0 mt-1 bg-red-100 text-red-800 border-red-200 animate-pulse cursor-pointer text-[11px] px-2 py-0.5 w-fit max-w-[90vw] sm:max-w-xs whitespace-normal break-words overflow-hidden block"
+                            style={{ lineHeight: '1.2', fontWeight: 600 }}
+                          >
+                            <span className="inline-flex items-center gap-1">
+                              <XCircle className="h-4 w-4 min-w-[16px] min-h-[16px]" />
+                              <span className="block">
+                                {order.cancelled_by === 'admin' ? 'أُلغي بواسطة الأدمن' : 'أُلغي بواسطة المستخدم'}
+                                {order.cancelled_by_name ? ` (${order.cancelled_by_name})` : ''}
+                              </span>
+                            </span>
+                          </Badge>
+                        )}
                       </div>
                       <Badge className={`text-base px-3 py-1 rounded-full font-semibold ${getStatusColor(order.status)}`}>{t(order.status)}</Badge>
                     </div>

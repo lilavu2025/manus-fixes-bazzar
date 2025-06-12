@@ -10,7 +10,9 @@ import {
   Edit,
   Trash,
   Eye,
-  FolderOpen
+  FolderOpen,
+  XCircle,
+  BarChart3
 } from 'lucide-react';
 import {
   Table,
@@ -180,14 +182,15 @@ const AdminCategories: React.FC = () => {
         </select>
         <button
           type="button"
-          className="ml-auto px-4 py-2 rounded-lg bg-red-600 text-white font-bold shadow border border-red-700 hover:bg-red-700 transition-all duration-200"
+          className="ml-auto flex items-center gap-2 px-4 py-2 rounded-lg bg-red-50 text-red-700 font-bold shadow border border-red-200 hover:bg-red-100 transition-all duration-200"
           onClick={() => { setSearch(''); setFilterActive('all'); setSortBy('name'); }}
         >
-          <span className="inline-block align-middle">{t('resetFilters') || 'تصفير الفلاتر'}</span>
+          <XCircle className="h-4 w-4" />
+          <span className="inline-block align-middle">{t('resetFilters') || 'مسح الفلاتر'}</span>
         </button>
         <button
           type="button"
-          className="px-4 py-2 rounded-lg bg-blue-600 text-white font-bold shadow border border-blue-700 hover:bg-blue-700 transition-all duration-200"
+          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white font-bold shadow border border-blue-700 hover:bg-blue-700 transition-all duration-200"
           onClick={() => {
             // تصدير CSV
             const csv = [
@@ -204,7 +207,8 @@ const AdminCategories: React.FC = () => {
             URL.revokeObjectURL(url);
           }}
         >
-          {t('export') || 'تصدير'}</button>
+          <BarChart3 className="h-4 w-4" />
+          {t('export Excel') || 'تصدير Excel'} </button>
         <Button onClick={() => setShowAddDialog(true)} className="gap-2 bg-primary text-white font-bold ml-2">
           <Plus className="h-4 w-4" />
           {t('addCategory')}

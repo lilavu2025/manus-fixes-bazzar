@@ -493,4 +493,5 @@ export const arTranslations = {
   details: 'تفاصيل',
   date: 'التاريخ',
   tracking: 'تتبع الشحن',
+  newCustomer: 'عميل جديد',
 };

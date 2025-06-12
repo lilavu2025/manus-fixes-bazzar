@@ -13,7 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ShoppingCart, Eye, Package, Clock, CheckCircle, XCircle, Plus, Trash2, UserPlus, Copy } from 'lucide-react';
+import { ShoppingCart, Eye, Package, Clock, CheckCircle, XCircle, Plus, Trash2, UserPlus, Copy, MapPin, BarChart3 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useProducts } from '@/hooks/useSupabaseData';
 import { useAdminUsers } from '@/hooks/useAdminUsers';
@@ -30,6 +30,7 @@ import OptimizedSearch from '../OptimizedSearch';
 interface Order {
   id: string;
   user_id: string;
+  customer_name?: string | null; // دعم اسم العميل اليدوي
   items: OrderItem[];
   total: number;
   status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
@@ -45,6 +46,8 @@ interface Order {
   };
   admin_created?: boolean; // <--- جديد
   admin_creator_name?: string; // <--- جديد
+  cancelled_by?: string; // 'user' | 'admin'
+  cancelled_by_name?: string;
 }
 
 // واجهة عنصر الطلب
@@ -115,11 +118,16 @@ function mapOrderFromDb(order: Record<string, unknown>): Order {
   } else if (Array.isArray(order['items'])) {
     items = order['items'] as OrderItem[];
   }
+  let total = order['total'] as number;
+  if (typeof total !== 'number' || isNaN(total)) {
+    total = 0;
+  }
   return {
     id: order['id'] as string,
     user_id: order['user_id'] as string,
+    customer_name: order['customer_name'] as string | null, // جلب اسم العميل اليدوي
     items,
-    total: order['total'] as number,
+    total,
     status: order['status'] as Order['status'],
     created_at: order['created_at'] as string,
     shipping_address: typeof order['shipping_address'] === 'string' ? mapAddressFromDb(JSON.parse(order['shipping_address'] as string)) : mapAddressFromDb(order['shipping_address'] as Record<string, unknown>),
@@ -129,6 +137,8 @@ function mapOrderFromDb(order: Record<string, unknown>): Order {
     profiles: order['profiles'] as { full_name: string; email?: string; phone?: string },
     admin_created: order['admin_created'] === true || order['admin_created'] === 1, // دعم boolean أو رقم
     admin_creator_name: order['admin_creator_name'] as string | undefined, // دعم اسم المنشئ
+    cancelled_by: order['cancelled_by'] as string | undefined,
+    cancelled_by_name: order['cancelled_by_name'] as string | undefined,
   };
 }
 
@@ -189,16 +199,19 @@ const AdminOrders: React.FC = () => {
   // تحديث حالة الطلب
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
     try {
-      const { error } = await supabase
+      const updateObj: Record<string, unknown> = {
+        status: newStatus,
+        updated_at: new Date().toISOString(),
+      };
+      if (newStatus === 'cancelled') {
+        updateObj.cancelled_by = 'admin';
+        updateObj.cancelled_by_name = user?.user_metadata?.full_name || user?.email || 'أدمن';
+      }
+      const { error: updateError } = await supabase
         .from('orders')
-        .update({ 
-          status: newStatus,
-          updated_at: new Date().toISOString()
-        })
+        .update(updateObj)
         .eq('id', orderId);
-      
-      if (error) throw error;
-      
+      if (updateError) throw updateError;
       toast.success('تم تحديث حالة الطلب بنجاح');
       refetchOrders(); // تحديث الطلبات مباشرة بعد التغيير
     } catch (err: unknown) {
@@ -262,16 +275,14 @@ const AdminOrders: React.FC = () => {
       setIsAddingOrder(true);
       
       // التحقق من صحة البيانات
-      if (!orderForm.user_id) {
-        toast.error('يرجى اختيار العميل');
+      if (!orderForm.user_id && !allowCustomClient) {
+        toast.error('يرجى اختيار العميل أو تعبئة بيانات عميل جديد');
         return;
       }
-      
       if (orderForm.items.length === 0) {
         toast.error('يرجى إضافة منتج واحد على الأقل');
         return;
       }
-      
       if (!orderForm.shipping_address.fullName || !orderForm.shipping_address.phone) {
         toast.error('يرجى إدخال معلومات الشحن الأساسية');
         return;
@@ -280,19 +291,20 @@ const AdminOrders: React.FC = () => {
       const total = calculateTotal();
       
       // إنشاء الطلب
+      const orderInsertObj: Record<string, unknown> = {
+        items: JSON.stringify(orderForm.items),
+        total,
+        status: orderForm.status,
+        payment_method: orderForm.payment_method,
+        shipping_address: JSON.stringify(orderForm.shipping_address),
+        notes: orderForm.notes || null,
+        admin_created: true,
+        admin_creator_name: user?.user_metadata?.full_name || user?.email,
+        ...(orderForm.user_id ? { user_id: orderForm.user_id } : { customer_name: orderForm.shipping_address.fullName }),
+      };
       const { data: order, error: orderError } = await supabase
         .from('orders')
-        .insert({
-          user_id: orderForm.user_id,
-          items: JSON.stringify(orderForm.items),
-          total,
-          status: orderForm.status,
-          payment_method: orderForm.payment_method,
-          shipping_address: JSON.stringify(orderForm.shipping_address),
-          notes: orderForm.notes || null,
-          admin_created: true, // <--- هنا
-          admin_creator_name: user?.user_metadata?.full_name || user?.email, // <--- حفظ اسم المنشئ
-        })
+        .insert(orderInsertObj)
         .select()
         .single();
       
@@ -624,11 +636,26 @@ const AdminOrders: React.FC = () => {
             <SelectItem value="cancelled">ملغي</SelectItem>
           </SelectContent>
         </Select>
-        <Button onClick={() => refetchOrders()} variant="outline">تحديث</Button>
+        <Button
+          type="button"
+          variant="destructive"
+          className="ml-auto flex items-center gap-2 px-4 py-2 rounded-lg bg-red-50 text-red-700 font-bold shadow border border-red-200 hover:bg-red-100 transition-all duration-200"
+          onClick={() => {
+            setStatusFilter('all');
+            setDateFrom('');
+            setDateTo('');
+            setPaymentFilter('all');
+            setSearchQuery('');
+          }}
+        >
+          <XCircle className="h-4 w-4" />
+          <span className="inline-block align-middle">{t('resetFilters') || 'مسح الفلاتر'}</span>
+        </Button>
         {/* أزرار التصدير */}
         <div className="flex gap-2 ml-auto">
-          <Button variant="outline" onClick={exportOrdersToExcel} className="flex items-center gap-1">
-            <span role="img" aria-label="excel">📊</span> تصدير Excel
+          <Button variant="outline" onClick={exportOrdersToExcel} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white font-bold shadow border border-blue-700 hover:bg-blue-700 transition-all duration-200">
+            <BarChart3 className="h-4 w-4" />
+            {t('export Excel') || 'تصدير Excel'}
           </Button>
         </div>
         <Dialog open={showAddOrder} onOpenChange={setShowAddOrder}>
@@ -668,7 +695,7 @@ const AdminOrders: React.FC = () => {
                           {user.full_name} <span className="text-xs text-gray-400">({user.email})</span>
                         </SelectItem>
                       ))}
-                      <SelectItem value="__custom__" className="text-blue-600 font-bold">+ عميل جديد (غير موجود)</SelectItem>
+                      <SelectItem value="__custom__" className="text-blue-600 font-bold">{t('newCustomer') || 'عميل جديد'}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -816,81 +843,101 @@ const AdminOrders: React.FC = () => {
       ) : (
         <div className="w-full">
           <VirtualScrollList
-            items={advancedFilteredOrders}
-            // إزالة itemHeight لجعل الكروت تعتمد على محتواها
+            items={Array.isArray(advancedFilteredOrders) ? advancedFilteredOrders.filter(o => o && typeof o.total === 'number' && !isNaN(o.total)) : []}
             containerHeight={700}
             overscan={5}
             className="w-full"
-            renderItem={(order: Order, idx: number) => (
-              <div className="p-2 w-full min-h-[240px] sm:min-h-0">
-                <Card className="relative h-full flex flex-col justify-between border shadow-md rounded-xl transition-all duration-200 bg-white">
-                  <CardHeader className="bg-gray-50 border-b flex flex-col gap-2 p-4 rounded-t-xl">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-400">{t('orderNumber')}</span>
-                        <span className="font-bold text-lg tracking-wider">#{order.id}</span>
-                        {order.admin_created && (
-  <div className="relative group">
-    <Badge className="ml-2 bg-blue-100 text-blue-800 border-blue-200 flex items-center gap-1 animate-pulse cursor-pointer">
-      <UserPlus className="h-4 w-4" />
-      <span>أدمن</span>
-    </Badge>
-    <div className="absolute z-20 hidden group-hover:block bg-white border shadow-lg rounded-lg px-3 py-2 text-xs text-gray-700 top-8 right-0 whitespace-nowrap">
-      {order.admin_creator_name ? `أنشأها: ${order.admin_creator_name}` : 'أنشئت من الأدمن'}
-    </div>
-  </div>
-)}
+            renderItem={(order: Order, idx: number) => {
+              if (!order || typeof order.total !== 'number' || isNaN(order.total)) return null;
+              return (
+                <div className="p-2 w-full min-h-[240px] sm:min-h-0">
+                  <Card className="relative h-full flex flex-col justify-between border shadow-md rounded-xl transition-all duration-200 bg-white">
+                    <CardHeader className="bg-gray-50 border-b flex flex-col gap-2 p-4 rounded-t-xl">
+                      <div className="flex flex-col gap-1">
+                        <span className="font-bold text-lg text-Black">{
+                          order.customer_name?.trim()
+                            ? order.customer_name
+                            : (order.profiles?.full_name || t('notProvided'))
+                        }</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-gray-400">{t('orderNumber')}</span>
+                          <span className="text-lg tracking-wider">#{order.id}</span>
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-2 w-full max-w-full">
+                            {order.admin_created && (
+                              <div className="relative group w-fit max-w-full">
+                                <Badge className="ml-0 bg-blue-100 text-blue-800 border-blue-200 flex items-center gap-1 animate-pulse cursor-pointer text-[11px] px-2 py-0.5 w-fit max-w-[90vw] sm:max-w-xs whitespace-normal break-words overflow-hidden block">
+                                  <UserPlus className="h-4 w-4 min-w-[16px] min-h-[16px]" />
+                                  <span className="block">أدمن</span>
+                                </Badge>
+                                <div className="absolute z-20 hidden group-hover:block bg-white border shadow-lg rounded-lg px-3 py-2 text-xs text-gray-700 top-8 right-0 whitespace-nowrap">
+                                  {order.admin_creator_name ? `أنشأها: ${order.admin_creator_name}` : 'أنشئت من الأدمن'}
+                                </div>
+                              </div>
+                            )}
+                            {order.status === 'cancelled' && order.cancelled_by && (
+                              <Badge
+                                className="ml-0 mt-1 bg-red-100 text-red-800 border-red-200 animate-pulse cursor-pointer text-[11px] px-2 py-0.5 w-fit max-w-[90vw] sm:max-w-xs whitespace-normal break-words overflow-hidden block"
+                                style={{ lineHeight: '1.2', fontWeight: 600 }}
+                              >
+                                <span className="inline-flex items-center gap-1">
+                                  <XCircle className="h-4 w-4 min-w-[16px] min-h-[16px]" />
+                                  <span className="block">
+                                    {order.cancelled_by === 'admin' ? 'أُلغي بواسطة الأدمن' : 'أُلغي بواسطة المستخدم'}
+                                    {order.cancelled_by_name ? ` (${order.cancelled_by_name})` : ''}
+                                  </span>
+                                </span>
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap gap-2 items-center text-xs text-gray-500 mt-1">
+                          <span>{new Date(order.created_at).toLocaleDateString('en-GB')}</span>
+                          <span>|</span>
+                          <span className="block text-center text-lg font-bold text-green-700">{typeof order.total === 'number' && !isNaN(order.total) ? order.total + ' ₪' : '-'}</span>
+                          <span>|</span>
+                          <span>{order.payment_method}</span>
+                          <span>|</span>
+                          <Badge className={`text-base px-3 py-1 rounded-full font-semibold ${getStatusColor(order.status)}`}>{t(order.status)}</Badge>
+                        </div>
                       </div>
-                      <Badge className={`text-base px-3 py-1 rounded-full font-semibold ${getStatusColor(order.status)}`}>{t(order.status)}</Badge>
-                    </div>
-                    <div className="flex flex-wrap gap-2 items-center text-xs text-gray-500 mt-1">
-                      <span>{new Date(order.created_at).toLocaleDateString('en-GB')}</span>
-                      <span>|</span>
-                      <span>{order.profiles?.full_name || 'غير محدد'}</span>
-                      <span>|</span>
-                      <span>{order.total} ₪</span>
-                      <span>|</span>
-                      <span>{order.payment_method}</span>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="flex flex-col gap-3 p-4">
-                    <div className="flex flex-col gap-2">
-                      {order.notes && <div className="mb-1 text-xs text-gray-500">{t('orderNotes')}: {order.notes}</div>}
-                      <div className="flex flex-wrap gap-2 text-xs text-gray-500">
-                        {order.items.map((item) => (
-                          <span key={item.id} className="bg-gray-100 rounded px-2 py-1">
-                            {item.product_name} × {item.quantity}
-                          </span>
-                        ))}
+                    </CardHeader>
+                    <CardContent className="flex flex-col gap-3 p-4">
+                      <div className="flex flex-col gap-2">
+                        {order.notes && <div className="mb-1 text-xs text-gray-500">{t('orderNotes')}: {order.notes}</div>}
+                        <div className="flex flex-wrap gap-2 text-xs text-gray-500">
+                          {order.items.map((item) => (
+                            <span key={item.id} className="bg-gray-100 rounded px-2 py-1">
+                              {item.product_name} × {item.quantity}
+                            </span>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                      <div className="flex flex-row flex-wrap gap-2 w-full sm:w-auto">
-                        <Button size="sm" variant="outline" className="flex-1 sm:flex-none" onClick={() => setSelectedOrder(order)}>
-                          <Eye className="h-4 w-4 mr-1" /> تفاصيل
+                      {/* أزرار التفاصيل والمشاركة */}
+                      <div className="flex flex-row gap-2 justify-center items-center mt-4 mb-2">
+                        <Button size="sm" variant="default" className="font-bold flex items-center gap-1 px-4 py-2" onClick={() => setSelectedOrder(order)}>
+                          <Eye className="h-4 w-4" /> تفاصيل
                         </Button>
-                        <Button size="sm" variant="outline" className="flex-1 sm:flex-none" onClick={() => {
-                          const msg = encodeURIComponent(generateWhatsappMessage(order));
-                          window.open(`https://wa.me/?text=${msg}`, '_blank');
-                        }}>
-                          <Copy className="h-4 w-4 mr-1" /> واتساب
-                        </Button>
-                        <Button size="sm" variant="destructive" className="flex-1 sm:flex-none" onClick={() => { setOrderToDelete(order); setShowDeleteDialog(true); }}>
-                          <Trash2 className="h-4 w-4 mr-1" /> حذف
-                        </Button>
+                        <Button size="sm" variant="outline" className="font-bold flex items-center gap-1 px-4 py-2 border-green-500 text-green-700 hover:bg-green-50" style={{ borderWidth: 2 }}
+                          onClick={() => {
+                            const msg = encodeURIComponent(generateWhatsappMessage(order));
+                            window.open(`https://wa.me/?text=${msg}`, '_blank');
+                          }}
+                        >
+                          <Copy className="h-4 w-4" /> مشاركة عبر واتساب
+                      </Button>
                       </div>
-                    </div>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      <Button size="sm" variant="outline" className="flex-1 min-w-[110px]" onClick={() => updateOrderStatus(order.id, 'pending')} disabled={order.status === 'pending'}>في الانتظار</Button>
-                      <Button size="sm" variant="outline" className="flex-1 min-w-[110px]" onClick={() => updateOrderStatus(order.id, 'processing')} disabled={order.status === 'processing'}>قيد المعالجة</Button>
-                      <Button size="sm" variant="outline" className="flex-1 min-w-[110px]" onClick={() => updateOrderStatus(order.id, 'shipped')} disabled={order.status === 'shipped' || order.status === 'delivered'}>تم الشحن</Button>
-                      <Button size="sm" variant="outline" className="flex-1 min-w-[110px]" onClick={() => updateOrderStatus(order.id, 'delivered')} disabled={order.status === 'delivered'}>تم التسليم</Button>
-                      <Button size="sm" variant="destructive" className="flex-1 min-w-[110px]" onClick={() => updateOrderStatus(order.id, 'cancelled')} disabled={order.status === 'cancelled' || order.status === 'delivered'}>إلغاء</Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        <Button size="sm" variant="outline" className="flex-1 min-w-[110px]" onClick={() => updateOrderStatus(order.id, 'pending')} disabled={order.status === 'pending'}>في الانتظار</Button>
+                        <Button size="sm" variant="outline" className="flex-1 min-w-[110px]" onClick={() => updateOrderStatus(order.id, 'processing')} disabled={order.status === 'processing'}>قيد المعالجة</Button>
+                        <Button size="sm" variant="outline" className="flex-1 min-w-[110px]" onClick={() => updateOrderStatus(order.id, 'shipped')} disabled={order.status === 'shipped' || order.status === 'delivered'}>تم الشحن</Button>
+                        <Button size="sm" variant="outline" className="flex-1 min-w-[110px]" onClick={() => updateOrderStatus(order.id, 'delivered')} disabled={order.status === 'delivered'}>تم التسليم</Button>
+                        <Button size="sm" variant="destructive" className="flex-1 min-w-[110px]" onClick={() => updateOrderStatus(order.id, 'cancelled')} disabled={order.status === 'cancelled' || order.status === 'delivered'}>إلغاء</Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              );
+            }}
           />
         </div>
       )}
@@ -909,48 +956,111 @@ const AdminOrders: React.FC = () => {
       </Dialog>
       {/* Dialog عرض تفاصيل الطلب */}
       <Dialog open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>تفاصيل الطلب</DialogTitle>
+        <DialogContent className="max-w-2xl w-full max-h-[90vh] overflow-y-auto p-0 sm:p-0">
+          <DialogHeader className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b px-6 py-4 rounded-t-2xl print:bg-white print:border-none print:backdrop-blur-0 print:shadow-none">
+            <DialogTitle className="text-xl font-bold flex items-center gap-2 print:justify-center print:w-full print:text-2xl print:mb-2">
+              <Package className="h-5 w-5 text-primary print:hidden" /> تفاصيل الطلبية #{selectedOrder?.id.slice(0, 8)}
+            </DialogTitle>
           </DialogHeader>
           {selectedOrder && (
-            <div className="space-y-4">
-              <div>
-                <h3 className="font-semibold mb-2">معلومات الطلب</h3>
-                <p className="text-sm text-gray-600">رقم الطلب: {selectedOrder.id}</p>
-                <p className="text-sm text-gray-600">التاريخ: {new Date(selectedOrder.created_at).toLocaleDateString('en-GB')} - {new Date(selectedOrder.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</p>
-                <p className="text-sm text-gray-600">الحالة: {selectedOrder.status}</p>
-                <p className="text-sm text-gray-600">المجموع: {selectedOrder.total} ₪</p>
-                <p className="text-sm text-gray-600">طريقة الدفع: {selectedOrder.payment_method}</p>
-                {selectedOrder.notes && <p className="text-sm text-gray-600">ملاحظات: {selectedOrder.notes}</p>}
-                <div className="flex gap-2 mt-4">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      const msg = encodeURIComponent(generateWhatsappMessage(selectedOrder));
-                      window.open(`https://wa.me/?text=${msg}`, '_blank');
-                    }}
-                  >
-                    <Copy className="h-4 w-4 mr-1" /> مشاركة الطلبية عبر واتساب
-                  </Button>
+            <>
+              {/* منطقة تفاصيل الطلب للطباعة */}
+              <div className="space-y-6 px-6 py-6 print:p-0 print:space-y-4 print:bg-white print:text-black print:rounded-none print:shadow-none print:w-full print:max-w-full print:mx-0 print:my-0" id="print-order-details">
+                {/* رأس الورقة للطباعة */}
+                <div className="print:flex print:flex-col print:items-center print:mb-6 hidden">
+                  <img src="/favicon.ico" alt="logo" className="h-14 w-14 mb-2" />
+                  <div className="text-2xl font-bold text-primary print:text-black">متجر موبايل بازار</div>
+                  <div className="text-sm text-gray-600 print:text-gray-700">www.mobilebazaar.ps</div>
+                  <div className="w-full border-b border-gray-300 my-2" />
+                </div>
+                {/* بيانات الطلب والعميل */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-b pb-4 print:gap-0 print:border print:rounded print:p-4 print:mb-4 print:border-gray-300">
+                  <div className="space-y-2 print:space-y-1">
+                    <h4 className="font-semibold text-primary flex items-center gap-1 print:justify-center print:text-lg"><UserPlus className="h-4 w-4 print:hidden" /> بيانات العميل</h4>
+                    <div className="text-base font-bold text-gray-900 print:text-black">{selectedOrder.customer_name?.trim() ? selectedOrder.customer_name : (selectedOrder.profiles?.full_name || t('notProvided'))}</div>
+                    {selectedOrder.profiles?.email && <div className="text-xs text-gray-700 print:text-black">{selectedOrder.profiles.email}</div>}
+                    <div className="text-xs text-gray-700 print:text-black">{selectedOrder.profiles?.phone || selectedOrder.shipping_address?.phone || t('notProvided')}</div>
+                  </div>
+                  <div className="space-y-2 print:space-y-1">
+                    <h4 className="font-semibold text-primary flex items-center gap-1 print:justify-center print:text-lg"><MapPin className="h-4 w-4 print:hidden" /> عنوان الشحن</h4>
+                    <div className="text-xs text-gray-900 print:text-black">
+                      {selectedOrder.shipping_address?.fullName || '-'}<br />
+                      {selectedOrder.shipping_address?.phone && <>{selectedOrder.shipping_address.phone}<br /></>}
+                      {selectedOrder.shipping_address?.city}, {selectedOrder.shipping_address?.area}, {selectedOrder.shipping_address?.street}<br />
+                      {selectedOrder.shipping_address?.building && <>مبنى: {selectedOrder.shipping_address.building}, </>}
+                      {selectedOrder.shipping_address?.floor && <>طابق: {selectedOrder.shipping_address.floor}, </>}
+                      {selectedOrder.shipping_address?.apartment && <>شقة: {selectedOrder.shipping_address.apartment}</>}
+                    </div>
+                  </div>
+                </div>
+                {/* معلومات الطلب */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-b pb-4 print:gap-0 print:border print:rounded print:p-4 print:mb-4 print:border-gray-300">
+                  <div className="space-y-1">
+                    <div className="text-xs text-gray-700 print:text-black">رقم الطلب: <span className="font-bold">{selectedOrder.id}</span></div>
+                    <div className="text-xs text-gray-700 print:text-black">تاريخ الطلب: <span className="font-bold">{new Date(selectedOrder.created_at).toLocaleDateString('en-GB')} - {new Date(selectedOrder.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</span></div>
+                    <div className="text-xs text-gray-700 print:text-black">الحالة: <span className="font-bold">{t(selectedOrder.status)}</span></div>
+                    <div className="text-xs text-gray-700 print:text-black">طريقة الدفع: <span className="font-bold">{t(selectedOrder.payment_method)}</span></div>
+                  </div>
+                  <div className="flex flex-col gap-1 items-end md:items-center print:hidden">
+                    <div className="text-lg font-bold text-green-700">{selectedOrder.total} ₪</div>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" className="font-bold flex items-center gap-1 px-4 py-2 border-green-500 text-green-700 hover:bg-green-50" style={{ borderWidth: 2 }}
+                          onClick={() => {
+                            const msg = encodeURIComponent(generateWhatsappMessage(selectedOrder));
+                            window.open(`https://wa.me/?text=${msg}`, '_blank');
+                          }}
+                        >
+                          <Copy className="h-4 w-4" /> مشاركة عبر واتساب
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+                {/* المنتجات */}
+                <div className="space-y-2 border-b pb-4 print:border print:rounded print:p-4 print:mb-4 print:border-gray-300">
+                  <h4 className="font-semibold text-primary flex items-center gap-1 print:justify-center print:text-lg"><Package className="h-4 w-4 print:hidden" /> المنتجات المطلوبة</h4>
+                  <div className="overflow-x-auto print:overflow-visible">
+                    <table className="min-w-full text-xs md:text-sm border rounded-lg print:border print:rounded-none print:text-base print:w-full">
+                      <thead>
+                        <tr className="bg-gray-100 print:bg-gray-200">
+                          <th className="p-2 font-bold">#</th>
+                          <th className="p-2 font-bold">المنتج</th>
+                          <th className="p-2 font-bold">الكمية</th>
+                          <th className="p-2 font-bold">السعر</th>
+                          <th className="p-2 font-bold">المجموع</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {selectedOrder.items && selectedOrder.items.length > 0 ? (
+                          selectedOrder.items.map((item, idx) => (
+                            <tr key={item.id} className="border-b hover:bg-gray-50 print:hover:bg-transparent">
+                              <td className="p-2 text-center">{idx + 1}</td>
+                              <td className="p-2">{item.product_name}</td>
+                              <td className="p-2 text-center">{item.quantity}</td>
+                              <td className="p-2 text-center">{item.price} ₪</td>
+                              <td className="p-2 text-center font-semibold">{(item.price * item.quantity).toFixed(2)} ₪</td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr><td colSpan={5} className="text-center text-gray-400 py-4">لا توجد منتجات</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                {/* ملاحظات الطلب */}
+                {selectedOrder.notes && (
+                  <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 rounded print:bg-white print:border print:border-yellow-400 print:rounded print:p-2 print:mt-2 print:mb-0">
+                    <span className="font-semibold text-yellow-800 print:text-black">ملاحظات:</span> <span className="text-gray-700 print:text-black">{selectedOrder.notes}</span>
+                  </div>
+                )}
+                {/* تذييل رسمي للطباعة */}
+                <div className="print:flex flex-col items-center mt-8 hidden">
+                  <div className="w-full border-t border-gray-300 my-2" />
+                  <div className="text-xs text-gray-500 print:text-gray-700">تم توليد هذه الإرسالية إلكترونيًا من خلال لوحة تحكم متجر موبايل بازار - {new Date().toLocaleDateString('en-GB')}</div>
+                  <div className="text-xs text-gray-500 print:text-gray-700">للاستفسار: 0599999999 - info@mobilebazaar.ps</div>
                 </div>
               </div>
-              <div>
-                <h3 className="font-semibold mb-2">المنتجات المطلوبة</h3>
-                <ul className="list-disc pl-5">
-                  {selectedOrder.items && selectedOrder.items.length > 0 ? (
-                    selectedOrder.items.map((item, idx) => (
-                      <li key={item.id} className="mb-1">
-                        {item.product_name} - الكمية: {item.quantity} - السعر: {item.price} ₪
-                      </li>
-                    ))
-                  ) : (
-                    <li>لا توجد منتجات</li>
-                  )}
-                </ul>
-              </div>
-            </div>
+            </>
           )}
         </DialogContent>
       </Dialog>

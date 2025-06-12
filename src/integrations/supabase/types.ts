@@ -189,6 +189,7 @@ export type Database = {
         Row: {
           id: string;
           user_id: string;
+          customer_name?: string | null; // اسم العميل إذا لم يوجد user_id
           total: number;
           status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
           payment_method: string;
@@ -206,6 +207,10 @@ export type Database = {
             price: number;
             products?: Database['public']['Tables']['products']['Row'];
           }>;
+          admin_created?: boolean;
+          admin_creator_name?: string;
+          cancelled_by?: string;
+          cancelled_by_name?: string;
         };
         Insert: Partial<Omit<Database['public']['Tables']['orders']['Row'], 'id' | 'created_at' | 'updated_at'>> & { id?: string; created_at?: string; updated_at?: string };
         Update: Partial<Database['public']['Tables']['orders']['Row']>;

@@ -494,4 +494,5 @@ export const enTranslations = {
   activityLog: 'Admin Activity Log',
   details: 'Details',
   date: 'Date',
+  newCustomer: 'New Customer',
 };

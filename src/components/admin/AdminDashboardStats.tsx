@@ -396,7 +396,9 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {productsStats.reduce((sum, stat) => sum + stat.total, 0)}
+              {Array.isArray(productsStats) && productsStats.length > 0
+                ? productsStats.reduce((sum, stat) => sum + (stat?.total || 0), 0)
+                : 0}
             </div>
             <p className="text-xs text-muted-foreground">
               {t('activeProducts')}
@@ -416,7 +418,7 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
             {!isOrdersExpanded ? (
               <>
                 <div className="text-2xl font-bold">
-                  {ordersStats?.totalOrders || 0}
+                  {ordersStats && typeof ordersStats.totalOrders === 'number' ? ordersStats.totalOrders : 0}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   {t('totalOrders')}
@@ -424,18 +426,20 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
               </>
             ) : (
               <div className="grid grid-cols-2 gap-2">
-                {ordersStats?.statusStats?.map((stat) => (
-                  <div 
-                    key={stat.status} 
-                    className="rounded-lg border bg-card p-2 text-center hover:bg-muted/50 transition-colors cursor-pointer"
-                    onClick={() => handleOrderStatusClick(stat.status)}
-                  >
-                    <div className="text-[0.9rem] font-medium">{stat.label}</div>
-                    <div className="text-xl font-bold mt-1" style={{ color: stat.color }}>
-                      {stat.value}
-                    </div>
-                  </div>
-                )) || []}
+                {Array.isArray(ordersStats?.statusStats) && ordersStats.statusStats.length > 0
+                  ? ordersStats.statusStats.map((stat) => (
+                      <div 
+                        key={stat.status} 
+                        className="rounded-lg border bg-card p-2 text-center hover:bg-muted/50 transition-colors cursor-pointer"
+                        onClick={() => handleOrderStatusClick(stat.status)}
+                      >
+                        <div className="text-[0.9rem] font-medium">{stat.label}</div>
+                        <div className="text-xl font-bold mt-1" style={{ color: stat.color }}>
+                          {typeof stat.value === 'number' ? stat.value : 0}
+                        </div>
+                      </div>
+                    ))
+                  : null}
               </div>
             )}
           </CardContent>
@@ -453,7 +457,7 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
             {!isRevenueExpanded ? (
               <>
                 <div className="text-2xl font-bold">
-                  {ordersStats?.totalRevenue?.toLocaleString() || 0} {t('currency')}
+                  {ordersStats && typeof ordersStats.totalRevenue === 'number' ? ordersStats.totalRevenue.toLocaleString() : 0} {t('currency')}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   إجمالي الإيرادات
@@ -461,17 +465,19 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
               </>
             ) : (
               <div className="grid grid-cols-1 gap-2">
-                {ordersStats?.statusStats?.filter(stat => stat.status !== 'cancelled').map((stat) => (
-                  <div 
-                    key={stat.status} 
-                    className="rounded-lg border bg-card p-2 hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="text-[0.8rem] font-medium">{stat.label}</div>
-                    <div className="text-lg font-bold mt-1" style={{ color: stat.color }}>
-                      {stat.revenue?.toLocaleString() || 0} {t('currency')}
-                    </div>
-                  </div>
-                )) || []}
+                {Array.isArray(ordersStats?.statusStats) && ordersStats.statusStats.length > 0
+                  ? ordersStats.statusStats.filter(stat => stat.status !== 'cancelled').map((stat) => (
+                      <div 
+                        key={stat.status} 
+                        className="rounded-lg border bg-card p-2 hover:bg-muted/50 transition-colors"
+                      >
+                        <div className="text-[0.8rem] font-medium">{stat.label}</div>
+                        <div className="text-lg font-bold mt-1" style={{ color: stat.color }}>
+                          {typeof stat.revenue === 'number' ? stat.revenue.toLocaleString() : 0} {t('currency')}
+                        </div>
+                      </div>
+                    ))
+                  : null}
               </div>
             )}
           </CardContent>

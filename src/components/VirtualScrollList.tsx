@@ -91,7 +91,13 @@ function VirtualScrollList<T>({
   }, [items.length]);
 
   // Calculate total height
-  const totalHeight = items.length * (itemHeight || 0);
+  let safeItems = Array.isArray(items) ? items.filter(Boolean) : [];
+  // Extra protection: filter out items with invalid total if present
+  function hasValidTotal(item: unknown): boolean {
+    return typeof item !== 'object' || item === null || !('total' in item) || (typeof (item as { total?: unknown }).total === 'number' && !isNaN((item as { total?: unknown }).total as number));
+  }
+  safeItems = safeItems.filter(hasValidTotal);
+  const totalHeight = safeItems.length * (itemHeight || 0);
 
   // Calculate offset for visible items
   const offsetY = visibleRange.startIndex * (itemHeight || 0);
@@ -108,7 +114,7 @@ function VirtualScrollList<T>({
     >
       {/* Visible items container */}
       <div>
-        {visibleItems.map((item, index) => {
+        {safeItems.slice(visibleRange.startIndex, visibleRange.endIndex + 1).map((item, index) => {
           const actualIndex = visibleRange.startIndex + index;
           const key = getItemKey ? getItemKey(item, actualIndex) : actualIndex;
           return (
