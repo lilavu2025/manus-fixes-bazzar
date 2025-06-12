@@ -556,18 +556,6 @@ const AdminOffers: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-sm font-medium">
-                    {t('titleEnglish')} <span className="text-red-500">*</span>
-                  </Label>
-                  <Input 
-                    name="title_en" 
-                    value={form.title_en} 
-                    onChange={handleInput} 
-                    placeholder="Enter English title"
-                    required 
-                  />
-                </div>
-                <div>
-                  <Label className="text-sm font-medium">
                     {t('titleArabic')} <span className="text-red-500">*</span>
                   </Label>
                   <Input 
@@ -576,6 +564,17 @@ const AdminOffers: React.FC = () => {
                     onChange={handleInput} 
                     placeholder="أدخل العنوان بالعربية"
                     required 
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">
+                    {t('titleEnglish')} <span className="text-red-500">*</span>
+                  </Label>
+                  <Input 
+                    name="title_en" 
+                    value={form.title_en} 
+                    onChange={handleInput} 
+                    placeholder="Enter English title"
                   />
                 </div>
                 <div>
@@ -595,23 +594,23 @@ const AdminOffers: React.FC = () => {
               <h3 className="text-lg font-semibold">{t('descriptions')}</h3>
               <div className="space-y-4">
                 <div>
-                  <Label className="text-sm font-medium">{t('descriptionEnglish')}</Label>
-                  <Textarea 
-                    name="description_en" 
-                    value={form.description_en} 
-                    onChange={handleInput} 
-                    placeholder="Enter English description"
-                    rows={3}
-                  />
-                </div>
-                <div>
                   <Label className="text-sm font-medium">{t('descriptionArabic')}</Label>
                   <Textarea 
                     name="description_ar" 
                     value={form.description_ar} 
                     onChange={handleInput} 
                     placeholder="أدخل الوصف بالعربية"
-                    rows={3}
+                    rows={1}
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">{t('descriptionEnglish')}</Label>
+                  <Textarea 
+                    name="description_en" 
+                    value={form.description_en} 
+                    onChange={handleInput} 
+                    placeholder="Enter English description"
+                    rows={2}
                   />
                 </div>
                 <div>

@@ -274,8 +274,8 @@ const AdminBanners: React.FC = () => {
   // عرض مؤشر التحميل إذا كانت البيانات قيد التحميل
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      <div className="flex justify-center items-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -318,7 +318,7 @@ const AdminBanners: React.FC = () => {
             console.log('فتح نموذج إضافة بانر جديد');
             setShowForm(true);
           }}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2"
+          className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg flex items-center gap-2"
         >
           <Plus className="h-4 w-4" />
           {t('addBanner')}
@@ -367,7 +367,6 @@ const AdminBanners: React.FC = () => {
                     onChange={(e) => setFormData(prev => ({ ...prev, title_en: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder={t('enterTitleEnglish')}
-                    required
                   />
                 </div>
                 <div>
@@ -380,7 +379,6 @@ const AdminBanners: React.FC = () => {
                     onChange={(e) => setFormData(prev => ({ ...prev, title_he: e.target.value }))}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder={t('enterTitleHebrew')}
-                    required
                   />
                 </div>
               </div>
@@ -490,7 +488,7 @@ const AdminBanners: React.FC = () => {
               </div>
 
               {/* حالة البانر (فعال/غير فعال) */}
-              <div className="flex items-center">
+              <div className="flex items-center space-x-2">
                 <input
                   type="checkbox"
                   id="active"
@@ -515,7 +513,7 @@ const AdminBanners: React.FC = () => {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                  className="bg-primary hover:bg-primary/90 px-4 py-2 text-white rounded-md disabled:opacity-50"
                 >
                   {submitting
                     ? (editingBanner ? t('updating') : t('adding'))
@@ -600,7 +598,7 @@ const AdminBanners: React.FC = () => {
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => handleEdit(banner)}
-                          className="text-blue-600 hover:text-blue-900"
+                          className="text-primary-600 hover:text-primary-900"
                         >
                           <Edit className="h-4 w-4" />
                         </button>
