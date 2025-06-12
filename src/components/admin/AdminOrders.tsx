@@ -182,6 +182,9 @@ const AdminOrders: React.FC = () => {
   const [orderToDelete, setOrderToDelete] = useState<Order | null>(null);
   // 1. إضافة حالة allowCustomClient
   const [allowCustomClient, setAllowCustomClient] = useState(false);
+  const [showEditOrder, setShowEditOrder] = useState(false);
+  const [editOrderForm, setEditOrderForm] = useState<NewOrderForm | null>(null);
+  const [editOrderId, setEditOrderId] = useState<string | null>(null);
   const virtualListRef = useRef<HTMLDivElement>(null);
   const { data: productsData } = useProducts();
   const products = productsData && Array.isArray(productsData.data) ? productsData.data : [];
@@ -339,6 +342,52 @@ const AdminOrders: React.FC = () => {
     } catch (error: unknown) {
       console.error('خطأ في إضافة الطلب:', error);
       toast.error('فشل في إضافة الطلب');
+    } finally {
+      setIsAddingOrder(false);
+    }
+  };
+  
+  // دالة تعديل الطلب (تستخدم في Dialog التعديل)
+  const handleEditOrder = async () => {
+    if (!editOrderForm || !editOrderId) return;
+    setIsAddingOrder(true);
+    try {
+      const total = editOrderForm.items.reduce((total, item) => total + (item.price * item.quantity), 0);
+      const updateObj: Record<string, unknown> = {
+        items: JSON.stringify(editOrderForm.items),
+        total,
+        status: editOrderForm.status,
+        payment_method: editOrderForm.payment_method,
+        shipping_address: JSON.stringify(editOrderForm.shipping_address),
+        notes: editOrderForm.notes ? compressText(editOrderForm.notes) : null,
+        updated_at: new Date().toISOString(),
+      };
+      if (editOrderForm.shipping_address.fullName) {
+        updateObj.customer_name = editOrderForm.shipping_address.fullName;
+      }
+      const { error } = await supabase.from('orders').update(updateObj).eq('id', editOrderId);
+      if (error) throw error;
+      // تحديث عناصر الطلب في order_items
+      // 1. حذف العناصر القديمة
+      await supabase.from('order_items').delete().eq('order_id', editOrderId);
+      // 2. إضافة العناصر الجديدة
+      const orderItems = editOrderForm.items.map(item => ({
+        order_id: editOrderId,
+        product_id: item.product_id,
+        quantity: item.quantity,
+        price: item.price,
+      }));
+      if (orderItems.length > 0) {
+        const { error: itemsError } = await supabase.from('order_items').insert(orderItems);
+        if (itemsError) throw itemsError;
+      }
+      toast.success('تم تعديل الطلب بنجاح');
+      setShowEditOrder(false);
+      setEditOrderForm(null);
+      setEditOrderId(null);
+      refetchOrders();
+    } catch (error) {
+      toast.error('فشل في تعديل الطلب');
     } finally {
       setIsAddingOrder(false);
     }
@@ -925,7 +974,36 @@ const AdminOrders: React.FC = () => {
                           }}
                         >
                           <Copy className="h-4 w-4" /> مشاركة عبر واتساب
-                      </Button>
+                        </Button>
+                        {/* زر التعديل */}
+                        <Button size="sm" variant="secondary" className="font-bold flex items-center gap-1 px-4 py-2 border-blue-500 text-blue-700 hover:bg-blue-50" style={{ borderWidth: 2 }}
+                          onClick={() => {
+                            setEditOrderId(order.id);
+                            setEditOrderForm({
+                              user_id: order.user_id,
+                              payment_method: order.payment_method,
+                              status: order.status,
+                              notes: order.notes ? decompressText(order.notes) : '',
+                              items: order.items,
+                              shipping_address: {
+                                ...order.shipping_address,
+                                fullName: order.customer_name || order.profiles?.full_name || '',
+                              },
+                            });
+                            setShowEditOrder(true);
+                          }}
+                        >
+                          تعديل
+                        </Button>
+                        {/* زر الحذف */}
+                        <Button size="sm" variant="destructive" className="font-bold flex items-center gap-1 px-4 py-2 border-red-500 text-red-700 hover:bg-red-50" style={{ borderWidth: 2 }}
+                          onClick={() => {
+                            setOrderToDelete(order);
+                            setShowDeleteDialog(true);
+                          }}
+                        >
+                          حذف
+                        </Button>
                       </div>
                       <div className="flex flex-wrap gap-2 mt-2">
                         <Button size="sm" variant="outline" className="flex-1 min-w-[110px]" onClick={() => updateOrderStatus(order.id, 'pending')} disabled={order.status === 'pending'}>في الانتظار</Button>
@@ -1062,6 +1140,172 @@ const AdminOrders: React.FC = () => {
                 </div>
               </div>
             </>
+          )}
+        </DialogContent>
+      </Dialog>
+      {/* Dialog تعديل الطلب */}
+      <Dialog open={showEditOrder} onOpenChange={opened => {
+  setShowEditOrder(opened);
+  if (!opened) {
+    setEditOrderForm(null);
+    setEditOrderId(null);
+  }
+}}>
+        <DialogContent className="max-w-2xl w-full max-h-[90vh] overflow-y-auto p-0 sm:p-0">
+          <DialogHeader className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b px-6 py-4 rounded-t-2xl">
+            <DialogTitle className="text-xl font-bold text-primary flex items-center gap-2">
+              تعديل الطلبية
+            </DialogTitle>
+            <p className="text-gray-500 text-sm mt-1">يمكنك تعديل جميع بيانات الطلب عدا اسم العميل.</p>
+          </DialogHeader>
+          {editOrderForm && (
+            <form className="space-y-8 px-6 py-6" autoComplete="off" onSubmit={e => { e.preventDefault(); handleEditOrder(); }}>
+              {/* اسم العميل (غير قابل للتغيير) */}
+              <div className="mb-4">
+                <Label>اسم العميل</Label>
+                <Input value={editOrderForm.shipping_address.fullName} disabled className="bg-gray-100 font-bold" />
+              </div>
+              {/* باقي الحقول */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div>
+                  <Label htmlFor="payment_method">طريقة الدفع <span className="text-red-500">*</span></Label>
+                  <Select value={editOrderForm.payment_method} onValueChange={value => setEditOrderForm(f => f ? { ...f, payment_method: value } : f)}>
+                    <SelectTrigger id="payment_method" className="w-full">
+                      <SelectValue placeholder="اختر طريقة الدفع" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="cash">نقداً</SelectItem>
+                      <SelectItem value="card">بطاقة ائتمان</SelectItem>
+                      <SelectItem value="bank_transfer">تحويل بنكي</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="status">الحالة <span className="text-red-500">*</span></Label>
+                  <Select value={editOrderForm.status} onValueChange={value => setEditOrderForm(f => f ? { ...f, status: value } : f)}>
+                    <SelectTrigger id="status" className="w-full">
+                      <SelectValue placeholder="اختر الحالة" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending">قيد الانتظار</SelectItem>
+                      <SelectItem value="processing">قيد التنفيذ</SelectItem>
+                      <SelectItem value="shipped">تم الشحن</SelectItem>
+                      <SelectItem value="delivered">تم التوصيل</SelectItem>
+                      <SelectItem value="cancelled">ملغي</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              {/* معلومات الشحن */}
+              <div className="bg-gray-50 rounded-xl p-4 border mt-2">
+                <h3 className="text-lg font-semibold mb-4 text-primary">معلومات الشحن</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div>
+                    <Label htmlFor="phone">رقم الهاتف <span className="text-red-500">*</span></Label>
+                    <Input id="phone" value={editOrderForm.shipping_address.phone} onChange={e => setEditOrderForm(f => f ? { ...f, shipping_address: { ...f.shipping_address, phone: e.target.value } } : f)} required />
+                  </div>
+                  <div>
+                    <Label htmlFor="city">المدينة</Label>
+                    <Input id="city" value={editOrderForm.shipping_address.city} onChange={e => setEditOrderForm(f => f ? { ...f, shipping_address: { ...f.shipping_address, city: e.target.value } } : f)} />
+                  </div>
+                  <div>
+                    <Label htmlFor="area">المنطقة</Label>
+                    <Input id="area" value={editOrderForm.shipping_address.area} onChange={e => setEditOrderForm(f => f ? { ...f, shipping_address: { ...f.shipping_address, area: e.target.value } } : f)} />
+                  </div>
+                  <div>
+                    <Label htmlFor="street">الشارع</Label>
+                    <Input id="street" value={editOrderForm.shipping_address.street} onChange={e => setEditOrderForm(f => f ? { ...f, shipping_address: { ...f.shipping_address, street: e.target.value } } : f)} />
+                  </div>
+                  <div>
+                    <Label htmlFor="building">رقم المبنى</Label>
+                    <Input id="building" value={editOrderForm.shipping_address.building} onChange={e => setEditOrderForm(f => f ? { ...f, shipping_address: { ...f.shipping_address, building: e.target.value } } : f)} />
+                  </div>
+                  <div>
+                    <Label htmlFor="floor">الطابق</Label>
+                    <Input id="floor" value={editOrderForm.shipping_address.floor} onChange={e => setEditOrderForm(f => f ? { ...f, shipping_address: { ...f.shipping_address, floor: e.target.value } } : f)} />
+                  </div>
+                  <div>
+                    <Label htmlFor="apartment">رقم الشقة</Label>
+                    <Input id="apartment" value={editOrderForm.shipping_address.apartment} onChange={e => setEditOrderForm(f => f ? { ...f, shipping_address: { ...f.shipping_address, apartment: e.target.value } } : f)} />
+                  </div>
+                </div>
+              </div>
+              {/* المنتجات */}
+              <div className="bg-gray-50 rounded-xl p-4 border mt-2">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-lg font-semibold text-primary">المنتجات</h3>
+                  <Button type="button" onClick={() => setEditOrderForm(f => f ? { ...f, items: [...f.items, { id: Date.now().toString(), product_id: '', quantity: 1, price: 0, product_name: '' }] } : f)} variant="outline" size="sm">
+                    <Plus className="h-4 w-4 mr-2" /> إضافة منتج
+                  </Button>
+                </div>
+                <div className="space-y-3">
+                  {editOrderForm.items.map((item, index) => (
+                    <div key={item.id} className="flex flex-col sm:flex-row gap-3 items-end p-3 border rounded-lg bg-white shadow-sm">
+                      <div className="flex-1 min-w-[180px]">
+                        <Label>المنتج <span className="text-red-500">*</span></Label>
+                        <Select value={item.product_id} onValueChange={value => {
+  setEditOrderForm(f => {
+    if (!f) return f;
+    // جلب بيانات المنتج المختار
+    const selectedProduct = products.find(p => p.id === value);
+    return {
+      ...f,
+      items: f.items.map((it, i) =>
+        i === index
+          ? {
+              ...it,
+              product_id: value,
+              // إذا تم اختيار منتج جديد، حدث السعر تلقائياً
+              price: selectedProduct ? selectedProduct.price : 0,
+              product_name: selectedProduct ? selectedProduct.name : '',
+            }
+          : it
+      ),
+    };
+  });
+}}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="ابحث أو اختر المنتج" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {products.map(product => (
+                              <SelectItem key={product.id} value={product.id} className="truncate">
+                                {product.name} <span className="text-xs text-gray-400">({product.price} ₪)</span>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="w-full sm:w-24">
+                        <Label>الكمية <span className="text-red-500">*</span></Label>
+                        <Input type="number" min="1" value={item.quantity} onChange={e => setEditOrderForm(f => f ? { ...f, items: f.items.map((it, i) => i === index ? { ...it, quantity: parseInt(e.target.value) || 1 } : it) } : f)} required />
+                      </div>
+                      <div className="w-full sm:w-24">
+                        <Label>السعر <span className="text-red-500">*</span></Label>
+                        <Input type="number" step="0.01" value={item.price} onChange={e => setEditOrderForm(f => f ? { ...f, items: f.items.map((it, i) => i === index ? { ...it, price: parseFloat(e.target.value) || 0 } : it) } : f)} required />
+                      </div>
+                      <Button type="button" onClick={() => setEditOrderForm(f => f ? { ...f, items: f.items.filter((_, i) => i !== index) } : f)} variant="destructive" size="sm" className="self-end">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {/* ملاحظات */}
+              <div>
+                <Label htmlFor="notes">ملاحظات</Label>
+                <Textarea id="notes" value={editOrderForm.notes} onChange={e => setEditOrderForm(f => f ? { ...f, notes: e.target.value } : f)} placeholder="أدخل ملاحظات إضافية (اختياري)" />
+              </div>
+              {/* أزرار الحفظ */}
+              <div className="flex flex-col sm:flex-row justify-end gap-2 mt-6">
+                <Button type="button" variant="outline" onClick={() => setShowEditOrder(false)}>
+                  إلغاء
+                </Button>
+                <Button type="submit" className="bg-primary text-white font-bold">
+                  حفظ التعديلات
+                </Button>
+              </div>
+            </form>
           )}
         </DialogContent>
       </Dialog>
