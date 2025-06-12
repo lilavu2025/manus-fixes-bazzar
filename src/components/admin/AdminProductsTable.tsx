@@ -30,6 +30,7 @@ interface AdminProductsTableProps {
   onViewProduct: (product: Product) => void;
   onEditProduct: (product: Product) => void;
   onDeleteProduct: (productId: string, productName: string) => void;
+  categories?: { id: string; name: string }[]; // إضافة قائمة الفئات
 }
 
 const AdminProductsTable: React.FC<AdminProductsTableProps> = ({
@@ -37,8 +38,15 @@ const AdminProductsTable: React.FC<AdminProductsTableProps> = ({
   onViewProduct,
   onEditProduct,
   onDeleteProduct,
+  categories = [], // افتراضي مصفوفة فارغة
 }) => {
   const { t } = useLanguage();
+
+  // دالة لجلب اسم الفئة من id
+  const getCategoryName = (categoryId: string) => {
+    const cat = categories.find((c) => c.id === categoryId);
+    return cat ? cat.name : categoryId;
+  };
 
   return (
     <Card>
@@ -69,7 +77,7 @@ const AdminProductsTable: React.FC<AdminProductsTableProps> = ({
                   />
                 </TableCell>
                 <TableCell className="font-medium">{product.name}</TableCell>
-                <TableCell>{product.category}</TableCell>
+                <TableCell>{getCategoryName(product.category)}</TableCell>
                 <TableCell>{product.price} {t('currency')}</TableCell>
                 <TableCell>{product.stock_quantity || 0}</TableCell>
                 <TableCell>

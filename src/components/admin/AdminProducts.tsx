@@ -23,26 +23,36 @@ const AdminProducts: React.FC = () => {
   // تحويل قائمة الفئات إلى النوع الصحيح قبل تمريرها للمكونات الفرعية
   const productCategories = categories.map(mapCategoryToProductCategory);
 
-  const mapProductToFormData = (product: Product): AdminProductForm => ({
+  // Helper type for flexible product mapping
+  type ProductWithOptionalFields = Product & {
+    name_he?: string;
+    nameHe?: string;
+    description_he?: string;
+    descriptionHe?: string;
+    category_id?: string;
+    discount?: number;
+  };
+
+  const mapProductToFormData = (product: ProductWithOptionalFields): AdminProductForm => ({
     id: product.id,
     name_ar: product.name || '',
     name_en: product.nameEn || '',
-    name_he: '', // Map if available
+    name_he: product.nameHe || product.name_he || '',
     description_ar: product.description || '',
     description_en: product.descriptionEn || '',
-    description_he: '', // Map if available
+    description_he: product.descriptionHe || product.description_he || '',
     price: product.price,
     original_price: product.originalPrice || 0,
     wholesale_price: product.wholesalePrice || 0,
-    category_id: product.category,
-    category: product.category,
+    category_id: product.category_id || '', // التصحيح هنا فقط
+    category: product.category || '',
     image: product.image,
     images: product.images || [],
     in_stock: product.inStock,
     stock_quantity: product.stock_quantity || 0,
     featured: product.featured || false,
     active: product.active ?? true,
-    discount: product.discount || 0,
+    discount: typeof product.discount === 'number' ? product.discount : 0,
     tags: product.tags || [],
   });
 
@@ -106,6 +116,7 @@ const AdminProducts: React.FC = () => {
           onViewProduct={handleViewProduct}
           onEditProduct={handleEditProduct}
           onDeleteProduct={handleDeleteProduct}
+          categories={productCategories} // تمرير قائمة الفئات لجدول المنتجات
         />
       )}
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useLanguage } from '../../utils/languageContextUtils';
+import { useLanguage } from '@/utils/languageContextUtils';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,7 +14,6 @@ import ImageUpload from '@/components/ImageUpload';
 import ProductNameFields from './ProductNameFields';
 import ProductDescriptionFields from './ProductDescriptionFields';
 import ProductPricingFields from './ProductPricingFields';
-import ProductCategoryField from './ProductCategoryField';
 import ProductToggleFields from './ProductToggleFields';
 import { ProductFormData, AdminProductForm } from '@/types/product';
 
@@ -65,93 +64,65 @@ const EditProductDialog: React.FC<EditProductDialogProps> = ({
     stock_quantity: 0,
   });
 
+  // تهيئة البيانات عند تحميل المنتج والتصنيفات
   useEffect(() => {
-    if (product) {
-      // تحضير الصور - التأكد من أن الصورة الرئيسية موجودة في مصفوفة الصور
-      const productImages = product.images && Array.isArray(product.images) ? product.images : [];
-      const allImages = productImages.length > 0 ? productImages : [product.image].filter(img => img);
-
+    if (product && categories.length > 0) {
+      const imgs = Array.isArray(product.images) ? product.images : [product.image].filter(Boolean);
+      const matched = categories.find(
+        c => c.id === product.category_id || c.id === product.category
+      );
       setFormData({
+        ...formData,
         name_ar: product.name_ar,
         name_en: product.name_en,
         name_he: product.name_he,
-        description_ar: product.description_ar ,
+        description_ar: product.description_ar,
         description_en: product.description_en,
         description_he: product.description_he,
         price: product.price,
         original_price: product.original_price,
         wholesale_price: product.wholesale_price,
         image: product.image,
-        images: product.images || [product.image].filter(Boolean),
-        category_id: product.category_id,
-        in_stock: product.in_stock !== undefined ? product.in_stock : true,
-        discount: product.discount || 0,
-        featured: product.featured !== undefined ? product.featured : false,
-        active: product.active !== undefined ? product.active : true,
+        images: imgs,
+        category_id: matched?.id || '',
+        in_stock: product.in_stock ?? true,
+        discount: product.discount ?? 0,
+        featured: product.featured ?? false,
+        active: product.active ?? true,
         tags: product.tags || [],
         stock_quantity: product.stock_quantity || 0,
       });
     }
-  }, [product]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product, categories]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-
     try {
       // التأكد من أن الصورة الرئيسية هي أول صورة في المصفوفة
-      const finalImages = formData.images.length > 0 ? formData.images : [formData.image].filter(img => img);
-      const mainImage = finalImages[0] || formData.image;
-
+      const imgs = formData.images.length ? formData.images : [formData.image].filter(Boolean);
+      const main = imgs[0] || formData.image;
       const { error } = await supabase
         .from('products')
         .update({
-          name_ar: formData.name_ar,
-          name_en: formData.name_en,
-          name_he: formData.name_he,
-          description_ar: formData.description_ar,
-          description_en: formData.description_en,
-          description_he: formData.description_he,
-          price: formData.price,
-          original_price: formData.original_price || null,
-          wholesale_price: formData.wholesale_price || null,
-          image: mainImage,
-          images: finalImages,
+          ...formData,
+          images: imgs,
+          image: main,
           category_id: formData.category_id,
-          in_stock: formData.in_stock,
-          discount: formData.discount || null,
-          featured: formData.featured,
           updated_at: new Date().toISOString(),
         })
         .eq('id', product.id);
-
       if (error) throw error;
-
-      toast({
-        title: t('productUpdated'),
-        description: t('productUpdatedSuccessfully'),
-      });
-
+      toast({ title: t('productUpdated'), description: t('productUpdatedSuccessfully') });
       onOpenChange(false);
       onSuccess();
-    } catch (error) {
-      console.error('Error updating product:', error);
-      toast({
-        title: t('error'),
-        description: t('errorUpdatingProduct'),
-      });
+    } catch (err) {
+      console.error(err);
+      toast({ title: t('error'), description: t('errorUpdatingProduct') });
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const handleImagesChange = (images: string | string[]) => {
-    const imageArray = Array.isArray(images) ? images : [images].filter(img => img);
-    setFormData(prev => ({
-      ...prev,
-      images: imageArray,
-      image: imageArray[0] || prev.image // تحديث الصورة الرئيسية
-    }));
   };
 
   return (
@@ -160,32 +131,48 @@ const EditProductDialog: React.FC<EditProductDialogProps> = ({
         <DialogHeader>
           <DialogTitle>{t('editProduct')}</DialogTitle>
         </DialogHeader>
-
         <form onSubmit={handleSubmit} className="space-y-6">
           <ProductNameFields formData={formData} setFormData={setFormData} />
-          
           <ProductDescriptionFields formData={formData} setFormData={setFormData} />
-
           <ImageUpload
             value={formData.images}
-            onChange={handleImagesChange}
+            onChange={imgs =>
+              setFormData(prev => ({
+                ...prev,
+                images: Array.isArray(imgs) ? imgs : [imgs],
+                image: (Array.isArray(imgs) ? imgs[0] : imgs) || prev.image,
+              }))
+            }
             bucket="product-images"
             label="صور المنتج"
-            multiple={true}
+            multiple
             maxImages={5}
           />
 
-          <ProductCategoryField 
-            formData={formData} 
-            setFormData={setFormData} 
-          />
+          {/* حقل اختيار الفئة */}
+          <div className="flex flex-col">
+            <label className="mb-2 font-medium">{t('category')}</label>
+            <select
+              value={formData.category_id}
+              onChange={e =>
+                setFormData(prev => ({ ...prev, category_id: e.target.value }))
+              }
+              className="border p-2 rounded"
+            >
+              <option value="">{t('selectCategory')}</option>
+              {categories.map(cat => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
+          </div>
 
           <ProductPricingFields formData={formData} setFormData={setFormData} />
-
           <ProductToggleFields formData={formData} setFormData={setFormData} />
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
               {t('cancel')}
             </Button>
             <Button type="submit" disabled={isSubmitting}>

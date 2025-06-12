@@ -21,6 +21,9 @@ const ProductCategoryField: React.FC<ProductCategoryFieldProps> = ({
   console.log('ProductCategoryField - categories:', categories);
   console.log('ProductCategoryField - loading:', loading);
   console.log('ProductCategoryField - error:', error);
+  console.log('ProductCategoryField - formData.category_id:', formData.category_id);
+  const found = categories.find((cat) => cat.id === formData.category_id);
+  console.log('ProductCategoryField - category_id match:', found ? 'MATCH' : 'NO MATCH', found);
 
   if (loading) {
     return (

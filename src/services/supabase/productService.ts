@@ -14,7 +14,7 @@ export class ProductService {
     console.log('[ProductService.getProducts] called with', { language, userType, categoryId });
     let query = supabase
       .from("products")
-      .select("*")
+      .select(`*, category:categories(id, name_ar, name_en, name_he)`) // join مع جدول الفئات
       .eq("active", true);
 
     if (categoryId && categoryId !== "all") {
@@ -29,7 +29,8 @@ export class ProductService {
       return [];
     }
 
-    const mapped = data.map((p: Tables<'products'>) => {
+    // تأكد أن كل منتج معه اسم الفئة الصحيح بناءً على اللغة
+    const mapped = data.map((p: Tables<'products'> & { category?: { id: string; name_ar: string; name_en: string; name_he: string } }) => {
       const isWholesale = userType === "wholesale";
       const price = isWholesale && p.wholesale_price ? p.wholesale_price : p.price;
       return {
@@ -45,7 +46,8 @@ export class ProductService {
         wholesalePrice: p.wholesale_price ?? undefined,
         image: p.image,
         images: p.images ?? [],
-        category: p.category_id,
+        category: p.category_id, // id الفئة
+        categoryName: p.category ? (p.category[`name_${language}`] || p.category.name_ar || p.category.name_en) : '',
         inStock: p.in_stock ?? false,
         rating: Number(p.rating) || 0,
         reviews: p.reviews_count || 0,
