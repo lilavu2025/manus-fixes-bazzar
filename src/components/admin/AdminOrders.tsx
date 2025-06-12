@@ -13,7 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ShoppingCart, Eye, Package, Clock, CheckCircle, XCircle, Plus, Trash2, UserPlus } from 'lucide-react';
+import { ShoppingCart, Eye, Package, Clock, CheckCircle, XCircle, Plus, Trash2, UserPlus, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 import { useProducts } from '@/hooks/useSupabaseData';
 import { useAdminUsers } from '@/hooks/useAdminUsers';
@@ -345,6 +345,33 @@ const AdminOrders: React.FC = () => {
     }
     return mappedOrders.filter(order => order.status === statusFilter);
   }, [orders, statusFilter]);
+
+  const generateWhatsappMessage = (order: Order) => {
+    let msg = `🛒 تفاصيل الطلبية:\n`;
+    msg += `رقم الطلب: ${order.id}\n`;
+    if (order.profiles?.full_name) msg += `العميل: ${order.profiles.full_name}\n`;
+    if (order.profiles?.phone) msg += `رقم الهاتف: ${order.profiles.phone}\n`;
+    msg += `التاريخ: ${new Date(order.created_at).toLocaleDateString('en-GB')} - ${new Date(order.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}\n`;
+    msg += `الحالة: ${order.status}\n`;
+    msg += `طريقة الدفع: ${order.payment_method}\n`;
+    if (order.shipping_address) {
+      msg += `عنوان الشحن: ${order.shipping_address.fullName}, ${order.shipping_address.phone}, ${order.shipping_address.city}, ${order.shipping_address.area}, ${order.shipping_address.street}`;
+      if (order.shipping_address.building) msg += `، مبنى: ${order.shipping_address.building}`;
+      if (order.shipping_address.apartment) msg += `، شقة: ${order.shipping_address.apartment}`;
+      msg += '\n';
+    }
+    if (order.notes) msg += `ملاحظات: ${order.notes}\n`;
+    msg += `\nالمنتجات:\n`;
+    if (order.items && order.items.length > 0) {
+      order.items.forEach((item, idx) => {
+        msg += `- ${item.product_name} | الكمية: ${item.quantity} | السعر: ${item.price} ₪\n`;
+      });
+    } else {
+      msg += `لا توجد منتجات\n`;
+    }
+    msg += `\nالمجموع: ${order.total} ₪`;
+    return msg;
+  };
 
   if (ordersLoading) {
     return (
@@ -697,6 +724,16 @@ const AdminOrders: React.FC = () => {
                   <Button size="sm" variant="outline" onClick={() => setSelectedOrder(mapOrderFromDb(order as unknown as Record<string, unknown>))}>
                     <Eye className="h-4 w-4 mr-1" /> عرض التفاصيل
                   </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      const msg = encodeURIComponent(generateWhatsappMessage(mapOrderFromDb(order as unknown as Record<string, unknown>)));
+                      window.open(`https://wa.me/?text=${msg}`, '_blank');
+                    }}
+                  >
+                    <Copy className="h-4 w-4 mr-1" /> مشاركة الطلبية عبر واتساب
+                  </Button>
                 </div>
                 
                 {/* أزرار تغيير الحالة */}
@@ -764,6 +801,18 @@ const AdminOrders: React.FC = () => {
                 <p className="text-sm text-gray-600">المجموع: {selectedOrder.total} ₪</p>
                 <p className="text-sm text-gray-600">طريقة الدفع: {selectedOrder.payment_method}</p>
                 {selectedOrder.notes && <p className="text-sm text-gray-600">ملاحظات: {selectedOrder.notes}</p>}
+                <div className="flex gap-2 mt-4">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      const msg = encodeURIComponent(generateWhatsappMessage(selectedOrder));
+                      window.open(`https://wa.me/?text=${msg}`, '_blank');
+                    }}
+                  >
+                    <Copy className="h-4 w-4 mr-1" /> مشاركة الطلبية عبر واتساب
+                  </Button>
+                </div>
               </div>
               <div>
                 <h3 className="font-semibold mb-2">المنتجات المطلوبة</h3>
