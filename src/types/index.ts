@@ -25,6 +25,7 @@ export interface Category {
   nameHe?: string;
   image: string;
   count: number;
+  active?: boolean;
 }
 
 export interface CartItem {
@@ -117,5 +118,6 @@ export function mapCategoryToProductCategory(category: import('./index').Categor
     nameHe: category.nameHe,
     image: category.image,
     count: category.count,
+    active: category.active, // دعم الفلترة
   };
 }

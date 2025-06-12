@@ -60,7 +60,16 @@ const AdminCategories: React.FC = () => {
 
   // فلترة وبحث
   const filteredCategories = categories
-    .filter(c => c.name.toLowerCase().includes(search.toLowerCase()))
+    .filter(c => {
+      // فلترة حسب البحث
+      const matchesSearch = c.name.toLowerCase().includes(search.toLowerCase());
+      // فلترة حسب الحالة
+      const matchesActive =
+        filterActive === 'all' ||
+        (filterActive === 'active' && c.active === true) ||
+        (filterActive === 'inactive' && c.active === false);
+      return matchesSearch && matchesActive;
+    })
     .sort((a, b) => sortBy === 'name' ? a.name.localeCompare(b.name) : (b.count || 0) - (a.count || 0));
 
   // ترتيب حسب السحب
@@ -253,7 +262,9 @@ const AdminCategories: React.FC = () => {
                                   <Badge variant="secondary">{category.count}</Badge>
                                 </TableCell>
                                 <TableCell>
-                                  <Badge variant="default">نشطة</Badge>
+                                  <Badge variant={category.active ? 'default' : 'destructive'}>
+                                    {category.active ? t('active') : t('inactive')}
+                                  </Badge>
                                 </TableCell>
                                 <TableCell className="text-right">
                                   <div className="flex items-center gap-2 justify-end">
