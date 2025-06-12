@@ -24,7 +24,6 @@ export interface Category {
   nameEn: string;
   nameHe?: string;
   image: string;
-  icon: string;
   count: number;
 }
 
@@ -117,7 +116,6 @@ export function mapCategoryToProductCategory(category: import('./index').Categor
     nameEn: category.nameEn,
     nameHe: category.nameHe,
     image: category.image,
-    icon: category.icon,
     count: category.count,
   };
 }

@@ -14,7 +14,6 @@ export function useCategoriesRealtime() {
     const { data: categoriesData, error: categoriesError } = await supabase
       .from('categories')
       .select('*')
-      .eq('active', true)
       .order('created_at', { ascending: false });
     if (categoriesError) setError(categoriesError as Error);
     // جلب المنتجات
@@ -35,8 +34,8 @@ export function useCategoriesRealtime() {
       nameEn: c.name_en || '',
       nameHe: c.name_he || '',
       image: c.image,
-      icon: c.icon,
       count: productCountMap[c.id] || 0,
+      active: c.active, // إضافة الحقل
     }));
     setCategories(mapped);
     setLoading(false);

@@ -32,8 +32,6 @@ const AddCategoryDialog: React.FC<AddCategoryDialogProps> = ({
     name_en: '',
     name_he: '',
     image: '',
-    icon: '',
-    active: true,
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -49,8 +47,6 @@ const AddCategoryDialog: React.FC<AddCategoryDialogProps> = ({
             name_en: formData.name_en,
             name_he: formData.name_he,
             image: formData.image,
-            icon: formData.icon,
-            active: formData.active,
           },
         ]);
 
@@ -66,8 +62,6 @@ const AddCategoryDialog: React.FC<AddCategoryDialogProps> = ({
         name_en: '',
         name_he: '',
         image: '',
-        icon: '',
-        active: true,
       });
 
       onOpenChange(false);
@@ -126,17 +120,6 @@ const AddCategoryDialog: React.FC<AddCategoryDialogProps> = ({
               id="name_he"
               value={formData.name_he}
               onChange={(e) => handleInputChange('name_he', e.target.value)}
-              required
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="icon">{t('categoryIcon')}</Label>
-            <Input
-              id="icon"
-              value={formData.icon}
-              onChange={(e) => handleInputChange('icon', e.target.value)}
-              placeholder="https://example.com/icon.svg"
               required
             />
           </div>

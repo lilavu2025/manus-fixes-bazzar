@@ -63,6 +63,7 @@ const AdminProductsTable: React.FC<AdminProductsTableProps> = ({
               <TableHead className="text-center">{t('price')}</TableHead>
               <TableHead className="text-center">{t('stockQuantity')}</TableHead>
               <TableHead className="text-center">{t('inStock')}</TableHead>
+              <TableHead className="text-center">{t('status')}</TableHead>
               <TableHead className="text-center">{t('actions')}</TableHead>
             </TableRow>
           </TableHeader>
@@ -71,18 +72,24 @@ const AdminProductsTable: React.FC<AdminProductsTableProps> = ({
               <TableRow key={product.id}>
                 <TableCell>
                   <img
-                    src={product.image}
+                    src={product.image || '/placeholder.svg'}
                     alt={product.name}
-                    className="w-12 h-12 object-cover rounded-lg"
+                    className="w-16 h-16 object-cover rounded-lg border shadow-sm bg-white mx-auto"
+                    onError={e => { e.currentTarget.src = '/placeholder.svg'; }}
                   />
                 </TableCell>
-                <TableCell className="font-medium">{product.name}</TableCell>
+                <TableCell className="font-medium max-w-[120px] truncate">{product.name}</TableCell>
                 <TableCell>{getCategoryName(product.category)}</TableCell>
                 <TableCell>{product.price} {t('currency')}</TableCell>
                 <TableCell>{product.stock_quantity || 0}</TableCell>
                 <TableCell>
                   <Badge variant={product.inStock ? 'default' : 'destructive'}>
                     {product.inStock ? t('inStock') : t('outOfStock')}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <Badge variant={product.active ? 'default' : 'destructive'}>
+                    {product.active ? t('active') : t('inactive')}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right">

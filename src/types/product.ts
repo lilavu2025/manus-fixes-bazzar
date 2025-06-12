@@ -55,6 +55,6 @@ export interface Category {
   nameEn: string;
   nameHe: string;
   image: string;
-  icon: string;
   count: number;
+  active?: boolean; // تمت الإضافة لدعم فلترة الفئات الفعالة/غير الفعالة
 }

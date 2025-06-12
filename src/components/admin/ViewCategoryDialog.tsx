@@ -41,6 +41,14 @@ const ViewCategoryDialog: React.FC<ViewCategoryDialogProps> = ({
               className="w-32 h-32 object-cover rounded-lg mx-auto mb-4"
             />
             <h2 className="text-2xl font-bold">{category.name}</h2>
+            {typeof category.active !== 'undefined' && (
+              <Badge
+                variant={category.active ? 'default' : 'destructive'}
+                className="ml-2"
+              >
+                {category.active ? t('active') : t('inactive')}
+              </Badge>
+            )}
           </div>
 
           <div>
