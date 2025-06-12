@@ -25,6 +25,7 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import VirtualScrollList from '../VirtualScrollList';
 import OptimizedSearch from '../OptimizedSearch';
+import { compressText, decompressText } from '@/utils/textCompression';
 
 // واجهة الطلب
 interface Order {
@@ -290,14 +291,14 @@ const AdminOrders: React.FC = () => {
       
       const total = calculateTotal();
       
-      // إنشاء الطلب
+      // ضغط notes قبل التخزين
       const orderInsertObj: Record<string, unknown> = {
         items: JSON.stringify(orderForm.items),
         total,
         status: orderForm.status,
         payment_method: orderForm.payment_method,
         shipping_address: JSON.stringify(orderForm.shipping_address),
-        notes: orderForm.notes || null,
+        notes: orderForm.notes ? compressText(orderForm.notes) : null,
         admin_created: true,
         admin_creator_name: user?.user_metadata?.full_name || user?.email,
         ...(orderForm.user_id ? { user_id: orderForm.user_id } : { customer_name: orderForm.shipping_address.fullName }),
@@ -501,7 +502,7 @@ const AdminOrders: React.FC = () => {
       if (order.shipping_address.apartment) msg += `، شقة: ${order.shipping_address.apartment}`;
       msg += '\n';
     }
-    if (order.notes) msg += `ملاحظات: ${order.notes}\n`;
+    if (order.notes) msg += `ملاحظات: ${decompressText(order.notes)}\n`;
     msg += `\nالمنتجات:\n`;
     if (order.items && order.items.length > 0) {
       order.items.forEach((item, idx) => {
@@ -859,9 +860,9 @@ const AdminOrders: React.FC = () => {
                             ? order.customer_name
                             : (order.profiles?.full_name || t('notProvided'))
                         }</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-gray-400">{t('orderNumber')}</span>
-                          <span className="text-lg tracking-wider">#{order.id}</span>
+                        <div className="flex items-center gap-1">
+                          {/* <span className="text-xs text-gray-400">{t('orderNumber')}</span>
+                          <span className="text-lg tracking-wider">#{order.id}</span> */}
                           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-2 w-full max-w-full">
                             {order.admin_created && (
                               <div className="relative group w-fit max-w-full">
@@ -903,7 +904,7 @@ const AdminOrders: React.FC = () => {
                     </CardHeader>
                     <CardContent className="flex flex-col gap-3 p-4">
                       <div className="flex flex-col gap-2">
-                        {order.notes && <div className="mb-1 text-xs text-gray-500">{t('orderNotes')}: {order.notes}</div>}
+                        {order.notes && <div className="mb-1 text-xs text-gray-500">{t('orderNotes')}: {decompressText(order.notes)}</div>}
                         <div className="flex flex-wrap gap-2 text-xs text-gray-500">
                           {order.items.map((item) => (
                             <span key={item.id} className="bg-gray-100 rounded px-2 py-1">
@@ -1050,7 +1051,7 @@ const AdminOrders: React.FC = () => {
                 {/* ملاحظات الطلب */}
                 {selectedOrder.notes && (
                   <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 rounded print:bg-white print:border print:border-yellow-400 print:rounded print:p-2 print:mt-2 print:mb-0">
-                    <span className="font-semibold text-yellow-800 print:text-black">ملاحظات:</span> <span className="text-gray-700 print:text-black">{selectedOrder.notes}</span>
+                    <span className="font-semibold text-yellow-800 print:text-black">ملاحظات:</span> <span className="text-gray-700 print:text-black">{decompressText(selectedOrder.notes)}</span>
                   </div>
                 )}
                 {/* تذييل رسمي للطباعة */}

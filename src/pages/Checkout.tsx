@@ -16,6 +16,7 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { ShoppingCart, CreditCard, Banknote, ArrowLeft } from 'lucide-react';
 import { Product } from '@/types';
+import { compressText, decompressText } from '@/utils/textCompression';
 
 // واجهة بيانات الشراء المباشر
 interface DirectBuyState {
@@ -121,7 +122,7 @@ const Checkout: React.FC = () => {
           total: totalPrice,
           payment_method: paymentMethod,
           shipping_address: shippingAddress,
-          notes: notes || null,
+          notes: notes ? compressText(notes) : null,
           status: 'pending', // حالة الطلب: في الانتظار
         })
         .select()

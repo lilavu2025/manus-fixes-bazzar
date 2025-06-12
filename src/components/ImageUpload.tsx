@@ -54,22 +54,64 @@ const ImageUpload = ({
     });
   }
 
+  // Resize and compress image before upload
+  async function resizeAndCompressImage(file: File, maxSize = 1024, quality = 0.85): Promise<Blob> {
+    return new Promise((resolve, reject) => {
+      const img = new window.Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxSize || height > maxSize) {
+          if (width > height) {
+            height = Math.round((maxSize / width) * height);
+            width = maxSize;
+          } else {
+            width = Math.round((maxSize / height) * width);
+            height = maxSize;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return reject('No canvas context');
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob(
+          (blob) => {
+            if (blob) resolve(blob);
+            else reject('Resize/Compress failed');
+          },
+          'image/webp',
+          quality
+        );
+      };
+      img.onerror = reject;
+      img.src = URL.createObjectURL(file);
+    });
+  }
+
   const uploadImage = async (file: File): Promise<string> => {
     let uploadFile = file;
     let fileExt = file.name.split('.').pop();
     const fileName = `${Math.random()}`;
     let filePath = fileName;
 
-    // حاول التحويل إلى WebP إذا كان الملف صورة قابلة للتحويل
+    // Resize and compress before upload
     if (file.type === 'image/png' || file.type === 'image/jpeg' || file.type === 'image/jpg') {
       try {
-        const webpBlob = await convertToWebP(file);
+        const webpBlob = await resizeAndCompressImage(file, 1024, 0.85);
         uploadFile = new File([webpBlob], fileName + '.webp', { type: 'image/webp' });
         fileExt = 'webp';
         filePath = `${fileName}.webp`;
       } catch (e) {
-        // إذا فشل التحويل، ارفع الصورة الأصلية
-        filePath = `${fileName}.${fileExt}`;
+        // fallback: try convertToWebP or original
+        try {
+          const webpBlob = await convertToWebP(file);
+          uploadFile = new File([webpBlob], fileName + '.webp', { type: 'image/webp' });
+          fileExt = 'webp';
+          filePath = `${fileName}.webp`;
+        } catch {
+          filePath = `${fileName}.${fileExt}`;
+        }
       }
     } else {
       filePath = `${fileName}.${fileExt}`;

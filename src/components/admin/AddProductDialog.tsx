@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import ImageUpload from '@/components/ImageUpload';
 import ProductCategoryField from './ProductCategoryField';
 import { ProductFormData, Category } from '@/types/product';
+import pako from 'pako';
 
 interface AddProductDialogProps {
   open: boolean;
@@ -48,18 +49,42 @@ const AddProductDialog: React.FC<AddProductDialogProps> = ({
     tags: [],
   });
 
+  const compressText = (text: string): string => {
+    if (!text || text.length < 100) return text;
+    try {
+      const compressed = pako.gzip(text);
+      // Uint8Array to base64
+      return btoa(String.fromCharCode(...compressed));
+    } catch {
+      return text;
+    }
+  };
+
+  const decompressText = (compressed: string): string => {
+    try {
+      // base64 to Uint8Array
+      const binaryString = atob(compressed);
+      const len = binaryString.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      return pako.ungzip(bytes, { to: 'string' });
+    } catch {
+      return compressed;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
       const productData = {
-        name_ar: formData.name_ar,
-        name_en: formData.name_en,
-        name_he: formData.name_he,
-        description_ar: formData.description_ar,
-        description_en: formData.description_en,
-        description_he: formData.description_he,
+        ...formData,
+        description_ar: compressText(formData.description_ar),
+        description_en: compressText(formData.description_en),
+        description_he: compressText(formData.description_he),
         price: formData.price,
         original_price: formData.original_price || null,
         wholesale_price: formData.wholesale_price || null,
