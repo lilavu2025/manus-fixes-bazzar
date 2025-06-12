@@ -10,6 +10,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { AdminProductForm } from '@/types/product';
+import { useCategoriesRealtime } from '@/hooks/useCategoriesRealtime';
 
 interface ViewProductDialogProps {
   open: boolean;
@@ -22,9 +23,20 @@ const ViewProductDialog: React.FC<ViewProductDialogProps> = ({
   onOpenChange,
   product,
 }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const { categories, loading: categoriesLoading } = useCategoriesRealtime();
 
   if (!product) return null;
+
+  // Get the category name based on the current language
+  let categoryName = product.category;
+  const foundCategory = categories.find((cat) => cat.id === product.category_id || cat.id === product.category);
+  if (foundCategory) {
+    if (language === 'ar') categoryName = foundCategory.name;
+    else if (language === 'en') categoryName = foundCategory.nameEn;
+    else if (language === 'he') categoryName = foundCategory.nameHe || foundCategory.name;
+    else categoryName = foundCategory.name;
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -50,7 +62,7 @@ const ViewProductDialog: React.FC<ViewProductDialogProps> = ({
 
               <div>
                 <h3 className="text-lg font-semibold">{t('category')}</h3>
-                <p>{product.category}</p>
+                <p>{categoryName}</p>
               </div>
 
               <div className="flex gap-4">
