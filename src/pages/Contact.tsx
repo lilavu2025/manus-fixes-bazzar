@@ -76,72 +76,50 @@ const Contact: React.FC = () => {
         onCartClick={() => setIsCartOpen(true)}
         onMenuClick={() => {}}
       />
-
-      <div className="container mx-auto px-4 py-6">
-        <div className="mb-8 text-center">
+      <div className='mb-4' />
+      <div className="text-center">
           <h1 className="text-3xl font-bold mb-2">{t('contact')}</h1>
-          <p className="text-gray-600">
+          {/* <p className="text-gray-600">
             {t('getInTouch')}
-          </p>
+          </p> */}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Contact Information */}
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Mail className="h-5 w-5" />
-                  {t('email')}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600">{contactInfo?.email || 'info@mystore.com'}</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Phone className="h-5 w-5" />
-                  {t('phone')}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600">{contactInfo?.phone || '+966 12 345 6789'}</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MapPin className="h-5 w-5" />
-                  {t('address')}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600">{contactInfo?.address || 'العنوان هنا'}</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Clock className="h-5 w-5" />
-                  {t('workingHours')}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600">
-                  {t('sunday')} - {t('thursday')}: 9:00 - 18:00<br />
-                  {t('friday')} - {t('saturday')}: 10:00 - 16:00
-                </p>
-              </CardContent>
-            </Card>
+      <div className="container mx-auto px-2 sm:px-4 py-6">
+        {/* Features Bar */}
+        {/* <section className="mb-8">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 bg-orange-50 rounded-xl p-4 shadow-sm">
+            <div className="flex items-center gap-2 text-orange-600 font-semibold">
+              <Mail className="w-6 h-6" /> دعم فني سريع
+            </div>
+            <div className="flex items-center gap-2 text-orange-600 font-semibold">
+              <Phone className="w-6 h-6" /> استجابة خلال 24 ساعة
+            </div>
+            <div className="flex items-center gap-2 text-orange-600 font-semibold">
+              <MapPin className="w-6 h-6" /> نخدم جميع المناطق
+            </div>
           </div>
+        </section> */}
+
+        {/* Quick Contact Section */}
+        <section className="mt-2 text-center">
+          <h2 className="text-xl font-bold mb-4 text-orange-600">طرق تواصل سريعة</h2>
+          <div className="flex flex-col sm:flex-row justify-center gap-4">
+            <a href={`https://wa.me/${contactInfo?.phone || '966123456789'}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-green-100 text-green-800 font-semibold hover:bg-green-200 transition-colors">
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M20.52 3.48A12 12 0 1 0 2.47 20.52l2.65-7.72a1 1 0 0 1 .6-.6l7.72-2.65a1 1 0 0 1 1.2 1.2l-2.65 7.72a1 1 0 0 1-.6.6l-7.72 2.65A12 12 0 1 0 20.52 3.48z" /></svg>
+              واتساب
+            </a>
+            <a href={`mailto:${contactInfo?.email || 'info@mystore.com'}`} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-100 text-blue-800 font-semibold hover:bg-blue-200 transition-colors">
+              <Mail className="w-5 h-5" />
+              البريد الإلكتروني
+            </a>
+          </div>
+        </section>
+        <div className="mb-8" />
+
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
 
           {/* Contact Form */}
-          <Card className="lg:col-span-2">
+          <Card className="lg:col-span-1 xl:col-span-2 bg-white/90 shadow-md">
             <CardHeader>
               <CardTitle>{t('sendMessage')}</CardTitle>
             </CardHeader>
@@ -159,7 +137,6 @@ const Contact: React.FC = () => {
                       required
                     />
                   </div>
-
                   <div className="space-y-2">
                     <Label htmlFor="email">{t('email')}</Label>
                     <Input
@@ -173,7 +150,6 @@ const Contact: React.FC = () => {
                     />
                   </div>
                 </div>
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="phone">{t('phone')}</Label>
@@ -186,7 +162,6 @@ const Contact: React.FC = () => {
                       onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
                     />
                   </div>
-
                   <div className="space-y-2">
                     <Label htmlFor="subject">{t('subject')}</Label>
                     <Input
@@ -199,7 +174,6 @@ const Contact: React.FC = () => {
                     />
                   </div>
                 </div>
-
                 <div className="space-y-2">
                   <Label htmlFor="message">{t('message')}</Label>
                   <Textarea
@@ -212,13 +186,63 @@ const Contact: React.FC = () => {
                     required
                   />
                 </div>
-
-                <Button type="submit" className="w-full" disabled={isLoading}>
+                <Button type="submit" className="w-full font-bold bg-orange-500 hover:bg-orange-600 text-white transition-colors" disabled={isLoading}>
                   {isLoading ? t('sending') : t('sendMessage')}
                 </Button>
               </form>
             </CardContent>
           </Card>
+
+          {/* Contact Information */}
+          <div className="space-y-6 xl:col-span-1">
+            <Card className="bg-white/90 shadow-md">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Mail className="h-5 w-5" />
+                  {t('email')}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600">{contactInfo?.email || 'info@mystore.com'}</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-white/90 shadow-md">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Phone className="h-5 w-5" />
+                  {t('phone')}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600">{contactInfo?.phone || '+966 12 345 6789'}</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-white/90 shadow-md">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MapPin className="h-5 w-5" />
+                  {t('address')}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600">{contactInfo?.address || 'العنوان هنا'}</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-white/90 shadow-md">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="h-5 w-5" />
+                  {t('workingHours')}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600">
+                  {t('sunday')} - {t('thursday')}: 9:00 - 18:00<br />
+                  {t('friday')} - {t('saturday')}: 10:00 - 16:00
+                </p>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
 
