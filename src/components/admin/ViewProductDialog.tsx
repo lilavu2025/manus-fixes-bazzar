@@ -147,6 +147,14 @@ const ViewProductDialog: React.FC<ViewProductDialogProps> = ({
                 )}
               </div>
             </div>
+
+            {/* وقت إنشاء المنتج */}
+            {product.created_at && (
+              <div>
+                <h3 className="text-lg font-semibold mb-1">{t('createdAt') || 'تاريخ الإضافة'}</h3>
+                <p className="text-gray-700">{new Date(product.created_at).toLocaleString('en-GB')}</p>
+              </div>
+            )}
           </div>
         </div>
 

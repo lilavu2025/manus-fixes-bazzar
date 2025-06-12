@@ -45,7 +45,7 @@ const AdminProducts: React.FC = () => {
     price: product.price,
     original_price: product.originalPrice || 0,
     wholesale_price: product.wholesalePrice || 0,
-    category_id: product.category_id || '', // التصحيح هنا فقط
+    category_id: product.category_id || '',
     category: product.category || '',
     image: product.image,
     images: product.images || [],
@@ -55,6 +55,7 @@ const AdminProducts: React.FC = () => {
     active: product.active ?? true,
     discount: typeof product.discount === 'number' ? product.discount : 0,
     tags: product.tags || [],
+    created_at: product.created_at || '',
   });
 
   const handleDeleteProduct = async (productId: string, productName: string) => {
@@ -203,6 +204,47 @@ const AdminProducts: React.FC = () => {
           }}
         >
           <span className="inline-block align-middle">{t('resetFilters') || 'تصفير الفلاتر'}</span>
+        </button>
+        <button
+          type="button"
+          className="px-4 py-2 rounded-lg bg-blue-600 text-white font-bold shadow border border-blue-700 hover:bg-blue-700 transition-all duration-200"
+          onClick={() => {
+            // تصدير المنتجات إلى CSV
+            const csv = [
+              [
+                'ID',
+                'Name',
+                'NameEn',
+                'Category',
+                'Price',
+                'InStock',
+                'Quantity',
+                'Active',
+                'CreatedAt'
+              ],
+              ...filteredProducts.map(p => [
+                p.id,
+                p.name,
+                p.nameEn,
+                productCategories.find(c => c.id === p.category)?.name || '',
+                p.price,
+                p.inStock ? 'Yes' : 'No',
+                p.stock_quantity ?? '',
+                p.active === false ? 'Inactive' : 'Active',
+                p.created_at ? new Date(p.created_at).toISOString() : ''
+              ])
+            ].map(row => row.join(',')).join('\n');
+            const BOM = '\uFEFF';
+            const blob = new Blob([BOM + csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'products.csv';
+            a.click();
+            URL.revokeObjectURL(url);
+          }}
+        >
+          {t('export') || 'تصدير'}
         </button>
       </div>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-6">

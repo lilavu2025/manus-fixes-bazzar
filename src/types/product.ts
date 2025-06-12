@@ -18,6 +18,7 @@ export interface Product {
   tags?: string[];
   stock_quantity?: number;
   active?: boolean;
+  created_at?: string;
 }
 
 export interface ProductFormData {
@@ -41,7 +42,7 @@ export interface ProductFormData {
   stock_quantity: number;
 }
 
-export type AdminProductForm = ProductFormData & { id: string; category_id: string; category: string };
+export type AdminProductForm = ProductFormData & { id: string; category_id: string; category: string; created_at?: string };
 
 export interface CartItem {
   id: string;

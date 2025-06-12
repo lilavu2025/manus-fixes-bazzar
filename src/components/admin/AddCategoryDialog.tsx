@@ -47,6 +47,7 @@ const AddCategoryDialog: React.FC<AddCategoryDialogProps> = ({
             name_en: formData.name_en,
             name_he: formData.name_he,
             image: formData.image,
+            active: true,
           },
         ]);
 

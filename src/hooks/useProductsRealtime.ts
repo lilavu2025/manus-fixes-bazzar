@@ -39,6 +39,7 @@ export function useProductsRealtime() {
       tags: p.tags ?? [],
       stock_quantity: p.stock_quantity ?? 0,
       active: p.active ?? true,
+      created_at: p.created_at,
     }));
     setProducts(mapped);
     setLoading(false);
