@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 
-export function useOrdersRealtime() {
+// Add options param to control realtime
+export function useOrdersRealtime(options?: { disableRealtime?: boolean }) {
   const [orders, setOrders] = useState<Database['public']['Tables']['orders']['Row'][]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -20,6 +21,7 @@ export function useOrdersRealtime() {
 
   useEffect(() => {
     fetchOrders();
+    if (options?.disableRealtime) return;
     const channel = supabase
       .channel('orders_realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
@@ -35,7 +37,8 @@ export function useOrdersRealtime() {
       channel.unsubscribe();
       document.removeEventListener('visibilitychange', handleVisibility);
     };
-  }, []);
+  }, [options?.disableRealtime]);
 
-  return { orders, loading, error, refetch: fetchOrders };
+  // expose setOrders for local UI updates
+  return { orders, loading, error, refetch: fetchOrders, setOrders };
 }

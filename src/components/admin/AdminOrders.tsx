@@ -198,7 +198,7 @@ const AdminOrders: React.FC = () => {
   }, [location.state]);
   
   // استعلام الطلبات مع تفعيل polling وتحديث البيانات عند العودة للنافذة
-  const { orders, loading: ordersLoading, error: ordersError, refetch: refetchOrders } = useOrdersRealtime();
+  const { orders, loading: ordersLoading, error: ordersError, refetch: refetchOrders, setOrders } = useOrdersRealtime({ disableRealtime: true });
   
   // تحديث حالة الطلب
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
@@ -217,7 +217,21 @@ const AdminOrders: React.FC = () => {
         .eq('id', orderId);
       if (updateError) throw updateError;
       toast.success('تم تحديث حالة الطلب بنجاح');
-      refetchOrders(); // تحديث الطلبات مباشرة بعد التغيير
+      // تحديث الطلب في الواجهة مباشرة بدون إعادة تحميل أو refetch
+      if (typeof setOrders === 'function') {
+        setOrders((prevOrders) => prevOrders.map(order => {
+          if (order.id === orderId) {
+            return {
+              ...order,
+              status: newStatus,
+              updated_at: updateObj.updated_at,
+              cancelled_by: newStatus === 'cancelled' ? 'admin' : order.cancelled_by,
+              cancelled_by_name: newStatus === 'cancelled' ? (user?.user_metadata?.full_name || user?.email || 'أدمن') : order.cancelled_by_name,
+            };
+          }
+          return order;
+        }));
+      }
     } catch (err: unknown) {
       console.error('خطأ في تحديث حالة الطلب:', err);
       toast.error('فشل في تحديث حالة الطلب');
@@ -1006,11 +1020,51 @@ const AdminOrders: React.FC = () => {
                         </Button>
                       </div>
                       <div className="flex flex-wrap gap-2 mt-2">
-                        <Button size="sm" variant="outline" className="flex-1 min-w-[110px]" onClick={() => updateOrderStatus(order.id, 'pending')} disabled={order.status === 'pending'}>في الانتظار</Button>
-                        <Button size="sm" variant="outline" className="flex-1 min-w-[110px]" onClick={() => updateOrderStatus(order.id, 'processing')} disabled={order.status === 'processing'}>قيد المعالجة</Button>
-                        <Button size="sm" variant="outline" className="flex-1 min-w-[110px]" onClick={() => updateOrderStatus(order.id, 'shipped')} disabled={order.status === 'shipped' || order.status === 'delivered'}>تم الشحن</Button>
-                        <Button size="sm" variant="outline" className="flex-1 min-w-[110px]" onClick={() => updateOrderStatus(order.id, 'delivered')} disabled={order.status === 'delivered'}>تم التسليم</Button>
-                        <Button size="sm" variant="destructive" className="flex-1 min-w-[110px]" onClick={() => updateOrderStatus(order.id, 'cancelled')} disabled={order.status === 'cancelled' || order.status === 'delivered'}>إلغاء</Button>
+                        <Button
+                          size="sm"
+                          variant={order.status === 'pending' ? 'default' : 'outline'}
+                          className={`flex-1 min-w-[110px] ${order.status === 'pending' ? 'bg-yellow-500 text-white font-bold border-yellow-600' : ''}`}
+                          onClick={() => updateOrderStatus(order.id, 'pending')}
+                          disabled={order.status === 'pending'}
+                        >
+                          في الانتظار
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant={order.status === 'processing' ? 'default' : 'outline'}
+                          className={`flex-1 min-w-[110px] ${order.status === 'processing' ? 'bg-blue-600 text-white font-bold border-blue-700' : ''}`}
+                          onClick={() => updateOrderStatus(order.id, 'processing')}
+                          disabled={order.status === 'processing'}
+                        >
+                          قيد المعالجة
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant={order.status === 'shipped' ? 'default' : 'outline'}
+                          className={`flex-1 min-w-[110px] ${order.status === 'shipped' ? 'bg-purple-600 text-white font-bold border-purple-700' : ''}`}
+                          onClick={() => updateOrderStatus(order.id, 'shipped')}
+                          disabled={order.status === 'shipped' || order.status === 'delivered'}
+                        >
+                          تم الشحن
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant={order.status === 'delivered' ? 'default' : 'outline'}
+                          className={`flex-1 min-w-[110px] ${order.status === 'delivered' ? 'bg-green-600 text-white font-bold border-green-700' : ''}`}
+                          onClick={() => updateOrderStatus(order.id, 'delivered')}
+                          disabled={order.status === 'delivered'}
+                        >
+                          تم التسليم
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant={order.status === 'cancelled' ? 'destructive' : 'outline'}
+                          className={`flex-1 min-w-[110px] ${order.status === 'cancelled' ? 'bg-red-600 text-white font-bold border-red-700' : ''}`}
+                          onClick={() => updateOrderStatus(order.id, 'cancelled')}
+                          disabled={order.status === 'cancelled' || order.status === 'delivered'}
+                        >
+                          إلغاء
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>
@@ -1291,6 +1345,7 @@ const AdminOrders: React.FC = () => {
                   ))}
                 </div>
               </div>
+
               {/* ملاحظات */}
               <div>
                 <Label htmlFor="notes">ملاحظات</Label>
