@@ -16,9 +16,10 @@ const Categories: React.FC = () => {
   console.log('Categories page - loading:', loading);
   console.log('Categories page - error:', error);
 
-  const filteredCategories = categories.filter(category =>
-    category.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // فلترة الفئات: فقط الفئات النشطة + البحث
+  const filteredCategories = categories
+    .filter(category => category.active)
+    .filter(category => category.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
   if (loading) {
     return (

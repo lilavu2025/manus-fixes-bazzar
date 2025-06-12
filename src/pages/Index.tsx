@@ -133,7 +133,7 @@ const Index = () => {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {categories.slice(0, 5).map(category => (
+                {categories.filter(c => c.active).slice(0, 5).map(category => (
                   <CategoryCard key={category.id} category={category} />
                 ))}
               </div>

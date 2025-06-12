@@ -72,10 +72,17 @@ const AdminCategories: React.FC = () => {
     })
     .sort((a, b) => sortBy === 'name' ? a.name.localeCompare(b.name) : (b.count || 0) - (a.count || 0));
 
-  // ترتيب حسب السحب
-  const orderedCategories = categoriesOrder
-    .map(id => filteredCategories.find(c => c.id === id))
-    .filter(Boolean) as typeof filteredCategories;
+  // ترتيب حسب السحب أو حسب الفرز
+  let orderedCategories: typeof filteredCategories;
+  if (sortBy === 'count') {
+    // عند الفرز بعدد المنتجات، تجاهل ترتيب السحب
+    orderedCategories = filteredCategories;
+  } else {
+    // عند الفرز بالاسم، استخدم ترتيب السحب
+    orderedCategories = categoriesOrder
+      .map(id => filteredCategories.find(c => c.id === id))
+      .filter(Boolean) as typeof filteredCategories;
+  }
 
   const handleDragEnd = async (result: DropResult) => {
     if (!result.destination) return;
