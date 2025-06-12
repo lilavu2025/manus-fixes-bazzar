@@ -5,7 +5,7 @@ import { useVirtualScroll, VirtualGrid } from '@/utils/virtualScrollUtils';
 
 interface VirtualScrollListProps<T> {
   items: T[];
-  itemHeight: number;
+  itemHeight?: number; // جعلها اختيارية
   containerHeight: number;
   renderItem: (item: T, index: number) => React.ReactNode;
   className?: string;
@@ -36,15 +36,15 @@ function VirtualScrollList<T>({
   const scrollElementRef = useRef<HTMLDivElement>(null);
   const loadMoreTriggered = useRef(false);
 
-  // Calculate visible range
+  // إذا لم يتم تمرير itemHeight، لا تحسب visibleRange ولا totalHeight
   const visibleRange = useMemo(() => {
+    if (!itemHeight) return { startIndex: 0, endIndex: items.length - 1, visibleItemCount: items.length };
     const visibleItemCount = Math.ceil(containerHeight / itemHeight);
     const startIndex = Math.max(0, Math.floor(scrollTop / itemHeight) - overscan);
     const endIndex = Math.min(
       items.length - 1,
       startIndex + visibleItemCount + overscan * 2
     );
-
     return { startIndex, endIndex, visibleItemCount };
   }, [scrollTop, containerHeight, itemHeight, overscan, items.length]);
 
@@ -91,10 +91,10 @@ function VirtualScrollList<T>({
   }, [items.length]);
 
   // Calculate total height
-  const totalHeight = items.length * itemHeight;
+  const totalHeight = items.length * (itemHeight || 0);
 
   // Calculate offset for visible items
-  const offsetY = visibleRange.startIndex * itemHeight;
+  const offsetY = visibleRange.startIndex * (itemHeight || 0);
 
   return (
     <div
@@ -106,46 +106,26 @@ function VirtualScrollList<T>({
       style={{ height: containerHeight }}
       onScroll={handleScroll}
     >
-      {/* Total height container */}
-      <div style={{ height: totalHeight, position: 'relative' }}>
-        {/* Visible items container */}
-        <div
-          style={{
-            transform: `translateY(${offsetY}px)`,
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-          }}
-        >
-          {visibleItems.map((item, index) => {
-            const actualIndex = visibleRange.startIndex + index;
-            const key = getItemKey ? getItemKey(item, actualIndex) : actualIndex;
-            
-            return (
-              <div
-                key={key}
-                style={{ height: itemHeight }}
-                className="flex-shrink-0"
-              >
-                {renderItem(item, actualIndex)}
-              </div>
-            );
-          })}
-          
-          {/* Loading indicator */}
-          {isLoading && (
-            <div 
-              style={{ height: itemHeight }}
-              className="flex items-center justify-center"
-            >
-              <div className="flex items-center space-x-2 text-muted-foreground">
-                <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                <span className="text-sm">Loading more...</span>
-              </div>
+      {/* Visible items container */}
+      <div>
+        {visibleItems.map((item, index) => {
+          const actualIndex = visibleRange.startIndex + index;
+          const key = getItemKey ? getItemKey(item, actualIndex) : actualIndex;
+          return (
+            <div key={key} className="flex-shrink-0">
+              {renderItem(item, actualIndex)}
             </div>
-          )}
-        </div>
+          );
+        })}
+        {/* Loading indicator */}
+        {isLoading && (
+          <div className="flex items-center justify-center min-h-[100px]">
+            <div className="flex items-center space-x-2 text-muted-foreground">
+              <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              <span className="text-sm">Loading more...</span>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
