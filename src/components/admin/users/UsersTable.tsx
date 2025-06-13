@@ -5,6 +5,8 @@ import { Users } from 'lucide-react';
 import { useLanguage } from '@/utils/languageContextUtils';
 import UserTableRow from './UserTableRow';
 import type { UserProfile } from '@/types/profile';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 
 interface UsersTableProps {
   users: UserProfile[];
@@ -18,6 +20,24 @@ interface UsersTableProps {
 
 const UsersTable: React.FC<UsersTableProps> = ({ users, isLoading, error, refetch, setUsers, disableUser, deleteUser }) => {
   const { t } = useLanguage();
+
+  // زر ودالة تصدير المستخدمين
+  const exportUsersToExcel = () => {
+    const ws = XLSX.utils.json_to_sheet(users.map(u => ({
+      ID: u.id,
+      Name: u.full_name,
+      Email: u.email,
+      Phone: u.phone,
+      Type: u.user_type,
+      Status: u.disabled ? 'معطل' : 'نشط',
+      Created: u.created_at,
+      LastSignIn: u.last_sign_in_at
+    })));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Users');
+    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    saveAs(new Blob([wbout], { type: 'application/octet-stream' }), 'users.xlsx');
+  };
 
   if (isLoading) {
     return (
@@ -74,13 +94,19 @@ const UsersTable: React.FC<UsersTableProps> = ({ users, isLoading, error, refetc
 
   return (
     <Card className="shadow-xl border-0 overflow-hidden">
-      <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 border-b p-4 lg:p-6">
+      <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 border-b p-4 lg:p-6 flex items-center justify-between">
         <CardTitle className="flex items-center gap-3 text-base lg:text-xl">
           <div className="p-2 bg-blue-100 rounded-lg">
             <Users className="h-4 w-4 lg:h-6 lg:w-6 text-blue-600" />
           </div>
           {t('registeredUsers')}
         </CardTitle>
+        <button
+          onClick={exportUsersToExcel}
+          className="bg-green-600 text-white px-4 py-2 rounded font-bold hover:bg-green-700"
+        >
+          تصدير المستخدمين (Excel)
+        </button>
       </CardHeader>
       <CardContent className="p-0">
         <div className="overflow-x-auto">
