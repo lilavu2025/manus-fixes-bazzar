@@ -12,6 +12,7 @@ export interface Profile {
   phone: string | null;
   email?: string;
   user_type: 'admin' | 'wholesale' | 'retail';
+  created_at?: string;
 }
 
 interface AuthProviderProps {
