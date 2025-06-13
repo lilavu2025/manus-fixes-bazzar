@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import ImageUpload from '@/components/ImageUpload';
 import ProductCategoryField from './ProductCategoryField';
 import { ProductFormData, Category } from '@/types/product';
+import type { Product } from '@/types/product';
 import pako from 'pako';
 
 interface AddProductDialogProps {
@@ -18,6 +19,7 @@ interface AddProductDialogProps {
   onOpenChange: (open: boolean) => void;
   categories: Category[];
   onSuccess: () => void;
+  setProducts: React.Dispatch<React.SetStateAction<Product[]>>;
 }
 
 const AddProductDialog: React.FC<AddProductDialogProps> = ({
@@ -25,6 +27,7 @@ const AddProductDialog: React.FC<AddProductDialogProps> = ({
   onOpenChange,
   categories,
   onSuccess,
+  setProducts,
 }) => {
   const { t, isRTL } = useLanguage();
   const [loading, setLoading] = useState(false);
@@ -98,13 +101,16 @@ const AddProductDialog: React.FC<AddProductDialogProps> = ({
         discount: formData.discount || null,
       };
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('products')
-        .insert([productData]);
+        .insert([productData])
+        .select();
 
       if (error) throw error;
 
       toast.success(t('productAdded'));
+      // تحديث الواجهة مباشرة
+      if (data && data[0]) setProducts(prev => [data[0], ...prev]);
       onSuccess();
       onOpenChange(false);
       setFormData({

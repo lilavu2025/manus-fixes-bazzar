@@ -48,7 +48,8 @@ const AdminCategories: React.FC = () => {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
-  const { categories, loading, error, refetch } = useCategoriesRealtime();
+  // Use disableRealtime and get setCategories for instant UI update
+  const { categories, loading, error, refetch, setCategories } = useCategoriesRealtime({ disableRealtime: true });
   const [search, setSearch] = useState('');
   const [filterActive, setFilterActive] = useState<'all' | 'active' | 'inactive'>('all');
   const [sortBy, setSortBy] = useState<'name' | 'count'>('name');
@@ -64,7 +65,8 @@ const AdminCategories: React.FC = () => {
   const filteredCategories = categories
     .filter(c => {
       // فلترة حسب البحث
-      const matchesSearch = c.name.toLowerCase().includes(search.toLowerCase());
+      const name = typeof c.name === 'string' ? c.name : '';
+      const matchesSearch = name.toLowerCase().includes(search.toLowerCase());
       // فلترة حسب الحالة
       const matchesActive =
         filterActive === 'all' ||
@@ -72,7 +74,7 @@ const AdminCategories: React.FC = () => {
         (filterActive === 'inactive' && c.active === false);
       return matchesSearch && matchesActive;
     })
-    .sort((a, b) => sortBy === 'name' ? a.name.localeCompare(b.name) : (b.count || 0) - (a.count || 0));
+    .sort((a, b) => sortBy === 'name' ? (a.name || '').localeCompare(b.name || '') : (b.count || 0) - (a.count || 0));
 
   // ترتيب حسب السحب أو حسب الفرز
   let orderedCategories: typeof filteredCategories;
@@ -341,6 +343,7 @@ const AdminCategories: React.FC = () => {
         open={showAddDialog} 
         onOpenChange={setShowAddDialog}
         onSuccess={() => refetch()}
+        setCategories={setCategories}
       />
 
       {selectedCategory && (
@@ -349,7 +352,8 @@ const AdminCategories: React.FC = () => {
             open={showEditDialog}
             onOpenChange={setShowEditDialog}
             category={selectedCategory}
-            onSuccess={() => refetch()}
+            onSuccess={() => {}} // No-op: UI updates via setCategories
+            setCategories={setCategories}
           />
           <ViewCategoryDialog
             open={showViewDialog}

@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 
-export function useOffersRealtime() {
+// Add options param to control realtime
+export function useOffersRealtime(options?: { disableRealtime?: boolean }) {
   const [offers, setOffers] = useState<Database['public']['Tables']['offers']['Row'][]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -23,6 +24,7 @@ export function useOffersRealtime() {
 
   useEffect(() => {
     fetchOffers();
+    if (options?.disableRealtime) return;
     // اشتراك Realtime
     const channel = supabase
       .channel('offers_realtime')
@@ -39,7 +41,8 @@ export function useOffersRealtime() {
       channel.unsubscribe();
       document.removeEventListener('visibilitychange', handleVisibility);
     };
-  }, []);
+  }, [options?.disableRealtime]);
 
-  return { offers, loading, error, refetch: fetchOffers };
+  // expose setOffers for local UI updates
+  return { offers, loading, error, refetch: fetchOffers, setOffers };
 }

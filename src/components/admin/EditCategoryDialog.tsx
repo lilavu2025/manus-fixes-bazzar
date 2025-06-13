@@ -13,13 +13,15 @@ import {
 } from '@/components/ui/dialog';
 import { toast } from '@/hooks/use-toast';
 import ImageUpload from '@/components/ImageUpload';
-import { Category } from '@/types/product';
+import type { Category } from '@/types';
+import { mapDbCategoryToCategory } from './categoryMappingUtils';
 
 interface EditCategoryDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   category: Category;
   onSuccess: () => void;
+  setCategories: React.Dispatch<React.SetStateAction<Category[]>>;
 }
 
 const EditCategoryDialog: React.FC<EditCategoryDialogProps> = ({
@@ -27,6 +29,7 @@ const EditCategoryDialog: React.FC<EditCategoryDialogProps> = ({
   onOpenChange,
   category,
   onSuccess,
+  setCategories,
 }) => {
   const { t } = useLanguage();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -55,7 +58,7 @@ const EditCategoryDialog: React.FC<EditCategoryDialogProps> = ({
     setIsSubmitting(true);
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('categories')
         .update({
           name_ar: formData.name_ar,
@@ -64,7 +67,8 @@ const EditCategoryDialog: React.FC<EditCategoryDialogProps> = ({
           image: formData.image,
           active: formData.active,
         })
-        .eq('id', category.id);
+        .eq('id', category.id)
+        .select();
 
       if (error) throw error;
 
@@ -74,6 +78,13 @@ const EditCategoryDialog: React.FC<EditCategoryDialogProps> = ({
       });
 
       onOpenChange(false);
+      // تحديث الواجهة مباشرة
+      if (data && data[0]) {
+        const mappedCategory = mapDbCategoryToCategory(data[0]);
+        setCategories((prev) =>
+          prev.map((cat) => (cat.id === category.id ? { ...mappedCategory, count: cat.count } : cat))
+        );
+      }
       onSuccess();
     } catch (error) {
       console.error('Error updating category:', error);
@@ -99,14 +110,19 @@ const EditCategoryDialog: React.FC<EditCategoryDialogProps> = ({
             {t('editCategory')}
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-6 px-6 py-6 bg-white dark:bg-gray-900">
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-6 px-6 py-6 bg-white dark:bg-gray-900"
+        >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="name_ar">{t('categoryNameArabic')}</Label>
               <Input
                 id="name_ar"
                 value={formData.name_ar}
-                onChange={(e) => setFormData({ ...formData, name_ar: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, name_ar: e.target.value })
+                }
                 required
                 className="mt-1"
               />
@@ -116,7 +132,9 @@ const EditCategoryDialog: React.FC<EditCategoryDialogProps> = ({
               <Input
                 id="name_en"
                 value={formData.name_en}
-                onChange={(e) => setFormData({ ...formData, name_en: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, name_en: e.target.value })
+                }
                 required
                 className="mt-1"
               />
@@ -126,7 +144,9 @@ const EditCategoryDialog: React.FC<EditCategoryDialogProps> = ({
               <Input
                 id="name_he"
                 value={formData.name_he}
-                onChange={(e) => setFormData({ ...formData, name_he: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, name_he: e.target.value })
+                }
                 required
                 className="mt-1"
               />
@@ -135,7 +155,11 @@ const EditCategoryDialog: React.FC<EditCategoryDialogProps> = ({
               <Label>{t('categoryImage')}</Label>
               <div className="w-24 h-24 rounded-lg overflow-hidden border bg-gray-50 flex items-center justify-center">
                 {formData.image ? (
-                  <img src={formData.image} alt="preview" className="object-cover w-full h-full" />
+                  <img
+                    src={formData.image}
+                    alt="preview"
+                    className="object-cover w-full h-full"
+                  />
                 ) : (
                   <span className="text-gray-400 text-xs">{t('noImage')}</span>
                 )}
@@ -153,18 +177,31 @@ const EditCategoryDialog: React.FC<EditCategoryDialogProps> = ({
               type="checkbox"
               id="active"
               checked={formData.active}
-              onChange={e => setFormData({ ...formData, active: e.target.checked })}
+              onChange={(e) =>
+                setFormData({ ...formData, active: e.target.checked })
+              }
               className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
             />
-            <Label htmlFor="active" className="text-sm font-medium cursor-pointer">
+            <Label
+              htmlFor="active"
+              className="text-sm font-medium cursor-pointer"
+            >
               {t('active')}
             </Label>
           </div>
           <DialogFooter className="flex flex-row gap-2 justify-end pt-4 border-t mt-4">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
               {t('cancel')}
             </Button>
-            <Button type="submit" disabled={isSubmitting} className="bg-primary text-white font-bold">
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="bg-primary text-white font-bold"
+            >
               {isSubmitting ? t('updating') : t('updateCategory')}
             </Button>
           </DialogFooter>

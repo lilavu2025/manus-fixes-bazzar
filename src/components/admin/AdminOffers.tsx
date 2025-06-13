@@ -48,7 +48,7 @@ const AdminOffers: React.FC = () => {
   const [form, setForm] = useState(initialForm);
 
   // جلب العروض من قاعدة البيانات
-  const { offers, loading, error, refetch } = useOffersRealtime();
+  const { offers, loading, error, refetch, setOffers } = useOffersRealtime({ disableRealtime: true });
 
   // حذف عرض
   const handleDelete = async (id: string) => {
@@ -65,7 +65,8 @@ const AdminOffers: React.FC = () => {
         toast.error(t('errorDeletingOffer'));
       } else {
         toast.success(t('offerDeletedSuccessfully'));
-        refetch();
+        // تحديث الواجهة مباشرة بدون refetch
+        setOffers(prev => prev.filter(offer => offer.id !== id));
       }
     } catch (error) {
       console.error('خطأ غير متوقع في حذف العرض:', error);

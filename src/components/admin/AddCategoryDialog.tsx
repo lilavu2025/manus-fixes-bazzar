@@ -13,17 +13,20 @@ import {
 } from '@/components/ui/dialog';
 import { toast } from '@/hooks/use-toast';
 import ImageUpload from '@/components/ImageUpload';
+import type { Category } from '@/types';
 
 interface AddCategoryDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
+  setCategories: React.Dispatch<React.SetStateAction<Category[]>>;
 }
 
 const AddCategoryDialog: React.FC<AddCategoryDialogProps> = ({
   open,
   onOpenChange,
   onSuccess,
+  setCategories,
 }) => {
   const { t } = useLanguage();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -42,7 +45,7 @@ const AddCategoryDialog: React.FC<AddCategoryDialogProps> = ({
     setIsSubmitting(true);
     setErrorMsg(null);
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('categories')
         .insert([
           {
@@ -51,9 +54,10 @@ const AddCategoryDialog: React.FC<AddCategoryDialogProps> = ({
             name_he: formData.name_he,
             image: formData.image,
             active: formData.active,
-            icon: '', // إرسال قيمة افتراضية إذا لم يكن هناك اختيار
+            icon: '',
           },
-        ]);
+        ])
+        .select();
       if (error) throw error;
       toast({
         title: t('categoryAdded'),
@@ -68,6 +72,8 @@ const AddCategoryDialog: React.FC<AddCategoryDialogProps> = ({
       });
       setPreviewImage('');
       onOpenChange(false);
+      // تحديث الواجهة مباشرة
+      if (data && data[0]) setCategories(prev => [data[0], ...prev]);
       onSuccess();
     } catch (error: unknown) {
       setErrorMsg((error instanceof Error ? error.message : t('errorAddingCategory')) as string);

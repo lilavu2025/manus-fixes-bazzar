@@ -3,7 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 import type { Product as AppProduct } from '@/types/product';
 
-export function useProductsRealtime() {
+// Add options param to control realtime
+export function useProductsRealtime(options?: { disableRealtime?: boolean }) {
   const [products, setProducts] = useState<AppProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -47,6 +48,7 @@ export function useProductsRealtime() {
 
   useEffect(() => {
     fetchProducts();
+    if (options?.disableRealtime) return;
     const channel = supabase
       .channel('products_realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'products' }, () => {
@@ -62,7 +64,8 @@ export function useProductsRealtime() {
       channel.unsubscribe();
       document.removeEventListener('visibilitychange', handleVisibility);
     };
-  }, []);
+  }, [options?.disableRealtime]);
 
-  return { products, loading, error, refetch: fetchProducts };
+  // expose setProducts for local UI updates
+  return { products, loading, error, refetch: fetchProducts, setProducts };
 }

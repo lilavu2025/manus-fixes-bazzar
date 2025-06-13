@@ -16,7 +16,7 @@ type DeletedUserInsert = {
 };
 
 // هوك مخصص لإدارة المستخدمين من قبل الأدمن
-export const useAdminUsers = () => {
+export const useAdminUsers = (options?: { disableRealtime?: boolean }) => {
   const { profile } = useAuth();
 
   // حالة لتخزين جميع المستخدمين
@@ -180,7 +180,11 @@ export const useAdminUsers = () => {
     } else {
       toast(disabled ? 'تم تعطيل المستخدم بنجاح' : 'تم تفعيل المستخدم بنجاح');
     }
-    await fetchUsers();
+    if (!options?.disableRealtime) {
+      await fetchUsers();
+    } else {
+      setUsers(prev => prev.map(u => u.id === userId ? { ...u, disabled } : u));
+    }
   };
 
   // دالة حذف مستخدم
@@ -215,7 +219,11 @@ export const useAdminUsers = () => {
       .eq('id', userId);
     if (error) throw error;
     await logUserActivity(userId, 'delete');
-    await fetchUsers();
+    if (!options?.disableRealtime) {
+      await fetchUsers();
+    } else {
+      setUsers(prev => prev.filter(u => u.id !== userId));
+    }
   };
 
   // حساب عدد حسابات الجملة والمفرق
@@ -225,6 +233,7 @@ export const useAdminUsers = () => {
   // القيم التي يتم إرجاعها من الهوك
   return {
     users,
+    setUsers,
     filteredAndSortedUsers,
     isLoading,
     error,

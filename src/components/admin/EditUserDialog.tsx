@@ -19,9 +19,10 @@ import type { UserProfile } from '@/types/profile';
 interface EditUserDialogProps {
   user: UserProfile;
   refetch: () => void;
+  setUsers: React.Dispatch<React.SetStateAction<UserProfile[]>>;
 }
 
-const EditUserDialog: React.FC<EditUserDialogProps> = ({ user, refetch }) => {
+const EditUserDialog: React.FC<EditUserDialogProps> = ({ user, refetch, setUsers }) => {
   const { isRTL } = useLanguage();
   const { profile } = useAuth();
   const queryClient = useQueryClient();
@@ -58,7 +59,8 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({ user, refetch }) => {
           phone: formData.phone || null,
           user_type: formData.user_type,
         })
-        .eq('id', user.id);
+        .eq('id', user.id)
+        .select();
 
       if (error) throw error;
 
@@ -70,8 +72,8 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({ user, refetch }) => {
       });
 
       toast.success('تم تحديث بيانات المستخدم بنجاح');
-      queryClient.invalidateQueries({ queryKey: ['admin-users-extended'] });
-      if (refetch) refetch();
+      // تحديث المستخدم في القائمة مباشرة
+      setUsers(prev => prev.map(u => u.id === user.id ? { ...u, ...formData } : u));
       setOpen(false);
     } catch (error) {
       console.error('Error updating user:', error);

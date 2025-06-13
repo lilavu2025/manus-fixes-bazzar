@@ -12,51 +12,51 @@ import { Product, ProductFormData, AdminProductForm } from '@/types/product';
 import { mapCategoryToProductCategory } from '@/types/index';
 import { BarChart3, Filter, CheckCircle, XCircle } from 'lucide-react';
 
+// Helper type for flexible product mapping
+export type ProductWithOptionalFields = Product & {
+  name_he?: string;
+  nameHe?: string;
+  description_he?: string;
+  descriptionHe?: string;
+  category_id?: string;
+  discount?: number;
+};
+
+export const mapProductToFormData = (product: ProductWithOptionalFields): AdminProductForm => ({
+  id: product.id,
+  name_ar: product.name || '',
+  name_en: product.nameEn || '',
+  name_he: product.nameHe || product.name_he || '',
+  description_ar: product.description || '',
+  description_en: product.descriptionEn || '',
+  description_he: product.descriptionHe || product.description_he || '',
+  price: product.price,
+  original_price: product.originalPrice || 0,
+  wholesale_price: product.wholesalePrice || 0,
+  category_id: product.category_id || '',
+  category: product.category || '',
+  image: product.image,
+  images: product.images || [],
+  in_stock: product.inStock,
+  stock_quantity: product.stock_quantity || 0,
+  featured: product.featured || false,
+  active: product.active ?? true,
+  discount: typeof product.discount === 'number' ? product.discount : 0,
+  tags: product.tags || [],
+  created_at: product.created_at || '',
+});
+
 const AdminProducts: React.FC = () => {
   const { t } = useLanguage();
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<AdminProductForm | null>(null);
-  const { products, loading: productsLoading, error: productsError, refetch: refetchProducts } = useProductsRealtime();
+  const { products, loading: productsLoading, error: productsError, refetch: refetchProducts, setProducts } = useProductsRealtime({ disableRealtime: true });
   const { data: categoriesData } = useCategories();
   const categories = categoriesData && Array.isArray(categoriesData.data) ? categoriesData.data : [];
   // تحويل قائمة الفئات إلى النوع الصحيح قبل تمريرها للمكونات الفرعية
   const productCategories = categories.map(mapCategoryToProductCategory);
-
-  // Helper type for flexible product mapping
-  type ProductWithOptionalFields = Product & {
-    name_he?: string;
-    nameHe?: string;
-    description_he?: string;
-    descriptionHe?: string;
-    category_id?: string;
-    discount?: number;
-  };
-
-  const mapProductToFormData = (product: ProductWithOptionalFields): AdminProductForm => ({
-    id: product.id,
-    name_ar: product.name || '',
-    name_en: product.nameEn || '',
-    name_he: product.nameHe || product.name_he || '',
-    description_ar: product.description || '',
-    description_en: product.descriptionEn || '',
-    description_he: product.descriptionHe || product.description_he || '',
-    price: product.price,
-    original_price: product.originalPrice || 0,
-    wholesale_price: product.wholesalePrice || 0,
-    category_id: product.category_id || '',
-    category: product.category || '',
-    image: product.image,
-    images: product.images || [],
-    in_stock: product.inStock,
-    stock_quantity: product.stock_quantity || 0,
-    featured: product.featured || false,
-    active: product.active ?? true,
-    discount: typeof product.discount === 'number' ? product.discount : 0,
-    tags: product.tags || [],
-    created_at: product.created_at || '',
-  });
 
   const handleDeleteProduct = async (productId: string, productName: string) => {
     try {
@@ -72,7 +72,8 @@ const AdminProducts: React.FC = () => {
         description: `${t('productDeletedSuccessfully')} ${productName}`,
       });
 
-      refetchProducts();
+      // تحديث الواجهة مباشرة بدون refetch
+      setProducts(prev => prev.filter(product => product.id !== productId));
     } catch (error) {
       console.error('Error deleting product:', error);
       toast({
@@ -300,7 +301,8 @@ const AdminProducts: React.FC = () => {
         setShowViewDialog={setShowViewDialog}
         selectedProduct={selectedProduct}
         categories={productCategories}
-        onSuccess={() => refetchProducts()}
+        onSuccess={() => {}} // لا تعيد التحميل، التحديث يتم عبر setProducts
+        setProducts={setProducts}
       />
     </div>
   );

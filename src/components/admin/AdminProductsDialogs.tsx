@@ -2,7 +2,7 @@ import React from 'react';
 import AddProductDialog from './AddProductDialog';
 import EditProductDialog from './EditProductDialog';
 import ViewProductDialog from './ViewProductDialog';
-import { ProductFormData, Category, AdminProductForm } from '@/types/product';
+import { Product, ProductFormData, Category, AdminProductForm } from '@/types/product';
 
 interface AdminProductsDialogsProps {
   showAddDialog: boolean;
@@ -14,6 +14,7 @@ interface AdminProductsDialogsProps {
   selectedProduct: AdminProductForm | null;
   categories: Category[];
   onSuccess: () => void;
+  setProducts: React.Dispatch<React.SetStateAction<Product[]>>;
 }
 
 const AdminProductsDialogs: React.FC<AdminProductsDialogsProps> = ({
@@ -26,6 +27,7 @@ const AdminProductsDialogs: React.FC<AdminProductsDialogsProps> = ({
   selectedProduct,
   categories,
   onSuccess,
+  setProducts,
 }) => {
   return (
     <>
@@ -34,6 +36,7 @@ const AdminProductsDialogs: React.FC<AdminProductsDialogsProps> = ({
         onOpenChange={setShowAddDialog}
         categories={categories}
         onSuccess={onSuccess}
+        setProducts={setProducts}
       />
 
       {selectedProduct && (
@@ -43,7 +46,8 @@ const AdminProductsDialogs: React.FC<AdminProductsDialogsProps> = ({
             onOpenChange={setShowEditDialog}
             product={selectedProduct}
             categories={categories}
-            onSuccess={onSuccess}
+            onSuccess={() => {}} // No-op: UI updates via setProducts
+            setProducts={setProducts}
           />
           <ViewProductDialog
             open={showViewDialog}

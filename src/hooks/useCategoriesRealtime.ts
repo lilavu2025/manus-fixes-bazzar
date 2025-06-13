@@ -3,7 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 import type { Category as AppCategory } from '@/types';
 
-export function useCategoriesRealtime() {
+// Add options param to control realtime
+export function useCategoriesRealtime(options?: { disableRealtime?: boolean }) {
   const [categories, setCategories] = useState<AppCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -35,7 +36,7 @@ export function useCategoriesRealtime() {
       nameHe: c.name_he || '',
       image: c.image,
       count: productCountMap[c.id] || 0,
-      active: c.active, // إضافة الحقل
+      active: c.active,
     }));
     setCategories(mapped);
     setLoading(false);
@@ -43,6 +44,7 @@ export function useCategoriesRealtime() {
 
   useEffect(() => {
     fetchCategories();
+    if (options?.disableRealtime) return;
     const channel = supabase
       .channel('categories_realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, () => {
@@ -58,7 +60,8 @@ export function useCategoriesRealtime() {
       channel.unsubscribe();
       document.removeEventListener('visibilitychange', handleVisibility);
     };
-  }, []);
+  }, [options?.disableRealtime]);
 
-  return { categories, loading, error, refetch: fetchCategories };
+  // expose setCategories for local UI updates
+  return { categories, loading, error, refetch: fetchCategories, setCategories };
 }

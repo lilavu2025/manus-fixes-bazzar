@@ -15,16 +15,8 @@ import ProductNameFields from './ProductNameFields';
 import ProductDescriptionFields from './ProductDescriptionFields';
 import ProductPricingFields from './ProductPricingFields';
 import ProductToggleFields from './ProductToggleFields';
-import { ProductFormData, AdminProductForm } from '@/types/product';
-
-interface Category {
-  id: string;
-  name: string;
-  nameEn: string;
-  image: string;
-  icon: string;
-  count: number;
-}
+import { Product, ProductFormData, Category, AdminProductForm } from '@/types/product';
+import { mapProductToFormData } from './productMappingUtils';
 
 interface EditProductDialogProps {
   open: boolean;
@@ -32,6 +24,7 @@ interface EditProductDialogProps {
   product: AdminProductForm;
   categories: Category[];
   onSuccess: () => void;
+  setProducts: React.Dispatch<React.SetStateAction<Product[]>>;
 }
 
 const EditProductDialog: React.FC<EditProductDialogProps> = ({
@@ -40,6 +33,7 @@ const EditProductDialog: React.FC<EditProductDialogProps> = ({
   product,
   categories,
   onSuccess,
+  setProducts,
 }) => {
   const { t } = useLanguage();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -103,7 +97,7 @@ const EditProductDialog: React.FC<EditProductDialogProps> = ({
       // التأكد من أن الصورة الرئيسية هي أول صورة في المصفوفة
       const imgs = formData.images.length ? formData.images : [formData.image].filter(Boolean);
       const main = imgs[0] || formData.image;
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('products')
         .update({
           ...formData,
@@ -112,10 +106,41 @@ const EditProductDialog: React.FC<EditProductDialogProps> = ({
           category_id: formData.category_id,
           updated_at: new Date().toISOString(),
         })
-        .eq('id', product.id);
+        .eq('id', product.id)
+        .select();
       if (error) throw error;
       toast({ title: t('productUpdated'), description: t('productUpdatedSuccessfully') });
       onOpenChange(false);
+      // تحديث الواجهة مباشرة
+      if (data && data[0]) {
+        // تحويل بيانات supabase إلى شكل Product المستخدم في الجدول
+        const p = data[0];
+        const mapped = {
+          id: p.id,
+          name: p.name_ar || p.name_en || '',
+          nameEn: p.name_en || '',
+          nameHe: p.name_he || '',
+          description: p.description_ar || p.description_en || '',
+          descriptionEn: p.description_en || '',
+          descriptionHe: p.description_he || '',
+          price: Number(p.price),
+          originalPrice: p.original_price ?? undefined,
+          wholesalePrice: p.wholesale_price ?? undefined,
+          image: p.image,
+          images: p.images ?? [],
+          category: p.category_id,
+          inStock: p.in_stock ?? false,
+          rating: Number(p.rating) || 0,
+          reviews: p.reviews_count || 0,
+          discount: p.discount ?? undefined,
+          featured: p.featured ?? false,
+          tags: p.tags ?? [],
+          stock_quantity: p.stock_quantity ?? 0,
+          active: p.active ?? true,
+          created_at: p.created_at,
+        };
+        setProducts(prev => prev.map(prod => prod.id === product.id ? mapped : prod));
+      }
       onSuccess();
     } catch (err) {
       console.error(err);
@@ -171,8 +196,8 @@ const EditProductDialog: React.FC<EditProductDialogProps> = ({
           <ProductPricingFields formData={formData} setFormData={setFormData} />
           <ProductToggleFields formData={formData} setFormData={setFormData} />
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <DialogFooter className="flex flex-row gap-2 justify-end pt-4 border-t mt-4">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               {t('cancel')}
             </Button>
             <Button type="submit" disabled={isSubmitting}>

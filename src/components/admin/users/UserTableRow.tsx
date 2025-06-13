@@ -9,20 +9,21 @@ import { useLanguage } from '@/utils/languageContextUtils';
 import EditUserDialog from '../EditUserDialog';
 import UserDetailsDialog from './UserDetailsDialog';
 import UserOrdersDialog from './UserOrdersDialog';
-import { useAdminUsers } from '@/hooks/useAdminUsers';
 import type { UserProfile } from '@/types/profile';
 
 interface UserTableRowProps {
   user: UserProfile;
   index: number;
   refetch: () => void;
+  setUsers: React.Dispatch<React.SetStateAction<UserProfile[]>>;
+  disableUser: (userId: string, disabled: boolean) => Promise<void>;
+  deleteUser: (userId: string) => Promise<void>;
 }
 
-const UserTableRow: React.FC<UserTableRowProps> = ({ user, index, refetch }) => {
+const UserTableRow: React.FC<UserTableRowProps> = ({ user, index, refetch, setUsers, disableUser, deleteUser }) => {
   const { t } = useLanguage();
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [showOrdersDialog, setShowOrdersDialog] = useState(false);
-  const { disableUser, deleteUser } = useAdminUsers();
   const [actionLoading, setActionLoading] = useState(false);
 
   const getUserTypeColor = (userType: string) => {
@@ -53,6 +54,26 @@ const UserTableRow: React.FC<UserTableRowProps> = ({ user, index, refetch }) => 
 
   const handleViewOrders = () => {
     setShowOrdersDialog(true);
+  };
+
+  const handleDisableUser = async () => {
+    setActionLoading(true);
+    try {
+      await disableUser(user.id, !user.disabled);
+      // setUsers will be called in disableUser for instant update
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    setActionLoading(true);
+    try {
+      await deleteUser(user.id);
+      // setUsers will be called in deleteUser for instant update
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   return (
@@ -98,7 +119,7 @@ const UserTableRow: React.FC<UserTableRowProps> = ({ user, index, refetch }) => 
         
         <TableCell className="p-2 lg:p-4">
           <div className="flex items-center gap-1 lg:gap-2">
-            <EditUserDialog user={user} refetch={refetch} />
+            <EditUserDialog user={user} refetch={refetch} setUsers={setUsers} />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="h-6 w-6 lg:h-8 lg:w-8 p-0">
@@ -115,24 +136,13 @@ const UserTableRow: React.FC<UserTableRowProps> = ({ user, index, refetch }) => 
                   {t('viewOrders')}
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={async () => {
-                    setActionLoading(true);
-                    await disableUser(user.id, !user.disabled);
-                    if (refetch) refetch();
-                    setActionLoading(false);
-                  }}
+                  onClick={handleDisableUser}
                   className={`text-xs lg:text-sm cursor-pointer ${user.disabled ? 'text-green-600' : 'text-yellow-600'}`}
                 >
                   {user.disabled ? t('enableUser') || 'تفعيل المستخدم' : t('disableUser') || 'تعطيل المستخدم'}
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={async () => {
-                    if (window.confirm(t('confirmDeleteUser') || 'هل أنت متأكد من حذف المستخدم؟')) {
-                      setActionLoading(true);
-                      await deleteUser(user.id);
-                      setActionLoading(false);
-                    }
-                  }}
+                  onClick={handleDeleteUser}
                   className="text-xs lg:text-sm cursor-pointer text-red-600"
                 >
                   {t('deleteUser') || 'حذف المستخدم'}

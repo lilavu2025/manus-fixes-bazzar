@@ -14,6 +14,7 @@ const AdminUsers: React.FC = () => {
   
   const {
     users,
+    setUsers,
     filteredAndSortedUsers,
     isLoading,
     error,
@@ -27,8 +28,10 @@ const AdminUsers: React.FC = () => {
     setSortBy,
     sortOrder,
     setSortOrder,
-    refetch
-  } = useAdminUsers();
+    refetch,
+    disableUser,
+    deleteUser
+  } = useAdminUsers({ disableRealtime: true });
 
   // Handle filter from dashboard navigation
   useEffect(() => {
@@ -76,7 +79,7 @@ const AdminUsers: React.FC = () => {
           setSortOrder={handleSortOrderChange}
         />
 
-        <UsersTable users={filteredAndSortedUsers} isLoading={isLoading} error={error} refetch={refetch} />
+        <UsersTable users={filteredAndSortedUsers} isLoading={isLoading} error={error} setUsers={setUsers} disableUser={disableUser} deleteUser={deleteUser} />
       </div>
     </div>
   );

@@ -11,9 +11,12 @@ interface UsersTableProps {
   isLoading: boolean;
   error?: string | null;
   refetch: () => void;
+  setUsers: React.Dispatch<React.SetStateAction<UserProfile[]>>;
+  disableUser: (userId: string, disabled: boolean) => Promise<void>;
+  deleteUser: (userId: string) => Promise<void>;
 }
 
-const UsersTable: React.FC<UsersTableProps> = ({ users, isLoading, error, refetch }) => {
+const UsersTable: React.FC<UsersTableProps> = ({ users, isLoading, error, refetch, setUsers, disableUser, deleteUser }) => {
   const { t } = useLanguage();
 
   if (isLoading) {
@@ -92,7 +95,15 @@ const UsersTable: React.FC<UsersTableProps> = ({ users, isLoading, error, refetc
             </TableHeader>
             <TableBody>
               {users.map((user, index) => (
-                <UserTableRow key={user.id} user={user} index={index} refetch={refetch} />
+                <UserTableRow
+                  key={user.id}
+                  user={user}
+                  index={index}
+                  refetch={refetch}
+                  setUsers={setUsers}
+                  disableUser={disableUser}
+                  deleteUser={deleteUser}
+                />
               ))}
             </TableBody>
           </Table>
