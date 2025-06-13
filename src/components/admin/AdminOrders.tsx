@@ -399,7 +399,41 @@ const AdminOrders: React.FC = () => {
       setShowEditOrder(false);
       setEditOrderForm(null);
       setEditOrderId(null);
-      refetchOrders();
+      // تحديث الطلب محليًا في الواجهة مباشرة
+      if (typeof setOrders === 'function') {
+        setOrders(prevOrders => prevOrders.map(order =>
+          order.id === editOrderId
+            ? {
+                ...order,
+                items: JSON.stringify(editOrderForm.items),
+                total,
+                status: editOrderForm.status as Order['status'],
+                payment_method: editOrderForm.payment_method,
+                shipping_address: JSON.stringify(editOrderForm.shipping_address),
+                notes: editOrderForm.notes ? compressText(editOrderForm.notes) : null,
+                updated_at: new Date().toISOString(),
+                customer_name: editOrderForm.shipping_address.fullName || order.customer_name,
+              }
+            : order
+        ));
+      }
+      // تحديث تفاصيل الطلب المعروض إذا كان هو نفسه المعدل
+      setSelectedOrder(prev => {
+        if (!prev || prev.id !== editOrderId) return prev;
+        const rawOrder = {
+          ...prev,
+          items: JSON.stringify(editOrderForm.items),
+          total,
+          status: editOrderForm.status as Order['status'],
+          payment_method: editOrderForm.payment_method,
+          shipping_address: JSON.stringify(editOrderForm.shipping_address),
+          notes: editOrderForm.notes ? compressText(editOrderForm.notes) : null,
+          updated_at: new Date().toISOString(),
+          customer_name: editOrderForm.shipping_address.fullName || prev.customer_name,
+        };
+        // إرجاع الطلب بعد فك العناصر ليظهر العدد الجديد مباشرة
+        return mapOrderFromDb(rawOrder);
+      });
     } catch (error) {
       toast.error('فشل في تعديل الطلب');
     } finally {
@@ -913,8 +947,15 @@ const AdminOrders: React.FC = () => {
             className="w-full"
             renderItem={(order: Order, idx: number) => {
               if (!order || typeof order.total !== 'number' || isNaN(order.total)) return null;
+              // فك العناصر إذا كانت نصية
+              let items: OrderItem[] = [];
+              if (typeof order.items === 'string') {
+                try { items = JSON.parse(order.items); } catch { items = []; }
+              } else if (Array.isArray(order.items)) {
+                items = order.items as OrderItem[];
+              }
               return (
-                <div className="p-2 w-full min-h-[240px] sm:min-h-0">
+                <div className="p-2 w-full min-h-[240px] sm:min-h-0" key={order.id + '-' + (order.updated_at || '')}>
                   <Card className="relative h-full flex flex-col justify-between border shadow-md rounded-xl transition-all duration-200 bg-white">
                     <CardHeader className="bg-gray-50 border-b flex flex-col gap-2 p-4 rounded-t-xl">
                       <div className="flex flex-col gap-1">
@@ -969,16 +1010,36 @@ const AdminOrders: React.FC = () => {
                       <div className="flex flex-col gap-2">
                         {order.notes && <div className="mb-1 text-xs text-gray-500">{t('orderNotes')}: {decompressText(order.notes)}</div>}
                         <div className="flex flex-wrap gap-2 text-xs text-gray-500">
-                          {order.items.map((item) => (
+                          {/* {order.items.map((item) => (
                             <span key={item.id} className="bg-gray-100 rounded px-2 py-1">
                               {item.product_name} × {item.quantity}
                             </span>
-                          ))}
+                          ))} */}
                         </div>
                       </div>
                       {/* أزرار التفاصيل والمشاركة */}
                       <div className="flex flex-wrap gap-2 justify-center items-center mt-4 mb-2 w-full">
-                        <Button size="sm" variant="default" className="font-bold flex items-center gap-1 px-3 py-2 min-w-[90px] flex-1 sm:flex-none" onClick={() => setSelectedOrder(order)}>
+                        <Button size="sm" variant="default" className="font-bold flex items-center gap-1 px-3 py-2 min-w-[90px] flex-1 sm:flex-none" onClick={() => {
+                          // جلب الطلب الأحدث من orders (بعد أي تعديل)
+                          const latestOrder = orders.find(o => o.id === order.id) || order;
+                          // معالجة items إذا كانت نصية
+                          let items: OrderItem[] = [];
+                          if (typeof latestOrder.items === 'string') {
+                            try { items = JSON.parse(latestOrder.items); } catch { items = []; }
+                          } else if (Array.isArray(latestOrder.items)) {
+                            items = latestOrder.items as OrderItem[];
+                          }
+                          // معالجة العنوان إذا كان نص
+                          let shipping_address: Address = latestOrder.shipping_address as Address;
+                          if (typeof shipping_address === 'string') {
+                            try { shipping_address = JSON.parse(shipping_address); } catch { shipping_address = {} as Address; }
+                          }
+                          setSelectedOrder({
+                            ...latestOrder,
+                            items,
+                            shipping_address,
+                          });
+                        }}>
                           <Eye className="h-4 w-4" /> تفاصيل
                         </Button>
                         <Button size="sm" variant="outline" className="font-bold flex items-center gap-1 px-3 py-2 border-green-500 text-green-700 hover:bg-green-50 min-w-[90px] flex-1 sm:flex-none" style={{ borderWidth: 2 }}
@@ -992,16 +1053,30 @@ const AdminOrders: React.FC = () => {
                         {/* زر التعديل */}
                         <Button size="sm" variant="secondary" className="font-bold flex items-center gap-1 px-3 py-2 border-blue-500 text-blue-700 hover:bg-blue-50 min-w-[90px] flex-1 sm:flex-none" style={{ borderWidth: 2 }}
                           onClick={() => {
-                            setEditOrderId(order.id);
+                            // جلب الطلب الأحدث من orders
+                            const latestOrder = orders.find(o => o.id === order.id) || order;
+                            // معالجة items إذا كانت نصية
+                            let items: OrderItem[] = [];
+                            if (typeof latestOrder.items === 'string') {
+                              try { items = JSON.parse(latestOrder.items); } catch { items = []; }
+                            } else if (Array.isArray(latestOrder.items)) {
+                              items = latestOrder.items as OrderItem[];
+                            }
+                            // معالجة العنوان إذا كان نص
+                            let shipping_address: Address = latestOrder.shipping_address as Address;
+                            if (typeof shipping_address === 'string') {
+                              try { shipping_address = JSON.parse(shipping_address); } catch { shipping_address = {} as Address; }
+                            }
+                            setEditOrderId(latestOrder.id);
                             setEditOrderForm({
-                              user_id: order.user_id,
-                              payment_method: order.payment_method,
-                              status: order.status,
-                              notes: order.notes ? decompressText(order.notes) : '',
-                              items: order.items,
+                              user_id: latestOrder.user_id,
+                              payment_method: latestOrder.payment_method,
+                              status: latestOrder.status,
+                              notes: latestOrder.notes ? decompressText(latestOrder.notes) : '',
+                              items,
                               shipping_address: {
-                                ...order.shipping_address,
-                                fullName: order.customer_name || order.profiles?.full_name || '',
+                                ...shipping_address,
+                                fullName: latestOrder.customer_name || latestOrder.profiles?.full_name || '',
                               },
                             });
                             setShowEditOrder(true);
@@ -1131,6 +1206,7 @@ const AdminOrders: React.FC = () => {
                   <div className="space-y-1">
                     <div className="text-xs text-gray-700 print:text-black">رقم الطلب: <span className="font-bold">{selectedOrder.id}</span></div>
                     <div className="text-xs text-gray-700 print:text-black">تاريخ الطلب: <span className="font-bold">{new Date(selectedOrder.created_at).toLocaleDateString('en-GB')} - {new Date(selectedOrder.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</span></div>
+                    <div className="text-xs text-gray-700 print:text-black">تاريخ التعديل: <span className="font-bold">{selectedOrder.updated_at ? new Date(selectedOrder.updated_at).toLocaleDateString('en-GB') + ' - ' + new Date(selectedOrder.updated_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '-'}</span></div>
                     <div className="text-xs text-gray-700 print:text-black">الحالة: <span className="font-bold">{t(selectedOrder.status)}</span></div>
                     <div className="text-xs text-gray-700 print:text-black">طريقة الدفع: <span className="font-bold">{t(selectedOrder.payment_method)}</span></div>
                   </div>
