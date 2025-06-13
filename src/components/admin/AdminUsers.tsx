@@ -79,7 +79,7 @@ const AdminUsers: React.FC = () => {
           setSortOrder={handleSortOrderChange}
         />
 
-        <UsersTable users={filteredAndSortedUsers} isLoading={isLoading} error={error} setUsers={setUsers} disableUser={disableUser} deleteUser={deleteUser} />
+        <UsersTable users={filteredAndSortedUsers} isLoading={isLoading} error={error} setUsers={setUsers} disableUser={disableUser} deleteUser={deleteUser} refetch={refetch} />
       </div>
     </div>
   );

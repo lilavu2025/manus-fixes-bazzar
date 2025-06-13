@@ -223,8 +223,8 @@ const AdminOrders: React.FC = () => {
           if (order.id === orderId) {
             return {
               ...order,
-              status: newStatus,
-              updated_at: updateObj.updated_at,
+              status: newStatus as Order['status'],
+              updated_at: updateObj.updated_at as string,
               cancelled_by: newStatus === 'cancelled' ? 'admin' : order.cancelled_by,
               cancelled_by_name: newStatus === 'cancelled' ? (user?.user_metadata?.full_name || user?.email || 'أدمن') : order.cancelled_by_name,
             };
