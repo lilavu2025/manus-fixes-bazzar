@@ -1,7 +1,7 @@
 import * as React from "react";
 import { useState, useCallback, useMemo } from 'react';
 import { Search } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import { ClearableInput } from '@/components/ui/ClearableInput';
 import { debounce } from '@/utils/performanceOptimizations';
 
 interface OptimizedSearchProps {
@@ -41,11 +41,15 @@ const OptimizedSearch: React.FC<OptimizedSearchProps> = ({
       style={{ minHeight: '40px', minWidth: 0 }}
     >
       <Search className="absolute right-2 sm:right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 pointer-events-none z-10" />
-      <Input
+      <ClearableInput
         type="text"
         placeholder={placeholder}
         value={searchQuery}
         onChange={handleInputChange}
+        onClear={() => {
+          setSearchQuery('');
+          debouncedSearch('');
+        }}
         className="pr-8 sm:pr-10 pl-2 sm:pl-4 py-2 w-full bg-transparent border-none focus:ring-0 text-xs sm:text-sm md:text-base"
         dir="rtl"
         style={{ borderRadius: 0, boxShadow: 'none', minWidth: 0 }}

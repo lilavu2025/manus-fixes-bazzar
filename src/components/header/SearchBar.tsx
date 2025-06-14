@@ -1,7 +1,7 @@
 import React from 'react';
 import { Search, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { ClearableInput } from '@/components/ui/ClearableInput';
 import { useLanguage } from '@/utils/languageContextUtils';
 
 interface SearchBarProps {
@@ -29,10 +29,11 @@ const SearchBar: React.FC<SearchBarProps> = ({
     return (
       <div className="relative">
         <Search className={`absolute top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5 ${isRTL ? 'right-3' : 'left-3'}`} />
-        <Input
+        <ClearableInput
           placeholder={t('search')}
           value={searchQuery}
           onChange={handleSearchChange}
+          onClear={() => onSearchChange('')}
           className={`${isRTL ? 'pr-10 pl-4' : 'pl-10 pr-4'} h-12 rounded-full border-2 border-gray-200 focus:border-primary text-base`}
           autoFocus
         />
@@ -46,10 +47,11 @@ const SearchBar: React.FC<SearchBarProps> = ({
       <div className="hidden md:flex flex-1 max-w-md mx-4">
         <div className="relative w-full">
           <Search className={`absolute top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5 ${isRTL ? 'right-3' : 'left-3'}`} />
-          <Input
+          <ClearableInput
             placeholder={t('search')}
             value={searchQuery}
             onChange={handleSearchChange}
+            onClear={() => onSearchChange('')}
             className={`${isRTL ? 'pr-10 pl-4' : 'pl-10 pr-4'} h-11 rounded-full border-2 border-gray-200 focus:border-primary text-base`}
           />
         </div>
