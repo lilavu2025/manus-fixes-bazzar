@@ -997,7 +997,7 @@ const AdminOrders: React.FC = () => {
                                   <span className="block">{t('admin') || 'أدمن'}</span>
                                 </Badge>
                                 <div className="absolute z-20 hidden group-hover:block bg-white border shadow-lg rounded-lg px-3 py-2 text-xs text-gray-700 top-8 right-0 whitespace-nowrap">
-                                  {order.admin_creator_name ? `أنشأها: ${order.admin_creator_name}` : 'أنشئت من الأدمن'}
+                                  {order.admin_creator_name ? `${t('createdBy')}: ${order.admin_creator_name}` : t('createdByAdmin')}
                                 </div>
                               </div>
                             )}
@@ -1009,7 +1009,7 @@ const AdminOrders: React.FC = () => {
                                 <span className="inline-flex items-center gap-1">
                                   <XCircle className="h-4 w-4 min-w-[16px] min-h-[16px]" />
                                   <span className="block">
-                                    {order.cancelled_by === 'admin' ? 'أُلغي بواسطة الأدمن' : 'أُلغي بواسطة المستخدم'}
+                                    {order.cancelled_by === 'admin' ? t('cancelledByAdmin') : t('cancelledByUser')}
                                     {order.cancelled_by_name ? ` (${order.cancelled_by_name})` : ''}
                                   </span>
                                 </span>

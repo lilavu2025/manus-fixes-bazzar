@@ -633,4 +633,8 @@ export const enTranslations = {
   order: 'Order',
   back: 'Back',
   showing: 'Showing',
+  createdBy: 'Created by',
+  createdByAdmin: 'Created by admin',
+  cancelledByAdmin: 'Cancelled by admin',
+  cancelledByUser: 'Cancelled by user',
 };

@@ -624,5 +624,9 @@ export const heTranslations = {
   order: 'הזמנה',
   validUntil: 'בתוקף עד',
   viewOffer: 'הצג הצעה',
-  showing: 'מראה'
+  showing: 'מראה',
+  createdBy: 'נוצר על ידי',
+  createdByAdmin: 'נוצר על ידי מנהל',
+  cancelledByAdmin: 'בוטל על ידי מנהל',
+  cancelledByUser: 'בוטל על ידי משתמש'
 };

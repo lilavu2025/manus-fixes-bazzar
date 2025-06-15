@@ -642,4 +642,8 @@ export const arTranslations = {
   validUntil: 'صالح حتى',
   viewOffer: 'عرض العرض',
   showing: 'يظهر',
+  createdBy: 'أنشأها',
+  createdByAdmin: 'أنشئت من الأدمن',
+  cancelledByAdmin: 'أُلغي بواسطة الأدمن',
+  cancelledByUser: 'أُلغي بواسطة المستخدم',
 };
