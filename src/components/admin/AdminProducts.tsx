@@ -156,7 +156,7 @@ const AdminProducts: React.FC = () => {
           <XCircle className="h-8 w-8 text-yellow-500" />
           <div>
             <div className="text-lg font-bold">{inactiveProducts}</div>
-            <div className="text-xs text-gray-600">غير فعالة</div>
+            <div className="text-xs text-gray-600">{t('inactive')}</div>
           </div>
         </div>
         <div
@@ -171,7 +171,7 @@ const AdminProducts: React.FC = () => {
           <Filter className="h-8 w-8 text-red-500" />
           <div>
             <div className="text-lg font-bold">{lowStockProducts}</div>
-            <div className="text-xs text-gray-600">منخفضة المخزون (&le;5)</div>
+            <div className="text-xs text-gray-600">{t('lowStock')}  (&le;5)</div>
           </div>
         </div>
       </div>

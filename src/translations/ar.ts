@@ -522,7 +522,7 @@ export const arTranslations = {
   lowStockProducts: 'منتجات منخفضة المخزون',
   restockNeededProducts: 'منتجات بحاجة لإعادة التوريد',
   since2days: 'منذ 2 يوم',
-  lowStock: 'منخفضة المخزون (≤5)',
+  lowStock: 'منخفضة المخزون',
   stock: 'المخزون',
   allStock: 'كل المخزون',
   lowStockOnly: 'منخفض المخزون فقط',

@@ -522,7 +522,7 @@ export const heTranslations = {
   lowStockProducts: 'מוצרים במלאי נמוך',
   restockNeededProducts: 'מוצרים שדורשים חידוש מלאי',
   since2days: 'לפני יומיים',
-  lowStock: 'מלאי נמוך (≤5)',
+  lowStock: 'מלאי נמוך',
   stock: 'מלאי',
   allStock: 'כל המלאי',
   lowStockOnly: 'רק מלאי נמוך',

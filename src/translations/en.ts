@@ -523,7 +523,7 @@ export const enTranslations = {
   lowStockProducts: 'Low Stock Products',
   restockNeededProducts: 'Products Needing Restock',
   since2days: 'Since 2 days',
-  lowStock: 'Low Stock (≤5)',
+  lowStock: 'Low Stock',
   stock: 'Stock',
   allStock: 'All Stock',
   lowStockOnly: 'Low Stock Only',
