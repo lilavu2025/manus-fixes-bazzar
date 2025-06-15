@@ -15,6 +15,7 @@ import ProductCardQuickView from './ProductCard/ProductCardQuickView';
 import ProductCardActions from './ProductCard/ProductCardActions';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Mail, Share2, Copy, MessageCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 // خصائص مكون كرت المنتج
 interface ProductCardProps {
@@ -26,7 +27,7 @@ interface ProductCardProps {
 const ProductCard: React.FC<ProductCardProps> = memo(({ product, onQuickView }) => {
   // استخدام الخطافات للوصول للوظائف المختلفة
   const { addItem, getItemQuantity, buyNow } = useCart();
-  // const { toggleFavorite, isFavorite } = useFavorites();
+  // const { toggleFavorite, isFavorites } = useFavorites();
   const { user } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
@@ -187,7 +188,7 @@ const ProductCard: React.FC<ProductCardProps> = memo(({ product, onQuickView }) 
         onClick={handleCardClick}
       >
         {/* أزرار التفاعل على أقصى يسار الكرت */}
-        <div className="absolute top-2 left-2 z-20">
+        <div className="absolute top-2 left-2 z-20 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform -translate-x-4 group-hover:translate-x-0 transition-transform">
           <ProductCardActions
             product={product}
             onQuickView={handleQuickView}
@@ -195,39 +196,49 @@ const ProductCard: React.FC<ProductCardProps> = memo(({ product, onQuickView }) 
             onFavorite={null}
             onShare={async () => { setShareOpen((v) => !v); }}
           />
+          <Popover open={shareOpen} onOpenChange={setShareOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                size="icon"
+                variant="secondary"
+                className="h-8 w-8 bg-white/90 hover:bg-orange-100 hover:text-orange-600 shadow-md transition-colors"
+                onClick={e => { e.preventDefault(); e.stopPropagation(); setShareOpen((v) => !v); }}
+              >
+                <Share2 className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-44 p-2 space-y-1 z-50">
+              <button className="flex items-center gap-2 w-full px-2 py-1 hover:bg-gray-100 rounded text-sm" onClick={handleShareWhatsapp}>
+                <MessageCircle className="h-4 w-4 text-green-600" />
+                {t('shareViaWhatsapp')}
+              </button>
+              <button className="flex items-center gap-2 w-full px-2 py-1 hover:bg-gray-100 rounded text-sm" onClick={handleShareEmail}>
+                <Mail className="h-4 w-4 text-blue-600" />
+                {t('shareViaEmail')}
+              </button>
+              <button className="flex items-center gap-2 w-full px-2 py-1 hover:bg-gray-100 rounded text-sm" onClick={handleCopyLink}>
+                <Copy className="h-4 w-4" />
+                {t('copyLink')}
+              </button>
+              {navigator.share && (
+                <button className="flex items-center gap-2 w-full px-2 py-1 hover:bg-gray-100 rounded text-sm" onClick={handleNativeShare}>
+                  <Share2 className="h-4 w-4 text-gray-600" />
+                  {t('shareSystem')}
+                </button>
+              )}
+            </PopoverContent>
+          </Popover>
         </div>
         {/* صورة المنتج */}
-        <Popover open={shareOpen} onOpenChange={setShareOpen}>
-          <ProductCardImage
-            product={product}
-            isFavorite={isFav}
-            onQuickView={handleQuickView}
-            //onFavorite={handleFavorite}
-            onFavorite={null}
-            onShare={async () => { setShareOpen((v) => !v); }}
-            isLoading={isLoading}
-          />
-          <PopoverContent align="end" className="w-44 p-2 space-y-1 z-50">
-            <button className="flex items-center gap-2 w-full px-2 py-1 hover:bg-gray-100 rounded text-sm" onClick={handleShareWhatsapp}>
-              <MessageCircle className="h-4 w-4 text-green-600" />
-              {t('shareViaWhatsapp')}
-            </button>
-            <button className="flex items-center gap-2 w-full px-2 py-1 hover:bg-gray-100 rounded text-sm" onClick={handleShareEmail}>
-              <Mail className="h-4 w-4 text-blue-600" />
-              {t('shareViaEmail')}
-            </button>
-            <button className="flex items-center gap-2 w-full px-2 py-1 hover:bg-gray-100 rounded text-sm" onClick={handleCopyLink}>
-              <Copy className="h-4 w-4" />
-              {t('copyLink')}
-            </button>
-            {navigator.share && (
-              <button className="flex items-center gap-2 w-full px-2 py-1 hover:bg-gray-100 rounded text-sm" onClick={handleNativeShare}>
-                <Share2 className="h-4 w-4 text-gray-600" />
-                {t('shareSystem')}
-              </button>
-            )}
-          </PopoverContent>
-        </Popover>
+        <ProductCardImage
+          product={product}
+          isFavorite={isFav}
+          onQuickView={handleQuickView}
+          //onFavorite={handleFavorite}
+          onFavorite={null}
+          onShare={async () => { setShareOpen((v) => !v); }}
+          isLoading={isLoading}
+        />
         
         {/* محتوى المنتج مع الأزرار */}
         <ProductCardContent
