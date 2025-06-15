@@ -15,6 +15,7 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import SEO from "@/components/SEO";
 import PerformanceMonitorComponent from "@/components/PerformanceMonitor";
 import { lazy, Suspense, memo, useEffect, useRef } from "react";
+import ScrollToTop from "@/components/ScrollToTop";
 
 // Critical pages - Regular imports for initial load
 import Index from "./pages/Index";
@@ -174,6 +175,7 @@ const App = () => {
     <QueryClientProvider client={queryClient}>
       <HelmetProvider>
         <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          <ScrollToTop />
           <ErrorBoundary>
             <LanguageProvider>
               <AuthProvider>
