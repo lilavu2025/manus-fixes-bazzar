@@ -22,7 +22,7 @@ const ViewCategoryDialog: React.FC<ViewCategoryDialogProps> = ({
   onOpenChange,
   category,
 }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   if (!category) return null;
 
@@ -48,7 +48,12 @@ const ViewCategoryDialog: React.FC<ViewCategoryDialogProps> = ({
               )}
             </div>
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
-              {category.name}
+              {(() => {
+                if (language === 'ar' && category.name) return category.name;
+                if (language === 'en' && category.nameEn) return category.nameEn;
+                if (language === 'he' && category.nameHe) return category.nameHe;
+                return category.name || category.nameEn || category.nameHe || '';
+              })()}
             </h2>
             {typeof category.active !== 'undefined' && (
               <Badge

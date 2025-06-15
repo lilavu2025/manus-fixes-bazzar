@@ -43,7 +43,7 @@ import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautif
 import OptimizedSearch from '@/components/OptimizedSearch';
 
 const AdminCategories: React.FC = () => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showViewDialog, setShowViewDialog] = useState(false);
@@ -270,7 +270,24 @@ const AdminCategories: React.FC = () => {
                                     className="w-12 h-12 object-cover rounded-lg mx-auto border"
                                   />
                                 </TableCell>
-                                <TableCell className="font-medium">{category.name}</TableCell>
+                                <TableCell className="font-medium">
+                                  {(() => {
+                                    if (typeof category.name === 'string' && category.name) {
+                                      // دعم البنية القديمة
+                                      if (t && typeof t === 'function' && t('lang') === 'ar') return category.name;
+                                      if (t && typeof t === 'function' && t('lang') === 'en' && category.nameEn) return category.nameEn;
+                                      if (t && typeof t === 'function' && t('lang') === 'he' && category.nameHe) return category.nameHe;
+                                    }
+                                    // دعم البنية الجديدة
+                                    if (typeof category === 'object') {
+                                      if (language === 'ar' && category.name) return category.name;
+                                      if (language === 'en' && category.nameEn) return category.nameEn;
+                                      if (language === 'he' && category.nameHe) return category.nameHe;
+                                    }
+                                    // fallback
+                                    return category.name || category.nameEn || category.nameHe || '';
+                                  })()}
+                                </TableCell>
                                 <TableCell>
                                   <Badge variant="secondary">{category.count}</Badge>
                                 </TableCell>
@@ -307,13 +324,23 @@ const AdminCategories: React.FC = () => {
                                         <AlertDialogHeader>
                                           <AlertDialogTitle>{t('deleteCategory')}</AlertDialogTitle>
                                           <AlertDialogDescription>
-                                            {t('deleteCategoryConfirmation')} "{category.name}"?
-                                          </AlertDialogDescription>
+                                            {t('deleteCategoryConfirmation')} "{(() => {
+                                              if (language === 'ar' && category.name) return category.name;
+                                              if (language === 'en' && category.nameEn) return category.nameEn;
+                                              if (language === 'he' && category.nameHe) return category.nameHe;
+                                              return category.name || category.nameEn || category.nameHe || '';
+                                            })()}"?
+                                        </AlertDialogDescription>
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
                                           <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
                                           <AlertDialogAction 
-                                            onClick={() => handleDeleteCategory(category.id, category.name)}
+                                            onClick={() => handleDeleteCategory(category.id, (() => {
+                                              if (language === 'ar' && category.name) return category.name;
+                                              if (language === 'en' && category.nameEn) return category.nameEn;
+                                              if (language === 'he' && category.nameHe) return category.nameHe;
+                                              return category.name || category.nameEn || category.nameHe || '';
+                                            })())}
                                             className="bg-red-600 hover:bg-red-700"
                                           >
                                             {t('delete')}
