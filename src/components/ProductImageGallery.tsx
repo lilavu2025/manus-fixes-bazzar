@@ -12,6 +12,7 @@ interface ProductImageGalleryProps {
     image: string;
     images?: string[];
     discount?: number;
+    inStock?: boolean;
   };
 }
 
@@ -72,6 +73,15 @@ const ProductImageGallery = ({ product }: ProductImageGalleryProps) => {
     <div className="space-y-4">
       {/* صورة المنتج الرئيسية مع إمكانية التكبير */}
       <div className="relative overflow-hidden rounded-xl bg-white border group cursor-zoom-in" onClick={openModal}>
+        {/* بادج حالة المخزون */}
+        {typeof product.inStock !== 'undefined' && (
+          <Badge
+            variant={product.inStock ? 'secondary' : 'destructive'}
+            className={`absolute top-4 ${isRTL ? 'left-4' : 'right-4'} z-10 ${product.inStock ? 'bg-green-100 text-green-800' : ''}`}
+          >
+            {product.inStock ? t('inStock') : t('outOfStock')}
+          </Badge>
+        )}
         {images.length > 0 && (
           <LazyImage
             src={images[selectedImage] || product.image}

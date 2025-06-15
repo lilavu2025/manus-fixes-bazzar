@@ -14,7 +14,7 @@ import EmailConfirmationPending from '@/components/EmailConfirmationPending';
 const Auth: React.FC = () => {
   const navigate = useNavigate();
   const { signIn, signUp, user, loading } = useAuth();
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const { toast } = useToast();
 
   const [loginData, setLoginData] = useState({
@@ -149,7 +149,7 @@ const Auth: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 to-secondary/5 flex items-center justify-center p-4">
+    <div className={`min-h-screen bg-gray-50 ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="w-full max-w-md">
         <div className="flex justify-center mb-6">
           <LanguageSwitcher />

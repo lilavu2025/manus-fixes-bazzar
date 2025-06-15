@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/useAuth';
 import { Product } from '@/types';
 import QuantitySelector from '@/components/QuantitySelector';
 import FavoriteButton from '@/components/ProductCard/FavoriteButton';
+import ProductInfo from '../ProductInfo';
 
 export interface ProductCardQuickViewProps {
   product: Product;
@@ -43,9 +44,9 @@ const ProductCardQuickView: React.FC<ProductCardQuickViewProps> = ({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+        {/* <DialogHeader>
           <DialogTitle>{product.name}</DialogTitle>
-        </DialogHeader>
+        </DialogHeader> */}
         <div className="grid md:grid-cols-2 gap-6">
           <div>
             <img
@@ -57,27 +58,22 @@ const ProductCardQuickView: React.FC<ProductCardQuickViewProps> = ({
           <div className="space-y-4">
 
 
-            <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-              <span className="text-2xl font-bold text-primary">
-                {displayPrice} {t('currency')}
-              </span>
-              {product.originalPrice && (
-                <span className="text-lg text-gray-500 line-through">
-                  {product.originalPrice} {t('currency')}
-                </span>
-              )}
+            
+
+            <div className="w-full">
+              <ProductInfo product={product} />
             </div>
 
-            <p className="text-gray-600">{product.description}</p>
-
-            <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-              <span className="text-sm text-gray-600">{t('quantity')}:</span>
+            <div className={`flex items-center gap-12 w-full ${isRTL ? 'flex-row-reverse justify-end' : 'justify-start'}`}>
               <QuantitySelector
                 quantity={quantity}
                 onQuantityChange={onQuantityChange}
                 max={99}
                 min={1}
               />
+              <span className="text-sm sm:text-base text-gray-600 whitespace-nowrap">
+                {t('quantity')}:
+              </span>
             </div>
 
             <div className="flex gap-2">

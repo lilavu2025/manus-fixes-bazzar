@@ -16,7 +16,7 @@ import type { Database } from '@/integrations/supabase/types';
 import type { Product } from '@/types';
 
 const Offers: React.FC = () => {
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const { addToCart } = useCart();
@@ -138,12 +138,8 @@ const Offers: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header
-        onSearchChange={setSearchQuery}
-        onCartClick={() => setIsCartOpen(true)}
-        onMenuClick={() => {}}
-      />
+    <div className={`min-h-screen bg-gray-50 ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
+      <Header onSearchChange={setSearchQuery} onCartClick={() => setIsCartOpen(true)} onMenuClick={() => {}} />
 
       <div className="container mx-auto px-4 py-6">
         {/* Page Header */}

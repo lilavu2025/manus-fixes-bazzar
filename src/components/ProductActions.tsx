@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Mail, Share2, ShoppingCart, Copy, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useLanguage } from '@/utils/languageContextUtils';
+import { isRTL, useLanguage } from '@/utils/languageContextUtils';
 import { useCart } from '@/hooks/useCart';
 import { toast } from 'sonner';
 import { Product } from '@/types';
@@ -105,14 +105,14 @@ const ProductActions = ({ product, onBuyNow }: ProductActionsProps) => {
       {/* Quantity & Add to Cart */}
       {product.inStock && (
         <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-semibold mb-2">{t('quantity')}</label>
+          <div className={`flex items-center gap-12 w-full ${isRTL ? 'flex-row-reverse justify-end' : 'justify-start'}`}>
             <QuantitySelector
               quantity={quantity}
               onQuantityChange={setQuantity}
               max={99}
               min={1}
             />
+            <label className="block text-sm font-semibold mb-2">{t('quantity')}</label>
           </div>
 
           <div className="flex gap-3">

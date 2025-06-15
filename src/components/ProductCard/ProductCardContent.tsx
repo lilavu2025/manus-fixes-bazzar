@@ -37,58 +37,44 @@ const ProductCardContent: React.FC<ProductCardContentProps> = ({
   return (
     <CardContent
       className={
-        `w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg mx-auto p-4 sm:p-6 ${
-          isRTL ? 'text-right' : 'text-left'
-        }`
+        `w-full p-4 sm:p-6 ${isRTL ? 'text-right' : 'text-left'}`
       }
     >
-      <Link to={`/product/${product.id}`} onClick={onProductClick}>
+      <Link to={`/product/${product.id}`} onClick={onProductClick} className="block w-full">
         <h3
-          className={
-            `font-semibold text-base sm:text-lg md:text-xl lg:text-2xl mb-2 line-clamp-2 group-hover:text-primary transition-colors ${
-              isRTL ? 'text-right' : 'text-left'
-            }`
-          }
+          className={`font-semibold text-base sm:text-lg md:text-xl lg:text-2xl mb-2 line-clamp-2 group-hover:text-primary transition-colors ${isRTL ? 'text-right' : 'text-left'}`}
         >
           {product.name}
         </h3>
       </Link>
-
-      {/* السعر */}
-      <div
-        className={`flex items-baseline gap-2 mb-4 ${
-          isRTL ? 'flex-row-reverse' : ''
-        }`}
-      >
-        <span className="text-lg sm:text-xl md:text-2xl font-bold text-primary">
-          {displayPrice} {t('currency')}
-        </span>
-        {product.originalPrice && (
-          <span className="text-sm sm:text-base text-gray-500 line-through">
-            {product.originalPrice} {t('currency')}
+      {/* السعر  */}
+      <div className={`flex flex-col gap-2 mb-4 w-full`}>
+        <div className={`flex flex-col gap-2 w-full`}>
+          <div className={`flex items-center gap-4 w-full ${isRTL ? 'flex-row-reverse justify-end' : 'justify-start'}`}> 
+            {product.originalPrice !== product.price && (
+              <span className="text-lg text-gray-500 line-through">
+                {product.originalPrice} {t('currency')}
+              </span>
+            )}
+            <span className="text-3xl font-bold text-primary">
+              {product.price} {t('currency')}
+            </span>
+          </div>
+        </div>
+        <div className={`flex items-center gap-12 w-full ${isRTL ? 'flex-row-reverse justify-end' : 'justify-start'}`}>
+          <QuantitySelector
+            quantity={quantity}
+            onQuantityChange={onQuantityChange}
+            max={99}
+            min={1}
+          />
+          <span className="text-sm sm:text-base text-gray-600 whitespace-nowrap">
+            {t('quantity')}:
           </span>
-        )}
+        </div>
       </div>
-
-      {/* محدد الكمية */}
-      <div
-        className={`flex flex-col sm:flex-row items-center sm:items-stretch gap-2 mb-4 ${
-          isRTL ? 'sm:flex-row-reverse' : ''
-        }`}
-      >
-        <span className="text-sm sm:text-base text-gray-600 whitespace-nowrap">
-          {t('quantity')}:
-        </span>
-        <QuantitySelector
-          quantity={quantity}
-          onQuantityChange={onQuantityChange}
-          max={99}
-          min={1}
-        />
-      </div>
-
       {/* أزرار الإجراءات */}
-      <div className="flex flex-col sm:flex-row gap-3">
+      <div className={`flex flex-col sm:flex-row gap-3 ${isRTL ? 'justify-end' : 'justify-start'}`}>
         <Button
           onClick={(e) => {
             e.preventDefault();

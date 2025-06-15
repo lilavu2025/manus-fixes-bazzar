@@ -64,7 +64,7 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
   };
 
   return (
-    <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+    <div className={`flex items-center gap-2 ${isRTL ? 'flex-row' : ''}`}>
       <Button
         size="icon"
         variant="outline"

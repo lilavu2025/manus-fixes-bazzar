@@ -36,8 +36,12 @@ const ProductCardBadges = ({ product }: ProductCardBadgesProps) => {
           {t('featured')}
         </Badge>
       )}
-      {!product.inStock && (
-        <Badge variant="secondary">
+      {product.inStock ? (
+        <Badge variant="secondary" className="bg-green-100 text-green-800">
+          {t('inStock')}
+        </Badge>
+      ) : (
+        <Badge variant="destructive">
           {t('outOfStock')}
         </Badge>
       )}

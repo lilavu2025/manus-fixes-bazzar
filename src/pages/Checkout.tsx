@@ -220,12 +220,8 @@ const Checkout: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header 
-        onSearchChange={() => {}}
-        onCartClick={() => {}}
-        onMenuClick={() => {}}
-      />
+    <div className={`min-h-screen bg-gray-50 ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
+      <Header onSearchChange={() => {}} onCartClick={() => {}} onMenuClick={() => {}} />
 
       <div className="container mx-auto px-4 py-6">
         {/* رأس الصفحة مع زر العودة */}

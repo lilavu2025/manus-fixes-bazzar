@@ -107,13 +107,8 @@ const Favorites: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* رأس الصفحة */}
-      <Header
-        onSearchChange={() => {}}
-        onCartClick={() => setIsCartOpen(true)}
-        onMenuClick={() => {}}
-      />
+    <div className={`min-h-screen bg-gray-50 ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
+      <Header onSearchChange={() => {}} onCartClick={() => setIsCartOpen(true)} onMenuClick={() => {}} />
       {isLoading ? (
         <LoadingComponent />
       ) : (

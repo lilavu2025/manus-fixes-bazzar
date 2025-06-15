@@ -17,7 +17,7 @@ import type { Product } from '@/types/product';
 const ProductDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   
@@ -97,26 +97,35 @@ const ProductDetails = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header
-        onSearchChange={setSearchQuery}
-        onCartClick={() => setIsCartOpen(true)}
-        onMenuClick={() => {}}
-      />
+    <div className={`min-h-screen bg-gray-50 ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
+      <Header onSearchChange={setSearchQuery} onCartClick={() => setIsCartOpen(true)} onMenuClick={() => {}} />
 
-      <main className="container mx-auto px-4 py-8">
-        <ProductBreadcrumb productName={product.name} />
+      <main className="container mx-auto px-2 sm:px-6 py-8">
+        <div className={`mb-4 ${isRTL ? 'text-right' : 'text-left'}`}> 
+          <ProductBreadcrumb productName={product.name} />
+        </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
-          <ProductImageGallery product={product} />
-          
-          <div className="space-y-6">
-            <ProductInfo product={product} />
-            <ProductActions product={product} onBuyNow={handleBuyNow} />
+          <ProductImageGallery product={{
+            name: product.name,
+            image: product.image,
+            images: product.images,
+            discount: product.discount,
+            inStock: product.inStock
+          }} />
+          <div className={`space-y-6 flex flex-col justify-start ${isRTL ? 'items-end' : 'items-start'}`}> 
+            <div className="w-full">
+              <ProductInfo product={product} />
+            </div>
+            <div className="w-full">
+              <ProductActions product={product} onBuyNow={handleBuyNow} />
+            </div>
           </div>
         </div>
 
-        <RelatedProducts products={relatedProducts} />
+        <div className="w-full">
+          <RelatedProducts products={relatedProducts} />
+        </div>
       </main>
 
       <CartSidebar isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />

@@ -13,7 +13,7 @@ import { useContactInfo } from '@/hooks/useContactInfo';
 import emailjs from '@emailjs/browser';
 
 const Contact: React.FC = () => {
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const { toast } = useToast();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -70,12 +70,8 @@ const Contact: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header 
-        onSearchChange={() => {}}
-        onCartClick={() => setIsCartOpen(true)}
-        onMenuClick={() => {}}
-      />
+    <div className={`min-h-screen bg-gray-50 ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
+      <Header onSearchChange={() => {}} onCartClick={() => setIsCartOpen(true)} onMenuClick={() => {}} />
       <div className='mb-4' />
       <div className="text-center">
           <h1 className="text-3xl font-bold mb-2">{t('contact')}</h1>

@@ -17,44 +17,28 @@ interface ProductInfoProps {
 }
 
 const ProductInfo = ({ product }: ProductInfoProps) => {
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
 
   return (
-    <div className="space-y-6">
+    <div className={`space-y-6 ${isRTL ? 'text-right' : 'text-left'}`}>
       <div>
-        <h1 className="text-3xl font-bold mb-2">{product.name}</h1>
-        {product.nameEn && <p className="text-gray-600">{product.nameEn}</p>}
+        <h1 className="text-3xl font-bold mb-2 text-center">{product.name}</h1>
       </div>
-
-
-
-      {/* Price */}
-      <div className="flex items-center gap-4">
-        <span className="text-3xl font-bold text-primary">
-          {product.price} {t('currency')}
-        </span>
-        {product.originalPrice && (
-          <span className="text-xl text-gray-500 line-through">
-            {product.originalPrice} {t('currency')}
+      {/* السعر */}
+      <div className={`flex flex-col gap-2 w-full`}>
+        <div className={`flex items-center gap-4 w-full ${isRTL ? 'flex-row-reverse justify-end' : 'justify-start'}`}> 
+          {product.originalPrice !== product.price && (
+            <span className="text-lg text-gray-500 line-through">
+              {product.originalPrice} {t('currency')}
+            </span>
+          )}
+          <span className="text-3xl font-bold text-primary">
+            {product.price} {t('currency')}
           </span>
-        )}
+        </div>
       </div>
-
-      {/* Stock Status */}
-      <div>
-        {product.inStock ? (
-          <Badge variant="secondary" className="bg-green-100 text-green-800">
-            {t('inStock')}
-          </Badge>
-        ) : (
-          <Badge variant="destructive">
-            {t('outOfStock')}
-          </Badge>
-        )}
-      </div>
-
       {/* Description */}
-      <div>
+      <div className={isRTL ? 'text-right' : 'text-left'}>
         <h3 className="font-semibold mb-2">{t('productDescription')}</h3>
         <p className="text-gray-600 leading-relaxed">{product.description}</p>
       </div>
