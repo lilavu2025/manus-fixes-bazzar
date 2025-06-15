@@ -631,4 +631,6 @@ export const enTranslations = {
   orderInfo: 'Order Information',
   items: 'Items',
   order: 'Order',
+  back: 'Back',
+  showing: 'Showing',
 };

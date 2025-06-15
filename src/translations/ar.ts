@@ -638,4 +638,8 @@ export const arTranslations = {
   wholesaleCustomer: 'عميل جملة',
   retailCustomer: 'عميل تجزئة',
   items: 'العناصر',
+  back: 'رجوع',
+  validUntil: 'صالح حتى',
+  viewOffer: 'عرض العرض',
+  showing: 'يظهر',
 };

@@ -622,5 +622,7 @@ export const heTranslations = {
   orderInfo: 'פרטי הזמנה',
   items: 'פריטים',
   order: 'הזמנה',
-  
+  validUntil: 'בתוקף עד',
+  viewOffer: 'הצג הצעה',
+  showing: 'מראה'
 };

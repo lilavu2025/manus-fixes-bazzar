@@ -149,8 +149,8 @@ const Auth: React.FC = () => {
   }
 
   return (
-    <div className={`min-h-screen bg-gray-50 ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
-      <div className="w-full max-w-md">
+    <div className={`min-h-screen bg-gray-50 flex items-center justify-center px-2 sm:px-4 ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
+      <div className="w-full max-w-md mx-auto">
         <div className="flex justify-center mb-6">
           <LanguageSwitcher />
         </div>
@@ -172,9 +172,13 @@ const Auth: React.FC = () => {
 
             <CardContent>
               <Tabs defaultValue="login" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="login">{t('login')}</TabsTrigger>
-                  <TabsTrigger value="signup">{t('signup')}</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-2 mb-4 rounded-lg overflow-hidden shadow">
+                  <TabsTrigger value="login" className="text-base font-semibold flex items-center justify-center data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-purple-500 data-[state=active]:text-white data-[state=active]:shadow-md transition-all">
+                    {t('login') || 'تسجيل الدخول'}
+                  </TabsTrigger>
+                  <TabsTrigger value="signup" className="text-base font-semibold flex items-center justify-center data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-teal-500 data-[state=active]:text-white data-[state=active]:shadow-md transition-all">
+                    {t('signup') || 'إنشاء حساب'}
+                  </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="login">
@@ -207,6 +211,14 @@ const Auth: React.FC = () => {
 
                     <Button type="submit" className="w-full" disabled={isLoading}>
                       {isLoading ? t('loading') : t('login')}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="w-full mt-2"
+                      onClick={() => navigate(-1)}
+                    >
+                      ← {t('back')}
                     </Button>
                   </form>
                 </TabsContent>
@@ -280,6 +292,14 @@ const Auth: React.FC = () => {
 
                     <Button type="submit" className="w-full" disabled={isLoading}>
                       {isLoading ? t('loading') : t('signup')}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="w-full mt-2"
+                      onClick={() => navigate(-1)}
+                    >
+                      ← {t('back')}
                     </Button>
                   </form>
                 </TabsContent>
