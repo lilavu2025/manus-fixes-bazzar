@@ -5,7 +5,18 @@ import { isRTL } from '@/utils/languageContextUtils';
 import { LanguageContext } from './LanguageContext.context';
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [language, setLanguage] = useState<Language>('ar');
+  const [language, setLanguageState] = useState<Language>(() => {
+    // جلب اللغة من localStorage أو الافتراضية
+    const stored = typeof window !== 'undefined' ? localStorage.getItem('language') : null;
+    return (stored as Language) || 'ar';
+  });
+
+  const setLanguage = (lang: Language) => {
+    setLanguageState(lang);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('language', lang);
+    }
+  };
 
   const rtl = isRTL(language);
 
