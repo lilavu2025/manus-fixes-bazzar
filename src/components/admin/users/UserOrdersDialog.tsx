@@ -33,6 +33,7 @@ interface Order {
     products: {
       name_ar: string;
       name_en: string;
+      name_he: string;
       image: string;
     };
   }>;
@@ -60,6 +61,7 @@ const UserOrdersDialog: React.FC<UserOrdersDialogProps> = ({ user, open, onOpenC
             products (
               name_ar,
               name_en,
+              name_he,
               image
             )
           )
@@ -195,19 +197,25 @@ const UserOrdersDialog: React.FC<UserOrdersDialogProps> = ({ user, open, onOpenC
                 <div className="space-y-4">
                   {selectedOrder.order_items?.map((item, index) => (
                     <div key={item.id}>
-                      <div className="flex items-center gap-4">
+                      <div className="flex flex-col sm:flex-row items-center gap-4">
                         <img
                           src={item.products?.image || '/placeholder.svg'}
                           alt={item.products?.name_ar}
-                          className="w-16 h-16 object-cover rounded"
+                          className="w-16 h-16 object-cover rounded mb-2 sm:mb-0"
                         />
-                        <div className="flex-1">
-                          <h4 className="font-medium">{language === 'ar' ? item.products?.name_ar : item.products?.name_en}</h4>
+                        <div className="flex-1 min-w-0 text-center sm:text-left">
+                          <h4 className="font-medium truncate">
+                            {language === 'ar'
+                              ? item.products?.name_ar
+                              : language === 'he'
+                              ? item.products?.name_he
+                              : item.products?.name_en}
+                          </h4>
                           <p className="text-sm text-gray-600">
                             {t('quantity') || 'الكمية'}: {item.quantity} × {item.price} {t('currency') || 'ش.ج'}
                           </p>
                         </div>
-                        <div className="text-left">
+                        <div className="text-left min-w-[80px]">
                           <p className="font-semibold">
                             {(item.quantity * Number(item.price)).toFixed(2)} {t('currency') || 'ش.ج'}
                           </p>
@@ -229,7 +237,7 @@ const UserOrdersDialog: React.FC<UserOrdersDialogProps> = ({ user, open, onOpenC
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className={`max-w-4xl max-h-[90vh] overflow-y-auto ${isRTL ? 'text-right' : 'text-left'}`} dir={isRTL ? 'rtl' : 'ltr'}>
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold">
+          <DialogTitle className="text-xl font-bold text-center">
             {t('userOrders') || 'طلبيات المستخدم'}: {user.full_name}
           </DialogTitle>
         </DialogHeader>
@@ -249,19 +257,18 @@ const UserOrdersDialog: React.FC<UserOrdersDialogProps> = ({ user, open, onOpenC
           ) : (
             orders.map((order) => (
               <Card key={order.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-4 mb-2">
-                        <h4 className="font-medium">
+                <CardContent>
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-2">
+                        <h4 className="font-medium truncate">
                           {t('order') || 'طلبية'} #{order.id.slice(0, 8)}
                         </h4>
                         <Badge className={getStatusColor(order.status)}>
                           {getStatusText(order.status)}
                         </Badge>
                       </div>
-                      
-                      <div className="flex items-center gap-4 text-sm text-gray-600">
+                      <div className="flex flex-wrap items-center gap-2 text-sm text-gray-600">
                         <div className="flex items-center gap-1">
                           <Calendar className="h-4 w-4" />
                           {format(new Date(order.created_at), 'PPp')}
@@ -276,8 +283,7 @@ const UserOrdersDialog: React.FC<UserOrdersDialogProps> = ({ user, open, onOpenC
                         </div>
                       </div>
                     </div>
-                    
-                    <div className="text-left">
+                    <div className="text-left md:text-right flex flex-col items-end min-w-[120px]">
                       <p className="text-lg font-bold mb-2">
                         {order.total} {t('currency') || 'ش.ج'}
                       </p>

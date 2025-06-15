@@ -15,6 +15,8 @@ const UserActivityLogTable: React.FC = () => {
     disable: t('disableUser'),
     enable: t('enableUser'),
     delete: t('deleteUser'),
+    restore: t('restoreUser'),
+    update: t('updateUser'),
   };
 
   type ProfileMap = Record<string, { full_name: string; email: string; phone: string | null } | undefined>;
@@ -175,7 +177,7 @@ const UserActivityLogTable: React.FC = () => {
                   <TableRow>
                     <TableHead className="text-center">{t('admin')}</TableHead>
                     <TableHead className="text-center">{t('user')}</TableHead>
-                    <TableHead className="text-center">{t('action')}</TableHead>
+                    <TableHead className="text-center">{t('actions')}</TableHead>
                     <TableHead className="text-center">{t('date')}</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -252,6 +254,7 @@ const UserActivityLogTable: React.FC = () => {
                             log.action === 'delete' ? 'bg-red-100 text-red-700' :
                             log.action === 'disable' ? 'bg-yellow-100 text-yellow-700' :
                             log.action === 'enable' ? 'bg-green-100 text-green-700' :
+                            log.action === 'update' ? 'bg-blue-100 text-blue-700' :
                             'bg-gray-100 text-gray-700'
                           }`}>
                             {ACTION_LABELS[log.action] || log.action}

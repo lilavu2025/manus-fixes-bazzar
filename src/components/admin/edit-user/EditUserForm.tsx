@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +19,7 @@ interface EditUserFormProps {
   onSubmit: (e: React.FormEvent) => void;
   onCancel: () => void;
   loading: boolean;
+  isRTL?: boolean;
 }
 
 const EditUserForm: React.FC<EditUserFormProps> = ({
@@ -27,9 +27,10 @@ const EditUserForm: React.FC<EditUserFormProps> = ({
   setFormData,
   onSubmit,
   onCancel,
-  loading
+  loading,
+  isRTL
 }) => {
-  const { isRTL } = useLanguage();
+  const { t } = useLanguage();
 
   const getUserTypeIcon = (userType: string) => {
     switch (userType) {
@@ -50,18 +51,18 @@ const EditUserForm: React.FC<EditUserFormProps> = ({
   };
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4 lg:space-y-6">
+    <form onSubmit={onSubmit} className={`space-y-4 lg:space-y-6 ${isRTL ? 'text-right' : 'text-left'}`} dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="space-y-2">
         <Label htmlFor="full_name" className="flex items-center gap-2 font-medium text-gray-700 text-sm lg:text-base">
           <User className="h-4 w-4" />
-          الاسم الكامل
+          {t('fullName') || 'الاسم الكامل'}
         </Label>
         <Input
           id="full_name"
           value={formData.full_name}
           onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
           className="h-10 lg:h-11 border-2 border-gray-200 focus:border-blue-500 transition-colors rounded-lg text-sm lg:text-base"
-          placeholder="أدخل الاسم الكامل"
+          placeholder={typeof t('enterFullName') === 'string' ? t('enterFullName') as string : 'أدخل الاسم الكامل'}
           required
         />
       </div>
@@ -69,22 +70,23 @@ const EditUserForm: React.FC<EditUserFormProps> = ({
       <div className="space-y-2">
         <Label htmlFor="phone" className="flex items-center gap-2 font-medium text-gray-700 text-sm lg:text-base">
           <Phone className="h-4 w-4" />
-          رقم الهاتف
+          {t('phoneNumber') || 'رقم الهاتف'}
         </Label>
         <Input
           id="phone"
           type="tel"
           value={formData.phone}
           onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-          className="h-10 lg:h-11 border-2 border-gray-200 focus:border-blue-500 transition-colors rounded-lg text-sm lg:text-base"
-          placeholder="أدخل رقم الهاتف"
+          className={`h-10 lg:h-11 border-2 border-gray-200 focus:border-blue-500 transition-colors rounded-lg text-sm lg:text-base ${isRTL ? 'text-right' : 'text-left'}`}
+          placeholder={typeof t('enterPhoneNumber') === 'string' ? t('enterPhoneNumber') as string : 'أدخل رقم الهاتف'}
+          dir={isRTL ? 'rtl' : 'ltr'}
         />
       </div>
 
       <div className="space-y-2">
         <Label htmlFor="user_type" className="flex items-center gap-2 font-medium text-gray-700 text-sm lg:text-base">
           <Shield className="h-4 w-4" />
-          نوع المستخدم
+          {t('userType') || 'نوع المستخدم'}
         </Label>
         <Select
           value={formData.user_type}
@@ -92,39 +94,39 @@ const EditUserForm: React.FC<EditUserFormProps> = ({
             setFormData({ ...formData, user_type: value })
           }
         >
-          <SelectTrigger className="h-10 lg:h-11 border-2 border-gray-200 focus:border-blue-500 transition-colors rounded-lg">
+          <SelectTrigger className={`h-10 lg:h-11 border-2 border-gray-200 focus:border-blue-500 transition-colors rounded-lg ${isRTL ? 'text-right' : 'text-left'}`} dir={isRTL ? 'rtl' : 'ltr'}>
             <SelectValue>
-              <div className="flex items-center gap-2">
+              <div className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : ''}`} dir={isRTL ? 'rtl' : 'ltr'}>
                 <span>{getUserTypeIcon(formData.user_type)}</span>
-                <span>{formData.user_type === 'admin' ? 'مدير' : formData.user_type === 'wholesale' ? 'جملة' : 'تجزئة'}</span>
+                <span>{formData.user_type === 'admin' ? t('admin') : formData.user_type === 'wholesale' ? t('wholesale') : t('retail')}</span>
               </div>
             </SelectValue>
           </SelectTrigger>
-          <SelectContent className="border-0 shadow-xl">
-            <SelectItem value="retail" className="py-3 hover:bg-green-50 transition-colors">
-              <div className="flex items-center gap-3">
+          <SelectContent className={"border-0 shadow-xl"} dir={isRTL ? 'rtl' : 'ltr'}>
+            <SelectItem value="retail" className={`py-3 hover:bg-green-50 transition-colors ${isRTL ? 'text-right' : 'text-left'}`} dir={isRTL ? 'rtl' : 'ltr'}>
+              <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`} dir={isRTL ? 'rtl' : 'ltr'}>
                 <span className="text-lg">🛒</span>
                 <div>
-                  <div className="font-medium">تجزئة</div>
-                  <div className="text-sm text-gray-500">عميل تجزئة عادي</div>
+                  <div className="font-medium">{t('retail') || 'تجزئة'}</div>
+                  <div className="text-sm text-gray-500">{t('retailCustomer') || 'عميل تجزئة عادي'}</div>
                 </div>
               </div>
             </SelectItem>
-            <SelectItem value="wholesale" className="py-3 hover:bg-blue-50 transition-colors">
-              <div className="flex items-center gap-3">
+            <SelectItem value="wholesale" className={`py-3 hover:bg-blue-50 transition-colors ${isRTL ? 'text-right' : 'text-left'}`} dir={isRTL ? 'rtl' : 'ltr'}>
+              <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`} dir={isRTL ? 'rtl' : 'ltr'}>
                 <span className="text-lg">🏢</span>
                 <div>
-                  <div className="font-medium">جملة</div>
-                  <div className="text-sm text-gray-500">عميل جملة</div>
+                  <div className="font-medium">{t('wholesale') || 'جملة'}</div>
+                  <div className="text-sm text-gray-500">{t('wholesaleCustomer') || 'عميل جملة'}</div>
                 </div>
               </div>
             </SelectItem>
-            <SelectItem value="admin" className="py-3 hover:bg-red-50 transition-colors">
-              <div className="flex items-center gap-3">
+            <SelectItem value="admin" className={`py-3 hover:bg-red-50 transition-colors ${isRTL ? 'text-right' : 'text-left'}`} dir={isRTL ? 'rtl' : 'ltr'}>
+              <div className={`flex items-center gap-3 ${isRTL ? 'flex-row-reverse' : ''}`} dir={isRTL ? 'rtl' : 'ltr'}>
                 <span className="text-lg">👑</span>
                 <div>
-                  <div className="font-medium">مدير</div>
-                  <div className="text-sm text-gray-500">مدير النظام</div>
+                  <div className="font-medium">{t('admin') || 'مدير'}</div>
+                  <div className="text-sm text-gray-500">{t('adminSystem') || 'مدير النظام'}</div>
                 </div>
               </div>
             </SelectItem>
@@ -139,7 +141,7 @@ const EditUserForm: React.FC<EditUserFormProps> = ({
           onClick={onCancel}
           className="h-10 lg:h-11 px-6 border-2 hover:bg-gray-50 transition-all duration-200 w-full sm:w-auto order-2 sm:order-1"
         >
-          إلغاء
+          {t('cancel') || 'إلغاء'}
         </Button>
         <Button 
           type="submit" 
@@ -149,12 +151,12 @@ const EditUserForm: React.FC<EditUserFormProps> = ({
           {loading ? (
             <div className="flex items-center gap-2">
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-              جاري التحديث...
+              {t('updating')}
             </div>
           ) : (
             <div className="flex items-center gap-2">
               <span>{getUserTypeIcon(formData.user_type)}</span>
-              حفظ التغييرات
+              {t('saveChanges')}
             </div>
           )}
         </Button>

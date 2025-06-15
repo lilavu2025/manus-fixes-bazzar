@@ -47,14 +47,14 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({ user, open, onOpe
   const safeNumber = (val: string | number | undefined | null) => {
     if (val === undefined || val === null || val === '') return '-';
     const n = Number(val);
-    return isNaN(n) ? '-' : n + ' ش.ج';
+    return isNaN(n) ? '-' : n + ' ' + (t('currency') || 'ش.ج');
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className={`max-w-2xl ${isRTL ? 'text-right' : 'text-left'}`} dir={isRTL ? 'rtl' : 'ltr'}>
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold">{t('userDetails')}</DialogTitle>
+          <DialogTitle className="text-xl font-bold text-center">{t('userDetails')}</DialogTitle>
         </DialogHeader>
         
         <div className="space-y-6">

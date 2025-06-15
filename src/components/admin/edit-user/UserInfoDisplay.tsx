@@ -7,9 +7,10 @@ import type { UserProfile } from '@/types/profile';
 
 interface UserInfoDisplayProps {
   user: UserProfile;
+  isRTL?: boolean;
 }
 
-const UserInfoDisplay: React.FC<UserInfoDisplayProps> = ({ user }) => {
+const UserInfoDisplay: React.FC<UserInfoDisplayProps> = ({ user, isRTL }) => {
   const { t } = useLanguage();
 
   const getUserTypeIcon = (userType: string) => {
@@ -31,7 +32,7 @@ const UserInfoDisplay: React.FC<UserInfoDisplayProps> = ({ user }) => {
   };
 
   return (
-    <div className="bg-gray-50 rounded-xl p-4 mb-6 space-y-3">
+    <div className={`bg-gray-50 rounded-xl p-4 mb-6 space-y-3 ${isRTL ? 'text-right' : 'text-left'}`} dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
           <span className="text-white font-semibold text-sm">
@@ -60,12 +61,12 @@ const UserInfoDisplay: React.FC<UserInfoDisplayProps> = ({ user }) => {
           {user.email_confirmed_at ? (
             <>
               <CheckCircle className="h-4 w-4 text-green-500" />
-              <span className="text-green-600">مؤكد</span>
+              <span className="text-green-600">{t('confirmed')}</span>
             </>
           ) : (
             <>
               <XCircle className="h-4 w-4 text-orange-500" />
-              <span className="text-orange-600">غير مؤكد</span>
+              <span className="text-orange-600">{t('unconfirmed')}</span>
             </>
           )}
         </div>

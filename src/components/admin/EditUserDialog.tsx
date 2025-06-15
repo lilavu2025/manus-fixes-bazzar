@@ -23,7 +23,7 @@ interface EditUserDialogProps {
 }
 
 const EditUserDialog: React.FC<EditUserDialogProps> = ({ user, refetch, setUsers }) => {
-  const { isRTL } = useLanguage();
+  const { isRTL, t } = useLanguage();
   const { profile } = useAuth();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -77,29 +77,31 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({ user, refetch, setUsers
       setOpen(false);
     } catch (error) {
       console.error('Error updating user:', error);
-      toast.error('حدث خطأ في تحديث بيانات المستخدم');
+      toast.error(t('errorUpdatingUser') || 'حدث خطأ في تحديث بيانات المستخدم');
     } finally {
       setLoading(false);
     }
   };
+
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button size="sm" className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5 text-xs lg:text-sm h-8 lg:h-9">
           <Edit className="h-3 w-3 lg:h-4 lg:w-4 mr-1" />
-          <span className="hidden lg:inline">تعديل</span>
+          <span className="hidden lg:inline">{t('edit')}</span>
         </Button>
       </DialogTrigger>
       <DialogContent className={`max-w-md lg:max-w-lg ${isRTL ? 'text-right' : 'text-left'} border-0 shadow-2xl max-h-[90vh] overflow-y-auto`} dir={isRTL ? 'rtl' : 'ltr'}>
         <EditUserDialogHeader />
-        <UserInfoDisplay user={user} />
+        <UserInfoDisplay user={user} isRTL={isRTL} />
         <EditUserForm
           formData={formData}
           setFormData={setFormData}
           onSubmit={handleSubmit}
           onCancel={() => setOpen(false)}
           loading={loading}
+          isRTL={isRTL}
         />
       </DialogContent>
     </Dialog>

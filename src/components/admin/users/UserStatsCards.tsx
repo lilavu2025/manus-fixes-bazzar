@@ -21,7 +21,7 @@ const UserStatsCards: React.FC<UserStatsCardsProps> = ({ users }) => {
       iconColor: 'text-blue-600'
     },
     {
-      title: 'تجار الجملة',
+      title: t('wholesaleUsers'),
       value: users.filter(user => user.user_type === 'wholesale').length,
       icon: TrendingUp,
       color: 'from-green-500 to-green-600',
@@ -29,7 +29,7 @@ const UserStatsCards: React.FC<UserStatsCardsProps> = ({ users }) => {
       iconColor: 'text-green-600'
     },
     {
-      title: 'تجار التجزئة',
+      title: t('retailUsers'),
       value: users.filter(user => user.user_type === 'retail').length,
       icon: UserCheck,
       color: 'from-orange-500 to-orange-600',
