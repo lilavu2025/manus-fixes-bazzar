@@ -200,7 +200,7 @@ export const useAdminUsers = (options?: { disableRealtime?: boolean }) => {
 
     // أرشفة بيانات المستخدم في جدول deleted_users أولاً
     const adminName = profile?.full_name || profile?.id || null;
-    await supabase.from('deleted_users').insert([
+    const { error: archiveError } = await supabase.from('deleted_users').insert([
       {
         user_id: userData.id,
         full_name: userData.full_name,
@@ -212,6 +212,10 @@ export const useAdminUsers = (options?: { disableRealtime?: boolean }) => {
         last_sign_in_at: userData.last_sign_in_at ?? null,
       }
     ]);
+    if (archiveError) {
+      toast.error('فشل أرشفة المستخدم في جدول deleted_users!');
+      throw archiveError;
+    }
 
     // حذف المستخدم من نظام المصادقة عبر Netlify Function
     let authError = null;
@@ -244,6 +248,9 @@ export const useAdminUsers = (options?: { disableRealtime?: boolean }) => {
       await fetchUsers();
     } else {
       setUsers(prev => prev.filter(u => u.id !== userId));
+    }
+    if (!error) {
+      toast.success('تم حذف المستخدم بنجاح');
     }
   };
 

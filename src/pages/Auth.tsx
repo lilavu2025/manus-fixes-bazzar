@@ -102,7 +102,6 @@ const Auth: React.FC = () => {
       }
       if (!isValidPhone(signupData.phone)) {
         setSignupErrors({ phone: t('invalidPhone') });
-        throw new Error(t('invalidPhone'));
       }
       await signUp(signupData.email, signupData.password, signupData.fullName, signupData.phone);
       setPendingEmail(signupData.email);
