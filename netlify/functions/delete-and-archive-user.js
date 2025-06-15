@@ -43,6 +43,39 @@ exports.handler = async function(event, context) {
   }
 
   // 2. أرشفة بيانات المستخدم في deleted_users (كل الأعمدة)
+  // 2.1 جلب أعلى قيمة طلبية
+  const { data: ordersData, error: ordersError } = await supabase
+    .from('orders')
+    .select('*')
+    .eq('user_id', userId);
+  let highest_order_value = null;
+  if (ordersData && ordersData.length > 0) {
+    highest_order_value = Math.max(...ordersData.map(o => Number(o.total || 0)));
+  }
+
+  // 2.2 جلب كل الطلبات كـ JSON
+  const orders = ordersData || [];
+
+  // 2.3 جلب المنتجات التي اشتراها المستخدم
+  let purchased_products = [];
+  if (orders.length > 0) {
+    const orderIds = orders.map(o => o.id);
+    // جلب كل order_items المرتبطة
+    const { data: orderItemsData } = await supabase
+      .from('order_items')
+      .select('product_id')
+      .in('order_id', orderIds);
+    const productIds = [...new Set((orderItemsData || []).map(i => i.product_id))];
+    if (productIds.length > 0) {
+      const { data: productsData } = await supabase
+        .from('products')
+        .select('*')
+        .in('id', productIds);
+      purchased_products = productsData || [];
+    }
+  }
+
+  // 2.4 تحديث بيانات الأرشفة
   const archivePayload = {
     user_id: userData.id,
     full_name: userData.full_name,
@@ -55,7 +88,10 @@ exports.handler = async function(event, context) {
     user_type: userData.user_type ?? null,
     created_at: userData.created_at ?? null,
     deleted_at: new Date().toISOString(),
-    original_data: userData
+    original_data: userData,
+    highest_order_value,
+    purchased_products,
+    orders
   };
   const { error: archiveError } = await supabase.from('deleted_users').insert([archivePayload]);
   if (archiveError) {
