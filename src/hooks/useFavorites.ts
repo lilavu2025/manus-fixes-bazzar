@@ -1,3 +1,4 @@
+/*
 // /home/ubuntu/modern-mobile-bazaar/src/hooks/useFavorites.ts
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from '@/contexts/useAuth';
@@ -228,4 +229,5 @@ export const useFavorites = () => {
     isClearing: clearFavoritesMutation.isPending,
   };
 };
+*/
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useFavorites } from '@/hooks/useFavorites';
+//import { useFavorites } from '@/hooks/useFavorites';
 import { useAuth } from '@/contexts/useAuth';
 import { useLanguage } from '@/utils/languageContextUtils';
 import { toast } from 'sonner';
@@ -21,7 +21,7 @@ const FavoriteButton: React.FC<FavoriteButtonProps> = ({
   variant = 'ghost',
   onClick, // <-- Add this line
 }) => {
-  const { toggleFavorite, isFavorite } = useFavorites();
+  //const { toggleFavorite, isFavorite } = useFavorites();
   const { user } = useAuth();
   const { t } = useLanguage();
 
@@ -35,7 +35,7 @@ const FavoriteButton: React.FC<FavoriteButtonProps> = ({
     }
     
     try {
-      await toggleFavorite(productId);
+      // await toggleFavorite(productId);
     } catch (error: unknown) {
       console.error('Error toggling favorite:', error);
       
@@ -48,25 +48,25 @@ const FavoriteButton: React.FC<FavoriteButtonProps> = ({
       }
     }
   };
+  // const isFav = isFavorite(productId);
 
-  const isFav = isFavorite(productId);
-
-  return (
-    <Button
-      size={size}
-      variant={variant}
-      className={`${className} ${isFav ? 'text-red-500' : ''}`}
-      onClick={e => {
-        e.preventDefault();
-        e.stopPropagation();
-        handleFavorite(e);
-        if (onClick) onClick();
-      }}
-      aria-label={isFav ? t('removeFromFavorites') : t('addToFavorites')}
-    >
-      <Heart className={`h-4 w-4 ${isFav ? 'fill-current' : ''}`} />
-    </Button>
-  );
+  // return (
+  //   <Button
+  //     size={size}
+  //     variant={variant}
+  //     className={`${className} ${isFav ? 'text-red-500' : ''}`}
+  //     onClick={e => {
+  //       e.preventDefault();
+  //       e.stopPropagation();
+  //       handleFavorite(e);
+  //       if (onClick) onClick();
+  //     }}
+  //     aria-label={isFav ? t('removeFromFavorites') : t('addToFavorites')}
+  //   >
+  //     <Heart className={`h-4 w-4 ${isFav ? 'fill-current' : ''}`} />
+  //   </Button>
+  // );
+  return null;
 };
 
 export default FavoriteButton;

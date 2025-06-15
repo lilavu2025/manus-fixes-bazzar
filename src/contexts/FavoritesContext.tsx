@@ -1,3 +1,4 @@
+/*
 import React, { createContext, useReducer, ReactNode } from 'react';
 import { Product } from '@/types';
 import { favoritesReducer, initialFavoritesState } from '../utils/favoritesContextUtils';
@@ -50,21 +51,14 @@ const FavoritesProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     }
   };
   
-  const value: FavoritesContextType = {
-    state,
-    addFavorite,
-    removeFavorite,
-    clearFavorites,
-    isFavorite,
-    toggleFavorite
-  };
   
   return (
-    <FavoritesContext.Provider value={value}>
+    <FavoritesContext.Provider value={{ state, addFavorite, removeFavorite, clearFavorites, isFavorite, toggleFavorite }}>
       {children}
     </FavoritesContext.Provider>
   );
 };
 
-export default FavoritesContext;
 export { FavoritesProvider };
+export default FavoritesContext;
+*/

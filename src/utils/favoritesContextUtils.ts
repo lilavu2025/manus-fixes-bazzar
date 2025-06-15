@@ -1,3 +1,4 @@
+/*
 import { useContext } from 'react';
 import FavoritesContext from '../contexts/FavoritesContext.context';
 import type { FavoritesContextType, FavoritesState, FavoritesAction } from '../types/favorites';
@@ -52,3 +53,4 @@ export const initialFavoritesState: FavoritesState = {
   items: [],
   count: 0
 };
+*/

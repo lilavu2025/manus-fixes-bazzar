@@ -8,7 +8,6 @@ import { HelmetProvider } from "react-helmet-async";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
-import { FavoritesProvider } from "@/contexts/FavoritesContext";
 import { useConnectionMonitor } from "@/hooks/useConnectionMonitor";
 import { useSmartRefresh } from "@/hooks/useSmartRefresh";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -26,7 +25,6 @@ import NotFound from "./pages/NotFound";
 const Products = lazy(() => import("./pages/Products"));
 const Categories = lazy(() => import("./pages/Categories"));
 const ProductDetails = lazy(() => import("./pages/ProductDetails"));
-const Favorites = lazy(() => import("./pages/Favorites"));
 const EmailConfirmation = lazy(() => import("./pages/EmailConfirmation"));
 
 // Lazy load less frequently accessed pages with preload hints
@@ -68,7 +66,7 @@ const LoadingSpinner = memo(() => (
 
 // Preload critical routes
 const preloadRoutes = () => {
-  const routes = [Products, Categories, ProductDetails, Favorites];
+  const routes = [Products, Categories, ProductDetails];
   routes.forEach(route => {
     // استخدم unknown بدلاً من any
     const componentImport = route as unknown;
@@ -87,8 +85,7 @@ const RoutePreloader = memo(() => {
         await Promise.all([
           import("./pages/Products"),
           import("./pages/Categories"),
-          import("./pages/ProductDetails"),
-          import("./pages/Favorites")
+          import("./pages/ProductDetails")
         ]);
       } catch (error) {
         console.warn('Route preloading failed:', error);
@@ -181,8 +178,7 @@ const App = () => {
             <LanguageProvider>
               <AuthProvider>
                 <CartProvider>
-                  <FavoritesProvider>
-                    <TooltipProvider>
+                  <TooltipProvider>
                       <div className="min-h-screen bg-background font-sans antialiased">
                         <SEO />
                         <Toaster />
@@ -198,7 +194,6 @@ const App = () => {
                       <Route path="/products" element={<Products />} />
                       <Route path="/categories" element={<Categories />} />
                       <Route path="/product/:id" element={<ProductDetails />} />
-                      <Route path="/favorites" element={<Favorites />} />
                       <Route path="/offers" element={
                         <Suspense fallback={<PageLoader />}>
                           <Offers />
@@ -248,9 +243,8 @@ const App = () => {
                       </Suspense>
                     </div>
                   </TooltipProvider>
-                </FavoritesProvider>
-              </CartProvider>
-            </AuthProvider>
+                </CartProvider>
+              </AuthProvider>
           </LanguageProvider>
         </ErrorBoundary>
       </BrowserRouter>

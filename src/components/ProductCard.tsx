@@ -4,7 +4,7 @@ import { useState, memo, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Product } from '@/types/product';
 import { useCart } from '@/hooks/useCart';
-import { useFavorites } from '@/hooks/useFavorites';
+// import { useFavorites } from '@/hooks/useFavorites';
 import { useAuth } from '@/contexts/useAuth';
 import { useLanguage } from '@/utils/languageContextUtils';
 import { toast } from 'sonner';
@@ -26,7 +26,7 @@ interface ProductCardProps {
 const ProductCard: React.FC<ProductCardProps> = memo(({ product, onQuickView }) => {
   // استخدام الخطافات للوصول للوظائف المختلفة
   const { addItem, getItemQuantity, buyNow } = useCart();
-  const { toggleFavorite, isFavorite } = useFavorites();
+  // const { toggleFavorite, isFavorite } = useFavorites();
   const { user } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
@@ -90,21 +90,20 @@ const ProductCard: React.FC<ProductCardProps> = memo(({ product, onQuickView }) 
   }, [onQuickView, product]);
 
   // وظيفة إضافة/إزالة المنتج من المفضلة
-  const handleFavorite = useCallback(async () => {
-    if (!user) {
-      toast.error(t('pleaseLogin'));
-      return;
-    }
-    
-    try {
-      const wasInFavorites = isFavorite(product.id);
-      await toggleFavorite(product.id);
-      toast.success(wasInFavorites ? t('removedFromFavorites') : t('addedToFavorites'));
-    } catch (error) {
-      console.error(t('errorUpdatingFavoritesLog') || 'خطأ في تحديث المفضلة:', error);
-      toast.error(t('errorUpdatingFavorites'));
-    }
-  }, [user, toggleFavorite, product.id, t, isFavorite]);
+  // const handleFavorite = useCallback(async () => {
+  //   if (!user) {
+  //     toast.error(t('pleaseLogin'));
+  //     return;
+  //   }
+  //   try {
+  //     const wasInFavorites = isFavorite(product.id);
+  //     await toggleFavorite(product.id);
+  //     toast.success(wasInFavorites ? t('removedFromFavorites') : t('addedToFavorites'));
+  //   } catch (error) {
+  //     console.error(t('errorUpdatingFavoritesLog') || 'خطأ في تحديث المفضلة:', error);
+  //     toast.error(t('errorUpdatingFavorites'));
+  //   }
+  // }, [user, toggleFavorite, product.id, t, isFavorite]);
 
   // مشاركة عبر واتساب
   const handleShareWhatsapp = useCallback((e?: React.MouseEvent) => {
@@ -177,7 +176,8 @@ const ProductCard: React.FC<ProductCardProps> = memo(({ product, onQuickView }) 
   }, [navigate, product.id]);
 
   // التحقق من حالة المفضلة
-  const isFav = isFavorite(product.id);
+  //const isFav = isFavorite(product.id);
+  const isFav = false; // isFavorite(product.id);
 
   return (
     <div className="w-full flex justify-center">
@@ -191,7 +191,8 @@ const ProductCard: React.FC<ProductCardProps> = memo(({ product, onQuickView }) 
           <ProductCardActions
             product={product}
             onQuickView={handleQuickView}
-            onFavorite={handleFavorite}
+            //onFavorite={handleFavorite}
+            onFavorite={null}
             onShare={async () => { setShareOpen((v) => !v); }}
           />
         </div>
@@ -201,7 +202,8 @@ const ProductCard: React.FC<ProductCardProps> = memo(({ product, onQuickView }) 
             product={product}
             isFavorite={isFav}
             onQuickView={handleQuickView}
-            onFavorite={handleFavorite}
+            //onFavorite={handleFavorite}
+            onFavorite={null}
             onShare={async () => { setShareOpen((v) => !v); }}
             isLoading={isLoading}
           />
@@ -251,7 +253,8 @@ const ProductCard: React.FC<ProductCardProps> = memo(({ product, onQuickView }) 
         onQuantityChange={setQuantity}
         onAddToCart={handleAddToCart}
         onBuyNow={handleBuyNow}
-        onFavorite={handleFavorite}
+        //onFavorite={handleFavorite}
+        onFavorite={null}
         onShare={async () => { setShareOpen((v) => !v); }}
       />
     </div>

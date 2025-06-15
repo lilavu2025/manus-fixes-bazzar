@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ShoppingCart, Heart, User, LogOut } from 'lucide-react';
+import { ShoppingCart, User, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { useCart } from '@/hooks/useCart';
-import { useFavorites } from '@/hooks/useFavorites';
+//import { useFavorites } from '@/hooks/useFavorites';
 import { useAuth } from '@/contexts/useAuth';
 import { useLanguage } from '@/utils/languageContextUtils';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
@@ -22,7 +22,7 @@ interface UserActionsProps {
 
 const UserActions: React.FC<UserActionsProps> = ({ onCartClick }) => {
   const { getTotalItems } = useCart();
-  const { getFavoritesCount } = useFavorites();
+  //const { getFavoritesCount } = useFavorites();
   const { user, profile, signOut } = useAuth();
   const { t } = useLanguage();
 
@@ -34,7 +34,7 @@ const UserActions: React.FC<UserActionsProps> = ({ onCartClick }) => {
     }
   };
 
-  const favoritesCount = getFavoritesCount();
+  //const favoritesCount = getFavoritesCount();
 
   return (
     <div className="flex items-center gap-1 sm:gap-2">
@@ -42,7 +42,7 @@ const UserActions: React.FC<UserActionsProps> = ({ onCartClick }) => {
         <LanguageSwitcher />
       </div>
       
-      <Button 
+      {/* <Button 
         asChild
         variant="ghost" 
         size="icon" 
@@ -59,7 +59,7 @@ const UserActions: React.FC<UserActionsProps> = ({ onCartClick }) => {
             </Badge>
           )}
         </Link>
-      </Button>
+      </Button> */}
       
       <Button 
         variant="ghost" 
@@ -97,12 +97,14 @@ const UserActions: React.FC<UserActionsProps> = ({ onCartClick }) => {
                 {t('orders')}
               </Link>
             </DropdownMenuItem>
+            {/*
             <DropdownMenuItem asChild>
               <Link to="/favorites" className="cursor-pointer">
                 <Heart className="h-4 w-4 mr-2" />
                 {t('favorites')}
               </Link>
             </DropdownMenuItem>
+            */}
             {profile?.user_type === 'admin' && (
               <>
                 <DropdownMenuSeparator />

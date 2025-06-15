@@ -8,7 +8,7 @@ import { useCart } from '@/hooks/useCart';
 import { toast } from 'sonner';
 import { Product } from '@/types';
 import QuantitySelector from '@/components/QuantitySelector';
-import FavoriteButton from '@/components/ProductCard/FavoriteButton';
+// import FavoriteButton from '@/components/ProductCard/FavoriteButton';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface ProductActionsProps {
@@ -146,12 +146,12 @@ const ProductActions = ({ product, onBuyNow }: ProductActionsProps) => {
 
       {/* Action Buttons */}
       <div className="flex gap-3">
-        <FavoriteButton
+        {/* <FavoriteButton
           productId={product.id}
           variant="outline"
           size="default"
           className="flex-1"
-        />
+        /> */}
         <Popover open={shareOpen} onOpenChange={setShareOpen}>
           <PopoverTrigger asChild>
             <Button variant="outline" size="icon" className="flex-1">

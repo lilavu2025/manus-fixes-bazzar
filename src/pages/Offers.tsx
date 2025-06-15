@@ -10,7 +10,7 @@ import { useProducts } from '@/hooks/useSupabaseData';
 import { Link } from 'react-router-dom';
 import { Heart, Share2 } from 'lucide-react';
 import { useCart } from '@/hooks/useCart';
-import { useFavorites } from '@/hooks/useFavorites';
+// import { useFavorites } from '@/hooks/useFavorites';
 import LazyImage from '@/components/LazyImage';
 import type { Database } from '@/integrations/supabase/types';
 import type { Product } from '@/types';
@@ -87,23 +87,23 @@ const Offers: React.FC = () => {
     setIsCartOpen(true);
   }
 
-  function FavoriteButton({ productId }: { productId: string }) {
-    const { isFavorite, toggleFavorite } = useFavorites();
-    const fav = isFavorite(productId);
-    return (
-      <button
-        type="button"
-        aria-label="Favorite"
-        className={`p-2 rounded-full border transition ${fav ? 'bg-red-100 text-red-600' : 'bg-white text-gray-400 hover:text-red-500'}`}
-        onClick={e => {
-          e.preventDefault();
-          toggleFavorite(productId);
-        }}
-      >
-        <Heart className="h-5 w-5" fill={fav ? '#ef4444' : 'none'} />
-      </button>
-    );
-  }
+  // function FavoriteButton({ productId }: { productId: string }) {
+  //   const { isFavorite, toggleFavorite } = useFavorites();
+  //   const fav = isFavorite(productId);
+  //   return (
+  //     <button
+  //       type="button"
+  //       aria-label="Favorite"
+  //       className={`p-2 rounded-full border transition ${fav ? 'bg-red-100 text-red-600' : 'bg-white text-gray-400 hover:text-red-500'}`}
+  //       onClick={e => {
+  //         e.preventDefault();
+  //         toggleFavorite(productId);
+  //       }}
+  //     >
+  //       <Heart className="w-5 h-5" />
+  //     </button>
+  //   );
+  // }
 
   function ShareButton({ product }: { product: Database['public']['Tables']['offers']['Row'] }) {
     const { t } = useLanguage();
