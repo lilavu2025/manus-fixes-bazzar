@@ -117,6 +117,7 @@ export const heTranslations = {
   viewAll: 'צפה בהכל',
   clearInput: 'נקה שדה',
   featuredProducts: 'מוצרים מומלצים',
+  featuredProduct: 'מוצר מומלץ',
   noFeaturedProducts: 'אין מוצרים מומלצים',
   browseAllProducts: 'עיין בכל המוצרים',
   
@@ -559,4 +560,5 @@ export const heTranslations = {
   october: 'אוקטובר',
   november: 'נובמבר',
   december: 'דצמבר',
+  exportUsersExcel: 'ייצא משתמשים לאקסל',
 };

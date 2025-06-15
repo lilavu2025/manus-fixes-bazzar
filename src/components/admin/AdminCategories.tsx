@@ -210,7 +210,7 @@ const AdminCategories: React.FC = () => {
           }}
         >
           <BarChart3 className="h-4 w-4" />
-          {t('export Excel') || 'تصدير Excel'} </button>
+          {t('exportExcel') || 'تصدير Excel'} </button>
         <Button onClick={() => setShowAddDialog(true)} className="gap-2 bg-primary text-white font-bold ml-2">
           <Plus className="h-4 w-4" />
           {t('addCategory')}

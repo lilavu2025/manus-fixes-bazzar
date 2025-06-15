@@ -753,7 +753,7 @@ const AdminOrders: React.FC = () => {
         <div className="flex gap-2 ml-auto">
           <Button variant="outline" onClick={exportOrdersToExcel} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white font-bold shadow border border-blue-700 hover:bg-blue-700 transition-all duration-200">
             <BarChart3 className="h-4 w-4" />
-            {t('export Excel') || 'تصدير Excel'}
+            {t('exportExcel') || 'تصدير Excel'}
           </Button>
         </div>
         <Dialog open={showAddOrder} onOpenChange={setShowAddOrder}>

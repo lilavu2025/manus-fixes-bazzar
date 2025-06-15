@@ -117,6 +117,7 @@ export const enTranslations = {
   viewAll: 'View All',
   clearInput: 'Clear input',
   featuredProducts: 'Featured Products',
+  featuredProduct: 'Featured Product',
   noFeaturedProducts: 'No featured products',
   browseAllProducts: 'Browse All Products',
   
@@ -557,4 +558,5 @@ export const enTranslations = {
   october: 'October',
   november: 'November',
   december: 'December',
+  exportUsersExcel: 'Export Users to Excel',
 };

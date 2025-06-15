@@ -120,6 +120,7 @@ export const arTranslations = {
   viewAll: 'عرض الكل',
   clearInput: 'مسح الحقل',
   featuredProducts: 'منتجات مميزة',
+  featuredProduct: 'منتج مميز',
   noFeaturedProducts: 'لا توجد منتجات مميزة',
   browseAllProducts: 'تصفح جميع المنتجات',
   

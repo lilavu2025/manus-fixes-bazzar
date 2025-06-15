@@ -194,11 +194,11 @@ const AddProductDialog: React.FC<AddProductDialogProps> = ({
                 <Input id="price" type="number" step="0.01" value={formData.price} onChange={e => setFormData(prev => ({ ...prev, price: parseFloat(e.target.value) || 0 }))} required />
               </div>
               <div>
-                <Label htmlFor="original_price">السعر الأصلي</Label>
+                <Label htmlFor="original_price">{t('originalPrice') || 'السعر الأصلي'}</Label>
                 <Input id="original_price" type="number" step="0.01" value={formData.original_price} onChange={e => setFormData(prev => ({ ...prev, original_price: parseFloat(e.target.value) || 0 }))} />
               </div>
               <div>
-                <Label htmlFor="wholesale_price">سعر الجملة</Label>
+                <Label htmlFor="wholesale_price">{t('wholesalePrice') || 'سعر الجملة'}</Label>
                 <Input id="wholesale_price" type="number" step="0.01" value={formData.wholesale_price} onChange={e => setFormData(prev => ({ ...prev, wholesale_price: parseFloat(e.target.value) || 0 }))} />
               </div>
             </div>
@@ -211,14 +211,14 @@ const AddProductDialog: React.FC<AddProductDialogProps> = ({
             </div>
             <div>
               <h3 className="text-lg font-semibold mb-2 text-primary">{t('stock')}</h3>
-              <Label htmlFor="stock_quantity">كمية المخزون</Label>
+              <Label htmlFor="stock_quantity">{t('stockQuantity') || 'كمية المخزون'}</Label>
               <Input id="stock_quantity" type="number" value={formData.stock_quantity} onChange={e => setFormData(prev => ({ ...prev, stock_quantity: parseInt(e.target.value) || 0 }))} />
             </div>
           </div>
           {/* الخصم والوسوم */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="discount">نسبة الخصم (%)</Label>
+              <Label htmlFor="discount">{t('discount') || 'نسبة الخصم'} (%)</Label>
               <Input id="discount" type="number" step="0.01" min="0" max="100" value={formData.discount} onChange={e => setFormData(prev => ({ ...prev, discount: parseFloat(e.target.value) || 0 }))} />
             </div>
           </div>
@@ -247,7 +247,7 @@ const AddProductDialog: React.FC<AddProductDialogProps> = ({
             </div>
             <div className="flex items-center gap-2">
               <Switch id="featured" checked={formData.featured} onCheckedChange={checked => setFormData(prev => ({ ...prev, featured: checked }))} />
-              <Label htmlFor="featured">منتج مميز</Label>
+              <Label htmlFor="featured">{t('featuredProduct') || 'منتج مميز'}</Label>
             </div>
             <div className="flex items-center gap-2">
               <Switch id="active" checked={formData.active} onCheckedChange={checked => setFormData(prev => ({ ...prev, active: checked }))} />

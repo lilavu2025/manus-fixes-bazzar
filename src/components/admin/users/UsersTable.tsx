@@ -105,7 +105,7 @@ const UsersTable: React.FC<UsersTableProps> = ({ users, isLoading, error, refetc
           onClick={exportUsersToExcel}
           className="bg-green-600 text-white px-4 py-2 rounded font-bold hover:bg-green-700"
         >
-          تصدير المستخدمين (Excel)
+          {t('exportUsersExcel') || 'תצא משתמשים לאקסל'}
         </button>
       </CardHeader>
       <CardContent className="p-0">

@@ -269,7 +269,7 @@ const AdminProducts: React.FC = () => {
           }}
         >
           <BarChart3 className="h-4 w-4" />
-          {t('export Excel') || 'تصدير Excel'}
+          {t('exportExcel') || 'تصدير Excel'}
         </button>
       </div>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-6">

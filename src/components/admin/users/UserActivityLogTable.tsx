@@ -159,7 +159,7 @@ const UserActivityLogTable: React.FC = () => {
           className="bg-blue-600 text-white px-4 py-2 rounded font-bold hover:bg-blue-700 mt-2"
           style={{ float: 'left' }}
         >
-          تصدير سجل نشاط الأدمن (Excel)
+          {t('exportExcel') || 'تصدير Excel'}
         </button>
       </CardHeader>
       <CardContent>
