@@ -68,9 +68,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Fetch profile by userId, return the profile or null
   const fetchProfile = useCallback(async (userId: string): Promise<Profile | null> => {
     const data = await ProfileService.fetchProfile(userId);
-    if (data) setProfile(data as Profile);
+    if (!data) {
+      setProfile(null);
+      setTimeout(() => {
+        navigate('/account-deleted', { replace: true });
+      }, 100);
+      return null;
+    }
+    setProfile(data as Profile);
     return data as Profile | null;
-  }, []);
+  }, [navigate]);
 
   // Create profile for new user and return it
   const createProfile = async (userId: string): Promise<Profile | null> => {

@@ -21,6 +21,7 @@ import ScrollToTop from "@/components/ScrollToTop";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import AccountDeleted from "@/pages/AccountDeleted";
 
 // Lazy load all other pages for better performance
 const Products = lazy(() => import("./pages/Products"));
@@ -240,6 +241,7 @@ const App = () => {
                       } />
                       
                       {/* Catch-all route */}
+                      <Route path="/account-deleted" element={<AccountDeleted />} />
                           <Route path="*" element={<NotFound />} />
                         </Routes>
                       </Suspense>
