@@ -40,7 +40,15 @@ const AdminProductsTable: React.FC<AdminProductsTableProps> = ({
   onDeleteProduct,
   categories = [], // افتراضي مصفوفة فارغة
 }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+
+  // دالة لجلب اسم المنتج حسب اللغة
+  const getProductName = (product: Product) => {
+    if (language === 'ar') return product.name;
+    if (language === 'en') return product.nameEn || product.name;
+    if (language === 'he') return product.nameHe || product.name;
+    return product.name;
+  };
 
   // دالة لجلب اسم الفئة من id
   const getCategoryName = (categoryId: string) => {
@@ -78,7 +86,7 @@ const AdminProductsTable: React.FC<AdminProductsTableProps> = ({
                     onError={e => { e.currentTarget.src = '/placeholder.svg'; }}
                   />
                 </TableCell>
-                <TableCell className="font-medium max-w-[120px] truncate">{product.name}</TableCell>
+                <TableCell className="font-medium max-w-[120px] truncate">{getProductName(product)}</TableCell>
                 <TableCell>{getCategoryName(product.category)}</TableCell>
                 <TableCell>{product.price} {t('currency')}</TableCell>
                 <TableCell>{product.stock_quantity || 0}</TableCell>
