@@ -9,6 +9,7 @@ import { useLanguage } from '@/utils/languageContextUtils';
 import EditUserDialog from '../EditUserDialog';
 import UserDetailsDialog from './UserDetailsDialog';
 import UserOrdersDialog from './UserOrdersDialog';
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from '@/components/ui/alert-dialog';
 import type { UserProfile } from '@/types/profile';
 
 interface UserTableRowProps {
@@ -25,6 +26,7 @@ const UserTableRow: React.FC<UserTableRowProps> = ({ user, index, refetch, setUs
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [showOrdersDialog, setShowOrdersDialog] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const getUserTypeColor = (userType: string) => {
     switch (userType) {
@@ -70,6 +72,7 @@ const UserTableRow: React.FC<UserTableRowProps> = ({ user, index, refetch, setUs
     setActionLoading(true);
     try {
       await deleteUser(user.id);
+      setShowDeleteDialog(false);
       // setUsers will be called in deleteUser for instant update
     } finally {
       setActionLoading(false);
@@ -142,7 +145,7 @@ const UserTableRow: React.FC<UserTableRowProps> = ({ user, index, refetch, setUs
                   {user.disabled ? t('enableUser') : t('disableUser')}
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={handleDeleteUser}
+                  onClick={() => setShowDeleteDialog(true)}
                   className="text-xs lg:text-sm cursor-pointer text-red-600"
                 >
                   {t('deleteUser')}
@@ -164,6 +167,20 @@ const UserTableRow: React.FC<UserTableRowProps> = ({ user, index, refetch, setUs
         open={showOrdersDialog} 
         onOpenChange={setShowOrdersDialog} 
       />
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-red-600 text-lg font-bold">{t('confirmDeleteUser') || 'تأكيد حذف المستخدم'}</AlertDialogTitle>
+          </AlertDialogHeader>
+          <div className="mb-4 text-gray-700">{t('deleteUserConfirmation') || 'هل أنت متأكد أنك تريد حذف هذا المستخدم؟ لا يمكن التراجع عن هذه العملية.'}</div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('cancel') || 'إلغاء'}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteUser} className="bg-red-600 hover:bg-red-700 text-white">
+              {actionLoading ? t('loading') : t('confirmDelete') || 'تأكيد الحذف'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };

@@ -29,4 +29,10 @@ export class AuthService {
     const { data } = await supabase.auth.getSession();
     return data.session;
   }
+
+  /** حذف مستخدم من نظام المصادقة (Supabase Auth Admin) */
+  static async deleteUserFromAuth(userId: string): Promise<{ error: AuthError | null }> {
+    const { error } = await supabase.auth.admin.deleteUser(userId);
+    return { error };
+  }
 }

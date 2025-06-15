@@ -30,6 +30,7 @@ const Auth: React.FC = () => {
     phone: '',
   });
 
+  const [signupErrors, setSignupErrors] = useState<{ [key: string]: string }>({});
   const [isLoading, setIsLoading] = useState(false);
   const [showEmailConfirmation, setShowEmailConfirmation] = useState(false);
   const [pendingEmail, setPendingEmail] = useState('');
@@ -85,40 +86,49 @@ const Auth: React.FC = () => {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-
+    setSignupErrors({});
     try {
       if (!isValidEmail(signupData.email)) {
+        setSignupErrors({ email: t('invalidEmail') });
         throw new Error(t('invalidEmail'));
       }
-
       if (signupData.password.length < 6) {
+        setSignupErrors({ password: t('passwordTooShort') });
         throw new Error(t('passwordTooShort'));
       }
-
       if (signupData.password !== signupData.confirmPassword) {
+        setSignupErrors({ confirmPassword: t('passwordMismatch') });
         throw new Error(t('passwordMismatch'));
       }
-
       if (!isValidPhone(signupData.phone)) {
+        setSignupErrors({ phone: t('invalidPhone') });
         throw new Error(t('invalidPhone'));
       }
-
       await signUp(signupData.email, signupData.password, signupData.fullName, signupData.phone);
-      
-      // Show email confirmation screen
       setPendingEmail(signupData.email);
       setShowEmailConfirmation(true);
-
       toast({
         title: t('success'),
         description: t('signupSuccess'),
       });
     } catch (error: unknown) {
       console.error('Signup error:', error);
-      toast({
-        title: t('error'),
-        description: typeof error === 'object' && error && 'message' in error ? (error as { message?: string }).message || t('signupError') : t('signupError'),
-      });
+      const errorMsg = typeof error === 'object' && error && 'message' in error ? (error as { message?: string }).message || t('signupError') : t('signupError');
+      if (
+        errorMsg.toLowerCase().includes('confirmation') ||
+        errorMsg.toLowerCase().includes('تحقق') ||
+        errorMsg.toLowerCase().includes('confirm')
+      ) {
+        toast({
+          title: t('success'),
+          description: errorMsg,
+        });
+      } else {
+        toast({
+          title: t('error'),
+          description: errorMsg,
+        });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -248,7 +258,12 @@ const Auth: React.FC = () => {
                         value={signupData.phone}
                         onChange={(e) => setSignupData(prev => ({ ...prev, phone: e.target.value }))}
                         required
+                        aria-invalid={!!signupErrors.phone}
+                        aria-describedby="signup-phone-error"
                       />
+                      {signupErrors.phone && (
+                        <span id="signup-phone-error" className="text-xs text-red-600 block mt-1">{signupErrors.phone}</span>
+                      )}
                     </div>
 
                     <div className="space-y-2">

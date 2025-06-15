@@ -631,7 +631,7 @@ export const arTranslations = {
   userUpdatedSuccessfully: 'تم تحديث المستخدم بنجاح',
   errorUpdatingUser: 'خطأ في تحديث المستخدم',
   editUser: 'تعديل بيانات المستخدم',
-  deleteUserConfirmation: 'هل أنت متأكد من حذف هذا المستخدم؟',
+  deleteUserConfirmation:  'هل أنت متأكد أنك تريد حذف هذا المستخدم؟ لا يمكن التراجع عن هذه العملية.',
   userDeletedSuccessfully: 'تم حذف المستخدم بنجاح',
   editUserDescription: 'قم بتعديل معلومات المستخدم وحفظ التغييرات.',
   adminSystem: 'نظام الإدارة',

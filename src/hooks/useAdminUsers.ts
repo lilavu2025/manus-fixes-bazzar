@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/useAuth';
 import type { Json } from '@/integrations/supabase/types';
 import type { UserProfile } from '@/types/profile';
 import { toast } from 'sonner';
+import { AuthService } from '@/services/supabase/authService';
 
 // Supabase type for deleted_users (مؤقت حتى تحديث الأنواع)
 type DeletedUserInsert = {
@@ -197,7 +198,7 @@ export const useAdminUsers = (options?: { disableRealtime?: boolean }) => {
       .single();
     if (fetchError || !userData) throw fetchError || new Error('User not found');
 
-    // أرشفة بيانات المستخدم في جدول deleted_users
+    // أرشفة بيانات المستخدم في جدول deleted_users أولاً
     const adminName = profile?.full_name || profile?.id || null;
     await supabase.from('deleted_users').insert([
       {
@@ -211,6 +212,26 @@ export const useAdminUsers = (options?: { disableRealtime?: boolean }) => {
         last_sign_in_at: userData.last_sign_in_at ?? null,
       }
     ]);
+
+    // حذف المستخدم من نظام المصادقة عبر Netlify Function
+    let authError = null;
+    try {
+      const response = await fetch('/.netlify/functions/delete-supabase-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId })
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        authError = new Error(data.error || 'فشل حذف المستخدم من المصادقة');
+      }
+    } catch (err) {
+      authError = err;
+    }
+    if (authError) {
+      toast.error(`فشل حذف المستخدم من نظام المصادقة.${authError.message ? ' (' + authError.message + ')' : ''}`);
+      throw authError;
+    }
 
     // حذف المستخدم من profiles
     const { error } = await supabase
