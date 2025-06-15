@@ -316,6 +316,7 @@ export const enTranslations = {
   currency: '₪',
   
   // Admin Products
+  image: 'Image',
   productImage: 'Product Image',
   productNameArabic: 'Product Name (Arabic)',
   productNameEnglish: 'Product Name (English)',
@@ -478,6 +479,7 @@ export const enTranslations = {
   deleteOffer: "Delete Offer",
   deleteOfferConfirmation: "Are you sure you want to delete this offer?",
   addFirstOffer: "Add your first offer",
+  title: "Title",
   titles: "Titles",
   offerDetails: "Offer Details",
   dateAndStatus: "Date & Status",

@@ -316,6 +316,7 @@ export const heTranslations = {
   currency: '₪',
   
   // Admin Products
+  image: 'תמונה',
   productImage: 'תמונת מוצר',
   productNameArabic: 'שם המוצר (ערבית)',
   productNameEnglish: 'שם המוצר (אנגלית)',
@@ -478,6 +479,7 @@ export const heTranslations = {
   deleteOffer: "מחק מבצע",
   deleteOfferConfirmation: "האם אתה בטוח שברצונך למחוק מבצע זה?",
   addFirstOffer: "הוסף את המבצע הראשון שלך",
+  title: "כותרת",
   titles: "כותרות",
   offerDetails: "פרטי מבצע",
   dateAndStatus: "תאריך וסטטוס",

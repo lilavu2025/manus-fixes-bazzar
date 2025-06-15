@@ -1,11 +1,24 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Eye, EyeOff, Upload, X } from 'lucide-react';
+import React, { useState, useEffect, ReactNode } from 'react';
+import { Plus, Edit, Trash2, Eye, EyeOff, Upload, X, Trash } from 'lucide-react';
 import { supabase } from '../../integrations/supabase/client';
 import { useLanguage } from '../../utils/languageContextUtils';
 import { toast } from 'sonner';
 
+import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 // تعريف واجهة البانر (Banner) كما هو مخزن في قاعدة البيانات
 interface Banner {
+  [x: string]: ReactNode;
   id: string;
   title_ar: string;
   title_en: string;
@@ -235,8 +248,6 @@ const AdminBanners: React.FC = () => {
 
   // حذف بانر
   const handleDelete = async (id: string) => {
-    if (!confirm(t('deleteBannerConfirmation'))) return;
-
     try {
       console.log('حذف بانر:', id);
       const { error } = await supabase
@@ -537,19 +548,19 @@ const AdminBanners: React.FC = () => {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     {t('image')}
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     {t('title')}
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     {t('sortOrder')}
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     {t('status')}
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     {t('actions')}
                   </th>
                 </tr>
@@ -602,12 +613,30 @@ const AdminBanners: React.FC = () => {
                         >
                           <Edit className="h-4 w-4" />
                         </button>
-                        <button
-                          onClick={() => handleDelete(banner.id)}
-                          className="text-red-600 hover:text-red-900"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="sm" title={t('delete')}>
+                              <Trash className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>{t('deleteCategory')}</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                {t('deleteCategoryConfirmation')} "{banner.title_ar}"?
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+                              <AlertDialogAction 
+                                onClick={() => handleDelete(banner.id)}
+                                className="bg-red-600 hover:bg-red-700"
+                              >
+                                {t('delete')}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </td>
                   </tr>

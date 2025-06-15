@@ -303,6 +303,7 @@ export const arTranslations = {
   currency: '₪',
   
   // Admin Products
+  image: 'الصورة',
   productImage: 'صورة المنتج',
   productNameArabic: 'اسم المنتج (عربي)',
   productNameEnglish: 'اسم المنتج (إنجليزي)',
@@ -428,6 +429,7 @@ export const arTranslations = {
   noOffersDesc: 'لم يتم إنشاء أي عروض بعد',
   addFirstOffer: 'إضافة أول عرض',
   titles: 'العناوين',
+  title: 'العنوان',
   offerDetails: 'تفاصيل العرض',
   dateAndStatus: 'التاريخ والحالة',
   titleEnglish: 'العنوان بالإنجليزية',
