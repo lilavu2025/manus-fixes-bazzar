@@ -196,7 +196,11 @@ export const useAdminUsers = (options?: { disableRealtime?: boolean }) => {
       const response = await fetch('/.netlify/functions/delete-and-archive-user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId, adminName: profile?.full_name || profile?.id || null })
+        body: JSON.stringify({
+          userId,
+          adminId: profile?.id || null, // uuid
+          adminName: profile?.full_name || null // نص
+        })
       });
       const data = await response.json();
       if (!response.ok) {

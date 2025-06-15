@@ -10,7 +10,7 @@ exports.handler = async function(event, context) {
     };
   }
 
-  const { userId, adminName } = JSON.parse(event.body || '{}');
+  const { userId, adminName, adminId } = JSON.parse(event.body || '{}');
   if (!userId) {
     return {
       statusCode: 400,
@@ -49,13 +49,13 @@ exports.handler = async function(event, context) {
     email: userData.email,
     phone: userData.phone,
     address: userData.address ?? null,
-    deleted_by: adminName || null,
+    deleted_by: adminId || null, // uuid
+    deleted_by_name: adminName || null, // نص
     last_sign_in_at: userData.last_sign_in_at ?? null,
     user_type: userData.user_type ?? null,
     created_at: userData.created_at ?? null,
     deleted_at: new Date().toISOString(),
-    // أضف أي أعمدة أخرى تحتاجها هنا
-    original_data: userData // كل بيانات المستخدم jsonb
+    original_data: userData
   };
   const { error: archiveError } = await supabase.from('deleted_users').insert([archivePayload]);
   if (archiveError) {
