@@ -244,7 +244,6 @@ export const heTranslations = {
   checkBackLater: 'בדקו שוב מאוחר יותר למבצעים חדשים',
   
   // Contact
-  getInTouch: 'אנחנו כאן כדי לעזור',
   address: 'כתובת',
   workingHours: 'שעות פעילות',
   sunday: 'ראשון',
@@ -254,6 +253,10 @@ export const heTranslations = {
   thursday: 'חמישי',
   friday: 'שישי',
   saturday: 'שבת',
+  getInTouch: 'צור קשר לכל שאלה או הצעה',
+  quickContacts: 'יצירת קשר מהירה',
+  whatsapp: 'וואטסאפ',
+  emailContact: 'אימייל',
   sendMessage: 'שלח הודעה',
   subject: 'נושא',
   message: 'הודעה',
@@ -512,9 +515,6 @@ export const heTranslations = {
   shipped: 'נשלח',
   delivered: 'נמסר',
   cancelled: 'בוטל',
-  quickContacts: 'דרכי יצירת קשר מהירים',
-  whatsapp: 'וואטסאפ',
-  emailContact: 'דוא"ל',
   favorites: 'מועדפים',
   onSale: 'במבצע',
   favoriteProducts: 'מוצרים מועדפים',
