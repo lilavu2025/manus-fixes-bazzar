@@ -48,6 +48,9 @@ interface UserOrdersDialogProps {
 const UserOrdersDialog: React.FC<UserOrdersDialogProps> = ({ user, open, onOpenChange }) => {
   const { isRTL, t, language } = useLanguage();
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [selectedOrderIndex, setSelectedOrderIndex] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
 
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ['user-orders', user.id],
@@ -123,22 +126,81 @@ const UserOrdersDialog: React.FC<UserOrdersDialogProps> = ({ user, open, onOpenC
     }
   };
 
+  const openOrderDetails = (order: Order) => {
+    const idx = orders.findIndex((o) => o.id === order.id);
+    setSelectedOrder(order);
+    setSelectedOrderIndex(idx !== -1 ? idx : null);
+  };
+
+  // البحث والفلترة
+  const filteredOrders = orders.filter(order => {
+    const matchesStatus = statusFilter ? order.status === statusFilter : true;
+    const matchesSearch = searchQuery
+      ? order.id.includes(searchQuery) ||
+        order.order_items.some(item => {
+          const name = (language === 'ar' ? item.products?.name_ar : language === 'he' ? item.products?.name_he : item.products?.name_en) || '';
+          return name.toLowerCase().includes(searchQuery.toLowerCase());
+        })
+      : true;
+    return matchesStatus && matchesSearch;
+  });
+
+  // تصدير الطلبات إلى Excel
+  const handleExport = () => {
+    import('xlsx').then(XLSX => {
+      const exportData = filteredOrders.map(order => ({
+        id: order.id,
+        status: getStatusText(order.status),
+        total: order.total,
+        payment: getPaymentMethodText(order.payment_method),
+        date: format(new Date(order.created_at), 'PPp'),
+        items: order.order_items?.map(item =>
+          (language === 'ar' ? item.products?.name_ar : language === 'he' ? item.products?.name_he : item.products?.name_en)
+        ).join(', ')
+      }));
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Orders');
+      XLSX.writeFile(wb, 'orders.xlsx');
+    });
+  };
+
   if (selectedOrder) {
+    const prevOrder = selectedOrderIndex !== null && selectedOrderIndex > 0 ? orders[selectedOrderIndex - 1] : null;
+    const nextOrder = selectedOrderIndex !== null && selectedOrderIndex < orders.length - 1 ? orders[selectedOrderIndex + 1] : null;
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className={`max-w-4xl max-h-[90vh] overflow-y-auto ${isRTL ? 'text-right' : 'text-left'}`} dir={isRTL ? 'rtl' : 'ltr'}>
           <DialogHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
               <DialogTitle className="text-xl font-bold">
                 {t('orderDetails') || 'تفاصيل الطلبية'} #{selectedOrder.id.slice(0, 8)}
               </DialogTitle>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => setSelectedOrder(null)}
-              >
-                {t('backToOrders') || 'العودة للطلبيات'}
-              </Button>
+              <div className="flex gap-2">
+                {prevOrder && (
+                  <Button variant="ghost" size="icon" title={t('previousOrder') || 'الطلب السابق'}
+                    onClick={() => { setSelectedOrder(prevOrder); setSelectedOrderIndex(selectedOrderIndex! - 1); }}
+                    className="rounded-full border border-gray-300 bg-white shadow hover:bg-primary/10 transition-all w-10 h-10 flex items-center justify-center text-lg"
+                  >
+                    <span>{isRTL ? '→' : '←'}</span>
+                  </Button>
+                )}
+                {nextOrder && (
+                  <Button variant="ghost" size="icon" title={t('nextOrder') || 'الطلب التالي'}
+                    onClick={() => { setSelectedOrder(nextOrder); setSelectedOrderIndex(selectedOrderIndex! + 1); }}
+                    className="rounded-full border border-gray-300 bg-white shadow hover:bg-primary/10 transition-all w-10 h-10 flex items-center justify-center text-lg"
+                  >
+                    <span>{isRTL ? '←' : '→'}</span>
+                  </Button>
+                )}
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => { setSelectedOrder(null); setSelectedOrderIndex(null); }}
+                >
+                  {t('backToOrders') || 'العودة للطلبيات'}
+                </Button>
+              </div>
             </div>
           </DialogHeader>
           
@@ -146,18 +208,21 @@ const UserOrdersDialog: React.FC<UserOrdersDialogProps> = ({ user, open, onOpenC
             {/* Order Header */}
             <Card>
               <CardHeader>
-                <div className="flex justify-between items-start">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-4">
                   <div>
-                    <h3 className="font-semibold">{t('orderInfo') || 'معلومات الطلبية'}</h3>
+                    <h3 className="font-semibold flex items-center gap-2">
+                      {t('orderInfo') || 'معلومات الطلبية'}
+                      <span className="text-xs text-gray-400 select-all">#{selectedOrder.id.slice(0, 8)}</span>
+                    </h3>
                     <p className="text-sm text-gray-600">
                       {t('orderDate') || 'تاريخ الطلبية'}: {format(new Date(selectedOrder.created_at), 'PPp')}
                     </p>
                   </div>
-                  <div className="text-left">
+                  <div className="text-left md:text-right flex flex-col items-end min-w-[120px]">
                     <Badge className={getStatusColor(selectedOrder.status)}>
                       {getStatusText(selectedOrder.status)}
                     </Badge>
-                    <p className="text-lg font-bold mt-2">
+                    <p className="text-lg font-bold mt-2 text-primary">
                       {selectedOrder.total} {t('currency') || 'ش.ج'}
                     </p>
                   </div>
@@ -168,7 +233,7 @@ const UserOrdersDialog: React.FC<UserOrdersDialogProps> = ({ user, open, onOpenC
                   <div className="flex items-center gap-2">
                     <CreditCard className="h-4 w-4 text-gray-400" />
                     <span className="text-sm text-gray-600">{t('paymentMethod') || 'طريقة الدفع'}:</span>
-                    <span className="text-sm">{getPaymentMethodText(selectedOrder.payment_method)}</span>
+                    <span className="text-sm font-semibold">{getPaymentMethodText(selectedOrder.payment_method)}</span>
                   </div>
                   
                   {selectedOrder.shipping_address && (
@@ -176,7 +241,7 @@ const UserOrdersDialog: React.FC<UserOrdersDialogProps> = ({ user, open, onOpenC
                       <Package className="h-4 w-4 text-gray-400 mt-0.5" />
                       <div>
                         <span className="text-sm text-gray-600">{t('shippingAddress') || 'عنوان الشحن'}:</span>
-                        <div className="text-sm">
+                        <div className="text-sm font-semibold">
                           {selectedOrder.shipping_address.full_name}<br />
                           {selectedOrder.shipping_address.street}, {selectedOrder.shipping_address.area}<br />
                           {selectedOrder.shipping_address.city}
@@ -196,32 +261,29 @@ const UserOrdersDialog: React.FC<UserOrdersDialogProps> = ({ user, open, onOpenC
               <CardContent>
                 <div className="space-y-4">
                   {selectedOrder.order_items?.map((item, index) => (
-                    <div key={item.id}>
-                      <div className="flex flex-col sm:flex-row items-center gap-4">
-                        <img
-                          src={item.products?.image || '/placeholder.svg'}
-                          alt={item.products?.name_ar}
-                          className="w-16 h-16 object-cover rounded mb-2 sm:mb-0"
-                        />
-                        <div className="flex-1 min-w-0 text-center sm:text-left">
-                          <h4 className="font-medium truncate">
-                            {language === 'ar'
-                              ? item.products?.name_ar
-                              : language === 'he'
-                              ? item.products?.name_he
-                              : item.products?.name_en}
-                          </h4>
-                          <p className="text-sm text-gray-600">
-                            {t('quantity') || 'الكمية'}: {item.quantity} × {item.price} {t('currency') || 'ش.ج'}
-                          </p>
-                        </div>
-                        <div className="text-left min-w-[80px]">
-                          <p className="font-semibold">
-                            {(item.quantity * Number(item.price)).toFixed(2)} {t('currency') || 'ش.ج'}
-                          </p>
-                        </div>
+                    <div key={item.id} className="rounded-lg border border-gray-100 bg-gray-50/60 p-3 flex flex-col sm:flex-row items-center gap-4 shadow-sm">
+                      <img
+                        src={item.products?.image || '/placeholder.svg'}
+                        alt={item.products?.name_ar}
+                        className="w-16 h-16 object-cover rounded mb-2 sm:mb-0 border border-gray-200"
+                      />
+                      <div className="flex-1 min-w-0 text-center sm:text-left">
+                        <h4 className="font-medium truncate">
+                          {language === 'ar'
+                            ? item.products?.name_ar
+                            : language === 'he'
+                            ? item.products?.name_he
+                            : item.products?.name_en}
+                        </h4>
+                        <p className="text-sm text-gray-600">
+                          {t('quantity') || 'الكمية'}: {item.quantity} × {item.price} {t('currency') || 'ش.ج'}
+                        </p>
                       </div>
-                      {index < selectedOrder.order_items.length - 1 && <Separator className="mt-4" />}
+                      <div className="text-left min-w-[80px]">
+                        <p className="font-semibold text-primary">
+                          {(item.quantity * Number(item.price)).toFixed(2)} {t('currency') || 'ش.ج'}
+                        </p>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -243,6 +305,36 @@ const UserOrdersDialog: React.FC<UserOrdersDialogProps> = ({ user, open, onOpenC
         </DialogHeader>
         
         <div className="space-y-4">
+          {/* شريط البحث والفلترة */}
+          <div className="flex flex-col md:flex-row md:items-center gap-3 mb-4">
+            <input
+              type="text"
+              placeholder={t('searchOrders') || 'بحث برقم الطلب أو اسم المنتج...'}
+              className="border border-gray-300 rounded-lg px-3 py-2 w-full md:w-64 focus:outline-none focus:ring-2 focus:ring-primary"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+            />
+            <select
+              className="border border-gray-300 rounded-lg px-3 py-2 w-full md:w-48 focus:outline-none focus:ring-2 focus:ring-primary"
+              value={statusFilter}
+              onChange={e => setStatusFilter(e.target.value)}
+            >
+              <option value="">{t('allStatuses') || 'كل الحالات'}</option>
+              <option value="pending">{t('pending')}</option>
+              <option value="processing">{t('processing')}</option>
+              <option value="shipped">{t('shipped')}</option>
+              <option value="delivered">{t('delivered')}</option>
+              <option value="cancelled">{t('cancelled')}</option>
+            </select>
+            <button
+              className="bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg px-4 py-2 font-semibold shadow hover:from-blue-600 hover:to-purple-600 transition-all"
+              onClick={handleExport}
+              type="button"
+            >
+              {t('exportExcel') || 'تصدير Excel'}
+            </button>
+          </div>
+
           {isLoading ? (
             <div className="text-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
@@ -255,14 +347,22 @@ const UserOrdersDialog: React.FC<UserOrdersDialogProps> = ({ user, open, onOpenC
               <p className="text-gray-500">{t('userHasNoOrders') || 'لم يقم هذا المستخدم بأي طلبيات بعد'}</p>
             </div>
           ) : (
-            orders.map((order) => (
-              <Card key={order.id} className="hover:shadow-md transition-shadow">
-                <CardContent>
+            filteredOrders.map((order) => (
+              <Card key={order.id} className="hover:shadow-lg transition-shadow rounded-xl border border-gray-200 bg-white/80 backdrop-blur-sm">
+                <CardContent className="p-4">
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-2">
-                        <h4 className="font-medium truncate">
-                          {t('order') || 'طلبية'} #{order.id.slice(0, 8)}
+                        <h4 className="font-medium truncate flex items-center gap-2">
+                          <span>{t('order') || 'طلبية'} #{order.id.slice(0, 8)}</span>
+                          <button
+                            type="button"
+                            className="text-xs text-blue-500 hover:underline"
+                            title={t('copyOrderId') || 'نسخ رقم الطلب'}
+                            onClick={() => navigator.clipboard.writeText(order.id)}
+                          >
+                            {t('copy') || 'نسخ'}
+                          </button>
                         </h4>
                         <Badge className={getStatusColor(order.status)}>
                           {getStatusText(order.status)}
@@ -284,13 +384,13 @@ const UserOrdersDialog: React.FC<UserOrdersDialogProps> = ({ user, open, onOpenC
                       </div>
                     </div>
                     <div className="text-left md:text-right flex flex-col items-end min-w-[120px]">
-                      <p className="text-lg font-bold mb-2">
+                      <p className="text-lg font-bold mb-2 text-primary">
                         {order.total} {t('currency') || 'ش.ج'}
                       </p>
                       <Button 
                         variant="outline" 
                         size="sm" 
-                        onClick={() => setSelectedOrder(order)}
+                        onClick={() => openOrderDetails(order)}
                         className="gap-2"
                       >
                         <Eye className="h-4 w-4" />
