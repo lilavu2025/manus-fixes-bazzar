@@ -19,7 +19,7 @@ type OrderDB = Tables<'orders'> & {
 };
 
 const Orders: React.FC = () => {
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, language } = useLanguage();
   const { user } = useAuth();
 
   const [orders, setOrders] = useState<OrderDB[]>([]);
@@ -190,7 +190,7 @@ const Orders: React.FC = () => {
                             <span className="inline-flex items-center gap-1">
                               <XCircle className="h-4 w-4 min-w-[16px] min-h-[16px]" />
                               <span className="block">
-                                <span className="block">ألغي الطلب بواسطة الأدمن</span>
+                                <span className="block">{t('orderCancelledByAdmin') || 'ألغي الطلب بواسطة الأدمن'}</span>
                               </span>
                             </span>
                           </Badge>
@@ -281,7 +281,7 @@ const Orders: React.FC = () => {
                               <tr key={item.id} className="border-b hover:bg-gray-50">
                                 <td className="p-2 flex items-center gap-2">
                                   <img src={item.products?.image} alt={item.products?.name_ar || item.products?.name_en || ''} className="w-10 h-10 object-cover rounded" />
-                                  <span className="truncate">{item.products?.name_ar || item.products?.name_en}</span>
+                                  <span className="truncate">{language === 'ar' ? item.products?.name_ar : item.products?.name_en}</span>
                                 </td>
                                 <td className="p-2 text-center">{item.quantity}</td>
                                 <td className="p-2 text-center">{item.price} {t('currency')}</td>
@@ -289,7 +289,7 @@ const Orders: React.FC = () => {
                               </tr>
                             ))
                           ) : (
-                            <tr><td colSpan={4} className="text-center text-gray-400 py-4">{t('noProductsFound')}</td></tr>
+                            <tr><td colSpan={4} className="text-center text-gray-400 py-4">{t('noProductsFound') || 'لا توجد منتجات'}</td></tr>
                           )}
                         </tbody>
                       </table>

@@ -45,7 +45,7 @@ interface UserOrdersDialogProps {
 }
 
 const UserOrdersDialog: React.FC<UserOrdersDialogProps> = ({ user, open, onOpenChange }) => {
-  const { isRTL } = useLanguage();
+  const { isRTL, t, language } = useLanguage();
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
   const { data: orders = [], isLoading } = useQuery({
@@ -103,20 +103,20 @@ const UserOrdersDialog: React.FC<UserOrdersDialogProps> = ({ user, open, onOpenC
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'pending': return 'معلق';
-      case 'processing': return 'قيد المعالجة';
-      case 'shipped': return 'تم الشحن';
-      case 'delivered': return 'تم التوصيل';
-      case 'cancelled': return 'ملغي';
+      case 'pending': return t('pending') || 'معلق';
+      case 'processing': return t('processing') || 'قيد المعالجة';
+      case 'shipped': return t('shipped') || 'تم الشحن';
+      case 'delivered': return t('delivered') || 'تم التوصيل';
+      case 'cancelled': return t('cancelled') || 'ملغي';
       default: return status;
     }
   };
 
   const getPaymentMethodText = (method: string) => {
     switch (method) {
-      case 'cash': return 'نقدي';
-      case 'card': return 'بطاقة';
-      case 'transfer': return 'حوالة';
+      case 'cash': return t('cash') || 'نقدي';
+      case 'card': return t('card') || 'بطاقة';
+      case 'transfer': return t('bankTransfer') || 'حوالة';
       default: return method;
     }
   };
@@ -128,14 +128,14 @@ const UserOrdersDialog: React.FC<UserOrdersDialogProps> = ({ user, open, onOpenC
           <DialogHeader>
             <div className="flex items-center justify-between">
               <DialogTitle className="text-xl font-bold">
-                تفاصيل الطلبية #{selectedOrder.id.slice(0, 8)}
+                {t('orderDetails') || 'تفاصيل الطلبية'} #{selectedOrder.id.slice(0, 8)}
               </DialogTitle>
               <Button 
                 variant="outline" 
                 size="sm" 
                 onClick={() => setSelectedOrder(null)}
               >
-                العودة للطلبيات
+                {t('backToOrders') || 'العودة للطلبيات'}
               </Button>
             </div>
           </DialogHeader>
@@ -146,9 +146,9 @@ const UserOrdersDialog: React.FC<UserOrdersDialogProps> = ({ user, open, onOpenC
               <CardHeader>
                 <div className="flex justify-between items-start">
                   <div>
-                    <h3 className="font-semibold">معلومات الطلبية</h3>
+                    <h3 className="font-semibold">{t('orderInfo') || 'معلومات الطلبية'}</h3>
                     <p className="text-sm text-gray-600">
-                      تاريخ الطلبية: {format(new Date(selectedOrder.created_at), 'PPp')}
+                      {t('orderDate') || 'تاريخ الطلبية'}: {format(new Date(selectedOrder.created_at), 'PPp')}
                     </p>
                   </div>
                   <div className="text-left">
@@ -156,7 +156,7 @@ const UserOrdersDialog: React.FC<UserOrdersDialogProps> = ({ user, open, onOpenC
                       {getStatusText(selectedOrder.status)}
                     </Badge>
                     <p className="text-lg font-bold mt-2">
-                      {selectedOrder.total} ش.ج
+                      {selectedOrder.total} {t('currency') || 'ش.ج'}
                     </p>
                   </div>
                 </div>
@@ -165,7 +165,7 @@ const UserOrdersDialog: React.FC<UserOrdersDialogProps> = ({ user, open, onOpenC
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="flex items-center gap-2">
                     <CreditCard className="h-4 w-4 text-gray-400" />
-                    <span className="text-sm text-gray-600">طريقة الدفع:</span>
+                    <span className="text-sm text-gray-600">{t('paymentMethod') || 'طريقة الدفع'}:</span>
                     <span className="text-sm">{getPaymentMethodText(selectedOrder.payment_method)}</span>
                   </div>
                   
@@ -173,7 +173,7 @@ const UserOrdersDialog: React.FC<UserOrdersDialogProps> = ({ user, open, onOpenC
                     <div className="flex items-start gap-2">
                       <Package className="h-4 w-4 text-gray-400 mt-0.5" />
                       <div>
-                        <span className="text-sm text-gray-600">عنوان الشحن:</span>
+                        <span className="text-sm text-gray-600">{t('shippingAddress') || 'عنوان الشحن'}:</span>
                         <div className="text-sm">
                           {selectedOrder.shipping_address.full_name}<br />
                           {selectedOrder.shipping_address.street}, {selectedOrder.shipping_address.area}<br />
@@ -189,7 +189,7 @@ const UserOrdersDialog: React.FC<UserOrdersDialogProps> = ({ user, open, onOpenC
             {/* Order Items */}
             <Card>
               <CardHeader>
-                <h3 className="font-semibold">عناصر الطلبية</h3>
+                <h3 className="font-semibold">{t('orderItems') || 'عناصر الطلبية'}</h3>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -202,14 +202,14 @@ const UserOrdersDialog: React.FC<UserOrdersDialogProps> = ({ user, open, onOpenC
                           className="w-16 h-16 object-cover rounded"
                         />
                         <div className="flex-1">
-                          <h4 className="font-medium">{item.products?.name_ar}</h4>
+                          <h4 className="font-medium">{language === 'ar' ? item.products?.name_ar : item.products?.name_en}</h4>
                           <p className="text-sm text-gray-600">
-                            الكمية: {item.quantity} × {item.price} ش.ج
+                            {t('quantity') || 'الكمية'}: {item.quantity} × {item.price} {t('currency') || 'ش.ج'}
                           </p>
                         </div>
                         <div className="text-left">
                           <p className="font-semibold">
-                            {(item.quantity * Number(item.price)).toFixed(2)} ش.ج
+                            {(item.quantity * Number(item.price)).toFixed(2)} {t('currency') || 'ش.ج'}
                           </p>
                         </div>
                       </div>
@@ -230,7 +230,7 @@ const UserOrdersDialog: React.FC<UserOrdersDialogProps> = ({ user, open, onOpenC
       <DialogContent className={`max-w-4xl max-h-[90vh] overflow-y-auto ${isRTL ? 'text-right' : 'text-left'}`} dir={isRTL ? 'rtl' : 'ltr'}>
         <DialogHeader>
           <DialogTitle className="text-xl font-bold">
-            طلبيات المستخدم: {user.full_name}
+            {t('userOrders') || 'طلبيات المستخدم'}: {user.full_name}
           </DialogTitle>
         </DialogHeader>
         
@@ -238,13 +238,13 @@ const UserOrdersDialog: React.FC<UserOrdersDialogProps> = ({ user, open, onOpenC
           {isLoading ? (
             <div className="text-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-              <p className="mt-2">جاري تحميل الطلبيات...</p>
+              <p className="mt-2">{t('loadingOrders') || 'جاري تحميل الطلبيات...'}</p>
             </div>
           ) : orders.length === 0 ? (
             <div className="text-center py-12">
               <ShoppingBag className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">لا توجد طلبيات</h3>
-              <p className="text-gray-500">لم يقم هذا المستخدم بأي طلبيات بعد</p>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">{t('noOrders') || 'لا توجد طلبيات'}</h3>
+              <p className="text-gray-500">{t('userHasNoOrders') || 'لم يقم هذا المستخدم بأي طلبيات بعد'}</p>
             </div>
           ) : (
             orders.map((order) => (
@@ -254,7 +254,7 @@ const UserOrdersDialog: React.FC<UserOrdersDialogProps> = ({ user, open, onOpenC
                     <div className="flex-1">
                       <div className="flex items-center gap-4 mb-2">
                         <h4 className="font-medium">
-                          طلبية #{order.id.slice(0, 8)}
+                          {t('order') || 'طلبية'} #{order.id.slice(0, 8)}
                         </h4>
                         <Badge className={getStatusColor(order.status)}>
                           {getStatusText(order.status)}
@@ -272,14 +272,14 @@ const UserOrdersDialog: React.FC<UserOrdersDialogProps> = ({ user, open, onOpenC
                         </div>
                         <div className="flex items-center gap-1">
                           <Package className="h-4 w-4" />
-                          {order.order_items?.length || 0} عنصر
+                          {order.order_items?.length || 0} {t('items') || 'عنصر'}
                         </div>
                       </div>
                     </div>
                     
                     <div className="text-left">
                       <p className="text-lg font-bold mb-2">
-                        {order.total} ش.ج
+                        {order.total} {t('currency') || 'ش.ج'}
                       </p>
                       <Button 
                         variant="outline" 
@@ -288,7 +288,7 @@ const UserOrdersDialog: React.FC<UserOrdersDialogProps> = ({ user, open, onOpenC
                         className="gap-2"
                       >
                         <Eye className="h-4 w-4" />
-                        عرض التفاصيل
+                        {t('viewDetails') || 'عرض التفاصيل'}
                       </Button>
                     </div>
                   </div>

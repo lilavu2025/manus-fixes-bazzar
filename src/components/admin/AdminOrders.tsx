@@ -162,7 +162,7 @@ const initialOrderForm: NewOrderForm = {
 };
 
 const AdminOrders: React.FC = () => {
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, language } = useLanguage();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const location = useLocation();
@@ -465,6 +465,27 @@ const AdminOrders: React.FC = () => {
     }
   };
   
+  // الحصول على نص الحالة حسب اللغة
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case 'pending': return t('pending') || 'Pending';
+      case 'processing': return t('processing') || 'Processing';
+      case 'shipped': return t('shipped') || 'Shipped';
+      case 'delivered': return t('delivered') || 'Delivered';
+      case 'cancelled': return t('cancelled') || 'Cancelled';
+      default: return status;
+    }
+  };
+  // الحصول على نص طريقة الدفع حسب اللغة
+  const getPaymentMethodText = (method: string) => {
+    switch (method) {
+      case 'cash': return t('cash') || 'Cash';
+      case 'card': return t('card') || 'Card';
+      case 'bank_transfer': return t('bankTransfer') || 'Bank Transfer';
+      default: return method;
+    }
+  };
+  
   // Filter orders based on status - moved before early returns to maintain hook order
   const filteredOrders: Order[] = useMemo(() => {
     const mappedOrders = Array.isArray(orders)
@@ -638,7 +659,7 @@ const AdminOrders: React.FC = () => {
         <h1 className="text-3xl font-bold">{t('manageOrders')}</h1>
         <div className="text-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">جاري تحميل الطلبات...</p>
+          <p className="mt-4 text-gray-600">{t('loadingOrders')}</p>
         </div>
       </div>
     );
@@ -652,9 +673,9 @@ const AdminOrders: React.FC = () => {
           <CardContent className="p-12">
             <div className="text-center">
               <XCircle className="h-16 w-16 text-red-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-red-900 mb-2">خطأ في تحميل الطلبات</h3>
+              <h3 className="text-lg font-medium text-red-900 mb-2">{t('errorLoadingOrders')}</h3>
               <p className="text-red-600 mb-4">{ordersError.message}</p>
-              <Button onClick={() => refetchOrders()}>إعادة المحاولة</Button>
+              <Button onClick={() => refetchOrders()}>{t('retry')}</Button>
             </div>
           </CardContent>
         </Card>
@@ -678,60 +699,60 @@ const AdminOrders: React.FC = () => {
           onClick={() => setStatusFilter('pending')}
         >
           <span className="text-lg font-bold">{stats.pending}</span>
-          <span className="text-xs text-gray-600">قيد الانتظار</span>
+          <span className="text-xs text-gray-600">{t('pending')}</span>
         </div>
         <div
           className={`bg-gradient-to-r from-blue-100 to-blue-50 rounded-xl p-3 flex flex-col items-center shadow-sm cursor-pointer transition ring-2 ${statusFilter === 'processing' ? 'ring-blue-500' : 'ring-transparent'} hover:ring-blue-300`}
           onClick={() => setStatusFilter('processing')}
         >
           <span className="text-lg font-bold">{stats.processing}</span>
-          <span className="text-xs text-gray-600">قيد التنفيذ</span>
+          <span className="text-xs text-gray-600">{t('processing')}</span>
         </div>
         <div
           className={`bg-gradient-to-r from-purple-100 to-purple-50 rounded-xl p-3 flex flex-col items-center shadow-sm cursor-pointer transition ring-2 ${statusFilter === 'shipped' ? 'ring-purple-400' : 'ring-transparent'} hover:ring-purple-300`}
           onClick={() => setStatusFilter('shipped')}
         >
           <span className="text-lg font-bold">{stats.shipped}</span>
-          <span className="text-xs text-gray-600">تم الشحن</span>
+          <span className="text-xs text-gray-600">{t('shipped')}</span>
         </div>
         <div
           className={`bg-gradient-to-r from-green-100 to-green-50 rounded-xl p-3 flex flex-col items-center shadow-sm cursor-pointer transition ring-2 ${statusFilter === 'delivered' ? 'ring-green-400' : 'ring-transparent'} hover:ring-green-300`}
           onClick={() => setStatusFilter('delivered')}
         >
           <span className="text-lg font-bold">{stats.delivered}</span>
-          <span className="text-xs text-gray-600">تم التوصيل</span>
+          <span className="text-xs text-gray-600">{t('delivered')}</span>
         </div>
         <div
           className={`bg-gradient-to-r from-red-100 to-red-50 rounded-xl p-3 flex flex-col items-center shadow-sm cursor-pointer transition ring-2 ${statusFilter === 'cancelled' ? 'ring-red-400' : 'ring-transparent'} hover:ring-red-300`}
           onClick={() => setStatusFilter('cancelled')}
         >
           <span className="text-lg font-bold">{stats.cancelled}</span>
-          <span className="text-xs text-gray-600">ملغي</span>
+          <span className="text-xs text-gray-600">{t('cancelled')}</span>
         </div>
       </div>
       {/* شريط الفلاتر والبحث والتصدير */}
       <div className="flex flex-wrap gap-2 items-center bg-white rounded-xl p-3 shadow-sm border mt-2 relative">
-        <OptimizedSearch onSearch={setSearchQuery} placeholder="بحث بالعميل أو رقم الطلب..." />
-        <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="w-36" placeholder="من تاريخ" />
-        <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="w-36" placeholder="إلى تاريخ" />
+        <OptimizedSearch onSearch={setSearchQuery} placeholder={t('searchByClientOrOrderNumber') || "بحث بالعميل أو رقم الطلب..."} />
+        <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="w-36" placeholder={t('fromDate') || "من تاريخ"} />
+        <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="w-36" placeholder={t('toDate') || "إلى تاريخ"} />
         <Select value={paymentFilter} onValueChange={setPaymentFilter}>
-          <SelectTrigger className="w-36"><SelectValue placeholder="طريقة الدفع" /></SelectTrigger>
+          <SelectTrigger className="w-36"><SelectValue placeholder={t('paymentMethod') || "طريقة الدفع"} /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">الكل</SelectItem>
-            <SelectItem value="cash">نقداً</SelectItem>
-            <SelectItem value="card">بطاقة ائتمان</SelectItem>
-            <SelectItem value="bank_transfer">تحويل بنكي</SelectItem>
+            <SelectItem value="all">{t('all') || "الكل"}</SelectItem>
+            <SelectItem value="cash">{t('cash') || "نقداً"}</SelectItem>
+            <SelectItem value="card">{t('card') || "بطاقة ائتمان"}</SelectItem>
+            <SelectItem value="bank_transfer">{t('bankTransfer') || "تحويل بنكي"}</SelectItem>
           </SelectContent>
         </Select>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-36"><SelectValue placeholder="الحالة" /></SelectTrigger>
+          <SelectTrigger className="w-36"><SelectValue placeholder={t('status') || "الحالة"} /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">الكل</SelectItem>
-            <SelectItem value="pending">قيد الانتظار</SelectItem>
-            <SelectItem value="processing">قيد التنفيذ</SelectItem>
-            <SelectItem value="shipped">تم الشحن</SelectItem>
-            <SelectItem value="delivered">تم التوصيل</SelectItem>
-            <SelectItem value="cancelled">ملغي</SelectItem>
+            <SelectItem value="all">{t('all') || "الكل"}</SelectItem>
+            <SelectItem value="pending">{t('pending') || "قيد الانتظار"}</SelectItem>
+            <SelectItem value="processing">{t('processing') || "قيد التنفيذ"}</SelectItem>
+            <SelectItem value="shipped">{t('shipped') || "تم الشحن"}</SelectItem>
+            <SelectItem value="delivered">{t('delivered') || "تم التوصيل"}</SelectItem>
+            <SelectItem value="cancelled">{t('cancelled') || "ملغي"}</SelectItem>
           </SelectContent>
         </Select>
         <Button
@@ -760,21 +781,21 @@ const AdminOrders: React.FC = () => {
           <DialogTrigger asChild>
             <Button className="bg-primary text-white font-bold ml-2">
               <Plus className="h-4 w-4" />
-              إضافة طلب جديد
+              {t('addNewOrder') || 'إضافة طلب جديد'}
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl w-full max-h-[90vh] overflow-y-auto p-0 sm:p-0">
             <DialogHeader className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b px-6 py-4 rounded-t-2xl">
               <DialogTitle className="text-xl font-bold text-primary flex items-center gap-2">
-                <Plus className="h-5 w-5 text-primary" /> إضافة طلب جديد
+                <Plus className="h-5 w-5 text-primary" /> {t('addNewOrder') || 'إضافة طلب جديد'}
               </DialogTitle>
-              <p className="text-gray-500 text-sm mt-1">يرجى تعبئة جميع الحقول المطلوبة بعناية. جميع الحقول بعلامة * مطلوبة.</p>
+              <p className="text-gray-500 text-sm mt-1">{t('fillAllRequiredFields') || 'يرجى تعبئة جميع الحقول المطلوبة بعناية. جميع الحقول بعلامة * مطلوبة.'}</p>
             </DialogHeader>
             <form className="space-y-8 px-6 py-6" autoComplete="off" onSubmit={e => { e.preventDefault(); handleAddOrder(); }}>
               {/* اختيار العميل */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div>
-                  <Label htmlFor="user_id">العميل <span className="text-red-500">*</span></Label>
+                  <Label htmlFor="user_id">{t('customer') || 'العميل'} <span className="text-red-500">*</span></Label>
                   <Select value={allowCustomClient ? '' : orderForm.user_id} onValueChange={value => {
   if (value === '__custom__') {
     setAllowCustomClient(true);
@@ -785,7 +806,7 @@ const AdminOrders: React.FC = () => {
   }
 }}>
                     <SelectTrigger id="user_id" className="w-full">
-                      <SelectValue placeholder="ابحث أو اختر العميل" />
+                      <SelectValue placeholder={t('searchOrSelectCustomer') || 'ابحث أو اختر العميل'} />
                     </SelectTrigger>
                     <SelectContent>
                       {users.map(user => (
@@ -798,73 +819,73 @@ const AdminOrders: React.FC = () => {
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="payment_method">طريقة الدفع <span className="text-red-500">*</span></Label>
+                  <Label htmlFor="payment_method">{t('paymentMethod') || 'طريقة الدفع'} <span className="text-red-500">*</span></Label>
                   <Select value={orderForm.payment_method} onValueChange={value => setOrderForm(prev => ({ ...prev, payment_method: value }))}>
                     <SelectTrigger id="payment_method" className="w-full">
-                      <SelectValue placeholder="اختر طريقة الدفع" />
+                      <SelectValue placeholder={t('selectPaymentMethod') || 'اختر طريقة الدفع'} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="cash">نقداً</SelectItem>
-                      <SelectItem value="card">بطاقة ائتمان</SelectItem>
-                      <SelectItem value="bank_transfer">تحويل بنكي</SelectItem>
+                      <SelectItem value="cash">{t('cash') || 'نقداً'}</SelectItem>
+                      <SelectItem value="card">{t('card') || 'بطاقة ائتمان'}</SelectItem>
+                      <SelectItem value="bank_transfer">{t('bankTransfer') || 'تحويل بنكي'}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
               {/* معلومات الشحن */}
               <div className="bg-gray-50 rounded-xl p-4 border mt-2">
-                <h3 className="text-lg font-semibold mb-4 text-primary">معلومات الشحن</h3>
+                <h3 className="text-lg font-semibold mb-4 text-primary">{t('shippingInfo') || 'معلومات الشحن'}</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div>
-                    <Label htmlFor="full_name">الاسم الكامل <span className="text-red-500">*</span></Label>
-                    <Input id="full_name" value={orderForm.shipping_address.fullName} onChange={e => setOrderForm(prev => ({ ...prev, shipping_address: { ...prev.shipping_address, fullName: e.target.value } }))} placeholder="أدخل الاسم الكامل" required disabled={!allowCustomClient && !!orderForm.user_id} />
+                    <Label htmlFor="full_name">{t('fullName') || 'الاسم الكامل'} <span className="text-red-500">*</span></Label>
+                    <Input id="full_name" value={orderForm.shipping_address.fullName} onChange={e => setOrderForm(prev => ({ ...prev, shipping_address: { ...prev.shipping_address, fullName: e.target.value } }))} placeholder={t('enterFullName') || 'أدخل الاسم الكامل'} required disabled={!allowCustomClient && !!orderForm.user_id} />
                   </div>
                   <div>
-                    <Label htmlFor="phone">رقم الهاتف <span className="text-red-500">*</span></Label>
-                    <Input id="phone" value={orderForm.shipping_address.phone} onChange={e => setOrderForm(prev => ({ ...prev, shipping_address: { ...prev.shipping_address, phone: e.target.value } }))} placeholder="أدخل رقم الهاتف" required disabled={!allowCustomClient && !!orderForm.user_id} />
+                    <Label htmlFor="phone">{t('phone') || 'رقم الهاتف'} <span className="text-red-500">*</span></Label>
+                    <Input id="phone" value={orderForm.shipping_address.phone} onChange={e => setOrderForm(prev => ({ ...prev, shipping_address: { ...prev.shipping_address, phone: e.target.value } }))} placeholder={t('enterPhoneNumber') || 'أدخل رقم الهاتف'} required disabled={!allowCustomClient && !!orderForm.user_id} />
                   </div>
                   <div>
-                    <Label htmlFor="city">المدينة</Label>
-                    <Input id="city" value={orderForm.shipping_address.city} onChange={e => setOrderForm(prev => ({ ...prev, shipping_address: { ...prev.shipping_address, city: e.target.value } }))} placeholder="أدخل المدينة" />
+                    <Label htmlFor="city">{t('city') || 'المدينة'}</Label>
+                    <Input id="city" value={orderForm.shipping_address.city} onChange={e => setOrderForm(prev => ({ ...prev, shipping_address: { ...prev.shipping_address, city: e.target.value } }))} placeholder={t('enterCity') || 'أدخل المدينة'} />
                   </div>
                   <div>
-                    <Label htmlFor="area">المنطقة</Label>
-                    <Input id="area" value={orderForm.shipping_address.area} onChange={e => setOrderForm(prev => ({ ...prev, shipping_address: { ...prev.shipping_address, area: e.target.value } }))} placeholder="أدخل المنطقة" />
+                    <Label htmlFor="area">{t('area') || 'المنطقة'}</Label>
+                    <Input id="area" value={orderForm.shipping_address.area} onChange={e => setOrderForm(prev => ({ ...prev, shipping_address: { ...prev.shipping_address, area: e.target.value } }))} placeholder={t('enterArea') || 'أدخل المنطقة'} />
                   </div>
                   <div>
-                    <Label htmlFor="street">الشارع</Label>
-                    <Input id="street" value={orderForm.shipping_address.street} onChange={e => setOrderForm(prev => ({ ...prev, shipping_address: { ...prev.shipping_address, street: e.target.value } }))} placeholder="أدخل الشارع" />
+                    <Label htmlFor="street">{t('street') || 'الشارع'}</Label>
+                    <Input id="street" value={orderForm.shipping_address.street} onChange={e => setOrderForm(prev => ({ ...prev, shipping_address: { ...prev.shipping_address, street: e.target.value } }))} placeholder={t('enterStreet') || 'أدخل الشارع'} />
                   </div>
                   <div>
-                    <Label htmlFor="building">رقم المبنى</Label>
-                    <Input id="building" value={orderForm.shipping_address.building} onChange={e => setOrderForm(prev => ({ ...prev, shipping_address: { ...prev.shipping_address, building: e.target.value } }))} placeholder="أدخل رقم المبنى" />
+                    <Label htmlFor="building">{t('building') || 'رقم المبنى'}</Label>
+                    <Input id="building" value={orderForm.shipping_address.building} onChange={e => setOrderForm(prev => ({ ...prev, shipping_address: { ...prev.shipping_address, building: e.target.value } }))} placeholder={t('enterBuildingNumber') || 'أدخل رقم المبنى'} />
                   </div>
                   <div>
-                    <Label htmlFor="floor">الطابق</Label>
-                    <Input id="floor" value={orderForm.shipping_address.floor} onChange={e => setOrderForm(prev => ({ ...prev, shipping_address: { ...prev.shipping_address, floor: e.target.value } }))} placeholder="أدخل الطابق (اختياري)" />
+                    <Label htmlFor="floor">{t('floor') || 'الطابق'}</Label>
+                    <Input id="floor" value={orderForm.shipping_address.floor} onChange={e => setOrderForm(prev => ({ ...prev, shipping_address: { ...prev.shipping_address, floor: e.target.value } }))} placeholder={t('enterFloorOptional') || 'أدخل الطابق (اختياري)'} />
                   </div>
                   <div>
-                    <Label htmlFor="apartment">رقم الشقة</Label>
-                    <Input id="apartment" value={orderForm.shipping_address.apartment} onChange={e => setOrderForm(prev => ({ ...prev, shipping_address: { ...prev.shipping_address, apartment: e.target.value } }))} placeholder="أدخل رقم الشقة" />
+                    <Label htmlFor="apartment">{t('apartment') || 'رقم الشقة'}</Label>
+                    <Input id="apartment" value={orderForm.shipping_address.apartment} onChange={e => setOrderForm(prev => ({ ...prev, shipping_address: { ...prev.shipping_address, apartment: e.target.value } }))} placeholder={t('enterApartmentNumber') || 'أدخل رقم الشقة'} />
                   </div>
                 </div>
               </div>
               {/* المنتجات */}
               <div className="bg-gray-50 rounded-xl p-4 border mt-2">
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-semibold text-primary">المنتجات</h3>
+                  <h3 className="text-lg font-semibold text-primary">{t('products') || 'المنتجات'}</h3>
                   <Button type="button" onClick={addOrderItem} variant="outline" size="sm">
-                    <Plus className="h-4 w-4 mr-2" /> إضافة منتج
+                    <Plus className="h-4 w-4 mr-2" /> {t('addProduct') || 'إضافة منتج'}
                   </Button>
                 </div>
                 <div className="space-y-3">
                   {orderForm.items.map((item, index) => (
                     <div key={item.id} className="flex flex-col sm:flex-row gap-3 items-end p-3 border rounded-lg bg-white shadow-sm">
                       <div className="flex-1 min-w-[180px]">
-                        <Label>المنتج <span className="text-red-500">*</span></Label>
+                        <Label>{t('product') || 'المنتج'} <span className="text-red-500">*</span></Label>
                         <Select value={item.product_id} onValueChange={value => updateOrderItem(item.id, 'product_id', value)}>
                           <SelectTrigger className="w-full">
-                            <SelectValue placeholder="ابحث أو اختر المنتج" />
+                            <SelectValue placeholder={t('searchOrSelectProduct') || 'ابحث أو اختر المنتج'} />
                           </SelectTrigger>
                           <SelectContent>
                             {products.map(product => (
@@ -876,11 +897,11 @@ const AdminOrders: React.FC = () => {
                         </Select>
                       </div>
                       <div className="w-full sm:w-24">
-                        <Label>الكمية <span className="text-red-500">*</span></Label>
+                        <Label>{t('quantity') || 'الكمية'} <span className="text-red-500">*</span></Label>
                         <Input type="number" min="1" value={item.quantity} onChange={e => updateOrderItem(item.id, 'quantity', parseInt(e.target.value) || 1)} required />
                       </div>
                       <div className="w-full sm:w-24">
-                        <Label>السعر <span className="text-red-500">*</span></Label>
+                        <Label>{t('price') || 'السعر'} <span className="text-red-500">*</span></Label>
                         <Input type="number" step="0.01" value={item.price} onChange={e => updateOrderItem(item.id, 'price', parseFloat(e.target.value) || 0)} required />
                       </div>
                       <Button type="button" onClick={() => removeOrderItem(item.id)} variant="destructive" size="sm" className="self-end">
@@ -892,7 +913,7 @@ const AdminOrders: React.FC = () => {
                 {orderForm.items.length > 0 && (
                   <div className="text-right mt-3">
                     <p className="text-lg font-semibold">
-                      المجموع الكلي: {calculateTotal().toFixed(2)} ₪
+                      {t('total') || 'المجموع الكلي'}: {calculateTotal().toFixed(2)} ₪
                     </p>
                   </div>
                 )}
@@ -900,24 +921,25 @@ const AdminOrders: React.FC = () => {
               {/* ملاحظات + تمييز منشئ الطلب */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div>
-                  <Label htmlFor="notes">ملاحظات</Label>
-                  <Textarea id="notes" value={orderForm.notes} onChange={e => setOrderForm(prev => ({ ...prev, notes: e.target.value }))} placeholder="أدخل ملاحظات إضافية (اختياري)" />
+                  <Label htmlFor="notes">{t('notes') || 'ملاحظات'}</Label>
+                  <Textarea id="notes" value={orderForm.notes} onChange={e => setOrderForm(prev => ({ ...prev, notes: e.target.value }))} placeholder={t('orderNotesPlaceholder') || 'أدخل ملاحظات إضافية (اختياري)'}
+                  />
                 </div>
                 <div className="flex flex-col gap-2 mt-2">
-                  <Label>منشئ الطلبية</Label>
+                  <Label>{t('orderCreator') || 'منشئ الطلبية'}</Label>
                   <div className="flex items-center gap-2">
-                    <Badge className="bg-blue-100 text-blue-800 border-blue-200">أدمن</Badge>
-                    <span className="text-xs text-gray-500">سيتم تمييز هذه الطلبية أنها أُنشئت من لوحة التحكم</span>
+                    <Badge className="bg-blue-100 text-blue-800 border-blue-200">{t('admin') || 'أدمن'}</Badge>
+                    <span className="text-xs text-gray-500">{t('orderCreatedFromAdminPanel') || 'سيتم تمييز هذه الطلبية أنها أُنشئت من لوحة التحكم'}</span>
                   </div>
                 </div>
               </div>
               {/* أزرار الحفظ */}
               <div className="flex flex-col sm:flex-row justify-end gap-2 mt-6">
                 <Button type="button" variant="outline" onClick={() => setShowAddOrder(false)} disabled={isAddingOrder}>
-                  إلغاء
+                  {t('cancel') || 'إلغاء'}
                 </Button>
                 <Button type="submit" className="bg-primary text-white font-bold" disabled={isAddingOrder}>
-                  {isAddingOrder ? 'جاري الإضافة...' : 'إضافة الطلب'}
+                  {isAddingOrder ? t('adding') || 'جاري الإضافة...' : t('addOrder') || 'إضافة الطلب'}
                 </Button>
               </div>
             </form>
@@ -932,9 +954,9 @@ const AdminOrders: React.FC = () => {
             <div className="text-center">
               <ShoppingCart className="h-16 w-16 text-gray-300 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">
-                {statusFilter === 'all' ? t('noOrders') : `لا توجد طلبات ${statusFilter === 'pending' ? 'في الانتظار' : statusFilter === 'processing' ? 'قيد المعالجة' : statusFilter === 'shipped' ? 'مشحونة' : statusFilter === 'delivered' ? 'مسلمة' : 'ملغية'}`}
+                {statusFilter === 'all' ? t('noOrders') : t('noOrdersForStatus') + ' ' + t(statusFilter)}
               </h3>
-              <p className="text-gray-500">{statusFilter === 'all' ? t('ordersWillAppearHere') : 'جرب تغيير الفلتر لعرض طلبات أخرى'}</p>
+              <p className="text-gray-500">{statusFilter === 'all' ? t('ordersWillAppearHere') : t('tryChangingFilterToShowOtherOrders')}</p>
             </div>
           </CardContent>
         </Card>
@@ -972,7 +994,7 @@ const AdminOrders: React.FC = () => {
                               <div className="relative group w-fit max-w-full">
                                 <Badge className="ml-0 bg-blue-100 text-blue-800 border-blue-200 flex items-center gap-1 animate-pulse cursor-pointer text-[11px] px-2 py-0.5 w-fit max-w-[90vw] sm:max-w-xs whitespace-normal break-words overflow-hidden block">
                                   <UserPlus className="h-4 w-4 min-w-[16px] min-h-[16px]" />
-                                  <span className="block">أدمن</span>
+                                  <span className="block">{t('admin') || 'أدمن'}</span>
                                 </Badge>
                                 <div className="absolute z-20 hidden group-hover:block bg-white border shadow-lg rounded-lg px-3 py-2 text-xs text-gray-700 top-8 right-0 whitespace-nowrap">
                                   {order.admin_creator_name ? `أنشأها: ${order.admin_creator_name}` : 'أنشئت من الأدمن'}
@@ -1000,7 +1022,7 @@ const AdminOrders: React.FC = () => {
                           <span>|</span>
                           <span className="block text-center text-lg font-bold text-green-700">{typeof order.total === 'number' && !isNaN(order.total) ? order.total + ' ₪' : '-'}</span>
                           <span>|</span>
-                          <span>{order.payment_method}</span>
+                          <span>{getPaymentMethodText(order.payment_method)}</span>
                           <span>|</span>
                           <Badge className={`text-base px-3 py-1 rounded-full font-semibold ${getStatusColor(order.status)}`}>{t(order.status)}</Badge>
                         </div>
@@ -1040,7 +1062,7 @@ const AdminOrders: React.FC = () => {
                             shipping_address,
                           });
                         }}>
-                          <Eye className="h-4 w-4" /> تفاصيل
+                          <Eye className="h-4 w-4" /> {t('details') || 'تفاصيل'}
                         </Button>
                         <Button size="sm" variant="outline" className="font-bold flex items-center gap-1 px-3 py-2 border-green-500 text-green-700 hover:bg-green-50 min-w-[90px] flex-1 sm:flex-none" style={{ borderWidth: 2 }}
                           onClick={() => {
@@ -1048,7 +1070,7 @@ const AdminOrders: React.FC = () => {
                             window.open(`https://wa.me/?text=${msg}`, '_blank');
                           }}
                         >
-                          <Copy className="h-4 w-4" /> مشاركة عبر واتساب
+                          <Copy className="h-4 w-4" /> {t('shareOnWhatsapp') || 'مشاركة عبر واتساب'}
                         </Button>
                         {/* زر التعديل */}
                         <Button size="sm" variant="secondary" className="font-bold flex items-center gap-1 px-3 py-2 border-blue-500 text-blue-700 hover:bg-blue-50 min-w-[90px] flex-1 sm:flex-none" style={{ borderWidth: 2 }}
@@ -1082,7 +1104,7 @@ const AdminOrders: React.FC = () => {
                             setShowEditOrder(true);
                           }}
                         >
-                          تعديل
+                          {t('edit') || 'تعديل'}
                         </Button>
                         {/* زر الحذف */}
                         <Button size="sm" variant="destructive" className="font-bold flex items-center gap-1 px-3 py-2 border-red-500 text-red-700 hover:bg-red-50 min-w-[90px] flex-1 sm:flex-none" style={{ borderWidth: 2 }}
@@ -1091,7 +1113,7 @@ const AdminOrders: React.FC = () => {
                             setShowDeleteDialog(true);
                           }}
                         >
-                          حذف
+                          {t('delete') || 'حذف'}
                         </Button>
                       </div>
                       <div className="flex flex-wrap gap-2 mt-2">
@@ -1102,7 +1124,7 @@ const AdminOrders: React.FC = () => {
                           onClick={() => updateOrderStatus(order.id, 'pending')}
                           disabled={order.status === 'pending'}
                         >
-                          في الانتظار
+                          {t('pending') || 'في الانتظار'}
                         </Button>
                         <Button
                           size="sm"
@@ -1111,7 +1133,7 @@ const AdminOrders: React.FC = () => {
                           onClick={() => updateOrderStatus(order.id, 'processing')}
                           disabled={order.status === 'processing'}
                         >
-                          قيد المعالجة
+                          {t('processing') || 'قيد المعالجة'}
                         </Button>
                         <Button
                           size="sm"
@@ -1120,7 +1142,7 @@ const AdminOrders: React.FC = () => {
                           onClick={() => updateOrderStatus(order.id, 'shipped')}
                           disabled={order.status === 'shipped' || order.status === 'delivered'}
                         >
-                          تم الشحن
+                          {t('shipped') || 'تم الشحن'}
                         </Button>
                         <Button
                           size="sm"
@@ -1129,7 +1151,7 @@ const AdminOrders: React.FC = () => {
                           onClick={() => updateOrderStatus(order.id, 'delivered')}
                           disabled={order.status === 'delivered'}
                         >
-                          تم التسليم
+                          {t('delivered') || 'تم التسليم'}
                         </Button>
                         <Button
                           size="sm"
@@ -1138,7 +1160,7 @@ const AdminOrders: React.FC = () => {
                           onClick={() => updateOrderStatus(order.id, 'cancelled')}
                           disabled={order.status === 'cancelled' || order.status === 'delivered'}
                         >
-                          إلغاء
+                          {t('cancel') || 'إلغاء'}
                         </Button>
                       </div>
                     </CardContent>
@@ -1153,12 +1175,12 @@ const AdminOrders: React.FC = () => {
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-red-600">تأكيد حذف الطلب</DialogTitle>
+            <DialogTitle className="text-xl font-bold text-red-600">{t('confirmDeleteOrder') || 'تأكيد حذف الطلب'}</DialogTitle>
           </DialogHeader>
-          <div className="mb-4">هل أنت متأكد أنك تريد حذف هذا الطلب؟ لا يمكن التراجع عن هذه العملية.</div>
+          <div className="mb-4">{t('areYouSureDeleteOrder') || 'هل أنت متأكد أنك تريد حذف هذا الطلب؟ لا يمكن التراجع عن هذه العملية.'}</div>
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>إلغاء</Button>
-            <Button variant="destructive" onClick={handleDeleteOrder}>تأكيد الحذف</Button>
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>{t('cancel') || 'إلغاء'}</Button>
+            <Button variant="destructive" onClick={handleDeleteOrder}>{t('confirmDelete') || 'تأكيد الحذف'}</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -1166,8 +1188,8 @@ const AdminOrders: React.FC = () => {
       <Dialog open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>
         <DialogContent className="max-w-2xl w-full max-h-[90vh] overflow-y-auto p-0 sm:p-0">
           <DialogHeader className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b px-6 py-4 rounded-t-2xl print:bg-white print:border-none print:backdrop-blur-0 print:shadow-none">
-            <DialogTitle className="text-xl font-bold flex items-center gap-2 print:justify-center print:w-full print:text-2xl print:mb-2">
-              <Package className="h-5 w-5 text-primary print:hidden" /> تفاصيل الطلبية #{selectedOrder?.id.slice(0, 8)}
+            <DialogTitle className="text-xl font-bold flex items-center gap-2">
+              <Package className="h-5 w-5 text-primary print:hidden" /> {t('orderDetails') || 'تفاصيل الطلبية'} #{selectedOrder?.id.slice(0, 8)}
             </DialogTitle>
           </DialogHeader>
           {selectedOrder && (
@@ -1184,13 +1206,13 @@ const AdminOrders: React.FC = () => {
                 {/* بيانات الطلب والعميل */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-b pb-4 print:gap-0 print:border print:rounded print:p-4 print:mb-4 print:border-gray-300">
                   <div className="space-y-2 print:space-y-1">
-                    <h4 className="font-semibold text-primary flex items-center gap-1 print:justify-center print:text-lg"><UserPlus className="h-4 w-4 print:hidden" /> بيانات العميل</h4>
+                    <h4 className="font-semibold text-primary flex items-center gap-1 print:justify-center print:text-lg"><UserPlus className="h-4 w-4 print:hidden" /> {t('customerInfo') || 'بيانات العميل'}</h4>
                     <div className="text-base font-bold text-gray-900 print:text-black">{selectedOrder.customer_name?.trim() ? selectedOrder.customer_name : (selectedOrder.profiles?.full_name || t('notProvided'))}</div>
                     {selectedOrder.profiles?.email && <div className="text-xs text-gray-700 print:text-black">{selectedOrder.profiles.email}</div>}
                     <div className="text-xs text-gray-700 print:text-black">{selectedOrder.profiles?.phone || selectedOrder.shipping_address?.phone || t('notProvided')}</div>
                   </div>
                   <div className="space-y-2 print:space-y-1">
-                    <h4 className="font-semibold text-primary flex items-center gap-1 print:justify-center print:text-lg"><MapPin className="h-4 w-4 print:hidden" /> عنوان الشحن</h4>
+                    <h4 className="font-semibold text-primary flex items-center gap-1 print:justify-center print:text-lg"><MapPin className="h-4 w-4 print:hidden" /> {t('shippingAddress') || 'عنوان الشحن'}</h4>
                     <div className="text-xs text-gray-900 print:text-black">
                       {selectedOrder.shipping_address?.fullName || '-'}<br />
                       {selectedOrder.shipping_address?.phone && <>{selectedOrder.shipping_address.phone}<br /></>}
@@ -1204,11 +1226,11 @@ const AdminOrders: React.FC = () => {
                 {/* معلومات الطلب */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-b pb-4 print:gap-0 print:border print:rounded print:p-4 print:mb-4 print:border-gray-300">
                   <div className="space-y-1">
-                    <div className="text-xs text-gray-700 print:text-black">رقم الطلب: <span className="font-bold">{selectedOrder.id}</span></div>
-                    <div className="text-xs text-gray-700 print:text-black">تاريخ الطلب: <span className="font-bold">{new Date(selectedOrder.created_at).toLocaleDateString('en-GB')} - {new Date(selectedOrder.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</span></div>
-                    <div className="text-xs text-gray-700 print:text-black">تاريخ التعديل: <span className="font-bold">{selectedOrder.updated_at ? new Date(selectedOrder.updated_at).toLocaleDateString('en-GB') + ' - ' + new Date(selectedOrder.updated_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '-'}</span></div>
-                    <div className="text-xs text-gray-700 print:text-black">الحالة: <span className="font-bold">{t(selectedOrder.status)}</span></div>
-                    <div className="text-xs text-gray-700 print:text-black">طريقة الدفع: <span className="font-bold">{t(selectedOrder.payment_method)}</span></div>
+                    <div className="text-xs text-gray-700 print:text-black">{t('orderNumber') || 'رقم الطلب'}: <span className="font-bold">{selectedOrder.id}</span></div>
+                    <div className="text-xs text-gray-700 print:text-black">{t('orderDate') || 'تاريخ الطلب'}: <span className="font-bold">{new Date(selectedOrder.created_at).toLocaleDateString('en-GB')} - {new Date(selectedOrder.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</span></div>
+                    <div className="text-xs text-gray-700 print:text-black">{t('updateDate') || 'تاريخ التعديل'}: <span className="font-bold">{selectedOrder.updated_at ? new Date(selectedOrder.updated_at).toLocaleDateString('en-GB') + ' - ' + new Date(selectedOrder.updated_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '-'}</span></div>
+                    <div className="text-xs text-gray-700 print:text-black">{t('status') || 'الحالة'}: <span className="font-bold">{t(selectedOrder.status)}</span></div>
+                    <div className="text-xs text-gray-700 print:text-black">{t('paymentMethod') || 'طريقة الدفع'}: <span className="font-bold">{t(selectedOrder.payment_method)}</span></div>
                   </div>
                   <div className="flex flex-col gap-1 items-end md:items-center print:hidden">
                     <div className="text-lg font-bold text-green-700">{selectedOrder.total} ₪</div>
@@ -1219,23 +1241,23 @@ const AdminOrders: React.FC = () => {
                             window.open(`https://wa.me/?text=${msg}`, '_blank');
                           }}
                         >
-                          <Copy className="h-4 w-4" /> مشاركة عبر واتساب
+                          <Copy className="h-4 w-4" /> {t('shareOnWhatsapp') || 'مشاركة عبر واتساب'}
                       </Button>
                     </div>
                   </div>
                 </div>
                 {/* المنتجات */}
                 <div className="space-y-2 border-b pb-4 print:border print:rounded print:p-4 print:mb-4 print:border-gray-300">
-                  <h4 className="font-semibold text-primary flex items-center gap-1 print:justify-center print:text-lg"><Package className="h-4 w-4 print:hidden" /> المنتجات المطلوبة</h4>
+                  <h4 className="font-semibold text-primary flex items-center gap-1 print:justify-center print:text-lg"><Package className="h-4 w-4 print:hidden" /> {t('orderedProducts') || 'المنتجات المطلوبة'}</h4>
                   <div className="overflow-x-auto print:overflow-visible">
                     <table className="min-w-full text-xs md:text-sm border rounded-lg print:border print:rounded-none print:text-base print:w-full">
                       <thead>
                         <tr className="bg-gray-100 print:bg-gray-200">
                           <th className="p-2 font-bold">#</th>
-                          <th className="p-2 font-bold">المنتج</th>
-                          <th className="p-2 font-bold">الكمية</th>
-                          <th className="p-2 font-bold">السعر</th>
-                          <th className="p-2 font-bold">المجموع</th>
+                          <th className="p-2 font-bold">{t('product') || 'المنتج'}</th>
+                          <th className="p-2 font-bold">{t('quantity') || 'الكمية'}</th>
+                          <th className="p-2 font-bold">{t('price') || 'السعر'}</th>
+                          <th className="p-2 font-bold">{t('total') || 'المجموع'}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1250,7 +1272,7 @@ const AdminOrders: React.FC = () => {
                             </tr>
                           ))
                         ) : (
-                          <tr><td colSpan={5} className="text-center text-gray-400 py-4">لا توجد منتجات</td></tr>
+                          <tr><td colSpan={5} className="text-center text-gray-400 py-4">{t('noProducts') || 'لا توجد منتجات'}</td></tr>
                         )}
                       </tbody>
                     </table>
@@ -1259,14 +1281,14 @@ const AdminOrders: React.FC = () => {
                 {/* ملاحظات الطلب */}
                 {selectedOrder.notes && (
                   <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 rounded print:bg-white print:border print:border-yellow-400 print:rounded print:p-2 print:mt-2 print:mb-0">
-                    <span className="font-semibold text-yellow-800 print:text-black">ملاحظات:</span> <span className="text-gray-700 print:text-black">{decompressText(selectedOrder.notes)}</span>
+                    <span className="font-semibold text-yellow-800 print:text-black">{t('notes') || 'ملاحظات'}:</span> <span className="text-gray-700 print:text-black">{decompressText(selectedOrder.notes)}</span>
                   </div>
                 )}
                 {/* تذييل رسمي للطباعة */}
                 <div className="print:flex flex-col items-center mt-8 hidden">
                   <div className="w-full border-t border-gray-300 my-2" />
-                  <div className="text-xs text-gray-500 print:text-gray-700">تم توليد هذه الإرسالية إلكترونيًا من خلال لوحة تحكم متجر موبايل بازار - {new Date().toLocaleDateString('en-GB')}</div>
-                  <div className="text-xs text-gray-500 print:text-gray-700">للاستفسار: 0599999999 - info@mobilebazaar.ps</div>
+                  <div className="text-xs text-gray-500 print:text-gray-700">{t('generatedByAdminPanel') || 'تم توليد هذه الإرسالية إلكترونيًا من خلال لوحة تحكم متجر موبايل بازار'} - {new Date().toLocaleDateString('en-GB')}</div>
+                  <div className="text-xs text-gray-500 print:text-gray-700">{t('forInquiries') || 'للاستفسار'}: 0599999999 - info@mobilebazaar.ps</div>
                 </div>
               </div>
             </>
@@ -1284,78 +1306,78 @@ const AdminOrders: React.FC = () => {
         <DialogContent className="max-w-2xl w-full max-h-[90vh] overflow-y-auto p-0 sm:p-0">
           <DialogHeader className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b px-6 py-4 rounded-t-2xl">
             <DialogTitle className="text-xl font-bold text-primary flex items-center gap-2">
-              تعديل الطلبية
+              {t('editOrder') || 'تعديل الطلبية'}
             </DialogTitle>
-            <p className="text-gray-500 text-sm mt-1">يمكنك تعديل جميع بيانات الطلب عدا اسم العميل.</p>
+            <p className="text-gray-500 text-sm mt-1">{t('orderNotes') || 'يمكنك تعديل جميع بيانات الطلب عدا اسم العميل.'}</p>
           </DialogHeader>
           {editOrderForm && (
             <form className="space-y-8 px-6 py-6" autoComplete="off" onSubmit={e => { e.preventDefault(); handleEditOrder(); }}>
               {/* اسم العميل (غير قابل للتغيير) */}
               <div className="mb-4">
-                <Label>اسم العميل</Label>
+                <Label>{t('customerName') || 'اسم العميل'}</Label>
                 <Input value={editOrderForm.shipping_address.fullName} disabled className="bg-gray-100 font-bold" />
               </div>
               {/* باقي الحقول */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div>
-                  <Label htmlFor="payment_method">طريقة الدفع <span className="text-red-500">*</span></Label>
+                  <Label htmlFor="payment_method">{t('paymentMethod') || 'طريقة الدفع'} <span className="text-red-500">*</span></Label>
                   <Select value={editOrderForm.payment_method} onValueChange={value => setEditOrderForm(f => f ? { ...f, payment_method: value } : f)}>
                     <SelectTrigger id="payment_method" className="w-full">
-                      <SelectValue placeholder="اختر طريقة الدفع" />
+                      <SelectValue placeholder={t('selectPaymentMethod') || 'اختر طريقة الدفع'} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="cash">نقداً</SelectItem>
-                      <SelectItem value="card">بطاقة ائتمان</SelectItem>
-                      <SelectItem value="bank_transfer">تحويل بنكي</SelectItem>
+                      <SelectItem value="cash">{t('cash') || 'نقداً'}</SelectItem>
+                      <SelectItem value="card">{t('card') || 'بطاقة ائتمان'}</SelectItem>
+                      <SelectItem value="bank_transfer">{t('bankTransfer') || 'تحويل بنكي'}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="status">الحالة <span className="text-red-500">*</span></Label>
+                  <Label htmlFor="status">{t('status') || 'الحالة'} <span className="text-red-500">*</span></Label>
                   <Select value={editOrderForm.status} onValueChange={value => setEditOrderForm(f => f ? { ...f, status: value } : f)}>
                     <SelectTrigger id="status" className="w-full">
-                      <SelectValue placeholder="اختر الحالة" />
+                      <SelectValue placeholder={t('selectStatus') || 'اختر الحالة'} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="pending">قيد الانتظار</SelectItem>
-                      <SelectItem value="processing">قيد التنفيذ</SelectItem>
-                      <SelectItem value="shipped">تم الشحن</SelectItem>
-                      <SelectItem value="delivered">تم التوصيل</SelectItem>
-                      <SelectItem value="cancelled">ملغي</SelectItem>
+                      <SelectItem value="pending">{t('pending') || 'قيد الانتظار'}</SelectItem>
+                      <SelectItem value="processing">{t('processing') || 'قيد التنفيذ'}</SelectItem>
+                      <SelectItem value="shipped">{t('shipped') || 'تم الشحن'}</SelectItem>
+                      <SelectItem value="delivered">{t('delivered') || 'تم التوصيل'}</SelectItem>
+                      <SelectItem value="cancelled">{t('cancelled') || 'ملغي'}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
               {/* معلومات الشحن */}
               <div className="bg-gray-50 rounded-xl p-4 border mt-2">
-                <h3 className="text-lg font-semibold mb-4 text-primary">معلومات الشحن</h3>
+                <h3 className="text-lg font-semibold mb-4 text-primary">{t('shippingInfo') || 'معلومات الشحن'}</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div>
-                    <Label htmlFor="phone">رقم الهاتف <span className="text-red-500">*</span></Label>
+                    <Label htmlFor="phone">{t('phone') || 'رقم الهاتف'} <span className="text-red-500">*</span></Label>
                     <Input id="phone" value={editOrderForm.shipping_address.phone} onChange={e => setEditOrderForm(f => f ? { ...f, shipping_address: { ...f.shipping_address, phone: e.target.value } } : f)} required />
                   </div>
                   <div>
-                    <Label htmlFor="city">المدينة</Label>
+                    <Label htmlFor="city">{t('city') || 'المدينة'}</Label>
                     <Input id="city" value={editOrderForm.shipping_address.city} onChange={e => setEditOrderForm(f => f ? { ...f, shipping_address: { ...f.shipping_address, city: e.target.value } } : f)} />
                   </div>
                   <div>
-                    <Label htmlFor="area">المنطقة</Label>
+                    <Label htmlFor="area">{t('area') || 'المنطقة'}</Label>
                     <Input id="area" value={editOrderForm.shipping_address.area} onChange={e => setEditOrderForm(f => f ? { ...f, shipping_address: { ...f.shipping_address, area: e.target.value } } : f)} />
                   </div>
                   <div>
-                    <Label htmlFor="street">الشارع</Label>
+                    <Label htmlFor="street">{t('street') || 'الشارع'}</Label>
                     <Input id="street" value={editOrderForm.shipping_address.street} onChange={e => setEditOrderForm(f => f ? { ...f, shipping_address: { ...f.shipping_address, street: e.target.value } } : f)} />
                   </div>
                   <div>
-                    <Label htmlFor="building">رقم المبنى</Label>
+                    <Label htmlFor="building">{t('building') || 'رقم المبنى'}</Label>
                     <Input id="building" value={editOrderForm.shipping_address.building} onChange={e => setEditOrderForm(f => f ? { ...f, shipping_address: { ...f.shipping_address, building: e.target.value } } : f)} />
                   </div>
                   <div>
-                    <Label htmlFor="floor">الطابق</Label>
+                    <Label htmlFor="floor">{t('floor') || 'الطابق'}</Label>
                     <Input id="floor" value={editOrderForm.shipping_address.floor} onChange={e => setEditOrderForm(f => f ? { ...f, shipping_address: { ...f.shipping_address, floor: e.target.value } } : f)} />
                   </div>
                   <div>
-                    <Label htmlFor="apartment">رقم الشقة</Label>
+                    <Label htmlFor="apartment">{t('apartment') || 'رقم الشقة'}</Label>
                     <Input id="apartment" value={editOrderForm.shipping_address.apartment} onChange={e => setEditOrderForm(f => f ? { ...f, shipping_address: { ...f.shipping_address, apartment: e.target.value } } : f)} />
                   </div>
                 </div>
@@ -1363,16 +1385,16 @@ const AdminOrders: React.FC = () => {
               {/* المنتجات */}
               <div className="bg-gray-50 rounded-xl p-4 border mt-2">
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-semibold text-primary">المنتجات</h3>
+                  <h3 className="text-lg font-semibold text-primary">{t('products') || 'المنتجات'}</h3>
                   <Button type="button" onClick={() => setEditOrderForm(f => f ? { ...f, items: [...f.items, { id: Date.now().toString(), product_id: '', quantity: 1, price: 0, product_name: '' }] } : f)} variant="outline" size="sm">
-                    <Plus className="h-4 w-4 mr-2" /> إضافة منتج
+                    <Plus className="h-4 w-4 mr-2" /> {t('addProduct') || 'إضافة منتج'}
                   </Button>
                 </div>
                 <div className="space-y-3">
                   {editOrderForm.items.map((item, index) => (
                     <div key={item.id} className="flex flex-col sm:flex-row gap-3 items-end p-3 border rounded-lg bg-white shadow-sm">
                       <div className="flex-1 min-w-[180px]">
-                        <Label>المنتج <span className="text-red-500">*</span></Label>
+                        <Label>{t('product') || 'المنتج'} <span className="text-red-500">*</span></Label>
                         <Select value={item.product_id} onValueChange={value => {
   setEditOrderForm(f => {
     if (!f) return f;
@@ -1395,7 +1417,7 @@ const AdminOrders: React.FC = () => {
   });
 }}>
                           <SelectTrigger className="w-full">
-                            <SelectValue placeholder="ابحث أو اختر المنتج" />
+                            <SelectValue placeholder={t('searchOrSelectProduct') || 'ابحث أو اختر المنتج'} />
                           </SelectTrigger>
                           <SelectContent>
                             {products.map(product => (
@@ -1407,11 +1429,11 @@ const AdminOrders: React.FC = () => {
                         </Select>
                       </div>
                       <div className="w-full sm:w-24">
-                        <Label>الكمية <span className="text-red-500">*</span></Label>
+                        <Label>{t('quantity') || 'الكمية'} <span className="text-red-500">*</span></Label>
                         <Input type="number" min="1" value={item.quantity} onChange={e => setEditOrderForm(f => f ? { ...f, items: f.items.map((it, i) => i === index ? { ...it, quantity: parseInt(e.target.value) || 1 } : it) } : f)} required />
                       </div>
                       <div className="w-full sm:w-24">
-                        <Label>السعر <span className="text-red-500">*</span></Label>
+                        <Label>{t('price') || 'السعر'} <span className="text-red-500">*</span></Label>
                         <Input type="number" step="0.01" value={item.price} onChange={e => setEditOrderForm(f => f ? { ...f, items: f.items.map((it, i) => i === index ? { ...it, price: parseFloat(e.target.value) || 0 } : it) } : f)} required />
                       </div>
                       <Button type="button" onClick={() => setEditOrderForm(f => f ? { ...f, items: f.items.filter((_, i) => i !== index) } : f)} variant="destructive" size="sm" className="self-end">
@@ -1424,16 +1446,16 @@ const AdminOrders: React.FC = () => {
 
               {/* ملاحظات */}
               <div>
-                <Label htmlFor="notes">ملاحظات</Label>
-                <Textarea id="notes" value={editOrderForm.notes} onChange={e => setEditOrderForm(f => f ? { ...f, notes: e.target.value } : f)} placeholder="أدخل ملاحظات إضافية (اختياري)" />
+                <Label htmlFor="notes">{t('notes') || 'ملاحظات'}</Label>
+                <Textarea id="notes" value={editOrderForm.notes} onChange={e => setEditOrderForm(f => f ? { ...f, notes: e.target.value } : f)} placeholder={t('orderNotesPlaceholder') || 'أدخل ملاحظات إضافية (اختياري)'} />
               </div>
               {/* أزرار الحفظ */}
               <div className="flex flex-col sm:flex-row justify-end gap-2 mt-6">
                 <Button type="button" variant="outline" onClick={() => setShowEditOrder(false)}>
-                  إلغاء
+                  {t('cancel') || 'إلغاء'}
                 </Button>
                 <Button type="submit" className="bg-primary text-white font-bold">
-                  حفظ التعديلات
+                  {t('saveChanges') || 'حفظ التعديلات'}
                 </Button>
               </div>
             </form>
