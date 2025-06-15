@@ -14,7 +14,7 @@ interface UserDetailsDialogProps {
 }
 
 const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({ user, open, onOpenChange }) => {
-  const { isRTL } = useLanguage();
+  const { t, isRTL } = useLanguage();
 
   const getUserTypeColor = (userType: string) => {
     switch (userType) {
@@ -54,7 +54,7 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({ user, open, onOpe
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className={`max-w-2xl ${isRTL ? 'text-right' : 'text-left'}`} dir={isRTL ? 'rtl' : 'ltr'}>
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold">تفاصيل المستخدم</DialogTitle>
+          <DialogTitle className="text-xl font-bold">{t('userDetails')}</DialogTitle>
         </DialogHeader>
         
         <div className="space-y-6">
@@ -71,7 +71,7 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({ user, open, onOpe
                   <h3 className="text-lg font-semibold">{user.full_name}</h3>
                   <Badge className={`${getUserTypeColor(user.user_type)} mt-1`}>
                     <span className="ml-1">{getUserTypeIcon(user.user_type)}</span>
-                    {user.user_type === 'admin' ? 'مدير' : user.user_type === 'wholesale' ? 'جملة' : 'تجزئة'}
+                    {t(user.user_type)}
                   </Badge>
                 </div>
               </div>
@@ -79,20 +79,20 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({ user, open, onOpe
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex items-center gap-2">
                   <User className="h-4 w-4 text-gray-400" />
-                  <span className="text-sm text-gray-600">المعرف:</span>
+                  <span className="text-sm text-gray-600">{t('id')}:</span>
                   <span className="text-sm font-mono bg-gray-100 px-2 py-1 rounded">
                     {user.id.slice(0, 8)}...
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Mail className="h-4 w-4 text-gray-400" />
-                  <span className="text-sm text-gray-600">الإيميل:</span>
-                  <span className="text-sm">{user.email || 'غير متاح'}</span>
+                  <span className="text-sm text-gray-600">{t('email')}:</span>
+                  <span className="text-sm">{user.email || t('notProvided')}</span>
                 </div>
                 {user.phone && (
                   <div className="flex items-center gap-2">
                     <Phone className="h-4 w-4 text-gray-400" />
-                    <span className="text-sm text-gray-600">الهاتف:</span>
+                    <span className="text-sm text-gray-600">{t('phone')}:</span>
                     <span className="text-sm">{user.phone}</span>
                   </div>
                 )}
@@ -105,7 +105,7 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({ user, open, onOpe
             <CardContent className="p-6">
               <h4 className="font-semibold mb-4 flex items-center gap-2">
                 <Shield className="h-4 w-4" />
-                الحالة وتواريخ الحساب
+                {t('accountStatusAndDates')}
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* حالة الحساب */}
@@ -113,12 +113,12 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({ user, open, onOpe
                   {user.disabled ? (
                     <>
                       <XCircle className="h-4 w-4 text-red-500" />
-                      <span className="text-sm text-red-600">الحساب معطل</span>
+                      <span className="text-sm text-red-600">{t('accountDisabled')}</span>
                     </>
                   ) : (
                     <>
                       <CheckCircle className="h-4 w-4 text-green-500" />
-                      <span className="text-sm text-green-600">الحساب فعال</span>
+                      <span className="text-sm text-green-600">{t('accountActive')}</span>
                     </>
                   )}
                 </div>
@@ -127,31 +127,31 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({ user, open, onOpe
                   {user.email_confirmed_at ? (
                     <>
                       <CheckCircle className="h-4 w-4 text-green-500" />
-                      <span className="text-sm text-green-600">الإيميل مؤكد</span>
+                      <span className="text-sm text-green-600">{t('emailConfirmed')}</span>
                     </>
                   ) : (
                     <>
                       <XCircle className="h-4 w-4 text-orange-500" />
-                      <span className="text-sm text-orange-600">الإيميل غير مؤكد</span>
+                      <span className="text-sm text-orange-600">{t('emailNotConfirmed')}</span>
                     </>
                   )}
                 </div>
                 {/* تاريخ التسجيل */}
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-gray-400" />
-                  <span className="text-sm text-gray-600">تاريخ التسجيل:</span>
+                  <span className="text-sm text-gray-600">{t('registrationDate')}:</span>
                   <span className="text-sm">{safeDate(user.created_at)}</span>
                 </div>
                 {/* تاريخ آخر تعديل */}
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-gray-400" />
-                  <span className="text-sm text-gray-600">تاريخ اخر تعديل للحساب:</span>
+                  <span className="text-sm text-gray-600">{t('lastAccountUpdate')}:</span>
                   <span className="text-sm">{safeDate(user.updated_at)}</span>
                 </div>
                 {/* آخر دخول */}
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-gray-400" />
-                  <span className="text-sm text-gray-600">آخر دخول:</span>
+                  <span className="text-sm text-gray-600">{t('lastLogin')}:</span>
                   <span className="text-sm">{safeDate(user.last_sign_in_at)}</span>
                 </div>
               </div>
@@ -163,18 +163,18 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({ user, open, onOpe
             <CardContent className="p-6">
               <h4 className="font-semibold mb-4 flex items-center gap-2">
                 <span className="text-lg">📦</span>
-                إحصائيات الطلبيات
+                {t('orderStats')}
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* آخر طلبية */}
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-gray-400" />
-                  <span className="text-sm text-gray-600">آخر طلبية:</span>
+                  <span className="text-sm text-gray-600">{t('lastOrder')}:</span>
                   <span className="text-sm">{safeDate(user.last_order_date)}</span>
                 </div>
                 {/* أكبر طلبية */}
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-600">أكبر طلبية:</span>
+                  <span className="text-sm text-gray-600">{t('highestOrder')}:</span>
                   <span className="text-sm">{safeNumber(user.highest_order_value)}</span>
                 </div>
               </div>

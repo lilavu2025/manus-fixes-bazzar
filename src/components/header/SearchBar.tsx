@@ -27,7 +27,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
 
   if (isMobileOnly) {
     return (
-      <div className="relative">
+      <div className="relative" aria-label={t('searchBarMobile')}>
         <Search className={`absolute top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5 ${isRTL ? 'right-3' : 'left-3'}`} />
         <ClearableInput
           placeholder={t('search')}
@@ -36,6 +36,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
           onClear={() => onSearchChange('')}
           className={`${isRTL ? 'pr-10 pl-4' : 'pl-10 pr-4'} h-12 rounded-full border-2 border-gray-200 focus:border-primary text-base`}
           autoFocus
+          aria-label={t('searchInput')}
         />
       </div>
     );
@@ -44,7 +45,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
   return (
     <>
       {/* Desktop Search */}
-      <div className="hidden md:flex flex-1 max-w-md mx-4">
+      <div className="hidden md:flex flex-1 max-w-md mx-4" aria-label={t('searchBarDesktop')}>
         <div className="relative w-full">
           <Search className={`absolute top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5 ${isRTL ? 'right-3' : 'left-3'}`} />
           <ClearableInput
@@ -53,10 +54,10 @@ const SearchBar: React.FC<SearchBarProps> = ({
             onChange={handleSearchChange}
             onClear={() => onSearchChange('')}
             className={`${isRTL ? 'pr-10 pl-4' : 'pl-10 pr-4'} h-11 rounded-full border-2 border-gray-200 focus:border-primary text-base`}
+            aria-label={t('searchInput')}
           />
         </div>
       </div>
-
       {/* Mobile Search Toggle */}
       {setShowMobileSearch && (
         <Button
@@ -64,6 +65,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
           size="icon"
           onClick={() => setShowMobileSearch(!showMobileSearch)}
           className="md:hidden h-10 w-10"
+          aria-label={showMobileSearch ? t('closeSearch') : t('openSearch')}
         >
           {showMobileSearch ? <X className="h-5 w-5" /> : <Search className="h-5 w-5" />}
         </Button>

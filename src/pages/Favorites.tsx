@@ -26,7 +26,7 @@ const Favorites: React.FC = () => {
     try {
       await clearFavorites();
     } catch (error) {
-      console.error('خطأ في مسح المفضلة:', error);
+      console.error(t('errorClearingFavoritesLog') || 'خطأ في مسح المفضلة:', error);
     }
   };
 

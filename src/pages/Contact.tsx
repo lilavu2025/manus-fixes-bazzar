@@ -98,15 +98,15 @@ const Contact: React.FC = () => {
 
         {/* Quick Contact Section */}
         <section className="mt-2 text-center">
-          <h2 className="text-xl font-bold mb-4 text-orange-600">طرق تواصل سريعة</h2>
+          <h2 className="text-xl font-bold mb-4 text-orange-600">{t('quickContacts')}</h2>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <a href={`https://wa.me/${contactInfo?.phone || '966123456789'}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-green-100 text-green-800 font-semibold hover:bg-green-200 transition-colors">
+            <a href={`https://wa.me/${contactInfo?.phone || t('defaultPhone')}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-green-100 text-green-800 font-semibold hover:bg-green-200 transition-colors">
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M20.52 3.48A12 12 0 1 0 2.47 20.52l2.65-7.72a1 1 0 0 1 .6-.6l7.72-2.65a1 1 0 0 1 1.2 1.2l-2.65 7.72a1 1 0 0 1-.6.6l-7.72 2.65A12 12 0 1 0 20.52 3.48z" /></svg>
-              واتساب
+              {t('whatsapp')}
             </a>
-            <a href={`mailto:${contactInfo?.email || 'info@mystore.com'}`} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-100 text-blue-800 font-semibold hover:bg-blue-200 transition-colors">
+            <a href={`mailto:${contactInfo?.email || t('defaultEmail')}`} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-100 text-blue-800 font-semibold hover:bg-blue-200 transition-colors">
               <Mail className="w-5 h-5" />
-              البريد الإلكتروني
+              {t('emailContact')}
             </a>
           </div>
         </section>
@@ -199,7 +199,7 @@ const Contact: React.FC = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-600">{contactInfo?.email || 'info@mystore.com'}</p>
+                <p className="text-gray-600">{contactInfo?.email || t('defaultEmail')}</p>
               </CardContent>
             </Card>
             <Card className="bg-white/90 shadow-md">
@@ -210,7 +210,7 @@ const Contact: React.FC = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-600">{contactInfo?.phone || '+966 12 345 6789'}</p>
+                <p className="text-gray-600">{contactInfo?.phone || t('defaultPhone')}</p>
               </CardContent>
             </Card>
             <Card className="bg-white/90 shadow-md">
@@ -221,7 +221,7 @@ const Contact: React.FC = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-600">{contactInfo?.address || 'العنوان هنا'}</p>
+                <p className="text-gray-600">{contactInfo?.address || t('defaultAddress')}</p>
               </CardContent>
             </Card>
             <Card className="bg-white/90 shadow-md">

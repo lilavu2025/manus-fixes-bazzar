@@ -139,13 +139,13 @@ const UserTableRow: React.FC<UserTableRowProps> = ({ user, index, refetch, setUs
                   onClick={handleDisableUser}
                   className={`text-xs lg:text-sm cursor-pointer ${user.disabled ? 'text-green-600' : 'text-yellow-600'}`}
                 >
-                  {user.disabled ? t('enableUser') || 'تفعيل المستخدم' : t('disableUser') || 'تعطيل المستخدم'}
+                  {user.disabled ? t('enableUser') : t('disableUser')}
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={handleDeleteUser}
                   className="text-xs lg:text-sm cursor-pointer text-red-600"
                 >
-                  {t('deleteUser') || 'حذف المستخدم'}
+                  {t('deleteUser')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

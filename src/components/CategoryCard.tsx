@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Category } from '@/types';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/utils/languageContextUtils';
+import { getLocalizedName } from '@/utils/getLocalizedName';
 import LazyImage from '@/components/LazyImage';
 
 interface CategoryCardProps {
@@ -12,7 +13,7 @@ interface CategoryCardProps {
 
 const CategoryCard: React.FC<CategoryCardProps> = ({ category }) => {
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   const handleClick = () => {
     navigate(`/products?category=${category.id}`);
@@ -33,23 +34,15 @@ const CategoryCard: React.FC<CategoryCardProps> = ({ category }) => {
           {/* شارة عدد المنتجات */}
           <div className="absolute bottom-2 right-2">
             <Badge variant="secondary" className="bg-white/90 text-gray-800 text-sm sm:text-base">
-              {category.count} {category.count === 1 ? t('product') : t('products')}
+              {category.count} {category.count === 1 ? t('products') : t('products')}
             </Badge>
           </div>
         </div>
 
         <CardContent className="p-4 text-center">
           <h3 className="font-bold text-lg sm:text-xl md:text-2xl group-hover:text-primary transition-colors">
-            {category.name}
+            {getLocalizedName(category, language)}
           </h3>
-          <p className="text-sm sm:text-base text-gray-600 mt-1 line-clamp-1">
-            {category.nameEn}
-          </p>
-          {category.nameHe && (
-            <p className="text-sm sm:text-base text-gray-600 mt-1 line-clamp-1">
-              {category.nameHe}
-            </p>
-          )}
         </CardContent>
       </Card>
     </div>

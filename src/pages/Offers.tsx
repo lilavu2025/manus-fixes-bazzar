@@ -182,7 +182,7 @@ const Offers: React.FC = () => {
               >
                 <LazyImage
                   src={offer.image_url}
-                  alt={offer.title_ar || offer.title_en || 'عرض خاص'}
+                  alt={offer.title_ar || offer.title_en || t('specialOffer')}
                   className="w-full h-40 object-cover rounded mb-4 group-hover:scale-105 transition-transform duration-200"
                 />
                 <h3 className="text-xl font-bold mb-2 text-center w-full truncate">

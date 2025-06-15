@@ -36,7 +36,7 @@ const ProductActions = ({ product, onBuyNow }: ProductActionsProps) => {
       console.log('Product added to cart successfully');
       setQuantity(1);
     } catch (error) {
-      console.error('Error adding to cart:', error);
+      console.error(t('errorAddingToCartLog') || 'Error adding to cart:', error);
       toast.error(t('errorAddingToCart'));
     }
   };
@@ -64,7 +64,7 @@ const ProductActions = ({ product, onBuyNow }: ProductActionsProps) => {
     try {
       if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
         await navigator.clipboard.writeText(productUrl);
-        toast.success(t('linkCopied') || 'تم نسخ الرابط');
+        toast.success(t('linkCopied'));
       } else {
         // fallback
         const tempInput = document.createElement('input');
@@ -73,10 +73,10 @@ const ProductActions = ({ product, onBuyNow }: ProductActionsProps) => {
         tempInput.select();
         document.execCommand('copy');
         document.body.removeChild(tempInput);
-        toast.success(t('linkCopied') || 'تم نسخ الرابط');
+        toast.success(t('linkCopied'));
       }
     } catch {
-      toast.error(t('shareError') || 'حدث خطأ في النسخ');
+      toast.error(t('shareError'));
     }
     setShareOpen(false);
   };
@@ -90,12 +90,12 @@ const ProductActions = ({ product, onBuyNow }: ProductActionsProps) => {
           text: product.description,
           url: productUrl
         });
-        toast.success(t('sharedSuccessfully') || 'تمت المشاركة بنجاح');
+        toast.success(t('sharedSuccessfully'));
       } catch {
         // تجاهل إغلاق المستخدم
       }
     } else {
-      toast.error(t('shareError') || 'المشاركة غير مدعومة على هذا المتصفح');
+      toast.error(t('shareError'));
     }
     setShareOpen(false);
   };
@@ -161,20 +161,20 @@ const ProductActions = ({ product, onBuyNow }: ProductActionsProps) => {
           <PopoverContent align="end" className="w-44 p-2 space-y-1">
             <button className="flex items-center gap-2 w-full px-2 py-1 hover:bg-gray-100 rounded text-sm" onClick={handleShareWhatsapp}>
               <MessageCircle className="h-4 w-4 text-green-600" />
-              {t('shareViaWhatsapp') || 'واتساب'}
+              {t('shareViaWhatsapp')}
             </button>
             <button className="flex items-center gap-2 w-full px-2 py-1 hover:bg-gray-100 rounded text-sm" onClick={handleShareEmail}>
               <Mail className="h-4 w-4 text-blue-600" />
-              {t('shareViaEmail') || 'إيميل'}
+              {t('shareViaEmail')}
             </button>
             <button className="flex items-center gap-2 w-full px-2 py-1 hover:bg-gray-100 rounded text-sm" onClick={handleCopyLink}>
               <Copy className="h-4 w-4" />
-              {t('copyLink') || 'نسخ الرابط'}
+              {t('copyLink')}
             </button>
             {navigator.share && (
               <button className="flex items-center gap-2 w-full px-2 py-1 hover:bg-gray-100 rounded text-sm" onClick={handleNativeShare}>
                 <Share2 className="h-4 w-4 text-gray-600" />
-                {t('shareSystem') || 'مشاركة النظام'}
+                {t('shareSystem')}
               </button>
             )}
           </PopoverContent>

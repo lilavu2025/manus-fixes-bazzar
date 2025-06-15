@@ -11,9 +11,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Filter, X } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { getLocalizedName } from '@/utils/getLocalizedName';
 
 const Products: React.FC = () => {
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, language } = useLanguage();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -70,8 +71,8 @@ const Products: React.FC = () => {
     .filter(product => {
       // فلترة حسب الفئة
       const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
-      const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           product.description.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSearch = getLocalizedName(product, language).toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.description.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesPrice = (!priceRange.min || product.price >= Number(priceRange.min)) &&
                           (!priceRange.max || product.price <= Number(priceRange.max));
       return matchesCategory && matchesSearch && matchesPrice;
@@ -205,7 +206,7 @@ const Products: React.FC = () => {
                     <SelectItem value="all">{t('allCategories')}</SelectItem>
                     {categories.map(category => (
                       <SelectItem key={category.id} value={category.id}>
-                        {category.name}
+                        {getLocalizedName(category, language)}
                       </SelectItem>
                     ))}
                   </SelectContent>

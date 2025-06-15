@@ -106,13 +106,19 @@ const AdminDashboard: React.FC = () => {
 
   // جلب المنتجات منخفضة المخزون
   useEffect(() => {
-    const fetchLowStockProducts = async () => {      const { data } = await supabase
+    const fetchLowStockProducts = async () => {
+      const { data } = await supabase
         .from('products')
-        .select('id,name_ar,stock_quantity')
+        .select('id,name_ar,name_en,name_he,stock_quantity')
         .lt('stock_quantity', 5);
-      setLowStockProductsData((data || []).map((p: { id: string; name_ar: string; stock_quantity: number }) => ({ id: p.id, name: p.name_ar, stock_quantity: p.stock_quantity })));
-
-
+      setLowStockProductsData((data || []).map((p: { id: string; name_ar: string; name_en: string; name_he: string; stock_quantity: number }) => ({
+        id: p.id,
+        name: p.name_ar, // احتياطي فقط، العرض الفعلي حسب اللغة في AdminDashboardStats
+        name_ar: p.name_ar,
+        name_en: p.name_en,
+        name_he: p.name_he,
+        stock_quantity: p.stock_quantity
+      })));
     };
     fetchLowStockProducts();
   }, []);

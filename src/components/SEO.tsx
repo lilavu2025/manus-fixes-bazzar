@@ -32,7 +32,7 @@ const SEO = ({
   const fullTitle = title ? `${title} | ${siteTitle}` : siteTitle;
   const defaultDescription = t('storeDescription');
   const finalDescription = description || defaultDescription;
-  const defaultKeywords = 'متجر إلكتروني, تسوق أونلاين, منتجات عربية, online store, shopping, arabic products';
+  const defaultKeywords = t('defaultKeywords') || 'متجر إلكتروني, تسوق أونلاين, منتجات عربية, online store, shopping, arabic products';
   const finalKeywords = keywords || defaultKeywords;
   const siteImage = image.startsWith('http') ? image : `${window.location.origin}${image}`;
 

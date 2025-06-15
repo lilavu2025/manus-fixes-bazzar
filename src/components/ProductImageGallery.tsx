@@ -201,7 +201,7 @@ const ProductImageGallery = ({ product }: ProductImageGalleryProps) => {
                   setIsZoomed(!isZoomed);
                 }}
                 onError={(e) => {
-                  console.error('فشل في تحميل الصورة المكبرة:', images[selectedImage]);
+                  console.error(t('errorLoadingZoomedImageLog') || 'فشل في تحميل الصورة المكبرة:', images[selectedImage]);
                   e.currentTarget.src = '/placeholder.svg';
                 }}
               />
@@ -235,7 +235,7 @@ const ProductImageGallery = ({ product }: ProductImageGalleryProps) => {
                 alt={`${product.name} ${index + 1}`}
                 className="w-full h-full object-cover"
                 onError={(e) => {
-                  console.error('Thumbnail failed to load:', image);
+                  console.error(t('errorLoadingThumbnailLog') || 'Thumbnail failed to load:', image);
                   e.currentTarget.src = '/placeholder.svg';
                 }}
               />

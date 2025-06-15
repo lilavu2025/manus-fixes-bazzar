@@ -9,9 +9,10 @@ import { Button } from '@/components/ui/button';
 import { useProducts, useBanners } from '@/hooks/useSupabaseData';
 import { useCategoriesRealtime } from '@/hooks/useCategoriesRealtime';
 import { useLanguage } from '@/utils/languageContextUtils';
+import { getLocalizedName } from '@/utils/getLocalizedName';
 
 const Index = () => {
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, language } = useLanguage();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -31,7 +32,7 @@ const Index = () => {
 
   const featuredProducts = products.filter(product => product.featured).slice(0, 8);
   const filteredProducts = products.filter(product => 
-    searchQuery === '' || product.name.toLowerCase().includes(searchQuery.toLowerCase())
+    searchQuery === '' || getLocalizedName(product, language).toLowerCase().includes(searchQuery.toLowerCase())
   );
   const displayProducts = searchQuery ? filteredProducts : featuredProducts;
 
@@ -121,11 +122,11 @@ const Index = () => {
             ) : categoriesError ? (
               <div className="text-center py-8">
                 <p className="text-red-500">
-                  خطأ في تحميل الفئات: {categoriesErrorMsg}</p>
+                  {t('errorLoadingCategories')}: {categoriesErrorMsg}</p>
               </div>
             ) : categories.length === 0 ? (
               <div className="text-center py-8">
-                <p className="text-gray-500">لا توجد فئات متاحة</p>
+                <p className="text-gray-500">{t('noCategoriesAvailable')}</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

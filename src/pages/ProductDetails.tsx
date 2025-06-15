@@ -12,12 +12,13 @@ import ProductInfo from '@/components/ProductInfo';
 import ProductActions from '@/components/ProductActions';
 import ProductBreadcrumb from '@/components/ProductBreadcrumb';
 import RelatedProducts from '@/components/RelatedProducts';
+import { getLocalizedName } from '@/utils/getLocalizedName';
 import type { Product } from '@/types/product';
 
 const ProductDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, language } = useLanguage();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   
@@ -102,12 +103,12 @@ const ProductDetails = () => {
 
       <main className="container mx-auto px-2 sm:px-6 py-8">
         <div className={`mb-4 ${isRTL ? 'text-right' : 'text-left'}`}> 
-          <ProductBreadcrumb productName={product.name} />
+          <ProductBreadcrumb productName={getLocalizedName(product, language)} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
           <ProductImageGallery product={{
-            name: product.name,
+            name: getLocalizedName(product, language),
             image: product.image,
             images: product.images,
             discount: product.discount,

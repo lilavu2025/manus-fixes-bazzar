@@ -9,25 +9,25 @@ import type { UserProfile } from '@/types/profile';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 
-const ACTION_LABELS: Record<string, string> = {
-  disable: 'تعطيل',
-  enable: 'تفعيل',
-  delete: 'حذف',
-};
-
-type ProfileMap = Record<string, { full_name: string; email: string; phone: string | null } | undefined>;
-
-interface UserActivityLog {
-  id: string;
-  admin_id: string;
-  user_id: string;
-  action: string;
-  details: Json | null;
-  created_at: string;
-}
-
 const UserActivityLogTable: React.FC = () => {
   const { t } = useLanguage();
+  const ACTION_LABELS: Record<string, string> = {
+    disable: t('disableUser'),
+    enable: t('enableUser'),
+    delete: t('deleteUser'),
+  };
+
+  type ProfileMap = Record<string, { full_name: string; email: string; phone: string | null } | undefined>;
+
+  interface UserActivityLog {
+    id: string;
+    admin_id: string;
+    user_id: string;
+    action: string;
+    details: Json | null;
+    created_at: string;
+  }
+
   const [logs, setLogs] = useState<UserActivityLog[]>([]);
   const [profileMap, setProfileMap] = useState<ProfileMap>({});
   const [loading, setLoading] = useState(true);
@@ -69,14 +69,14 @@ const UserActivityLogTable: React.FC = () => {
           .select('user_id,full_name,email,phone')
           .in('user_id', missingIds);
         (deletedUsers as Array<{ user_id: string; full_name: string | null; email: string | null; phone: string | null }> | undefined)?.forEach(u => {
-          map[u.user_id] = { full_name: u.full_name || 'مستخدم محذوف', email: u.email, phone: u.phone };
+          map[u.user_id] = { full_name: u.full_name || t('deletedUser'), email: u.email, phone: u.phone };
         });
       }
       setProfileMap(map);
       setLoading(false);
     };
     fetchLogsAndProfiles();
-  }, []);
+  }, [t]);
 
   // جلب تفاصيل المستخدم عند الضغط
   const handleUserDetails = async (userId: string) => {
@@ -89,7 +89,7 @@ const UserActivityLogTable: React.FC = () => {
       if (deleted) {
         data = {
           id: deleted.user_id,
-          full_name: deleted.full_name || 'مستخدم محذوف',
+          full_name: deleted.full_name || t('deletedUser'),
           phone: deleted.phone,
           user_type: 'retail',
           last_sign_in_at: deleted.last_sign_in_at,
@@ -194,7 +194,7 @@ const UserActivityLogTable: React.FC = () => {
                       displayPhone = displayPhone || detailsObj.phone;
                     }
                     // fallback نهائي
-                    if (!displayName) displayName = 'مستخدم غير متوفر';
+                    if (!displayName) displayName = t('userUnavailable');
                     if (!displayEmail) displayEmail = '';
                     if (!displayPhone) displayPhone = null;
                     // زر التفاصيل فقط إذا كان هناك اسم

@@ -1,6 +1,7 @@
 import * as React from "react";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLanguage } from '@/utils/languageContextUtils';
 
 export interface ClearableInputProps extends React.ComponentProps<"input"> {
   onClear?: () => void;
@@ -8,6 +9,7 @@ export interface ClearableInputProps extends React.ComponentProps<"input"> {
 
 export const ClearableInput = React.forwardRef<HTMLInputElement, ClearableInputProps>(
   ({ className, type = "text", value, onChange, onClear, ...props }, ref) => {
+    const { t } = useLanguage();
     return (
       <div className="relative w-full">
         <input
@@ -27,7 +29,7 @@ export const ClearableInput = React.forwardRef<HTMLInputElement, ClearableInputP
             tabIndex={-1}
             className="absolute top-1/2 right-2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
             onClick={onClear}
-            aria-label="Clear input"
+            aria-label={t('clearInput')}
           >
             <X className="w-4 h-4" />
           </button>

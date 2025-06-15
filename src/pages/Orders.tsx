@@ -68,14 +68,14 @@ const Orders: React.FC = () => {
     const updateObj: Record<string, unknown> = {
       status: 'cancelled',
       cancelled_by: 'user',
-      cancelled_by_name: user?.user_metadata?.full_name || user?.email || 'مستخدم',
+      cancelled_by_name: user?.user_metadata?.full_name || user?.email || t('user'),
     };
     const { error: updateError } = await supabase
       .from('orders')
       .update(updateObj)
       .eq('id', orderId);
     if (!updateError) {
-      setOrders((prev) => prev.map((o) => o.id === orderId ? { ...o, status: 'cancelled', cancelled_by: 'user', cancelled_by_name: user?.user_metadata?.full_name || user?.email || 'مستخدم' } : o));
+      setOrders((prev) => prev.map((o) => o.id === orderId ? { ...o, status: 'cancelled', cancelled_by: 'user', cancelled_by_name: user?.user_metadata?.full_name || user?.email || t('user') } : o));
     }
     setCancellingId(null);
   };
@@ -259,8 +259,8 @@ const Orders: React.FC = () => {
                         return [
                           fullName && <span key="fn">{fullName}</span>,
                           phone && <span key="ph">({phone})</span>,
-                          [city, area, street, building].filter(Boolean).join('، '),
-                          (floor || apartment) ? `طابق: ${floor || '-'}، شقة: ${apartment || '-'}` : null
+                          [city, area, street, building].filter(Boolean).join(t('addressSeparator') || '، '),
+                          (floor || apartment) ? `${t('floor')}: ${floor || '-'}${t('addressSeparator') || '، '}${t('apartment')}: ${apartment || '-'}` : null
                         ].filter(Boolean).map((part, i) => <span key={i}>{part}{i < 2 ? ' - ' : ''}</span>);
                       })()}</span>
                     </div>

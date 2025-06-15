@@ -2,6 +2,7 @@ import * as React from 'react';
 import { Star } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '@/utils/languageContextUtils';
+import { getLocalizedName } from '@/utils/getLocalizedName';
 
 interface ProductInfoProps {
   product: {
@@ -17,12 +18,12 @@ interface ProductInfoProps {
 }
 
 const ProductInfo = ({ product }: ProductInfoProps) => {
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, language } = useLanguage();
 
   return (
     <div className={`space-y-6 ${isRTL ? 'text-right' : 'text-left'}`}>
       <div>
-        <h1 className="text-3xl font-bold mb-2 text-center">{product.name}</h1>
+        <h1 className="text-3xl font-bold mb-2 text-center">{getLocalizedName(product, language)}</h1>
       </div>
       {/* السعر */}
       <div className={`flex flex-col gap-2 w-full`}>

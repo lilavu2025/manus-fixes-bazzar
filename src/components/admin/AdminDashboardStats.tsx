@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '../../utils/languageContextUtils';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,12 +11,27 @@ import { useNavigate } from 'react-router-dom';
 // Helper types
 interface UsersByType { [key: string]: number; }
 interface ProductsByCategoryStats { total: number; inStock: number; outOfStock: number; }
+interface Category {
+  id: string;
+  name_ar?: string;
+  name_en?: string;
+  name_he?: string;
+}
+
+interface LowStockProduct {
+  id: string;
+  name: string;
+  name_ar?: string;
+  name_en?: string;
+  name_he?: string;
+  stock_quantity: number;
+}
 
 interface AdminDashboardStatsProps {
   onFilterUsers?: (userType: string) => void;
   onFilterOrders?: (status: string) => void;
   pendingOrders?: { id: string; created_at: string; profiles?: { full_name: string; email?: string; phone?: string } }[];
-  lowStockProductsData?: { id: string; name: string; stock_quantity: number }[];
+  lowStockProductsData?: LowStockProduct[];
 }
 
 const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({ 
@@ -25,7 +40,7 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
   pendingOrders = [],
   lowStockProductsData = []
 }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
   const [isUsersExpanded, setIsUsersExpanded] = useState(false);
   const [isOrdersExpanded, setIsOrdersExpanded] = useState(false);
@@ -63,7 +78,7 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
 
   // Fetch products statistics
   const { data: productsStats = [], isLoading: productsLoading, error: productsError } = useQuery({
-    queryKey: ["admin-products-stats"],
+    queryKey: ["admin-products-stats", language],
     queryFn: async () => {
       const { data: products, error: productsError } = await supabase
         .from('products')
@@ -71,13 +86,21 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
 
       const { data: categories, error: categoriesError } = await supabase
         .from('categories')
-        .select('id, name_ar, name_en');
+        .select('id, name_ar, name_en, name_he');
 
       if (productsError || categoriesError) throw productsError || categoriesError;
 
+      const getCategoryName = (cat: Category | undefined) => {
+        if (!cat) return t('notProvided');
+        if (language === 'ar') return cat.name_ar || t('notProvided');
+        if (language === 'en') return cat.name_en || t('notProvided');
+        if (language === 'he') return cat.name_he || t('notProvided');
+        return t('notProvided');
+      };
+
       const productsByCategory: Record<string, ProductsByCategoryStats> = products.reduce((acc: Record<string, ProductsByCategoryStats>, product: { category_id: string; in_stock: boolean; active: boolean }) => {
         const category = categories.find((cat: { id: string }) => cat.id === product.category_id);
-        const categoryName = category?.name_ar || 'غير محدد';
+        const categoryName = getCategoryName(category);
         if (!acc[categoryName]) {
           acc[categoryName] = { total: 0, inStock: 0, outOfStock: 0 };
         }
@@ -99,8 +122,7 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
     retry: 3,
     staleTime: 0,
     refetchOnWindowFocus: true,
-    refetchInterval: false, // تم تعطيل polling (refetchInterval) لأن المتصفح يوقفه بالخلفية،
-    // والاعتماد على WebSocket أو إعادة الجلب عند العودة للواجهة أفضل
+    refetchInterval: false,
   });
 
   // Fetch orders statistics
@@ -134,35 +156,35 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
         statusStats: [
           { 
             status: 'pending', 
-            label: 'في الانتظار', 
+            label: t('pending'), 
             value: ordersByStatus.pending || 0, 
             revenue: revenueByStatus.pending || 0,
             color: '#8b5cf6' 
           },
           { 
             status: 'processing', 
-            label: 'قيد المعالجة', 
+            label: t('processing'), 
             value: ordersByStatus.processing || 0, 
             revenue: revenueByStatus.processing || 0,
             color: '#f59e0b' 
           },
           { 
             status: 'shipped', 
-            label: 'تم الشحن', 
+            label: t('shipped'), 
             value: ordersByStatus.shipped || 0, 
             revenue: revenueByStatus.shipped || 0,
             color: '#3b82f6' 
           },
           { 
             status: 'delivered', 
-            label: 'تم التسليم', 
+            label: t('delivered'), 
             value: ordersByStatus.delivered || 0, 
             revenue: revenueByStatus.delivered || 0,
             color: '#10b981' 
           },
           { 
             status: 'cancelled', 
-            label: 'ملغية', 
+            label: t('cancelled'), 
             value: ordersByStatus.cancelled || 0, 
             revenue: 0,
             color: '#ef4444' 
@@ -209,8 +231,8 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
         const date = new Date(order.created_at);
         const monthKey = date.getMonth();
         const monthNames = [
-          'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
-          'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
+          t('january'), t('february'), t('march'), t('april'), t('may'), t('june'),
+          t('july'), t('august'), t('september'), t('october'), t('november'), t('december')
         ];
         if (!acc[monthKey]) {
           acc[monthKey] = {
@@ -236,7 +258,7 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
   });
 
   // Fetch recent activity data
-  const { data: recentActivity = [], isLoading: activityLoading } = useQuery({
+  const { data: recentActivity = [], isLoading: activityLoading, refetch: refetchRecentActivity } = useQuery({
     queryKey: ["admin-recent-activity"],
     queryFn: async () => {
       const activities = [];
@@ -306,6 +328,11 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
     refetchInterval: false, // تم تعطيل polling (refetchInterval) لأن المتصفح يوقفه بالخلفية،
     // والاعتماد على WebSocket أو إعادة الجلب عند العودة للواجهة أفضل
   });
+
+  // إعادة جلب النشاط الأخير عند تغيير اللغة
+  useEffect(() => {
+    refetchRecentActivity();
+  }, [language, refetchRecentActivity]);
 
   const chartConfig = {
     users: { label: t('users'), color: '#3b82f6' },
@@ -460,7 +487,7 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
                   {ordersStats && typeof ordersStats.totalRevenue === 'number' ? ordersStats.totalRevenue.toLocaleString() : 0} {t('currency')}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  إجمالي الإيرادات
+                  {t('totalRevenue')}
                 </p>
               </>
             ) : (
@@ -488,40 +515,46 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-8 mt-2">
         <Card className="hover:shadow-lg transition-shadow cursor-pointer border-yellow-300 bg-yellow-50" onClick={() => setShowPendingOrdersDetails((v) => !v)}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-yellow-900">طلبات جديدة</CardTitle>
+            <CardTitle className="text-sm font-medium text-yellow-900">{t('newOrders')}</CardTitle>
             <ShoppingCart className="h-4 w-4 text-yellow-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-yellow-900">{pendingOrders.length}</div>
-            <p className="text-xs text-yellow-800">طلبات بانتظار المعالجة</p>
+            <p className="text-xs text-yellow-800">{t('ordersPendingProcessing')}</p>
             {showPendingOrdersDetails && pendingOrders.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-2">
                 {pendingOrders.slice(0, 3).map(order => (
                   <button key={order.id} className="underline text-yellow-700 hover:text-yellow-900 text-xs" onClick={e => { e.stopPropagation(); navigate(`/admin/orders?orderId=${order.id}`); }}>
-                    تفاصيل الطلب {order.profiles?.full_name ? order.profiles.full_name : 'عميل غير محدد'}
+                    {t('orderDetails')} {order.profiles?.full_name ? order.profiles.full_name : t('unknownCustomer')}
                   </button>
                 ))}
-                {pendingOrders.length > 3 && <span className="text-xs text-yellow-700">والمزيد...</span>}
+                {pendingOrders.length > 3 && <span className="text-xs text-yellow-700">{t('andMore')}</span>}
               </div>
             )}
           </CardContent>
         </Card>
         <Card className="hover:shadow-lg transition-shadow cursor-pointer border-red-300 bg-red-50" onClick={() => setShowLowStockDetails((v) => !v)}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-red-900">منتجات منخفضة المخزون</CardTitle>
+            <CardTitle className="text-sm font-medium text-red-900">{t('lowStockProducts')}</CardTitle>
             <Package className="h-4 w-4 text-red-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-900">{lowStockProductsData.length}</div>
-            <p className="text-xs text-red-800">منتجات بحاجة لإعادة التوريد</p>
+            <p className="text-xs text-red-800">{t('restockNeededProducts')}</p>
             {showLowStockDetails && lowStockProductsData.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-2">
-                {lowStockProductsData.slice(0, 3).map(product => (
-                  <button key={product.id} className="underline text-red-700 hover:text-red-900 text-xs" onClick={e => { e.stopPropagation(); navigate(`/admin/products?productId=${product.id}`); }}>
-                    {product.name} ({product.stock_quantity})
-                  </button>
-                ))}
-                {lowStockProductsData.length > 3 && <span className="text-xs text-red-700">والمزيد...</span>}
+                {lowStockProductsData.slice(0, 3).map(product => {
+                  let productName = product.name;
+                  if (language === 'ar' && product.name_ar) productName = product.name_ar;
+                  else if (language === 'en' && product.name_en) productName = product.name_en;
+                  else if (language === 'he' && product.name_he) productName = product.name_he;
+                  return (
+                    <button key={product.id} className="underline text-red-700 hover:text-red-900 text-xs" onClick={e => { e.stopPropagation(); navigate(`/admin/products?productId=${product.id}`); }}>
+                      {productName} ({product.stock_quantity})
+                    </button>
+                  );
+                })}
+                {lowStockProductsData.length > 3 && <span className="text-xs text-red-700">{t('andMore')}</span>}
               </div>
             )}
           </CardContent>
@@ -643,10 +676,10 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
                   const activityTime = new Date(time);
                   const diffInMinutes = Math.floor((now.getTime() - activityTime.getTime()) / (1000 * 60));
                   
-                  if (diffInMinutes < 1) return 'الآن';
-                  if (diffInMinutes < 60) return `منذ ${diffInMinutes} دقيقة`;
-                  if (diffInMinutes < 1440) return `منذ ${Math.floor(diffInMinutes / 60)} ساعة`;
-                  return `منذ ${Math.floor(diffInMinutes / 1440)} يوم`;
+                  if (diffInMinutes < 1) return t('now');
+                  if (diffInMinutes < 60) return t('minutesAgo').replace('{count}', diffInMinutes.toString());
+                  if (diffInMinutes < 1440) return t('hoursAgo').replace('{count}', Math.floor(diffInMinutes / 60).toString());
+                  return t('daysAgo').replace('{count}', Math.floor(diffInMinutes / 1440).toString());
                 };
                 
                 const colorClasses = {

@@ -7,6 +7,7 @@ import { useLanguage } from '@/utils/languageContextUtils';
 import { useAuth } from '@/contexts/useAuth';
 import { Product } from '@/types';
 import QuantitySelector from '@/components/QuantitySelector';
+import { getLocalizedName } from '@/utils/getLocalizedName';
 
 interface ProductCardContentProps {
   product: Product;
@@ -29,7 +30,7 @@ const ProductCardContent: React.FC<ProductCardContentProps> = ({
   isLoading = false,
   onProductClick,
 }) => {
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, language } = useLanguage();
   const { profile } = useAuth();
 
   const displayPrice = product.price;
@@ -44,7 +45,7 @@ const ProductCardContent: React.FC<ProductCardContentProps> = ({
         <h3
           className={`font-semibold text-base sm:text-lg md:text-xl lg:text-2xl mb-2 line-clamp-2 group-hover:text-primary transition-colors ${isRTL ? 'text-right' : 'text-left'}`}
         >
-          {product.name}
+          {getLocalizedName(product, language)}
         </h3>
       </Link>
       {/* السعر  */}

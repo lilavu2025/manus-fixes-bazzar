@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { useCategoriesRealtime } from '@/hooks/useCategoriesRealtime';
 import { useLanguage } from '@/utils/languageContextUtils';
+import { getLocalizedName } from '@/utils/getLocalizedName';
 import Header from '@/components/Header';
 import CategoryCard from '@/components/CategoryCard';
 import CartSidebar from '@/components/CartSidebar';
 
 const Categories: React.FC = () => {
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, language } = useLanguage();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -19,7 +20,7 @@ const Categories: React.FC = () => {
   // فلترة الفئات: فقط الفئات النشطة + البحث
   const filteredCategories = categories
     .filter(category => category.active)
-    .filter(category => category.name.toLowerCase().includes(searchQuery.toLowerCase()));
+    .filter(category => getLocalizedName(category, language).toLowerCase().includes(searchQuery.toLowerCase()));
 
   if (loading) {
     return (
@@ -97,7 +98,7 @@ const Categories: React.FC = () => {
         {filteredCategories.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-500 text-lg">
-              {searchQuery ? t('noCategoriesFound') : 'لا توجد فئات متاحة'}
+              {searchQuery ? t('noCategoriesFound') : t('noCategoriesAvailable')}
             </p>
           </div>
         ) : (
