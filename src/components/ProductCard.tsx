@@ -198,14 +198,15 @@ const ProductCard: React.FC<ProductCardProps> = memo(({ product, onQuickView }) 
           />
           <Popover open={shareOpen} onOpenChange={setShareOpen}>
             <PopoverTrigger asChild>
-              <Button
+              {/* زر المشاركة بالمنتج */}
+              {/* <Button
                 size="icon"
                 variant="secondary"
                 className="h-8 w-8 bg-white/90 hover:bg-orange-100 hover:text-orange-600 shadow-md transition-colors"
                 onClick={e => { e.preventDefault(); e.stopPropagation(); setShareOpen((v) => !v); }}
               >
                 <Share2 className="h-4 w-4" />
-              </Button>
+              </Button> */}
             </PopoverTrigger>
             <PopoverContent align="end" className="w-44 p-2 space-y-1 z-50">
               <button className="flex items-center gap-2 w-full px-2 py-1 hover:bg-gray-100 rounded text-sm" onClick={handleShareWhatsapp}>
