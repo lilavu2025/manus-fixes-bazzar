@@ -350,7 +350,7 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
   if (usersLoading || productsLoading || ordersLoading) {
     return (
       <div className="space-y-6">
-        <h1 className="text-3xl font-bold">{t('loadingAdminDashboard')}</h1>
+        <h1 className="text-3xl font-bold">{t('adminPanel')}</h1>
         <div className="text-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto animate-spin rounded-full border-primary"></div>
           <p className="mt-4 text-gray-600">{t('loadingAdminDashboard')}</p>
