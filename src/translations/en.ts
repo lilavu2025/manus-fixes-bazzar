@@ -675,4 +675,5 @@ export const enTranslations = {
   dragAndDropArea: 'Image upload area',
   dragAndDropHint: 'Drag & drop images here or click to select files',
   searchByClientOrOrderNumber: 'Search by client name, email, or order number',
+  payOnDeliveryDescription: 'Pay for your order upon delivery.',
 };

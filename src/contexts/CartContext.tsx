@@ -4,6 +4,8 @@ import { useAuth } from '@/contexts/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useState, useEffect } from 'react';
 import type { CartContextType, CartItem, CartState, CartAction } from './CartContext.types';
+import { getDisplayPrice } from '@/utils/priceUtils';
+import type { Product as ProductFull } from '@/types/product';
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
@@ -94,7 +96,7 @@ const initialState: CartState = {
  */
 export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(cartReducer, initialState);
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
@@ -311,10 +313,14 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return state.items.reduce((sum, item) => sum + item.quantity, 0);
   };
   
+  // Helper: حساب المجموع الكلي للسلة حسب نوع المستخدم
+  const getTotalPrice = () => {
+    return (state.items as unknown as CartItemFull[]).reduce((sum, item) => sum + (getDisplayPrice(item.product, profile?.user_type) * item.quantity), 0);
+  };
+
   // Aliases for compatibility with old code
   const addToCart = addItem;
   const cartItems = state.items;
-  const getTotalPrice = () => state.total;
 
   // buyNow: إضافة منتج وبدء الشراء المباشر
   const buyNow = async (product: Product, quantity = 1) => {
@@ -357,3 +363,9 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   );
 };
 export default CartContext;
+
+type CartItemFull = {
+  id: string;
+  product: ProductFull;
+  quantity: number;
+};

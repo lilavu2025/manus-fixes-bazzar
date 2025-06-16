@@ -26,6 +26,7 @@ import 'jspdf-autotable';
 import VirtualScrollList from '../VirtualScrollList';
 import OptimizedSearch from '../OptimizedSearch';
 import { compressText, decompressText } from '@/utils/textCompression';
+import { getDisplayPrice } from '@/utils/priceUtils';
 
 // واجهة الطلب
 interface Order {
@@ -163,7 +164,7 @@ const initialOrderForm: NewOrderForm = {
 
 const AdminOrders: React.FC = () => {
   const { t, isRTL, language } = useLanguage();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const queryClient = useQueryClient();
   const location = useLocation();
   
@@ -1267,7 +1268,7 @@ const AdminOrders: React.FC = () => {
                               <td className="p-2 text-center">{idx + 1}</td>
                               <td className="p-2">{item.product_name}</td>
                               <td className="p-2 text-center">{item.quantity}</td>
-                              <td className="p-2 text-center">{item.price} ₪</td>
+                              <td className="p-2 text-center">{getDisplayPrice(products.find(p => p.id === item.product_id) as import('@/types/product').Product, profile?.user_type) || item.price} ₪</td>
                               <td className="p-2 text-center font-semibold">{(item.price * item.quantity).toFixed(2)} ₪</td>
                             </tr>
                           ))
@@ -1396,28 +1397,28 @@ const AdminOrders: React.FC = () => {
                       <div className="flex-1 min-w-[180px]">
                         <Label>{t('product') || 'المنتج'} <span className="text-red-500">*</span></Label>
                         <Select value={item.product_id} onValueChange={value => {
-  setEditOrderForm(f => {
-    if (!f) return f;
-    // جلب بيانات المنتج المختار
-    const selectedProduct = products.find(p => p.id === value);
-    return {
-      ...f,
-      items: f.items.map((it, i) =>
-        i === index
-          ? {
-              ...it,
-              product_id: value,
-              // إذا تم اختيار منتج جديد، حدث السعر تلقائياً
-              price: selectedProduct ? selectedProduct.price : 0,
-              product_name: selectedProduct ? selectedProduct.name : '',
-            }
-          : it
-      ),
-    };
-  });
-}}>
+                            setEditOrderForm(f => {
+                              if (!f) return f;
+                              // جلب بيانات المنتج المختار
+                              const selectedProduct = products.find(p => p.id === value);
+                              return {
+                                ...f,
+                                items: f.items.map((it, i) =>
+                                  i === index
+                                    ? {
+                                        ...it,
+                                        product_id: value,
+                                        // إذا تم اختيار منتج جديد، حدث السعر تلقائياً
+                                        price: selectedProduct ? selectedProduct.price : 0,
+                                        product_name: selectedProduct ? selectedProduct.name : '',
+                                      }
+                                    : it
+                                ),
+                              };
+                            });
+                          }}>
                           <SelectTrigger className="w-full">
-                            <SelectValue placeholder={t('searchOrSelectProduct') || 'ابحث أو اختر المنتج'} />
+                            <SelectValue  className={`${isRTL ? 'text-right' : 'text-left'}`} placeholder={t('searchOrSelectProduct') || 'ابحث أو اختر المنتج'} />
                           </SelectTrigger>
                           <SelectContent>
                             {products.map(product => (

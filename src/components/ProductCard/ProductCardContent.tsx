@@ -5,12 +5,14 @@ import { Button } from '@/components/ui/button';
 import { CardContent } from '@/components/ui/card';
 import { useLanguage } from '@/utils/languageContextUtils';
 import { useAuth } from '@/contexts/useAuth';
+import type { Product as ProductFull } from '@/types/product';
 import { Product } from '@/types';
 import QuantitySelector from '@/components/QuantitySelector';
 import { getLocalizedName } from '@/utils/getLocalizedName';
+import { getDisplayPrice } from '@/utils/priceUtils';
 
 interface ProductCardContentProps {
-  product: Product;
+  product: ProductFull;
   quantity: number;
   cartQuantity: number;
   onQuantityChange: (quantity: number) => void;
@@ -33,7 +35,7 @@ const ProductCardContent: React.FC<ProductCardContentProps> = ({
   const { t, isRTL, language } = useLanguage();
   const { profile } = useAuth();
 
-  const displayPrice = product.price;
+  const displayPrice = getDisplayPrice(product, profile?.user_type);
 
   return (
     <CardContent
@@ -52,13 +54,13 @@ const ProductCardContent: React.FC<ProductCardContentProps> = ({
       <div className={`flex flex-col gap-2 mb-4 w-full`}>
         <div className={`flex flex-col gap-2 w-full`}>
           <div className={`flex items-center gap-4 w-full ${isRTL ? 'flex-row-reverse justify-end' : 'justify-start'}`}> 
-            {product.originalPrice !== product.price && (
+            {product.originalPrice !== displayPrice && (
               <span className="text-lg text-gray-500 line-through">
                 {product.originalPrice} {t('currency')}
               </span>
             )}
             <span className="text-3xl font-bold text-primary">
-              {product.price} {t('currency')}
+              {displayPrice} {t('currency')}
             </span>
           </div>
         </div>

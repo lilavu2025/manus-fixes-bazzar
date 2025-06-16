@@ -680,5 +680,6 @@ export const arTranslations = {
   visitInstagram: 'زيارة انستغرام',
   working_hours: 'ساعات العمل',
   drag_indicator: 'سحب لتغيير الترتيب',
-  searchByClientOrOrderNumber: 'البحث بواسطة العميل أو رقم الطلب'
+  searchByClientOrOrderNumber: 'البحث بواسطة العميل أو رقم الطلب',
+  payOnDeliveryDescription: 'الدفع عند الاستلام.',
 };

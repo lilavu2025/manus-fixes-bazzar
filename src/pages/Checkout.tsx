@@ -17,6 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ShoppingCart, CreditCard, Banknote, ArrowLeft } from 'lucide-react';
 import { Product } from '@/types';
 import { compressText, decompressText } from '@/utils/textCompression';
+import { getDisplayPrice } from '@/utils/priceUtils';
 
 // واجهة بيانات الشراء المباشر
 interface DirectBuyState {
@@ -28,7 +29,7 @@ interface DirectBuyState {
 const Checkout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { t, isRTL } = useLanguage();
   const { state, cartItems = state.items, getTotalPrice, clearCart, isLoading: cartLoading } = useCart();
   const [isCartLoading, setIsCartLoading] = useState(true);
@@ -78,7 +79,7 @@ const Checkout: React.FC = () => {
 
   // حساب السعر الإجمالي
   const totalPrice = isDirectBuy && directProduct
-    ? directProduct.price * directQuantity
+    ? getDisplayPrice(normalizeProductForDisplay(directProduct), profile?.user_type) * directQuantity
     : getTotalPrice();
 
   // وظيفة إتمام الطلب
@@ -386,9 +387,9 @@ const Checkout: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <RadioGroup name="paymentMethod" value={paymentMethod} onValueChange={(value: 'cash' | 'card') => setPaymentMethod(value)}>
-                  <div className="flex items-center space-x-2 p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                  <div className={`flex items-center p-4 border rounded-lg hover:bg-gray-50 transition-colors ${isRTL ? 'flex-row-reverse space-x-reverse space-x-2' : 'space-x-2'}`}>
                     <RadioGroupItem value="cash" id="cash" />
-                    <Label htmlFor="cash" className="flex items-center gap-2 cursor-pointer flex-1">
+                    <Label htmlFor="cash" className={`flex items-center gap-2 cursor-pointer flex-1 ${isRTL ? 'flex-row-reverse space-x-reverse space-x-2' : 'space-x-2'}`}>
                       <Banknote className="h-5 w-5 text-green-600" />
                       <div>
                         <span className="font-medium">{t('cashOnDelivery')}</span>
@@ -396,9 +397,9 @@ const Checkout: React.FC = () => {
                       </div>
                     </Label>
                   </div>
-                  <div className="flex items-center space-x-2 p-4 border rounded-lg opacity-50">
+                  <div className={`flex items-center p-4 border rounded-lg opacity-50 ${isRTL ? 'flex-row-reverse space-x-reverse space-x-2' : 'space-x-2'}`}>
                     <RadioGroupItem value="card" id="card" disabled />
-                    <Label htmlFor="card" className="flex items-center gap-2 cursor-not-allowed flex-1">
+                    <Label htmlFor="card" className={`flex items-center gap-2 cursor-not-allowed flex-1 ${isRTL ? 'flex-row-reverse space-x-reverse space-x-2' : 'space-x-2'}`}>
                       <CreditCard className="h-5 w-5" />
                       <div>
                         <span>{t('creditCard')}</span>
@@ -424,24 +425,51 @@ const Checkout: React.FC = () => {
             <CardContent className="space-y-4">
               {/* عرض المنتجات */}
               <div className="space-y-3 max-h-64 overflow-y-auto">
-                {itemsToCheckout.map((item) => (
-                  <div key={item.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50">
-                    <img
-                      src={item.product.image}
-                      alt={item.product.name}
-                      className="w-12 h-12 object-cover rounded"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-medium text-sm truncate">{item.product.name}</h4>
-                      <p className="text-xs text-gray-600">
-                        {item.quantity} × {item.product.price} {t('currency')}
+                {itemsToCheckout.map((item) => {
+                  // Ensure all required Product fields are present for getDisplayPrice
+                  const productForPrice = {
+                    id: item.product.id || '',
+                    name: item.product.name || '',
+                    nameEn: item.product.nameEn || '',
+                    nameHe: item.product.nameHe || '',
+                    description: item.product.description || '',
+                    descriptionEn: item.product.descriptionEn || '',
+                    descriptionHe: item.product.descriptionHe || '',
+                    price: item.product.price,
+                    originalPrice: item.product.originalPrice,
+                    wholesalePrice: item.product.wholesalePrice,
+                    image: item.product.image || '',
+                    images: item.product.images || [],
+                    category: item.product.category || '',
+                    inStock: typeof item.product.inStock === 'boolean' ? item.product.inStock : true,
+                    rating: item.product.rating || 0,
+                    reviews: item.product.reviews || 0,
+                    discount: item.product.discount,
+                    featured: item.product.featured,
+                    tags: item.product.tags || [],
+                    stock_quantity: item.product.stock_quantity,
+                    active: item.product.active,
+                    created_at: item.product.created_at,
+                  };
+                  return (
+                    <div key={item.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50">
+                      <img
+                        src={item.product.image}
+                        alt={item.product.name}
+                        className="w-12 h-12 object-cover rounded"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-sm truncate">{item.product.name}</h4>
+                        <p className="text-xs text-gray-600">
+                          {item.quantity} × {getDisplayPrice(productForPrice, profile?.user_type)} {t('currency')}
+                        </p>
+                      </div>
+                      <p className="font-medium text-sm">
+                        {item.quantity * getDisplayPrice(productForPrice, profile?.user_type)} {t('currency')}
                       </p>
                     </div>
-                    <p className="font-medium text-sm">
-                      {item.quantity * item.product.price} {t('currency')}
-                    </p>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
               
               <Separator />
@@ -479,5 +507,26 @@ const Checkout: React.FC = () => {
     </div>
   );
 };
+
+// Helper to normalize a Product to the canonical type with all required fields
+function normalizeProductForDisplay(product: Product): import("@/types/product").Product {
+  return {
+    ...product,
+    nameHe: (product as { nameHe?: string }).nameHe ?? '',
+    descriptionHe: (product as { descriptionHe?: string }).descriptionHe ?? '',
+    // fallback for any other required fields if needed
+    name: product.name || '',
+    nameEn: product.nameEn || '',
+    description: product.description || '',
+    descriptionEn: product.descriptionEn || '',
+    id: product.id || '',
+    price: product.price,
+    image: product.image || '',
+    category: product.category || '',
+    inStock: typeof product.inStock === 'boolean' ? product.inStock : true,
+    rating: product.rating || 0,
+    reviews: product.reviews || 0,
+  };
+}
 
 export default Checkout;

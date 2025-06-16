@@ -14,9 +14,12 @@ import { useCart } from '@/hooks/useCart';
 import LazyImage from '@/components/LazyImage';
 import type { Database } from '@/integrations/supabase/types';
 import type { Product } from '@/types';
+import { getDisplayPrice } from '@/utils/priceUtils';
+import { useAuth } from '@/contexts/useAuth';
 
 const Offers: React.FC = () => {
   const { t, isRTL } = useLanguage();
+  const { profile } = useAuth();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const { addToCart } = useCart();
@@ -145,8 +148,8 @@ const Offers: React.FC = () => {
         {/* Page Header */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-4">
-            <Percent className="h-8 w-8 text-primary" />
             <h1 className="text-3xl font-bold">{t('offers')}</h1>
+            <Percent className="h-8 w-8 text-primary" />
           </div>
           <p className="text-gray-600 mb-6">
             {t('specialOffers')}
@@ -194,6 +197,9 @@ const Offers: React.FC = () => {
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-lg font-bold text-primary">
                     {t('discount')}: {offer.discount_percent}%
+                  </span>
+                  <span className="text-lg font-bold text-primary">
+                    {getDisplayPrice(offerToProduct(offer) as import('@/types/product').Product, profile?.user_type)} {t('currency')}
                   </span>
                 </div>
                 <div className="text-sm text-gray-500 mb-4">

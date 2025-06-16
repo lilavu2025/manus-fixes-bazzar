@@ -663,4 +663,5 @@ export const heTranslations = {
   dragAndDropArea: 'אזור העלאת תמונות',
   dragAndDropHint: 'גרור ושחרר תמונות כאן או לחץ לבחירת קבצים',
   searchByClientOrOrderNumber: 'חפש לפי שם לקוח או מספר הזמנה',
+  payOnDeliveryDescription: 'שלם במזומן בעת קבלת המוצר.',
 };

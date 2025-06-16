@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Tables } from '@/integrations/supabase/types';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { getDisplayPrice } from '@/utils/priceUtils';
 
 // أنواع الطلب وعناصر الطلب من Supabase
 type OrderItemDB = NonNullable<Tables<'orders'>['order_items']>[number];
@@ -20,7 +21,7 @@ type OrderDB = Tables<'orders'> & {
 
 const Orders: React.FC = () => {
   const { t, isRTL, language } = useLanguage();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
 
   const [orders, setOrders] = useState<OrderDB[]>([]);
   const [loading, setLoading] = useState(true);
@@ -109,8 +110,8 @@ const Orders: React.FC = () => {
       <Header onSearchChange={() => {}} onCartClick={() => {}} onMenuClick={() => {}} />
       <div className="container mx-auto px-4 py-6 max-w-3xl">
         <div className={`mb-8 ${isRTL ? 'text-right' : 'text-left'}`}>  
-          <h1 className="text-3xl font-bold mb-1">{t('orders')}</h1>
-          <p className="text-gray-600 mt-2">{t('trackYourOrders') || t('viewYourOrders')}</p>
+          <h1 className="text-3xl font-bold mb-1 text-center">{t('orders')}</h1>
+          <p className="text-gray-600 mt-2 text-center">{t('trackYourOrders') || t('viewYourOrders')}</p>
         </div>
         {/* شريط الفلترة والبحث */}
         <div className="flex flex-col md:flex-row md:items-center gap-3 mb-6">
@@ -284,8 +285,54 @@ const Orders: React.FC = () => {
                                   <span className="truncate">{language === 'ar' ? item.products?.name_ar : item.products?.name_en}</span>
                                 </td>
                                 <td className="p-2 text-center">{item.quantity}</td>
-                                <td className="p-2 text-center">{item.price} {t('currency')}</td>
-                                <td className="p-2 text-center font-semibold">{(item.price * item.quantity).toFixed(2)} {t('currency')}</td>
+                                <td className="p-2 text-center">{getDisplayPrice({
+                                  id: item.products?.id || '',
+                                  name: item.products?.name_ar || '',
+                                  nameEn: item.products?.name_en || '',
+                                  nameHe: item.products?.name_he || '',
+                                  description: item.products?.description_ar || '',
+                                  descriptionEn: item.products?.description_en || '',
+                                  descriptionHe: item.products?.description_he || '',
+                                  price: item.price,
+                                  originalPrice: item.products?.original_price,
+                                  wholesalePrice: item.products?.wholesale_price,
+                                  image: item.products?.image || '',
+                                  images: item.products?.images || [],
+                                  category: '', // fallback
+                                  inStock: typeof item.products?.in_stock === 'boolean' ? item.products.in_stock : true,
+                                  rating: item.products?.rating || 0,
+                                  reviews: 0, // fallback
+                                  discount: item.products?.discount,
+                                  featured: item.products?.featured,
+                                  tags: item.products?.tags || [],
+                                  stock_quantity: item.products?.stock_quantity,
+                                  active: item.products?.active,
+                                  created_at: item.products?.created_at,
+                                }, profile?.user_type)} {t('currency')}</td>
+                                <td className="p-2 text-center font-semibold">{(getDisplayPrice({
+                                  id: item.products?.id || '',
+                                  name: item.products?.name_ar || '',
+                                  nameEn: item.products?.name_en || '',
+                                  nameHe: item.products?.name_he || '',
+                                  description: item.products?.description_ar || '',
+                                  descriptionEn: item.products?.description_en || '',
+                                  descriptionHe: item.products?.description_he || '',
+                                  price: item.price,
+                                  originalPrice: item.products?.original_price,
+                                  wholesalePrice: item.products?.wholesale_price,
+                                  image: item.products?.image || '',
+                                  images: item.products?.images || [],
+                                  category: '', // fallback
+                                  inStock: typeof item.products?.in_stock === 'boolean' ? item.products.in_stock : true,
+                                  rating: item.products?.rating || 0,
+                                  reviews: 0, // fallback
+                                  discount: item.products?.discount,
+                                  featured: item.products?.featured,
+                                  tags: item.products?.tags || [],
+                                  stock_quantity: item.products?.stock_quantity,
+                                  active: item.products?.active,
+                                  created_at: item.products?.created_at,
+                                }, profile?.user_type) * item.quantity).toFixed(2)} {t('currency')}</td>
                               </tr>
                             ))
                           ) : (

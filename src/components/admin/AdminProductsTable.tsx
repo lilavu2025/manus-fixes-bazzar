@@ -24,6 +24,8 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Product } from '@/types/product';
+import { getDisplayPrice } from '@/utils/priceUtils';
+import { useAuth } from '@/contexts/useAuth';
 
 interface AdminProductsTableProps {
   products: Product[];
@@ -41,6 +43,7 @@ const AdminProductsTable: React.FC<AdminProductsTableProps> = ({
   categories = [], // افتراضي مصفوفة فارغة
 }) => {
   const { t, language } = useLanguage();
+  const { profile } = useAuth();
 
   // دالة لجلب اسم المنتج حسب اللغة
   const getProductName = (product: Product) => {
@@ -88,7 +91,7 @@ const AdminProductsTable: React.FC<AdminProductsTableProps> = ({
                 </TableCell>
                 <TableCell className="font-medium max-w-[120px] truncate">{getProductName(product)}</TableCell>
                 <TableCell>{getCategoryName(product.category)}</TableCell>
-                <TableCell>{product.price} {t('currency')}</TableCell>
+                <TableCell>{getDisplayPrice(product, profile?.user_type)} {t('currency')}</TableCell>
                 <TableCell>{product.stock_quantity || 0}</TableCell>
                 <TableCell>
                   <Badge variant={product.inStock ? 'default' : 'destructive'}>

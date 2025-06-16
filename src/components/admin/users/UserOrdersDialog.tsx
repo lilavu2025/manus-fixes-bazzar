@@ -9,6 +9,8 @@ import { Separator } from '@/components/ui/separator';
 import { Package, Eye, Calendar, CreditCard, ShoppingBag } from 'lucide-react';
 import { format } from 'date-fns';
 import { useLanguage } from '../../../utils/languageContextUtils';
+import { getDisplayPrice } from '@/utils/priceUtils';
+import { useAuth } from '@/contexts/useAuth';
 import type { UserProfile } from '@/types/profile';
 
 interface ShippingAddress {
@@ -47,6 +49,7 @@ interface UserOrdersDialogProps {
 
 const UserOrdersDialog: React.FC<UserOrdersDialogProps> = ({ user, open, onOpenChange }) => {
   const { isRTL, t, language } = useLanguage();
+  const { profile } = useAuth();
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [selectedOrderIndex, setSelectedOrderIndex] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -276,12 +279,48 @@ const UserOrdersDialog: React.FC<UserOrdersDialogProps> = ({ user, open, onOpenC
                             : item.products?.name_en}
                         </h4>
                         <p className="text-sm text-gray-600">
-                          {t('quantity') || 'الكمية'}: {item.quantity} × {item.price} {t('currency') || 'ش.ج'}
+                          {t('quantity') || 'الكمية'}: {item.quantity} × {getDisplayPrice({
+                            id: item.id,
+                            price: item.price,
+                            name: item.products?.name_ar || '',
+                            nameEn: item.products?.name_en || '',
+                            nameHe: item.products?.name_he || '',
+                            description: '',
+                            descriptionEn: '',
+                            descriptionHe: '',
+                            image: item.products?.image || '',
+                            images: [],
+                            category: '',
+                            inStock: true,
+                            rating: 0,
+                            reviews: 0,
+                            discount: undefined,
+                            featured: false,
+                            tags: [],
+                          }, profile?.user_type)} {t('currency') || 'ش.ج'}
                         </p>
                       </div>
                       <div className="text-left min-w-[80px]">
                         <p className="font-semibold text-primary">
-                          {(item.quantity * Number(item.price)).toFixed(2)} {t('currency') || 'ش.ج'}
+                          {(item.quantity * getDisplayPrice({
+                            id: item.id,
+                            price: item.price,
+                            name: item.products?.name_ar || '',
+                            nameEn: item.products?.name_en || '',
+                            nameHe: item.products?.name_he || '',
+                            description: '',
+                            descriptionEn: '',
+                            descriptionHe: '',
+                            image: item.products?.image || '',
+                            images: [],
+                            category: '',
+                            inStock: true,
+                            rating: 0,
+                            reviews: 0,
+                            discount: undefined,
+                            featured: false,
+                            tags: [],
+                          }, profile?.user_type)).toFixed(2)} {t('currency') || 'ش.ج'}
                         </p>
                       </div>
                     </div>

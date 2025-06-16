@@ -11,6 +11,7 @@ import ProductInfo from '../ProductInfo';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Mail, Copy, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { getDisplayPrice } from '@/utils/priceUtils';
 
 export interface ProductCardQuickViewProps {
   product: Product;
@@ -94,7 +95,7 @@ const ProductCardQuickView: React.FC<ProductCardQuickViewProps> = ({
     setShareOpen(false);
   };
 
-  const displayPrice = product.price;
+  const displayPrice = getDisplayPrice(product as import('@/types/product').Product, profile?.user_type);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -116,7 +117,12 @@ const ProductCardQuickView: React.FC<ProductCardQuickViewProps> = ({
             
 
             <div className="w-full">
-              <ProductInfo product={product} />
+              <ProductInfo product={{
+                ...product,
+                price: displayPrice,
+                nameHe: (product as { nameHe?: string }).nameHe || '',
+                descriptionHe: (product as { descriptionHe?: string }).descriptionHe || ''
+              }} />
             </div>
 
             <div className={`flex items-center gap-12 w-full ${isRTL ? 'flex-row-reverse justify-end' : 'justify-start'}`}>

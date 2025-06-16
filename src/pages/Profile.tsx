@@ -70,7 +70,7 @@ const Profile: React.FC = () => {
           {/* Profile Summary */}
           <Card className={isRTL ? 'text-right' : 'text-left'}>
             <CardHeader>
-              <CardTitle className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : 'flex-row'}`}>
+              <CardTitle className={`flex items-center gap-2 ${isRTL ? 'text-right' : 'text-left'}`}>
                 <User className="h-5 w-5" />
                 <span>{t('accountInfo')}</span>
               </CardTitle>
@@ -94,7 +94,7 @@ const Profile: React.FC = () => {
           {/* Settings */}
           <Card className="lg:col-span-2">
             <CardHeader>
-              <CardTitle className={`flex items-center gap-2 ${isRTL ? 'flex-row-reverse' : 'flex-row'}`}>
+              <CardTitle className={`flex items-center gap-2 ${isRTL ? 'text-right' : 'text-left'}`}>
                 <Settings className="h-5 w-5" />
                 <span>{t('settings')}</span>
               </CardTitle>
@@ -161,7 +161,7 @@ const Profile: React.FC = () => {
 
                 <TabsContent value="addresses">
                   <div className="space-y-4">
-                    <div className={`flex items-center justify-between ${isRTL ? 'flex-row-reverse' : 'flex-row'}`}>
+                    <div className={`flex items-center justify-between ${isRTL ? 'text-right' : 'text-left'}`}>
                       <h3 className={`text-lg font-medium ${isRTL ? 'text-right' : 'text-left'}`}>{t('savedAddresses')}</h3>
                       <AddAddressDialog />
                     </div>
@@ -169,7 +169,7 @@ const Profile: React.FC = () => {
                     {addresses.length === 0 ? (
                       <div className="text-center py-8">
                         <MapPin className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                        <p className={`text-gray-500 ${isRTL ? 'text-right' : 'text-left'} text-center`}>{t('noAddressesSaved')}</p>
+                        <p className={`text-gray-500 text-center`}>{t('noAddressesSaved')}</p>
                       </div>
                     ) : (
                       <div className="space-y-3">

@@ -57,8 +57,8 @@ const AddAddressDialog: React.FC<AddAddressDialogProps> = ({ trigger }) => {
       <DialogTrigger asChild>
         {trigger || (
           <Button className="gap-2">
-            <Plus className="h-4 w-4" />
             {t('addAddress')}
+            <Plus className="h-4 w-4" />
           </Button>
         )}
       </DialogTrigger>
