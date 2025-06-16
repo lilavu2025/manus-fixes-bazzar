@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/toast"
 import { useLanguage } from '@/utils/languageContextUtils';
 
-export function Toaster(props: any) {
+export function Toaster(props: React.ComponentProps<typeof ToastProvider>) {
   const { t } = useLanguage();
   const { toasts } = useToast()
 
