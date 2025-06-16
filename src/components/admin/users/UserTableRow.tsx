@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Mail, Phone, Calendar, CheckCircle, XCircle, Eye, ShoppingBag, MoreVertical } from 'lucide-react';
 import { format } from 'date-fns';
-import { useLanguage } from '@/utils/languageContextUtils';
+import { isRTL, useLanguage } from '@/utils/languageContextUtils';
 import EditUserDialog from '../EditUserDialog';
 import UserDetailsDialog from './UserDetailsDialog';
 import UserOrdersDialog from './UserOrdersDialog';
@@ -170,10 +170,10 @@ const UserTableRow: React.FC<UserTableRowProps> = ({ user, index, refetch, setUs
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-red-600 text-lg font-bold">{t('confirmDeleteUser') || 'تأكيد حذف المستخدم'}</AlertDialogTitle>
+            <AlertDialogTitle className={`${isRTL ? 'text-right' : 'text-left'} text-red-600 text-lg font-bold`}>{t('confirmDeleteUser') || 'تأكيد حذف المستخدم'}</AlertDialogTitle>
           </AlertDialogHeader>
           <div className="mb-4 text-gray-700">{t('deleteUserConfirmation') || 'هل أنت متأكد أنك تريد حذف هذا المستخدم؟ لا يمكن التراجع عن هذه العملية.'}</div>
-          <AlertDialogFooter>
+          <AlertDialogFooter className='gap-2'>
             <AlertDialogCancel>{t('cancel') || 'إلغاء'}</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeleteUser} className="bg-red-600 hover:bg-red-700 text-white">
               {actionLoading ? t('loading') : t('confirmDelete') || 'تأكيد الحذف'}
