@@ -148,7 +148,7 @@ const Products: React.FC = () => {
 
       <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-6">
         {/* Advanced Filters & Search Bar */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
+        {/* <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
           <div className="flex-1 flex items-center gap-2">
             <Input
               type="text"
@@ -166,10 +166,10 @@ const Products: React.FC = () => {
               {t('showing')}: {filteredProducts.length}
             </span>
           </div>
-        </div>
+        </div> */}
 
         {/* Page Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-2">
+        <div className="flex flex-col sm:items-center sm:justify-between mb-4 gap-2">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{t('products')}</h1>
             <p className="text-gray-600 text-sm sm:text-base mt-1">
