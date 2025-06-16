@@ -254,8 +254,14 @@ const AdminDashboard: React.FC = () => {
 
         {/* Main Content */}
         <div className="flex-1 min-w-0">
-          {/* Mobile Header */}
-          <div className="lg:hidden bg-white border-b border-gray-200 p-4 flex items-center justify-between">
+          {/* Sticky Header */}
+          <div
+            className="lg:hidden bg-white border-b border-gray-200 p-4 flex items-center justify-between sticky top-0 z-40 transition-all duration-300"
+            style={{
+              height: '56px',
+              transition: 'height 0.3s, padding 0.3s',
+            }}
+          >
             <Button
               variant="ghost"
               size="icon"
