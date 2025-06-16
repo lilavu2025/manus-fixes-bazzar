@@ -198,9 +198,6 @@ const Offers: React.FC = () => {
                   <span className="text-lg font-bold text-primary">
                     {t('discount')}: {offer.discount_percent}%
                   </span>
-                  <span className="text-lg font-bold text-primary">
-                    {getDisplayPrice(offerToProduct(offer) as import('@/types/product').Product, profile?.user_type)} {t('currency')}
-                  </span>
                 </div>
                 <div className="text-sm text-gray-500 mb-4">
                   {t('validUntil')}: {new Date(offer.end_date).toLocaleDateString()}
