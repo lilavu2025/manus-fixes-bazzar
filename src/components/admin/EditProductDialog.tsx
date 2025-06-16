@@ -154,7 +154,7 @@ const EditProductDialog: React.FC<EditProductDialogProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{t('editProduct')}</DialogTitle>
+          <DialogTitle className="text-center">{t('editProduct')}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-6">
           <ProductNameFields formData={formData} setFormData={setFormData} />
@@ -169,7 +169,7 @@ const EditProductDialog: React.FC<EditProductDialogProps> = ({
               }))
             }
             bucket="product-images"
-            label="صور المنتج"
+            label={t('productImages')}
             multiple
             maxImages={5}
           />

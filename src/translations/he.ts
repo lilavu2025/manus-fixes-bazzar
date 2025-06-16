@@ -535,7 +535,7 @@ export const heTranslations = {
   updateProduct: 'עדכן מוצר',
   prices: 'מחירים',
   loadingImages: 'טוען...',
-  imagesUploaded: '0 / 5 תמונות הועלו',
+  imagesUploaded: ' תמונות הועלו',
   sortByName: 'מיין לפי שם',
   sortByProductCount: 'מיין לפי כמות מוצרים',
   searchCategories: 'חפש קטגוריות',
@@ -642,4 +642,13 @@ export const heTranslations = {
   visitInstagram: 'בקר באינסטגרם',
   working_hours: 'שעות פעילות',
   drag_indicator: 'גרור כדי לשנות סדר',
+
+  // Image upload translations
+  imageUploadedSuccess: 'התמונה הועלתה בהצלחה',
+  imagesUploadedSuccess: 'התמונות הועלו בהצלחה',
+  imageUploadFailed: 'העלאת התמונה נכשלה',
+  uploading: 'מעלה...',
+  removeImage: 'מחק תמונה',
+  dragAndDropArea: 'אזור העלאת תמונות',
+  dragAndDropHint: 'גרור ושחרר תמונות כאן או לחץ לבחירת קבצים',
 };

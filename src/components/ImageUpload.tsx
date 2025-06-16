@@ -6,6 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Upload, X, Image } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { Progress } from '@/components/ui/progress';
+import { useLanguage } from '@/utils/languageContextUtils';
 
 interface ImageUploadProps {
   value: string | string[];
@@ -28,6 +30,9 @@ const ImageUpload = ({
 }: ImageUploadProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState<number>(0);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const { t, language } = useLanguage();
 
   // دالة لتحويل الصورة إلى WebP في المتصفح
   async function convertToWebP(file: File): Promise<Blob> {
@@ -137,30 +142,40 @@ const ImageUpload = ({
     if (!files || files.length === 0) return;
 
     setUploading(true);
+    setProgress(0);
+    setSelectedFiles(Array.from(files));
 
     try {
       if (multiple) {
         const currentUrls = Array.isArray(value) ? value : [];
         const filesToUpload = Array.from(files).slice(0, maxImages - currentUrls.length);
-        
-        const uploadPromises = filesToUpload.map(file => uploadImage(file));
+        let uploadedCount = 0;
+        const uploadPromises = filesToUpload.map(async (file, idx) => {
+          const url = await uploadImage(file);
+          uploadedCount++;
+          setProgress(Math.round((uploadedCount / filesToUpload.length) * 100));
+          return url;
+        });
         const newUrls = await Promise.all(uploadPromises);
-        
         onChange([...currentUrls, ...newUrls]);
-        toast.success(`${newUrls.length} image(s) uploaded successfully`);
+        toast.success(t('imagesUploadedSuccess'));
       } else {
+        setProgress(30);
         const url = await uploadImage(files[0]);
+        setProgress(100);
         onChange(url);
-        toast.success('Image uploaded successfully');
+        toast.success(t('imageUploadedSuccess'));
       }
     } catch (error) {
       console.error('Error uploading image:', error);
-      toast.error('Failed to upload image');
+      toast.error(t('imageUploadFailed'));
     } finally {
       setUploading(false);
+      setTimeout(() => setProgress(0), 1000);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
+      setSelectedFiles([]);
     }
   };
 
@@ -180,18 +195,23 @@ const ImageUpload = ({
       return (
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           {value.map((url, index) => (
-            <div key={index} className="relative group">
+            <div key={index} className="relative group shadow-md rounded-xl border bg-white dark:bg-gray-800 hover:shadow-lg transition-all">
               <img
                 src={url}
                 alt={`Preview ${index + 1}`}
-                className="w-full h-24 object-cover rounded-lg border"
+                className="w-full h-28 object-cover rounded-t-xl border-b"
               />
+              <div className="px-2 py-1 text-xs text-gray-600 dark:text-gray-300 flex flex-col gap-1 bg-gray-50 dark:bg-gray-900 rounded-b-xl">
+                <span>{t('image')} #{index + 1}</span>
+                <a href={url} target="_blank" rel="noopener noreferrer" className="text-blue-500 underline break-all">{url.split('/').pop()}</a>
+              </div>
               <Button
                 type="button"
                 variant="destructive"
                 size="icon"
                 className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
                 onClick={() => removeImage(index)}
+                aria-label={t('removeImage')}
               >
                 <X className="h-3 w-3" />
               </Button>
@@ -201,18 +221,22 @@ const ImageUpload = ({
       );
     } else if (typeof value === 'string' && value) {
       return (
-        <div className="relative group inline-block">
+        <div className="relative group inline-block shadow-md rounded-xl border bg-white dark:bg-gray-800 hover:shadow-lg transition-all">
           <img
             src={value}
             alt="Preview"
-            className="w-32 h-24 object-cover rounded-lg border"
+            className="w-40 h-28 object-cover rounded-t-xl border-b"
           />
+          <div className="px-2 py-1 text-xs text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-900 rounded-b-xl">
+            <a href={value} target="_blank" rel="noopener noreferrer" className="text-blue-500 underline break-all">{value.split('/').pop()}</a>
+          </div>
           <Button
             type="button"
             variant="destructive"
             size="icon"
             className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
             onClick={() => removeImage(value)}
+            aria-label={t('removeImage')}
           >
             <X className="h-3 w-3" />
           </Button>
@@ -222,6 +246,21 @@ const ImageUpload = ({
     return null;
   };
 
+  // دعم السحب والإفلات (Drag & Drop)
+  const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    if (uploading) return;
+    const files = event.dataTransfer.files;
+    if (files && files.length > 0) {
+      // Cast DataTransferList to FileList for handleFileSelect
+      const fileList = files as unknown as FileList;
+      handleFileSelect({ target: { files: fileList } } as React.ChangeEvent<HTMLInputElement>);
+    }
+  };
+  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+  };
+
   const canAddMore = multiple 
     ? Array.isArray(value) ? value.length < maxImages : true
     : !value;
@@ -229,11 +268,22 @@ const ImageUpload = ({
   return (
     <div className="space-y-4">
       <Label>{label}</Label>
-      
-      {renderImagePreview()}
-      
+      <div
+        className="rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 p-4 bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all cursor-pointer"
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        onClick={() => fileInputRef.current?.click()}
+        tabIndex={0}
+        role="button"
+        aria-label={t('dragAndDropArea')}
+      >
+        {renderImagePreview()}
+        <div className="text-center text-xs text-gray-500 mt-2">
+          {t('dragAndDropHint')}
+        </div>
+      </div>
       {canAddMore && (
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
           <Input
             type="file"
             ref={fileInputRef}
@@ -242,24 +292,50 @@ const ImageUpload = ({
             multiple={multiple}
             className="hidden"
           />
-          
           <Button
             type="button"
             variant="outline"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
             className="flex-1"
+            aria-label={t('uploadImage')}
           >
             <Upload className="h-4 w-4 mr-2" />
-            {uploading ? 'Uploading...' : placeholder}
+            {uploading ? t('uploading') : placeholder}
           </Button>
+          {uploading && (
+            <div className="w-32">
+              <Progress value={progress} />
+            </div>
+          )}
         </div>
       )}
       
       {multiple && Array.isArray(value) && (
         <p className="text-sm text-gray-500">
-          {value.length} / {maxImages} images uploaded
+          {value.length} / {maxImages} {t('imagesUploaded')}
         </p>
+      )}
+      {selectedFiles.length > 0 && (
+        <div className="mt-2 space-y-1">
+          {selectedFiles.map((file, idx) => (
+            <div key={idx} className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
+              <Image className="h-4 w-4 text-gray-400" />
+              <span className="truncate max-w-[120px]" title={file.name}>{file.name}</span>
+              <span>({(file.size / 1024).toFixed(1)} KB)</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Progress bar */}
+      {uploading && (
+        <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+          <div
+            className="bg-blue-600 h-2.5 rounded-full"
+            style={{ width: `${progress}%` }}
+           />
+        </div>
       )}
     </div>
   );

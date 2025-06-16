@@ -24,8 +24,8 @@ const ViewProductDialog: React.FC<ViewProductDialogProps> = ({
   onOpenChange,
   product,
 }) => {
-  const { t, language } = useLanguage();
-  const { categories, loading: categoriesLoading } = useCategoriesRealtime();
+  const { t, language, isRTL } = useLanguage();
+  const { categories } = useCategoriesRealtime();
 
   if (!product) return null;
 
@@ -41,24 +41,36 @@ const ViewProductDialog: React.FC<ViewProductDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[95vh] overflow-y-auto p-0 sm:p-0 rounded-2xl">
-        <DialogHeader className="px-6 pt-6">
-          <DialogTitle className="text-2xl font-bold mb-2">{t('viewProduct')}</DialogTitle>
+      <DialogContent
+        className="max-w-3xl max-h-[95vh] overflow-y-auto p-0 sm:p-0 rounded-2xl"
+        dir={isRTL ? 'rtl' : 'ltr'}
+        style={{ direction: isRTL ? 'rtl' : 'ltr' }}
+      >
+        <DialogHeader className="px-4 pt-4 sm:px-6 sm:pt-6">
+          <DialogTitle className="text-2xl font-bold mb-2 text-center">{t('viewProduct')}</DialogTitle>
         </DialogHeader>
 
-        <div className="flex flex-col md:flex-row gap-8 px-6 pb-6">
-          {/* معرض صور احترافي */}
-          <div className="w-full md:w-1/2 flex flex-col items-center">
-            <ProductImageGallery product={{
-              name: product.name_ar || product.name_en || '',
-              image: product.image,
-              images: product.images,
-              discount: product.discount
-            }} />
-          </div>
-
+        <div className="flex flex-col-reverse md:flex-row gap-6 md:gap-8 px-4 sm:px-6 pb-6">
           {/* معلومات المنتج */}
-          <div className="flex-1 w-full space-y-6">
+          <div className="flex-1 w-full space-y-6 border-t md:border-t-0 md:border-l border-gray-100 dark:border-gray-800 pt-4 md:pt-0 md:pl-8">
+            <div className="flex flex-col gap-2">
+              <div className="flex flex-wrap gap-2 items-center justify-between">
+                <span className="text-xs text-gray-400">ID: {product.id}</span>
+                <Badge variant={product.active ? 'default' : 'destructive'}>
+                  {product.active ? t('active') : t('inactive')}
+                </Badge>
+              </div>
+              <div className="flex flex-wrap gap-2 items-center">
+                <Badge variant={product.in_stock ? 'default' : 'destructive'}>
+                  {product.in_stock ? t('inStock') : t('outOfStock')}
+                </Badge>
+                {product.featured && <Badge variant="secondary">{t('featured')}</Badge>}
+                {typeof product.stock_quantity === 'number' && (
+                  <Badge variant="outline">{t('stockQuantity')}: {product.stock_quantity}</Badge>
+                )}
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
                 <h3 className="text-lg font-semibold mb-1">{t('productNames')}</h3>
@@ -69,30 +81,13 @@ const ViewProductDialog: React.FC<ViewProductDialogProps> = ({
               <div>
                 <h3 className="text-lg font-semibold mb-1">{t('category')}</h3>
                 <p className={language === 'he' ? 'text-right' : 'text-left'}>{categoryName}</p>
-                <div className="flex flex-wrap gap-2 mt-2 items-center">
-                  <Badge variant={product.in_stock ? 'default' : 'destructive'}>
-                    {product.in_stock ? t('inStock') : t('outOfStock')}
-                  </Badge>
-                  {product.featured && (
-                    <Badge variant="secondary">{t('featured')}</Badge>
-                  )}
-                  {typeof product.active === 'boolean' && (
-                    <Badge variant={product.active ? 'default' : 'destructive'}>
-                      {product.active ? t('active') : t('inactive')}
-                    </Badge>
-                  )}
-                  {typeof product.stock_quantity === 'number' && (
-                    <Badge variant="outline">{t('stockQuantity')}: {product.stock_quantity}</Badge>
-                  )}
-                </div>
               </div>
             </div>
 
-            {/* جدول مواصفات مختصر إذا توفرت بيانات إضافية */}
             {product.tags && product.tags.length > 0 && (
               <div>
                 <h3 className="text-lg font-semibold mb-1">{t('tags')}</h3>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 overflow-x-auto max-w-full pb-1">
                   {product.tags.map((tag, idx) => (
                     <Badge key={idx} variant="outline">{tag}</Badge>
                   ))}
@@ -100,8 +95,7 @@ const ViewProductDialog: React.FC<ViewProductDialogProps> = ({
               </div>
             )}
 
-            {/* الوصف */}
-            <div>
+            <div className="border-t border-gray-100 dark:border-gray-800 pt-4 mt-2">
               <h3 className="text-lg font-semibold mb-2">{t('descriptions')}</h3>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
@@ -119,8 +113,7 @@ const ViewProductDialog: React.FC<ViewProductDialogProps> = ({
               </div>
             </div>
 
-            {/* التسعير */}
-            <div>
+            <div className="border-t border-gray-100 dark:border-gray-800 pt-4 mt-2">
               <h3 className="text-lg font-semibold mb-2">{t('pricing')}</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
@@ -148,17 +141,26 @@ const ViewProductDialog: React.FC<ViewProductDialogProps> = ({
               </div>
             </div>
 
-            {/* وقت إنشاء المنتج */}
             {product.created_at && (
-              <div>
+              <div className="border-t border-gray-100 dark:border-gray-800 pt-4 mt-2">
                 <h3 className="text-lg font-semibold mb-1">{t('createdAt') || 'تاريخ الإضافة'}</h3>
-                <p className="text-gray-700">{new Date(product.created_at).toLocaleString('en-GB')}</p>
+                <p className="text-gray-700">{new Date(product.created_at).toLocaleString(language === 'ar' ? 'ar-EG' : language === 'he' ? 'he-IL' : 'en-GB')}</p>
               </div>
             )}
           </div>
+
+          {/* معرض صور احترافي */}
+          <div className="w-full md:w-1/2 flex flex-col items-center md:items-start">
+            <ProductImageGallery product={{
+              name: product.name_ar || product.name_en || '',
+              image: product.image,
+              images: product.images,
+              discount: product.discount
+            }} />
+          </div>
         </div>
 
-        <DialogFooter className="px-6 pb-6">
+        <DialogFooter className="px-4 sm:px-6 pb-4 sm:pb-6 sticky bottom-0 bg-white dark:bg-gray-900 z-10">
           <Button onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
             {t('close')}
           </Button>

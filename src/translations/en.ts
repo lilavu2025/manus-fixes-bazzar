@@ -541,7 +541,7 @@ export const enTranslations = {
   updateProduct: 'Update Product',
   prices: 'Prices',
   loadingImages: 'Loading...',
-  imagesUploaded: '0 / 5 images uploaded',
+  imagesUploaded: ' Images uploaded',
   sortByName: 'Sort by Name',
   sortByProductCount: 'Sort by Product Count',
   searchCategories: 'Search Categories',
@@ -655,4 +655,12 @@ export const enTranslations = {
   visitInstagram: 'Visit Instagram',
   working_hours: 'Working Hours',
   drag_indicator: 'Drag to reorder',
+
+  // Image upload translations
+  imageUploadedSuccess: 'Images uploaded successfully',
+  imageUploadFailed: 'Failed to upload image',
+  uploading: 'Uploading...',
+  removeImage: 'Remove image',
+  dragAndDropArea: 'Image upload area',
+  dragAndDropHint: 'Drag & drop images here or click to select files',
 };

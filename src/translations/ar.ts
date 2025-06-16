@@ -535,11 +535,17 @@ export const arTranslations = {
   allStatus: 'كل الحالات',
   resetFilters: 'إعادة تعيين الفلاتر',
   exportExcel: 'تصدير Excel',
+  
+  // Image upload translations
+  imagesUploaded: 'صور مرفوعة',
+  imageUploadedSuccess: 'تم رفع الصور بنجاح',
+  imageUploadFailed: 'فشل رفع الصورة',
   uploadImage: 'رفع صورة',
-  updateProduct: 'تحديث المنتج',
-  prices: 'الأسعار',
-  loadingImages: 'جاري التحميل...',
-  imagesUploaded: '0 / 5 صور تم رفعها',
+  uploading: 'جاري الرفع...',
+  removeImage: 'حذف الصورة',
+  dragAndDropArea: 'منطقة رفع الصور',
+  dragAndDropHint: 'اسحب وأسقط الصور هنا أو اضغط لاختيار الملفات',
+  
   sortByName: 'ترتيب حسب الاسم',
   sortByProductCount: 'ترتيب حسب عدد المنتجات',
   searchCategories: 'بحث الفئات',
