@@ -285,8 +285,12 @@ const AdminBanners: React.FC = () => {
   // عرض مؤشر التحميل إذا كانت البيانات قيد التحميل
   if (loading) {
     return (
-      <div className="flex justify-center items-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold">{t('manageBanners')}</h1>
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto animate-spin rounded-full border-primary"></div>
+          <p className="mt-4 text-gray-600">{t('loadingBanners')}</p>
+        </div>
       </div>
     );
   }

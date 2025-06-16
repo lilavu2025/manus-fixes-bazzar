@@ -41,16 +41,13 @@ const UsersTable: React.FC<UsersTableProps> = ({ users, isLoading, error, refetc
 
   if (isLoading) {
     return (
-      <Card className="shadow-xl border-0 overflow-hidden">
-        <CardContent className="p-0">
-          <div className="text-center py-12">
-            <div className="inline-flex items-center gap-3">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              <span className="text-gray-600">{t('loadingData')}</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold">{t('manageUsers')}</h1>
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto animate-spin rounded-full border-primary"></div>
+          <p className="mt-4 text-gray-600">{t('loadingUsers')}</p>
+        </div>
+      </div>
     );
   }
 

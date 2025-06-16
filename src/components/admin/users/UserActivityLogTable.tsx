@@ -166,7 +166,12 @@ const UserActivityLogTable: React.FC = () => {
       </CardHeader>
       <CardContent>
         {loading ? (
-          <div className="text-center py-8 text-lg text-gray-500">{t('loadingData') || 'جاري التحميل...'}</div>
+          <div className="space-y-6">
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto animate-spin rounded-full border-primary"></div>
+              <p className="mt-4 text-gray-600">{t('loadingData') || 'جاري التحميل...'}</p>
+            </div>
+          </div>
         ) : logs.length === 0 ? (
           <div className="text-center py-8 text-lg text-gray-500">{t('noResults') || 'لا يوجد نشاط'}</div>
         ) : (

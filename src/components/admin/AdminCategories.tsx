@@ -143,8 +143,12 @@ const AdminCategories: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold">{t('manageCategories')}</h1>
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto animate-spin rounded-full border-primary"></div>
+          <p className="mt-4 text-gray-600">{t('loadingCategories')}</p>
+        </div>
       </div>
     );
   }

@@ -229,7 +229,7 @@ const AdminOffers: React.FC = () => {
       {/* رأس الصفحة */}
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">{t('offers')}</h2>
+          <h1 className="text-3xl font-bold">{t('manageOffers')}</h1>
           <p className="text-gray-600 mt-1">
             {t('manageOffers')} ({offers.length} {t('offers')})
           </p>
@@ -245,10 +245,12 @@ const AdminOffers: React.FC = () => {
 
       {/* حالة التحميل */}
       {loading && (
-        <div className="flex justify-center items-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          <span className="ml-2 text-gray-600">{t('loading')}...</span>
+        <div className="space-y-6">
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto animate-spin rounded-full border-primary"></div>
+          <p className="mt-4 text-gray-600">{t('loadingOffers')}</p>
         </div>
+      </div>
       )}
 
       {/* عرض العروض */}

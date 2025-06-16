@@ -658,7 +658,7 @@ const AdminOrders: React.FC = () => {
       <div className="space-y-6">
         <h1 className="text-3xl font-bold">{t('manageOrders')}</h1>
         <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto animate-spin rounded-full border-primary"></div>
           <p className="mt-4 text-gray-600">{t('loadingOrders')}</p>
         </div>
       </div>

@@ -116,11 +116,16 @@ const AdminProducts: React.FC = () => {
 
   if (productsLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold">{t('manageProducts')}</h1>
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto animate-spin rounded-full border-primary"></div>
+          <p className="mt-4 text-gray-600">{t('loadingProducts')}</p>
+        </div>
       </div>
     );
   }
+
 
   // استبدل productsData?.data بـ products مباشرة
   const productsList = products;

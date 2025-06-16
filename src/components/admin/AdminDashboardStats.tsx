@@ -349,10 +349,11 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
   // Show loading state
   if (usersLoading || productsLoading || ordersLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">{t('loading')}...</p>
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold">{t('loadingAdminDashboard')}</h1>
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto animate-spin rounded-full border-primary"></div>
+          <p className="mt-4 text-gray-600">{t('loadingAdminDashboard')}</p>
         </div>
       </div>
     );
