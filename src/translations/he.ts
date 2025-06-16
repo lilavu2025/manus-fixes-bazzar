@@ -664,4 +664,20 @@ export const heTranslations = {
   dragAndDropHint: 'גרור ושחרר תמונות כאן או לחץ לבחירת קבצים',
   searchByClientOrOrderNumber: 'חפש לפי שם לקוח או מספר הזמנה',
   payOnDeliveryDescription: 'שלם במזומן בעת קבלת המוצר.',
+  editProfile: 'ערוך פרופיל',
+  updateProfileSuccess: 'הפרופיל עודכן בהצלחה',
+  changePassword: 'שנה סיסמה',
+  currentPassword: 'סיסמה נוכחית',
+  newPassword: 'סיסמה חדשה',
+  confirmNewPassword: 'אשר סיסמה חדשה',
+  passwordChanged: 'הסיסמה שונתה בהצלחה',
+  passwordChangeError: 'שגיאה בשינוי הסיסמה',
+  passwordChangeHint: 'אנא הזן את הסיסמה הנוכחית ואת הסיסמה החדשה כדי לשנות אותה.',
+  changePasswordHint: 'שנה סיסמה',
+  passwordRequirements: 'הסיסמה חייבת להכיל לפחות 6 תווים.',
+  weakPassword: 'סיסמה חלשה. היא חייבת להכיל לפחות 6 תווים.',
+  newPasswordSameAsCurrent: 'הסיסמה החדשה חייבת להיות שונה מהנוכחית.',
+  currentPasswordIncorrect: 'הסיסמה הנוכחית שגויה. אנא נסה שוב.',
+  invalidLoginCredentials: 'פרטי ההתחברות אינם נכונים.'
+
 };

@@ -7,8 +7,10 @@ import {
   ToastTitle,
   ToastViewport,
 } from "@/components/ui/toast"
+import { useLanguage } from '@/utils/languageContextUtils';
 
-export function Toaster() {
+export function Toaster(props: any) {
+  const { t } = useLanguage();
   const { toasts } = useToast()
 
   return (
@@ -19,7 +21,15 @@ export function Toaster() {
             <div className="grid gap-1">
               {title && <ToastTitle>{title}</ToastTitle>}
               {description && (
-                <ToastDescription>{description}</ToastDescription>
+                <ToastDescription>
+                  {typeof description === "string"
+                    ? t(
+                        description === "Invalid login credentials"
+                          ? "invalidLoginCredentials"
+                          : description
+                      )
+                    : description}
+                </ToastDescription>
               )}
             </div>
             {action}

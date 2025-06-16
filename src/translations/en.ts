@@ -676,4 +676,20 @@ export const enTranslations = {
   dragAndDropHint: 'Drag & drop images here or click to select files',
   searchByClientOrOrderNumber: 'Search by client name, email, or order number',
   payOnDeliveryDescription: 'Pay for your order upon delivery.',
+  editProfile: 'Edit Profile',
+  updateProfileSuccess: 'Profile updated successfully',
+  changePassword: 'Change Password',
+  currentPassword: 'Current Password',
+  newPassword: 'New Password',
+  confirmNewPassword: 'Confirm New Password',
+  passwordChanged: 'Password changed successfully',
+  passwordChangeError: 'Error changing password',
+  passwordChangeHint: 'Please enter your current password and new password to change it.',
+  changePasswordHint: 'Change Password',
+  passwordRequirements: 'Password must be at least 6 characters long.',
+  weakPassword: 'Weak password. It must contain at least 6 characters.',
+  newPasswordSameAsCurrent: 'New password must be different from the current password.',
+  currentPasswordIncorrect: 'Current password is incorrect. Please try again.',
+  invalidLoginCredentials: 'Invalid login credentials'
+
 };
