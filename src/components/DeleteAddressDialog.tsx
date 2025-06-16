@@ -45,7 +45,10 @@ const DeleteAddressDialog: React.FC<DeleteAddressDialogProps> = ({
           </Button>
         )}
       </AlertDialogTrigger>
-      <AlertDialogContent className={isRTL ? 'text-right' : 'text-left'} dir={isRTL ? 'rtl' : 'ltr'}>
+      <AlertDialogContent
+        className={`w-full max-w-xs sm:max-w-md ${isRTL ? 'text-right' : 'text-left'} break-words`}
+        dir={isRTL ? 'rtl' : 'ltr'}
+      >
         <AlertDialogHeader>
           <AlertDialogTitle className={isRTL ? 'text-right' : 'text-left'}>
             {t('deleteAddress')}
@@ -54,12 +57,12 @@ const DeleteAddressDialog: React.FC<DeleteAddressDialogProps> = ({
             {t('confirmDeleteAddress')} "{addressName}"? {t('actionCannotBeUndone')}
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <AlertDialogFooter className={isRTL ? 'flex-row-reverse' : ''}>
-          <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
+        <AlertDialogFooter className={`flex flex-col sm:flex-row gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
+          <AlertDialogCancel className="w-full sm:w-auto">{t('cancel')}</AlertDialogCancel>
           <AlertDialogAction
             onClick={handleDelete}
             disabled={isDeleting}
-            className="bg-red-600 hover:bg-red-700"
+            className="bg-red-600 hover:bg-red-700 w-full sm:w-auto"
           >
             {isDeleting ? t('deleting') : t('delete')}
           </AlertDialogAction>

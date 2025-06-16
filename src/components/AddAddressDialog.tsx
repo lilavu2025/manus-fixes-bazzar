@@ -35,21 +35,34 @@ const AddAddressDialog: React.FC<AddAddressDialogProps> = ({ trigger }) => {
     is_default: false,
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    createAddress(formData);
-    setFormData({
-      full_name: '',
-      phone: '',
-      city: '',
-      area: '',
-      street: '',
-      building: '',
-      floor: '',
-      apartment: '',
-      is_default: false,
-    });
-    setOpen(false);
+    // تحويل الحقول الفارغة إلى undefined
+    const cleanData = Object.fromEntries(
+      Object.entries(formData).map(([k, v]) => [k, v === '' ? undefined : v])
+    ) as unknown as Omit<import('@/hooks/useAddresses').Address, 'id' | 'user_id'>;
+    try {
+      await new Promise((resolve, reject) => {
+        createAddress(cleanData, {
+          onSuccess: resolve,
+          onError: reject,
+        });
+      });
+      setFormData({
+        full_name: '',
+        phone: '',
+        city: '',
+        area: '',
+        street: '',
+        building: '',
+        floor: '',
+        apartment: '',
+        is_default: false,
+      });
+      setOpen(false);
+    } catch (err) {
+      // يمكن عرض رسالة خطأ هنا إذا رغبت
+    }
   };
 
   return (

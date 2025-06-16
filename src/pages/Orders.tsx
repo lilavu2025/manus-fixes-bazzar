@@ -231,39 +231,41 @@ const Orders: React.FC = () => {
                   </CardHeader>
                   <CardContent className="bg-white">
                     {/* عنوان الشحن */}
-                    <div className="flex items-center gap-2 mb-4 text-sm text-gray-600">
-                      <MapPin className="h-4 w-4" />
-                      <span>{t('shippingAddress')}: {(() => {
-                        type AddressType = {
-                          fullName?: string; full_name?: string; phone?: string; city?: string; area?: string; street?: string; building?: string; floor?: string; apartment?: string;
-                          [key: string]: unknown;
-                        };
-                        let addr: AddressType | null = null;
-                        try {
-                          if (typeof order.shipping_address === 'string') {
-                            addr = JSON.parse(order.shipping_address) as AddressType;
-                          } else if (typeof order.shipping_address === 'object' && order.shipping_address !== null) {
-                            addr = order.shipping_address as AddressType;
+                    <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-1 sm:gap-2 mb-4 text-sm text-gray-600 break-words">
+                      <MapPin className="h-4 w-4 shrink-0" />
+                      <span className="flex flex-col sm:flex-row sm:flex-wrap gap-1 sm:gap-2 w-full">
+                        {(() => {
+                          type AddressType = {
+                            fullName?: string; full_name?: string; phone?: string; city?: string; area?: string; street?: string; building?: string; floor?: string; apartment?: string;
+                            [key: string]: unknown;
+                          };
+                          let addr: AddressType | null = null;
+                          try {
+                            if (typeof order.shipping_address === 'string') {
+                              addr = JSON.parse(order.shipping_address) as AddressType;
+                            } else if (typeof order.shipping_address === 'object' && order.shipping_address !== null) {
+                              addr = order.shipping_address as AddressType;
+                            }
+                          } catch {
+                            addr = null;
                           }
-                        } catch {
-                          addr = null;
-                        }
-                        if (!addr) return '-';
-                        const fullName = addr.fullName || addr.full_name || '';
-                        const phone = addr.phone || '';
-                        const city = addr.city || '';
-                        const area = addr.area || '';
-                        const street = addr.street || '';
-                        const building = addr.building || '';
-                        const floor = addr.floor || '';
-                        const apartment = addr.apartment || '';
-                        return [
-                          fullName && <span key="fn">{fullName}</span>,
-                          phone && <span key="ph">({phone})</span>,
-                          [city, area, street, building].filter(Boolean).join(t('addressSeparator') || '، '),
-                          (floor || apartment) ? `${t('floor')}: ${floor || '-'}${t('addressSeparator') || '، '}${t('apartment')}: ${apartment || '-'}` : null
-                        ].filter(Boolean).map((part, i) => <span key={i}>{part}{i < 2 ? ' - ' : ''}</span>);
-                      })()}</span>
+                          if (!addr) return '-';
+                          const fullName = addr.fullName || addr.full_name || '';
+                          const phone = addr.phone || '';
+                          const city = addr.city || '';
+                          const area = addr.area || '';
+                          const street = addr.street || '';
+                          const building = addr.building || '';
+                          const floor = addr.floor || '';
+                          const apartment = addr.apartment || '';
+                          return [
+                            fullName && <span key="fn" className="truncate max-w-xs inline-block">{fullName}</span>,
+                            phone && <span key="ph" className="truncate max-w-xs inline-block">({phone})</span>,
+                            [city, area, street, building].filter(Boolean).join(t('addressSeparator') || '، '),
+                            (floor || apartment) ? `${t('floor')}: ${floor || '-'}${t('addressSeparator') || '، '}${t('apartment')}: ${apartment || '-'}` : null
+                          ].filter(Boolean).map((part, i) => <span key={i} className="truncate max-w-xs inline-block">{part}{i < 2 ? ' - ' : ''}</span>);
+                        })()}
+                      </span>
                     </div>
                     {/* المنتجات */}
                     <div className="overflow-x-auto">

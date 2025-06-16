@@ -175,9 +175,9 @@ const Profile: React.FC = () => {
                       <div className="space-y-3">
                         {addresses.map((address) => (
                           <Card key={address.id} className="p-4">
-                            <div className={`flex items-start justify-between ${isRTL ? 'flex-row-reverse' : 'flex-row'}`}>
+                            <div className={`flex items-start justify-between ${isRTL ? 'text-right' : 'text-left'}`}>
                               <div className="flex-1">
-                                <div className={`flex items-center gap-2 mb-2 ${isRTL ? 'flex-row-reverse' : 'flex-row'}`}>
+                                <div className={`flex items-center gap-2 mb-2 ${isRTL ? 'text-right' : 'text-left'}`}>
                                   <h4 className={`font-medium ${isRTL ? 'text-right' : 'text-left'}`}>{address.full_name}</h4>
                                   {address.is_default && (
                                     <Badge variant="secondary">{t('default')}</Badge>
@@ -195,7 +195,7 @@ const Profile: React.FC = () => {
                                   {address.phone}
                                 </p>
                               </div>
-                              <div className={`flex gap-2 ${isRTL ? 'flex-row-reverse' : 'flex-row'}`}>
+                              <div className={`flex gap-2 ${isRTL ? 'text-right' : 'text-left'}`}>
                                 <EditAddressDialog address={address} />
                                 <DeleteAddressDialog 
                                   addressId={address.id!}
