@@ -674,4 +674,5 @@ export const enTranslations = {
   removeImage: 'Remove image',
   dragAndDropArea: 'Image upload area',
   dragAndDropHint: 'Drag & drop images here or click to select files',
+  searchByClientOrOrderNumber: 'Search by client name, email, or order number',
 };

@@ -105,14 +105,14 @@ function mapOrderFromDb(order: Record<string, unknown>): Order {
       product_id: string;
       quantity: number;
       price: number;
-      products?: { name_ar?: string; name_en?: string };
+      products?: { name_ar?: string; name_en?: string ; name_he?: string };
     };
     items = (order['order_items'] as OrderItemDB[]).map((item) => ({
       id: item.id,
       product_id: item.product_id,
       quantity: item.quantity,
       price: item.price,
-      product_name: item.products?.name_ar || item.products?.name_en || '',
+      product_name: item.products?.name_ar || item.products?.name_en || item.products?.name_he || '',
     }));
   } else if (typeof order['items'] === 'string') {
     items = JSON.parse(order['items'] as string);
