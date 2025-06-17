@@ -9,6 +9,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Product } from "@/types"; // Assuming Product type is defined
 import { Language } from "@/types/language";
 import { useLiveSupabaseQuery } from './useLiveSupabaseQuery';
+import { setCookie, getCookie } from '../utils/cookieUtils';
 
 export const useFavorites = () => {
   const { user } = useAuth();
@@ -20,12 +21,12 @@ export const useFavorites = () => {
     queryKey: ["favorites", user?.id],
     queryFn: async () => {
       if (!user) {
-        // Guest user: Load from localStorage
+        // Guest user: Load from cookies
         try {
-          const guestFavorites = localStorage.getItem("favorites_guest");
+          const guestFavorites = getCookie("favorites_guest");
           return guestFavorites ? JSON.parse(guestFavorites) : [];
         } catch (error) {
-          console.error("[useFavorites] Error loading guest favorites:", error);
+          console.error("[useFavorites] Error loading guest favorites from cookies:", error);
           return [];
         }
       }
@@ -39,13 +40,13 @@ export const useFavorites = () => {
   });
   const favoriteIds: string[] = useMemo(() => favoriteIdsRaw || [], [favoriteIdsRaw]);
 
-  // Save guest favorites to localStorage
+  // Save guest favorites to cookies
   useEffect(() => {
     if (!user && Array.isArray(favoriteIds)) {
       try {
-        localStorage.setItem("favorites_guest", JSON.stringify(favoriteIds));
+        setCookie("favorites_guest", JSON.stringify(favoriteIds), 60 * 60 * 24 * 30); // 30 يوم
       } catch (error) {
-        console.error("[useFavorites] Error saving guest favorites:", error);
+        console.error("[useFavorites] Error saving guest favorites to cookies:", error);
       }
     }
   }, [favoriteIds, user]);
@@ -55,10 +56,10 @@ export const useFavorites = () => {
     mutationFn: async (productId: string) => {
       if (!user) {
         // Guest: Update local state directly via query cache invalidation/update
-        const currentGuestFavorites = JSON.parse(localStorage.getItem("favorites_guest") || "[]");
+        const currentGuestFavorites = JSON.parse(getCookie("favorites_guest") || "[]");
         if (!currentGuestFavorites.includes(productId)) {
           const updatedGuestFavorites = [...currentGuestFavorites, productId];
-          localStorage.setItem("favorites_guest", JSON.stringify(updatedGuestFavorites));
+          setCookie("favorites_guest", JSON.stringify(updatedGuestFavorites), 60 * 60 * 24 * 30);
         }
         return productId; // Return ID for optimistic update
       }
@@ -103,9 +104,9 @@ export const useFavorites = () => {
     mutationFn: async (productId: string) => {
       if (!user) {
         // Guest: Update local state directly
-        const currentGuestFavorites = JSON.parse(localStorage.getItem("favorites_guest") || "[]");
+        const currentGuestFavorites = JSON.parse(getCookie("favorites_guest") || "[]");
         const updatedGuestFavorites = currentGuestFavorites.filter((id: string) => id !== productId);
-        localStorage.setItem("favorites_guest", JSON.stringify(updatedGuestFavorites));
+        setCookie("favorites_guest", JSON.stringify(updatedGuestFavorites), 60 * 60 * 24 * 30);
         return productId; // Return ID for optimistic update
       }
       // Logged-in user: Call service
@@ -146,8 +147,8 @@ export const useFavorites = () => {
   const clearFavoritesMutation = useMutation({
     mutationFn: async () => {
       if (!user) {
-        // Guest: Clear localStorage
-        localStorage.removeItem("favorites_guest");
+        // Guest: Clear cookies
+        setCookie("favorites_guest", "[]", -1); // Set expiration in the past to delete
         return;
       }
       // Logged-in user: Call service

@@ -697,5 +697,6 @@ export const arTranslations = {
   passwordMismatchError: 'كلمة المرور الجديدة وتأكيد كلمة المرور غير متطابقتين.',
   newPasswordSameAsCurrent: 'كلمة المرور الجديدة يجب أن تختلف عن الحالية.',
   currentPasswordIncorrect: 'كلمة المرور الحالية غير صحيحة.',
-  invalidLoginCredentials:'بيانات الدخول غير صحيحة'
+  invalidLoginCredentials:'بيانات الدخول غير صحيحة',
+  addressSeparator: ' - ',
 };

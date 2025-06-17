@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import type { CartContextType, CartItem, CartState, CartAction } from './CartContext.types';
 import { getDisplayPrice } from '@/utils/priceUtils';
 import type { Product as ProductFull } from '@/types/product';
+import { setCookie, getCookie, deleteCookie } from '../utils/cookieUtils';
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
@@ -219,22 +220,22 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   }, [user, fetchCartItems]);
 
-  // Load cart from localStorage on mount
+  // Load cart from cookies on mount
   React.useEffect(() => {
-    const savedCart = localStorage.getItem('cart');
+    const savedCart = getCookie('cart');
     if (savedCart) {
       try {
         const cartItems = JSON.parse(savedCart);
         dispatch({ type: 'LOAD_CART', payload: cartItems });
       } catch (error) {
-        console.error('Error loading cart from localStorage:', error);
+        console.error('Error loading cart from cookies:', error);
       }
     }
   }, []);
   
-  // Save cart to localStorage whenever it changes
+  // Save cart to cookies whenever it changes
   React.useEffect(() => {
-    localStorage.setItem('cart', JSON.stringify(state.items));
+    setCookie('cart', JSON.stringify(state.items), 60 * 60 * 24 * 7); // أسبوع
   }, [state.items]);
   
   const addItem = async (product: Product, quantity = 1) => {

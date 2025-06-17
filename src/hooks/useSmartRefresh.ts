@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
+import { setCookie } from '../utils/cookieUtils';
 
 interface UseSmartRefreshOptions {
   refreshFunction: () => Promise<void> | void;
@@ -27,6 +28,7 @@ export const useSmartRefresh = (options: UseSmartRefreshOptions) => {
     try {
       isRefreshingRef.current = true;
       await refreshFunction();
+      // إذا أردت حفظ توكن من دالة التحديث، عدل refreshFunction ليعيد التوكن أو احفظه خارج الهوك
       retryCountRef.current = 0; // إعادة تعيين عداد المحاولات عند النجاح
       lastRefreshRef.current = Date.now();
     } catch (error) {

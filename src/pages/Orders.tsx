@@ -6,17 +6,49 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription }
 import { Badge } from '@/components/ui/badge';
 import { CalendarDays, Package, CreditCard, XCircle, MapPin, Truck, CheckCircle, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import type { Tables } from '@/integrations/supabase/types';
+import type { Tables, Json } from '@/integrations/supabase/types';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getDisplayPrice } from '@/utils/priceUtils';
 
 // أنواع الطلب وعناصر الطلب من Supabase
-type OrderItemDB = NonNullable<Tables<'orders'>['order_items']>[number];
-type ProductDB = NonNullable<OrderItemDB['products']>;
-type OrderDB = Tables<'orders'> & {
-  cancelled_by?: string;
-  cancelled_by_name?: string;
+type ProductDB = {
+  id: string;
+  name_ar: string;
+  name_en: string;
+  name_he: string;
+  description_ar: string;
+  description_en: string;
+  description_he: string;
+  price: number;
+  original_price: number | null;
+  wholesale_price: number | null;
+  image: string;
+  images: string[] | null;
+  in_stock: boolean | null;
+  rating: number | null;
+  discount: number | null;
+  featured: boolean | null;
+  tags: string[] | null;
+  stock_quantity: number | null;
+  active: boolean | null;
+  created_at: string;
+};
+
+type OrderItemDB = {
+  id: string;
+  order_id: string;
+  price: number;
+  product_id: string;
+  quantity: number;
+  created_at: string;
+  products?: ProductDB;
+};
+
+type OrderDB = Omit<Tables<'orders'>, 'items' | 'shipping_address'> & {
+  items: Json | null;
+  shipping_address: Json;
+  order_items?: OrderItemDB[];
 };
 
 const Orders: React.FC = () => {
@@ -34,10 +66,10 @@ const Orders: React.FC = () => {
     const fetchOrders = async () => {
       if (!user) return;
       setLoading(true);
-      // جلب الطلبات مع تفاصيل المنتجات
+      // جلب الطلبات مع تفاصيل المنتجات (كل الحقول)
       const { data, error } = await supabase
         .from('orders')
-        .select('*, order_items(*, products(name_ar, name_en, image, price))')
+        .select('*, order_items(*, products(*))')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
       if (error) {

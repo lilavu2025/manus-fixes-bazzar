@@ -1,20 +1,35 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { Language, LanguageContextType } from '@/types/language';
 import { translations } from '@/translations';
 import { isRTL } from '@/utils/languageContextUtils';
 import { LanguageContext } from './LanguageContext.context';
+import { setCookie, getCookie, deleteCookie } from '../utils/cookieUtils';
+import { AuthContext } from './AuthContext.context';
+import { ProfileService } from '@/services/supabaseService';
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [language, setLanguageState] = useState<Language>(() => {
-    // جلب اللغة من localStorage أو الافتراضية
-    const stored = typeof window !== 'undefined' ? localStorage.getItem('language') : null;
+    // جلب اللغة من الكوكيز أو الافتراضية
+    const stored = typeof window !== 'undefined' ? getCookie('language') : null;
     return (stored as Language) || 'ar';
   });
+
+  // جلب المستخدم من سياق المصادقة
+  const auth = useContext(AuthContext);
+  const user = auth?.user;
+
+  // مزامنة اللغة مع البروفايل عند تسجيل الدخول
+  useEffect(() => {
+    if (user && language) {
+      ProfileService.updateProfile(user.id, { language });
+      deleteCookie('language');
+    }
+  }, [user, language]);
 
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
     if (typeof window !== 'undefined') {
-      localStorage.setItem('language', lang);
+      setCookie('language', lang, 60 * 60 * 24 * 365); // سنة
     }
   };
 

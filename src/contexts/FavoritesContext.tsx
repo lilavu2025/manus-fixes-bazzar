@@ -1,31 +1,54 @@
-/*
-import React, { createContext, useReducer, ReactNode } from 'react';
+import React, { createContext, useReducer, ReactNode, useEffect } from 'react';
 import { Product } from '@/types';
 import { favoritesReducer, initialFavoritesState } from '../utils/favoritesContextUtils';
 import type { FavoritesContextType, FavoritesState, FavoritesAction } from '../types/favorites';
+import { setCookie, getCookie, deleteCookie } from '../utils/cookieUtils';
+import { useAuth } from '@/contexts/useAuth';
+import { FavoriteService } from '@/services/supabaseService';
 
 const FavoritesContext = createContext<FavoritesContextType | undefined>(undefined);
 
 const FavoritesProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(favoritesReducer, initialFavoritesState);
-  
-  // Load favorites from localStorage on mount
+  const { user } = useAuth();
+
+  // Load favorites from cookies on mount
   React.useEffect(() => {
-    const savedFavorites = localStorage.getItem('favorites');
+    const savedFavorites = getCookie('favorites');
     if (savedFavorites) {
       try {
         const favoriteItems = JSON.parse(savedFavorites);
         dispatch({ type: 'LOAD_FAVORITES', payload: favoriteItems });
       } catch (error) {
-        console.error('Error loading favorites from localStorage:', error);
+        console.error('Error loading favorites from cookies:', error);
       }
     }
   }, []);
   
-  // Save favorites to localStorage whenever they change
+  // Save favorites to cookies whenever they change
   React.useEffect(() => {
-    localStorage.setItem('favorites', JSON.stringify(state.items));
+    setCookie('favorites', JSON.stringify(state.items), 60 * 60 * 24 * 30); // 30 يوم
   }, [state.items]);
+  
+  // مزامنة المفضلة من الكوكيز إلى قاعدة البيانات عند تسجيل الدخول
+  useEffect(() => {
+    if (user) {
+      const guestFavorites = getCookie('favorites');
+      if (guestFavorites) {
+        try {
+          const items: Product[] = JSON.parse(guestFavorites);
+          // أضف كل منتج للمفضلة في قاعدة البيانات
+          items.forEach(async (item) => {
+            await FavoriteService.addFavorite(user.id, item.id);
+          });
+          deleteCookie('favorites');
+        } catch (error) {
+          // إذا فشل التحويل، احذف الكوكيز فقط
+          deleteCookie('favorites');
+        }
+      }
+    }
+  }, [user]);
   
   const addFavorite = (product: Product) => {
     dispatch({ type: 'ADD_FAVORITE', payload: product });
@@ -61,4 +84,3 @@ const FavoritesProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
 
 export { FavoritesProvider };
 export default FavoritesContext;
-*/

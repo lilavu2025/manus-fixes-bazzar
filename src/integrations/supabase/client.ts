@@ -16,6 +16,14 @@ export const supabase = createClient<Database>(
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true
+    },
+    // أضف هذا الجزء لتثبيت الهارت بيت وإعادة الاتصال
+    realtime: {
+      // كل 30 ثانية نبضة حياة
+      heartbeatIntervalMs: 30000,
+      // عشان ما يطلب أكثر من اللازم
+      reconnectAfterMs: (retryCount: number) =>
+        Math.min(1000 * 2 ** retryCount, 30000)
     }
   }
 );

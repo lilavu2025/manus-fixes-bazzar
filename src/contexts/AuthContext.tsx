@@ -5,6 +5,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from './AuthContext.context';
 import type { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 import { ProfileService } from '@/services/supabase/profileService';
+import { setCookie, getCookie, deleteCookie } from '../utils/cookieUtils';
 
 export interface Profile {
   id: string;
@@ -53,9 +54,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           if (!currentSession && session) {
             // إذا انقطعت الجلسة، حاول استعادتها
             console.log('Session lost, attempting to restore...');
-            setSession(null);
-            setUser(null);
-            setProfile(null);
+            // لا تقم بتعيين الجلسة والمستخدم إلى null هنا، بل اسمح لـ onAuthStateChange بالتعامل معها
+            // أو حاول جلب الجلسة مرة أخرى إذا لزم الأمر.
+            // Forcing a re-fetch of the session to ensure it's up-to-date
+            supabase.auth.getSession().then(({ data: { session: reFetchedSession } }) => {
+              if (reFetchedSession) {
+                setSession(reFetchedSession);
+                setUser(reFetchedSession.user);
+                fetchProfile(reFetchedSession.user.id);
+              } else {
+                // If still no session, then truly log out
+                setSession(null);
+                setUser(null);
+                setProfile(null);
+              }
+            });
           }
         });
       }
@@ -118,7 +131,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       location.pathname !== '/auth' &&
       location.pathname !== '/email-confirmation'
     ) {
-      localStorage.setItem('lastVisitedPath', location.pathname + location.search + location.hash);
+      setCookie('lastVisitedPath', location.pathname + location.search + location.hash, 60 * 60 * 24 * 30);
     }
   }, [location.pathname, location.search, location.hash]);
 
@@ -142,7 +155,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           console.log('Auth state change:', event, 'session:', !!session);
           
           // تجنب التحديثات غير الضرورية
-          if (event === 'TOKEN_REFRESHED' && session?.user?.id === user?.id) {
+          if (event === 'TOKEN_REFRESHED') {
             setSession(session);
             return;
           }
@@ -197,7 +210,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         throw new Error('تم تعطيل حسابك من قبل الإدارة. يرجى التواصل مع الدعم.');
       }
     }
-    localStorage.setItem('lastLoginTime', Date.now().toString());
+    setCookie('lastLoginTime', Date.now().toString(), 60 * 60 * 24 * 30);
   };
 
   // SignUp function with comprehensive email existence check
@@ -244,8 +257,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setProfile(null);
     
     // Clear any stored data
-    localStorage.removeItem('lastLoginTime');
-    localStorage.removeItem('lastVisitedPath');
+    deleteCookie('lastLoginTime');
+    deleteCookie('lastVisitedPath');
     
     // Redirect to home
     navigate('/', { replace: true });

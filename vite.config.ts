@@ -15,6 +15,7 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 8080,
     historyApiFallback: true,
+    allowedHosts: ["8080-iulzih0nq0la09tlfsfr2-f4845436.manusvm.computer"],
   },
   plugins: [
     react(),

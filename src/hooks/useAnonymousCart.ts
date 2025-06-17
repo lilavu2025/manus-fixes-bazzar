@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Product, CartItem } from '@/types';
+import { setCookie, getCookie } from '../utils/cookieUtils';
 
 const ANONYMOUS_CART_KEY = 'anonymous_cart';
 
@@ -10,28 +11,28 @@ export const useAnonymousCart = () => {
   // عند تحميل الكومبوننت لأول مرة، نحاول جلب محتويات الكارت من localStorage
   useEffect(() => {
     try {
-      console.log('Loading anonymous cart from localStorage...');
-      const savedCart = localStorage.getItem(ANONYMOUS_CART_KEY);
+      console.log('Loading anonymous cart from cookies...');
+      const savedCart = getCookie(ANONYMOUS_CART_KEY);
       if (savedCart) {
         const parsed = JSON.parse(savedCart);
         console.log('Anonymous cart loaded:', parsed);
         setCartItems(Array.isArray(parsed) ? parsed : []);
       } else {
-        console.log('No anonymous cart found in localStorage.');
+        console.log('No anonymous cart found in cookies.');
       }
     } catch (error) {
-      console.error('Error loading anonymous cart:', error);
+      console.error('Error loading anonymous cart from cookies:', error);
       setCartItems([]);
     }
   }, []);
 
-  // كلما تغيرت محتويات الكارت، نحفظها في localStorage
+  // كلما تغيرت محتويات الكارت، نحفظها في الكوكيز
   useEffect(() => {
     try {
-      console.log('Saving anonymous cart to localStorage:', cartItems);
-      localStorage.setItem(ANONYMOUS_CART_KEY, JSON.stringify(cartItems));
+      console.log('Saving anonymous cart to cookies:', cartItems);
+      setCookie(ANONYMOUS_CART_KEY, JSON.stringify(cartItems), 60 * 60 * 24 * 7); // أسبوع
     } catch (error) {
-      console.error('Error saving anonymous cart:', error);
+      console.error('Error saving anonymous cart to cookies:', error);
     }
   }, [cartItems]);
 
