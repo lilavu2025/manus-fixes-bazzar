@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useOffersRealtime } from '@/hooks/useOffersRealtime';
 import { useLanguage } from '@/utils/languageContextUtils';
 import Header from '@/components/Header';
@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Percent } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useProducts } from '@/hooks/useSupabaseData';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { Heart, Share2 } from 'lucide-react';
 import { useCart } from '@/hooks/useCart';
 // import { useFavorites } from '@/hooks/useFavorites';
@@ -16,6 +16,7 @@ import type { Database } from '@/integrations/supabase/types';
 import type { Product } from '@/types';
 import { getDisplayPrice } from '@/utils/priceUtils';
 import { useAuth } from '@/contexts/useAuth';
+import { getSetting } from '@/services/settingsService';
 
 const Offers: React.FC = () => {
   const { t, isRTL } = useLanguage();
@@ -23,9 +24,14 @@ const Offers: React.FC = () => {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const { addToCart } = useCart();
+  const [hideOffers, setHideOffers] = useState(false);
 
   // استخدم hook الجديد لجلب العروض مع التحديث الفوري
   const { offers, loading: isLoading, error, refetch } = useOffersRealtime();
+
+  useEffect(() => {
+    getSetting('hide_offers_page').then(val => setHideOffers(val === 'true'));
+  }, []);
 
   // تصفية العروض حسب البحث
   const filteredOffers = offers.filter((offer: Database['public']['Tables']['offers']['Row']) =>
@@ -33,6 +39,8 @@ const Offers: React.FC = () => {
     offer.title_ar?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     offer.title_en?.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  if (hideOffers) return <Navigate to="/" replace />;
 
   if (isLoading) {
     return (

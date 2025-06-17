@@ -21,6 +21,7 @@ import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import ImageUpload from '@/components/ImageUpload';
 import { useOffersRealtime } from '@/hooks/useOffersRealtime';
+import { getSetting, setSetting } from '@/services/settingsService';
 import type { Database } from '@/integrations/supabase/types';
 
 const AdminOffers: React.FC = () => {
@@ -29,6 +30,8 @@ const AdminOffers: React.FC = () => {
   const [showEdit, setShowEdit] = useState(false);
   const [showDelete, setShowDelete] = useState(false);
   const [selectedOffer, setSelectedOffer] = useState<Database['public']['Tables']['offers']['Row'] | null>(null);
+  const [hideOffersPage, setHideOffersPage] = useState<boolean>(false);
+  const [loadingSetting, setLoadingSetting] = useState(true);
   
   // نموذج العرض مع جميع الحقول المطلوبة
   const initialForm = useMemo(() => ({
@@ -49,6 +52,14 @@ const AdminOffers: React.FC = () => {
 
   // جلب العروض من قاعدة البيانات
   const { offers, loading, error, refetch, setOffers } = useOffersRealtime({ disableRealtime: true });
+
+  // جلب الإعداد عند تحميل الصفحة
+  useEffect(() => {
+    getSetting('hide_offers_page').then(val => {
+      setHideOffersPage(val === 'true');
+      setLoadingSetting(false);
+    });
+  }, []);
 
   // حذف عرض
   const handleDelete = async (id: string) => {
@@ -224,8 +235,26 @@ const AdminOffers: React.FC = () => {
     }
   }, [showEdit, selectedOffer, showAdd, initialForm]);
 
+  // تحديث الإعداد عند تغيير السويتش
+  const handleToggleHideOffers = async (checked: boolean) => {
+    setLoadingSetting(true);
+    await setSetting('hide_offers_page', checked ? 'true' : 'false');
+    setHideOffersPage(checked);
+    setLoadingSetting(false);
+  };
+
   return (
     <div className={`space-y-6 ${isRTL ? 'rtl' : 'ltr'}`}>
+      {/* إعداد إخفاء صفحة العروض */}
+      <div className="flex items-center gap-4 mb-4 justify-center py-4 bg-gray-50 rounded-lg border">
+        <Switch checked={hideOffersPage} onCheckedChange={handleToggleHideOffers} disabled={loadingSetting} />
+        <span className={`font-medium text-base ${hideOffersPage ? 'text-red-600' : 'text-green-700'}`}
+        >
+          {hideOffersPage ? 'العروض مخفية من واجهة المستخدم' : 'العروض ظاهرة للمستخدمين'}
+        </span>
+        {loadingSetting && <span className="ml-2 text-xs text-gray-400 animate-pulse">جاري التحميل...</span>}
+      </div>
+
       {/* رأس الصفحة */}
       <div className="flex justify-between items-center">
         <div>

@@ -1,5 +1,5 @@
 import * as React from "react";
-import { useState, memo, useCallback, useMemo } from 'react';
+import { useState, memo, useCallback, useMemo, useEffect } from 'react';
 import { Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetTrigger } from '@/components/ui/sheet';
@@ -11,6 +11,7 @@ import SearchBar from './header/SearchBar';
 import UserActions from './header/UserActions';
 import MobileNavigation from './header/MobileNavigation';
 import DesktopNavigation from './header/DesktopNavigation';
+import { getSetting } from '@/services/settingsService';
 
 interface HeaderProps {
   onSearchChange: (query: string) => void;
@@ -22,8 +23,17 @@ const Header: React.FC<HeaderProps> = memo(({ onSearchChange, onCartClick, onMen
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
+  const [hideOffers, setHideOffers] = useState(false);
+  const [loadingSetting, setLoadingSetting] = useState(true);
   const { user } = useAuth();
   const { t } = useLanguage();
+
+  useEffect(() => {
+    getSetting('hide_offers_page').then(val => {
+      setHideOffers(val === 'true');
+      setLoadingSetting(false);
+    });
+  }, []);
 
   const handleSearchChange = useCallback((query: string) => {
     setSearchQuery(query);
@@ -38,14 +48,23 @@ const Header: React.FC<HeaderProps> = memo(({ onSearchChange, onCartClick, onMen
     setShowMobileSearch(prev => !prev);
   }, []);
 
-  const navigationItems = useMemo(() => [
-    { path: '/', label: t('home'), icon: Home },
-    { path: '/products', label: t('products') },
-    { path: '/categories', label: t('categories') },
-    { path: '/offers', label: t('offers') },
-    ...(user ? [{ path: '/orders', label: t('orders') }] : []),
-    { path: '/contact', label: t('contact') },
-  ], [t, user]);
+  const navigationItems = useMemo(() => {
+    if (loadingSetting) return [
+      { path: '/', label: t('home'), icon: Home },
+      { path: '/products', label: t('products') },
+      { path: '/categories', label: t('categories') },
+      ...(user ? [{ path: '/orders', label: t('orders') }] : []),
+      { path: '/contact', label: t('contact') },
+    ];
+    return [
+      { path: '/', label: t('home'), icon: Home },
+      { path: '/products', label: t('products') },
+      { path: '/categories', label: t('categories') },
+      ...(!hideOffers ? [{ path: '/offers', label: t('offers') }] : []),
+      ...(user ? [{ path: '/orders', label: t('orders') }] : []),
+      { path: '/contact', label: t('contact') },
+    ];
+  }, [t, user, hideOffers, loadingSetting]);
 
   return (
     <header className="bg-white/95 backdrop-blur-md shadow-lg border-b border-gray-100 sticky top-0 z-50 transition-all duration-300">

@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -14,8 +14,9 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import SEO from "@/components/SEO";
 import PerformanceMonitorComponent from "@/components/PerformanceMonitor";
-import { lazy, Suspense, memo, useEffect, useRef } from "react";
+import { lazy, Suspense, memo, useEffect, useRef, useState } from "react";
 import ScrollToTop from "@/components/ScrollToTop";
+import { getSetting } from '@/services/settingsService';
 
 // Critical pages - Regular imports for initial load
 import Index from "./pages/Index";
@@ -147,6 +148,11 @@ const App = () => {
   }
   const queryClient = queryClientRef.current;
 
+  const [hideOffers, setHideOffers] = useState(false);
+  useEffect(() => {
+    getSetting('hide_offers_page').then(val => setHideOffers(val === 'true'));
+  }, []);
+
   useEffect(() => {
     // حذف setInterval، والإبقاء فقط على التحديث عند التفاعل
     const refetchAll = (source?: string) => {
@@ -198,6 +204,7 @@ const App = () => {
                       <Route path="/categories" element={<Categories />} />
                       <Route path="/product/:id" element={<ProductDetails />} />
                       <Route path="/offers" element={
+                        hideOffers ? <Navigate to="/" replace /> :
                         <Suspense fallback={<PageLoader />}>
                           <Offers />
                         </Suspense>
