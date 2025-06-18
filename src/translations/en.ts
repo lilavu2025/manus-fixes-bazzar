@@ -693,4 +693,6 @@ export const enTranslations = {
   invalidLoginCredentials: 'Invalid login credentials',
   addressSeparator: ' - ',
 
+  pageNotFound: 'Oops! Page not found',
+  returnToHome: 'Return to Home',
 };

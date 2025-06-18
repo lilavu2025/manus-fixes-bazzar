@@ -681,4 +681,6 @@ export const heTranslations = {
   invalidLoginCredentials: 'פרטי ההתחברות אינם נכונים.',
   addressSeparator: ' - ',
 
+  pageNotFound: 'הדף לא נמצא',
+  returnToHome: 'חזרה לדף הבית'
 };

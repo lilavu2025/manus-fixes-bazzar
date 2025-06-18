@@ -699,4 +699,6 @@ export const arTranslations = {
   currentPasswordIncorrect: 'كلمة المرور الحالية غير صحيحة.',
   invalidLoginCredentials:'بيانات الدخول غير صحيحة',
   addressSeparator: ' - ',
+  pageNotFound: 'عذرًا، لم نعثر على الصفحة',
+  returnToHome: 'العودة للرئيسية'
 };
