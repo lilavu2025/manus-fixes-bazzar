@@ -322,7 +322,7 @@ const App = () => {
       openCart: boolean;
     }) {
       const location = useLocation();
-      if (location.pathname.startsWith('/admin')) return null;
+      if (location.pathname.startsWith('/admin') || location.pathname === '/auth') return null;
       return (
         <Header
           searchQuery={props.searchQuery}
