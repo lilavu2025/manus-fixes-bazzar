@@ -98,7 +98,17 @@ const EmailConfirmationPending: React.FC<EmailConfirmationPendingProps> = ({ ema
   };
 
   return (
-    <Card>
+    <Card className="relative">
+      {/* زر الرجوع صغير دائري أعلى طرف الكرت */}
+      <button
+        onClick={onBack}
+        className="absolute -top-4 ltr:-left-4 rtl:-right-4 w-10 h-10 rounded-full bg-gradient-to-r from-orange-500 to-red-500 text-white flex items-center justify-center shadow-lg hover:from-orange-600 hover:to-red-600 transition-all duration-200 z-10 border-4 border-white dark:border-neutral-900"
+        aria-label={t('back')}
+        type="button"
+      >
+        <svg className="h-5 w-5 rtl:rotate-180" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+      </button>
+
       <CardHeader className="text-center">
         <div className="w-16 h-16 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
           <span className="text-white font-bold text-2xl">م</span>
