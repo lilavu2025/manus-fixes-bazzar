@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -17,6 +17,9 @@ import PerformanceMonitorComponent from "@/components/PerformanceMonitor";
 import { lazy, Suspense, memo, useEffect, useRef, useState } from "react";
 import ScrollToTop from "@/components/ScrollToTop";
 import { getSetting } from '@/services/settingsService';
+import MobileBottomNavBar from '@/components/MobileBottomNavBar';
+import Header from '@/components/Header';
+import CartSidebar from '@/components/CartSidebar';
 
 // Critical pages - Regular imports for initial load
 import Index from "./pages/Index";
@@ -149,6 +152,11 @@ const App = () => {
   const queryClient = queryClientRef.current;
 
   const [hideOffers, setHideOffers] = useState(false);
+  const [openMobileMenu, setOpenMobileMenu] = useState(false);
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
+  const [openCart, setOpenCart] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
   useEffect(() => {
     getSetting('hide_offers_page').then(val => setHideOffers(val === 'true'));
   }, []);
@@ -188,80 +196,143 @@ const App = () => {
               <AuthProvider>
                 <CartProvider>
                   <TooltipProvider>
-                      <div className="min-h-screen bg-background font-sans antialiased">
-                        <SEO />
-                        <Toaster />
-                        <Sonner />
-                        <PerformanceMonitorComponent />
-                        <ConnectionManager />
-                        <RoutePreloader />
-                        <Suspense fallback={<LoadingSpinner />}>
-                          <Routes>
-                      <Route path="/" element={<Index />} />
-                      <Route path="/auth" element={<Auth />} />
-                      <Route path="/email-confirmation" element={<EmailConfirmation />} />
-                      <Route path="/products" element={<Products />} />
-                      <Route path="/categories" element={<Categories />} />
-                      <Route path="/product/:id" element={<ProductDetails />} />
-                      <Route path="/offers" element={
-                        hideOffers ? <Navigate to="/" replace /> :
-                        <Suspense fallback={<PageLoader />}>
-                          <Offers />
-                        </Suspense>
-                      } />
-                      <Route path="/contact" element={
-                        <Suspense fallback={<PageLoader />}>
-                          <Contact />
-                        </Suspense>
-                      } />
-                      
-                      {/* Protected Routes */}
-                      <Route path="/orders" element={
-                        <ProtectedRoute>
-                          <Suspense fallback={<PageLoader />}>
-                            <Orders />
+                    <div className="min-h-screen bg-background font-sans antialiased">
+                      <SEO />
+                      <Toaster />
+                      <Sonner />
+                      <PerformanceMonitorComponent />
+                      <ConnectionManager />
+                      <RoutePreloader />
+                      <AppHeaderWrapper
+                        searchQuery={searchQuery}
+                        setSearchQuery={setSearchQuery}
+                        setOpenCart={setOpenCart}
+                        setOpenMobileMenu={setOpenMobileMenu}
+                        openMobileMenu={openMobileMenu}
+                        showMobileSearch={showMobileSearch}
+                        setShowMobileSearch={setShowMobileSearch}
+                        openCart={openCart}
+                      />
+                      <CartSidebar isOpen={openCart} onClose={() => setOpenCart(false)} />
+                      <Suspense fallback={<LoadingSpinner />}>
+                        <Routes>
+                          <Route path="/" element={<Index searchQuery={searchQuery} setSearchQuery={setSearchQuery} />} />
+                          <Route path="/auth" element={<Auth />} />
+                          <Route path="/email-confirmation" element={<EmailConfirmation />} />
+                          <Route path="/products" element={<Products />} />
+                          <Route path="/categories" element={<Categories />} />
+                          <Route path="/product/:id" element={<ProductDetails />} />
+                          <Route path="/offers" element={
+                            hideOffers ? <Navigate to="/" replace /> :
+                            <Suspense fallback={<PageLoader />}>
+                              <Offers />
+                            </Suspense>
+                          } />
+                          <Route path="/contact" element={
+                            <Suspense fallback={<PageLoader />}>
+                              <Contact />
+                            </Suspense>
+                          } />
+                          
+                          {/* Protected Routes */}
+                          <Route path="/orders" element={
+                            <ProtectedRoute>
+                              <Suspense fallback={<PageLoader />}>
+                                <Orders />
+                              </Suspense>
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/profile" element={
+                            <ProtectedRoute>
+                              <Suspense fallback={<PageLoader />}>
+                                <Profile />
+                              </Suspense>
+                            </ProtectedRoute>
+                          } />
+                          <Route path="/checkout" element={
+                            <ProtectedRoute>
+                              <Suspense fallback={<PageLoader />}>
+                                <Checkout />
+                              </Suspense>
+                            </ProtectedRoute>
+                          } />
+                          
+                          {/* Admin Routes */}
+                          <Route path="/admin/*" element={
+                            <ProtectedRoute requireAdmin>
+                              <Suspense fallback={<PageLoader />}>
+                                <AdminDashboard />
+                              </Suspense>
+                            </ProtectedRoute>
+                          } />
+                          
+                          {/* Catch-all route */}
+                          <Route path="/account-deleted" element={<AccountDeleted />} />
+                              <Route path="*" element={<NotFound />} />
+                            </Routes>
                           </Suspense>
-                        </ProtectedRoute>
-                      } />
-                      <Route path="/profile" element={
-                        <ProtectedRoute>
-                          <Suspense fallback={<PageLoader />}>
-                            <Profile />
-                          </Suspense>
-                        </ProtectedRoute>
-                      } />
-                      <Route path="/checkout" element={
-                        <ProtectedRoute>
-                          <Suspense fallback={<PageLoader />}>
-                            <Checkout />
-                          </Suspense>
-                        </ProtectedRoute>
-                      } />
-                      
-                      {/* Admin Routes */}
-                      <Route path="/admin/*" element={
-                        <ProtectedRoute requireAdmin>
-                          <Suspense fallback={<PageLoader />}>
-                            <AdminDashboard />
-                          </Suspense>
-                        </ProtectedRoute>
-                      } />
-                      
-                      {/* Catch-all route */}
-                      <Route path="/account-deleted" element={<AccountDeleted />} />
-                          <Route path="*" element={<NotFound />} />
-                        </Routes>
-                      </Suspense>
-                    </div>
-                  </TooltipProvider>
-                </CartProvider>
-              </AuthProvider>
-          </LanguageProvider>
-        </ErrorBoundary>
-      </BrowserRouter>
-    </HelmetProvider>
-  </QueryClientProvider>
-  );
-};
+                          {/* البوتوم ناف بار يظهر فقط على الجوال */}
+                          <div className="md:hidden">
+                            <MobileBottomNavBar
+                              onMenuClick={() => {
+                                setOpenMobileMenu(true);
+                                setOpenCart(false);
+                                setShowMobileSearch(false);
+                              }}
+                              onSearchClick={() => {
+                                setShowMobileSearch(true);
+                                setOpenCart(false);
+                                setOpenMobileMenu(false);
+                              }}
+                              onCartClick={() => {
+                                setOpenCart(true);
+                                setOpenMobileMenu(false);
+                                setShowMobileSearch(false);
+                              }}
+                              onHomeClick={() => {
+                                setOpenCart(false);
+                                setOpenMobileMenu(false);
+                                setShowMobileSearch(false);
+                                window.location.pathname = '/';
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </TooltipProvider>
+                    </CartProvider>
+                  </AuthProvider>
+              </LanguageProvider>
+            </ErrorBoundary>
+          </BrowserRouter>
+        </HelmetProvider>
+      </QueryClientProvider>
+      );
+    };
 
-export default App;
+    export default App;
+
+    function AppHeaderWrapper(props: {
+      searchQuery: string;
+      setSearchQuery: (q: string) => void;
+      setOpenCart: (b: boolean) => void;
+      setOpenMobileMenu: (b: boolean) => void;
+      openMobileMenu: boolean;
+      showMobileSearch: boolean;
+      setShowMobileSearch: (b: boolean) => void;
+      openCart: boolean;
+    }) {
+      const location = useLocation();
+      if (location.pathname.startsWith('/admin')) return null;
+      return (
+        <Header
+          searchQuery={props.searchQuery}
+          onSearchChange={props.setSearchQuery}
+          onCartClick={() => props.setOpenCart(true)}
+          onMenuClick={() => props.setOpenMobileMenu(true)}
+          mobileMenuOpen={props.openMobileMenu}
+          setMobileMenuOpen={props.setOpenMobileMenu}
+          showMobileSearch={props.showMobileSearch}
+          setShowMobileSearch={props.setShowMobileSearch}
+        />
+      );
+    }

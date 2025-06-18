@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useLanguage } from '@/utils/languageContextUtils';
-import Header from '@/components/Header';
 import CartSidebar from '@/components/CartSidebar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -71,7 +70,7 @@ const Contact: React.FC = () => {
 
   return (
     <div className={`min-h-screen bg-gray-50 ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
-      <Header onSearchChange={() => {}} onCartClick={() => setIsCartOpen(true)} onMenuClick={() => {}} />
+      {/* <Header onSearchChange={() => {}} onCartClick={() => setIsCartOpen(true)} onMenuClick={() => {}} /> */}
       <div className='mb-4' />
       <div className="text-center">
           <h1 className="text-3xl font-bold mb-2">{t('contact')}</h1>

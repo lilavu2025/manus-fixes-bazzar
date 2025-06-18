@@ -136,10 +136,9 @@ const AdminDashboard: React.FC = () => {
 
         {/* Sidebar */}
         <div className={`
-          ${sidebarOpen ? 'translate-x-0' : isRTL ? 'translate-x-full' : '-translate-x-full'} 
+          ${sidebarOpen ? 'translate-x-0 w-72' : isRTL ? 'translate-x-full w-0 p-0 border-none overflow-hidden pointer-events-none' : '-translate-x-full w-0 p-0 border-none overflow-hidden pointer-events-none'}
           lg:translate-x-0 
           ${sidebarCollapsed ? 'lg:w-20' : 'lg:w-72'} 
-          w-72 
           transition-all duration-300 ease-in-out 
           bg-white shadow-2xl border-r border-gray-200 
           flex flex-col min-h-screen 

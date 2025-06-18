@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import Header from '@/components/Header';
 import ProductCard from '@/components/ProductCard';
 import BannerCarousel from '@/components/BannerCarousel';
 import CategoryCard from '@/components/CategoryCard';
@@ -11,10 +10,14 @@ import { useCategoriesRealtime } from '@/hooks/useCategoriesRealtime';
 import { useLanguage } from '@/utils/languageContextUtils';
 import { getLocalizedName } from '@/utils/getLocalizedName';
 
-const Index = () => {
+interface IndexProps {
+  searchQuery: string;
+  setSearchQuery: (query: string) => void;
+}
+
+const Index = ({ searchQuery, setSearchQuery }: IndexProps) => {
   const { t, isRTL, language } = useLanguage();
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
 
   const { data: bannersData, loading: bannersLoading } = useBanners();
   const { categories, loading: categoriesLoading, error: categoriesError } = useCategoriesRealtime();
@@ -31,9 +34,14 @@ const Index = () => {
   }
 
   const featuredProducts = products.filter(product => product.featured).slice(0, 8);
-  const filteredProducts = products.filter(product => 
-    searchQuery === '' || getLocalizedName(product, language).toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredProducts = products.filter(product => {
+    if (searchQuery === '') return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      (product.name && product.name.toLowerCase().includes(q)) ||
+      (product.nameEn && product.nameEn.toLowerCase().includes(q))
+    );
+  });
   const displayProducts = searchQuery ? filteredProducts : featuredProducts;
 
   useEffect(() => {
@@ -71,7 +79,12 @@ const Index = () => {
 
   return (
     <div className={`min-h-screen bg-gray-50 ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
-      <Header onSearchChange={setSearchQuery} onCartClick={() => setIsCartOpen(true)} onMenuClick={() => {}} />
+      {/* <Header
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        onCartClick={() => setIsCartOpen(true)}
+        onMenuClick={() => {}}
+      /> */}
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Hero Banner */}
@@ -94,7 +107,7 @@ const Index = () => {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {filteredProducts.map(product => (
-                  <ProductCard key={product.id} product={product} />
+                  <ProductCard key={product.id} product={product as import("@/types/product").Product} />
                 ))}
               </div>
             )}
@@ -168,7 +181,7 @@ const Index = () => {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
                 {displayProducts.map(product => (
-                  <ProductCard key={product.id} product={product} />
+                  <ProductCard key={product.id} product={product as import("@/types/product").Product} />
                 ))}
               </div>
             )}

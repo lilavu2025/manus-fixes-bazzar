@@ -34,7 +34,7 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
 
   return (
     <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-      <SheetContent side={isRTL ? "right" : "left"} className="w-80 p-0">
+      <SheetContent side={isRTL ? "left" : "right"} className="w-80 p-0">
         <div className="flex flex-col h-full">
           <div className="p-6 border-b">
             <Link to="/" className="flex items-center gap-3" onClick={() => setMobileMenuOpen(false)}>

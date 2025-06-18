@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useAuth } from '@/contexts/useAuth';
 import { useLanguage } from '@/utils/languageContextUtils';
 import { useAddresses } from '@/hooks/useAddresses';
-import Header from '@/components/Header';
 import AddAddressDialog from '@/components/AddAddressDialog';
 import EditAddressDialog from '@/components/EditAddressDialog';
 import DeleteAddressDialog from '@/components/DeleteAddressDialog';
@@ -124,7 +123,7 @@ const Profile: React.FC = () => {
 
   return (
     <div className={`min-h-screen bg-gradient-to-br from-gray-50 to-orange-50 ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
-      <Header onSearchChange={() => {}} onCartClick={() => {}} onMenuClick={() => {}} />
+      {/* <Header onSearchChange={() => {}} onCartClick={() => {}} onMenuClick={() => {}} /> */}
       <div className="container mx-auto px-4 py-8 max-w-3xl">
         <div className="mb-8 flex flex-col items-center justify-center gap-2">
           <h1 className="text-3xl font-bold mt-2">{t('profile')}</h1>

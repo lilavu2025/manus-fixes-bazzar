@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useLanguage } from '@/utils/languageContextUtils';
 import { useAuth } from '@/contexts/useAuth';
-import Header from '@/components/Header';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { CalendarDays, Package, CreditCard, XCircle, MapPin, Truck, CheckCircle, Loader2 } from 'lucide-react';
@@ -139,7 +138,7 @@ const Orders: React.FC = () => {
 
   return (
     <div className={`min-h-screen bg-gray-50 ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
-      <Header onSearchChange={() => {}} onCartClick={() => {}} onMenuClick={() => {}} />
+      {/* <Header onSearchChange={() => {}} onCartClick={() => {}} onMenuClick={() => {}} /> */}
       <div className="container mx-auto px-4 py-6 max-w-3xl">
         <div className={`mb-8 ${isRTL ? 'text-right' : 'text-left'}`}>  
           <h1 className="text-3xl font-bold mb-1 text-center">{t('orders')}</h1>

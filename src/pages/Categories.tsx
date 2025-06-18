@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useCategoriesRealtime } from '@/hooks/useCategoriesRealtime';
 import { useLanguage } from '@/utils/languageContextUtils';
 import { getLocalizedName } from '@/utils/getLocalizedName';
-import Header from '@/components/Header';
 import CategoryCard from '@/components/CategoryCard';
 import CartSidebar from '@/components/CartSidebar';
 
@@ -40,11 +39,6 @@ const Categories: React.FC = () => {
     }
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header 
-          onSearchChange={setSearchQuery}
-          onCartClick={() => setIsCartOpen(true)}
-          onMenuClick={() => {}}
-        />
         <div className="container mx-auto px-4 py-6">
           <div className="text-center py-12">
             <p className="text-red-500 text-lg">خطأ في تحميل الفئات: {errorMsg}</p>
@@ -62,8 +56,6 @@ const Categories: React.FC = () => {
 
   return (
     <div className={`min-h-screen bg-gray-50 ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
-      <Header onSearchChange={setSearchQuery} onCartClick={() => setIsCartOpen(true)} onMenuClick={() => {}} />
-
       <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-6">
         {/* Advanced Search Bar & Stats */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">

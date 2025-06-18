@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useProductsRealtime } from '@/hooks/useProductsRealtime';
 import { useCategories } from '@/hooks/useSupabaseData';
 import { useLanguage } from '@/utils/languageContextUtils';
-import Header from '@/components/Header';
 import ProductCard from '@/components/ProductCard';
 import CartSidebar from '@/components/CartSidebar';
 import { Button } from '@/components/ui/button';
@@ -144,7 +143,7 @@ const Products: React.FC = () => {
 
   return (
     <div className={`min-h-screen bg-gray-50 ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
-      <Header onSearchChange={setSearchQuery} onCartClick={() => setIsCartOpen(true)} onMenuClick={() => {}} />
+      {/* <Header onSearchChange={setSearchQuery} onCartClick={() => setIsCartOpen(true)} onMenuClick={() => { } } searchQuery={''} /> */}
 
       <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-6">
         {/* Advanced Filters & Search Bar */}
@@ -199,7 +198,7 @@ const Products: React.FC = () => {
               <div>
                 <label className="block text-sm font-medium mb-2">{t('category')}</label>
                 <Select value={selectedCategory} onValueChange={handleCategoryChange}>
-                  <SelectTrigger>
+                  <SelectTrigger >
                     <SelectValue placeholder={t('allCategories')} />
                   </SelectTrigger>
                   <SelectContent className="bg-white z-50">
