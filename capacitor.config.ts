@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.mystore.shop',
-  appName: 'mystore',
+  appId: 'com.lilavu.mtjare',
+  appName: 'mtjare',
   webDir: 'dist'
 };
 

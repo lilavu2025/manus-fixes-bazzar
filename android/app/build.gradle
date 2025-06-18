@@ -1,5 +1,11 @@
 apply plugin: 'com.android.application'
 
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
 android {
     namespace "com.mystore.shop"
     compileSdk rootProject.ext.compileSdkVersion
@@ -25,9 +31,9 @@ android {
 }
 
 repositories {
-    flatDir{
-        //dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
-    }
+    // flatDir{
+    //     dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
+    // }
 }
 
 dependencies {
