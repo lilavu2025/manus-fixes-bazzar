@@ -94,10 +94,11 @@ const AdminCategories: React.FC = () => {
     const [removed] = newOrder.splice(result.source.index, 1);
     newOrder.splice(result.destination.index, 0, removed);
     setCategoriesOrder(newOrder);
-    // إذا كان لديك حقل sort_order في جدول categories يمكنك تفعيل الكود التالي:
-    await Promise.all(newOrder.map((id, idx) =>
-      supabase.from('categories').update({ sort_order: idx }).eq('id', id)
-    ));
+    // تم حذف تحديث sort_order لأنه غير موجود في قاعدة البيانات
+    // إذا أضفت الحقل لاحقًا يمكنك إعادة الكود التالي:
+    // await Promise.all(newOrder.map((id, idx) =>
+    //   supabase.from('categories').update({ sort_order: idx }).eq('id', id)
+    // ));
   };
 
   const handleDeleteCategory = async (categoryId: string, categoryName: string) => {
