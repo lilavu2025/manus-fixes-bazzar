@@ -5,7 +5,6 @@ import { useAuth } from '@/contexts/useAuth';
 import { useLanguage } from '@/utils/languageContextUtils';
 import { useCart } from '@/hooks/useCart';
 import { supabase } from '@/integrations/supabase/client';
-import Header from '@/components/Header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -200,11 +199,6 @@ const Checkout: React.FC = () => {
   if (!isDirectBuy && cartItems.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Header 
-          onSearchChange={() => {}}
-          onCartClick={() => {}}
-          onMenuClick={() => {}}
-        />
         
         <div className="container mx-auto px-4 py-6">
           <div className="text-center py-12">
@@ -222,7 +216,7 @@ const Checkout: React.FC = () => {
 
   return (
     <div className={`min-h-screen bg-gray-50 ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
-      <Header onSearchChange={() => {}} onCartClick={() => {}} onMenuClick={() => {}} />
+      {/* <Header onSearchChange={() => {}} onCartClick={() => {}} onMenuClick={() => {}} /> */}
 
       <div className="container mx-auto px-4 py-6">
         {/* رأس الصفحة مع زر العودة */}

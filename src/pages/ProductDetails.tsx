@@ -5,7 +5,6 @@ import { useProducts } from '@/hooks/useSupabaseData';
 import { useCart } from '@/hooks/useCart';
 import { useLanguage } from '@/utils/languageContextUtils';
 import { toast } from 'sonner';
-import Header from '@/components/Header';
 import CartSidebar from '@/components/CartSidebar';
 import ProductImageGallery from '@/components/ProductImageGallery';
 import ProductInfo from '@/components/ProductInfo';
@@ -99,7 +98,7 @@ const ProductDetails = () => {
 
   return (
     <div className={`min-h-screen bg-gray-50 ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
-      <Header onSearchChange={setSearchQuery} onCartClick={() => setIsCartOpen(true)} onMenuClick={() => {}} />
+      {/* <Header onSearchChange={setSearchQuery} onCartClick={() => setIsCartOpen(true)} onMenuClick={() => {}} /> */}
 
       <main className="container mx-auto px-2 sm:px-6 py-8">
         <div className={`mb-4 ${isRTL ? 'text-right' : 'text-left'}`}> 
