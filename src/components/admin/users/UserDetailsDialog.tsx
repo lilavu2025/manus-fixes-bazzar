@@ -132,7 +132,7 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({ user, open, onOpe
                   ) : (
                     <>
                       <XCircle className="h-4 w-4 text-orange-500" />
-                      <span className="text-sm text-orange-600">{t('emailNotConfirmed')}</span>
+                      <span className="text-sm text-orange-600">{t('emailNotConfirmedAdmin')}</span>
                     </>
                   )}
                 </div>

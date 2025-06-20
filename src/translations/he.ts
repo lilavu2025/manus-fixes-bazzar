@@ -30,7 +30,8 @@ export const heTranslations = {
   signupError: 'שגיאה בהרשמה',
   passwordMismatch: 'הסיסמאות אינן תואמות',
   emailNotConfirmed: 'אנא אמת את האימייל שלך תחילה',
-  
+  emailNotConfirmedAdmin: 'החשבון לא אושר על ידי הלקוח',
+
   // Email Confirmation
   confirmYourEmail: 'אמת את האימייל שלך',
   checkYourEmail: 'בדוק את האימייל שלך',

@@ -30,7 +30,8 @@ export const enTranslations = {
   signupError: 'Sign up error',
   passwordMismatch: 'Passwords do not match',
   emailNotConfirmed: 'Please confirm your email first',
-  
+  emailNotConfirmedAdmin: 'Account not confirmed by the customer',
+
   // Email Confirmation
   confirmYourEmail: 'Confirm Your Email',
   checkYourEmail: 'Check Your Email',

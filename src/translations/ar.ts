@@ -30,6 +30,7 @@ export const arTranslations = {
   signupError: 'خطأ في إنشاء الحساب',
   passwordMismatch: 'كلمات المرور غير متطابقة',
   emailNotConfirmed: 'يرجى تأكيد بريدك الإلكتروني أولاً',
+  emailNotConfirmedAdmin: 'الحساب غير مؤكد من قبل العميل',
   invalidEmail: "البريد الإلكتروني غير صالح",
   passwordTooShort: "كلمة المرور يجب أن تكون 6 أحرف على الأقل",
   invalidPhone: "رقم الهاتف غير صحيح، يجب أن يبدأ بـ 05 ويحتوي على 10 أرقام",
