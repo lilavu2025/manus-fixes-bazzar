@@ -39,7 +39,8 @@ const Index = ({ searchQuery, setSearchQuery }: IndexProps) => {
     const q = searchQuery.toLowerCase();
     return (
       (product.name && product.name.toLowerCase().includes(q)) ||
-      (product.nameEn && product.nameEn.toLowerCase().includes(q))
+      (product.nameEn && product.nameEn.toLowerCase().includes(q)) ||
+      (product.nameHe && product.nameHe.toLowerCase().includes(q))
     );
   });
   const displayProducts = searchQuery ? filteredProducts : featuredProducts;
