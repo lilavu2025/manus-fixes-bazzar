@@ -131,10 +131,10 @@ const EditProductDialog: React.FC<EditProductDialogProps> = ({
         const p = data[0];
         const mapped = {
           id: p.id,
-          name: p.name_ar || p.name_en || "",
+          name: p.name_ar || p.name_en || p.name_he || "",
           nameEn: p.name_en || "",
           nameHe: p.name_he || "",
-          description: p.description_ar || p.description_en || "",
+          description: p.description_ar || p.description_en || p.description_he || "",
           descriptionEn: p.description_en || "",
           descriptionHe: p.description_he || "",
           price: Number(p.price),
@@ -143,6 +143,7 @@ const EditProductDialog: React.FC<EditProductDialogProps> = ({
           image: p.image,
           images: p.images ?? [],
           category: p.category_id,
+          category_id: p.category_id,
           inStock: p.in_stock ?? false,
           rating: Number(p.rating) || 0,
           reviews: p.reviews_count || 0,

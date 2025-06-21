@@ -128,6 +128,11 @@ const AdminProducts: React.FC = () => {
     );
   }
 
+  // استدعاء refetch بعد نجاح التعديل
+  const onSuccess = () => {
+    refetch();
+  };
+
   return (
     <div className="space-y-8 max-w-7xl mx-auto px-2 sm:px-4 md:px-8 py-6">
       {/* شريط الإحصائيات */}
@@ -332,7 +337,7 @@ const AdminProducts: React.FC = () => {
         setShowViewDialog={setShowViewDialog}
         selectedProduct={selectedProduct}
         categories={productCategories}
-        onSuccess={refetch} // تحديث المنتجات من السيرفر بعد التعديل
+        onSuccess={onSuccess} // تحديث المنتجات من السيرفر بعد التعديل
         setProducts={setProducts}
       />
     </div>
