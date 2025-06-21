@@ -145,6 +145,11 @@ const ConnectionManager = memo(() => {
   return null;
 });
 
+// إخفاء جميع console.log إلا في بيئة الاختبار فقط
+if (typeof console !== "undefined" && typeof process !== "undefined" && process.env && process.env.NODE_ENV !== "test") {
+  console.log = () => {};
+}
+
 const App = () => {
   const queryClientRef = useRef<QueryClient>();
   if (!queryClientRef.current) {
