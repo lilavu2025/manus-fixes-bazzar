@@ -96,9 +96,13 @@ const UserActivityLogTable: React.FC = () => {
           user_type: 'retail',
           last_sign_in_at: deleted.last_sign_in_at,
           created_at: deleted.deleted_at,
-          updated_at: deleted.deleted_at, // تمرير updated_at دائماً
+          updated_at: deleted.deleted_at,
           email: deleted.email,
           disabled: true,
+          email_confirmed_at: '',
+          highest_order_value: 0,
+          language: '',
+          last_order_date: '',
         };
       }
     } else {

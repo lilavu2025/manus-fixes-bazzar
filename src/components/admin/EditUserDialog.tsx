@@ -15,6 +15,7 @@ import EditUserForm from './edit-user/EditUserForm';
 import { useLanguage } from '@/utils/languageContextUtils';
 import { useAuth } from '@/contexts/useAuth';
 import type { UserProfile } from '@/types/profile';
+import type { Json } from '@/integrations/supabase/types';
 
 interface EditUserDialogProps {
   user: UserProfile;
@@ -42,7 +43,7 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({ user, refetch, setUsers
         admin_id: profile.id,
         user_id: userId,
         action,
-        details,
+        details: details as Json,
       }
     ]);
   };

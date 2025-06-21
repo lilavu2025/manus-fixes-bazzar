@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Upload, X, Image } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { useUploadImageToStorage, useGetPublicImageUrl } from '@/integrations/supabase/reactQueryHooks';
 import { toast } from 'sonner';
 import { Progress } from '@/components/ui/progress';
 import { useLanguage } from '@/utils/languageContextUtils';
@@ -33,6 +33,9 @@ const ImageUpload = ({
   const [progress, setProgress] = useState<number>(0);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const { t, language } = useLanguage();
+
+  const uploadImageToStorage = useUploadImageToStorage();
+  const getPublicImageUrl = useGetPublicImageUrl();
 
   // دالة لتحويل الصورة إلى WebP في المتصفح
   async function convertToWebP(file: File): Promise<Blob> {
@@ -99,8 +102,6 @@ const ImageUpload = ({
     let fileExt = file.name.split('.').pop();
     const fileName = `${Math.random()}`;
     let filePath = fileName;
-
-    // Resize and compress before upload
     if (file.type === 'image/png' || file.type === 'image/jpeg' || file.type === 'image/jpg') {
       try {
         const webpBlob = await resizeAndCompressImage(file, 1024, 0.85);
@@ -108,7 +109,6 @@ const ImageUpload = ({
         fileExt = 'webp';
         filePath = `${fileName}.webp`;
       } catch (e) {
-        // fallback: try convertToWebP or original
         try {
           const webpBlob = await convertToWebP(file);
           uploadFile = new File([webpBlob], fileName + '.webp', { type: 'image/webp' });
@@ -121,20 +121,9 @@ const ImageUpload = ({
     } else {
       filePath = `${fileName}.${fileExt}`;
     }
-
-    const { error: uploadError } = await supabase.storage
-      .from(bucket)
-      .upload(filePath, uploadFile);
-
-    if (uploadError) {
-      throw uploadError;
-    }
-
-    const { data } = supabase.storage
-      .from(bucket)
-      .getPublicUrl(filePath);
-
-    return data.publicUrl;
+    await uploadImageToStorage.mutateAsync({ bucket, filePath, file: uploadFile });
+    const url = await getPublicImageUrl.mutateAsync({ bucket, filePath });
+    return url;
   };
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {

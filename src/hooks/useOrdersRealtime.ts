@@ -1,44 +1,30 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import type { Database } from '@/integrations/supabase/types';
+import { useOrdersWithDetailsQuery } from '@/integrations/supabase/reactQueryHooks';
 
 // Add options param to control realtime
 export function useOrdersRealtime(options?: { disableRealtime?: boolean }) {
-  const [orders, setOrders] = useState<Database['public']['Tables']['orders']['Row'][]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-
-  const fetchOrders = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('orders')
-      .select(`*, profiles:profiles(id, full_name, email, phone), order_items(*, products(name_ar, name_en, image))`)
-      .order('created_at', { ascending: false });
-    if (error) setError(error as Error);
-    setOrders(data || []);
-    setLoading(false);
-  };
+  const { data: orders = [], isLoading: loading, error, refetch } = useOrdersWithDetailsQuery();
 
   useEffect(() => {
-    fetchOrders();
     if (options?.disableRealtime) return;
     const channel = supabase
       .channel('orders_realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
-        fetchOrders();
+        refetch();
       })
       .subscribe();
     // Refetch on tab visibility
     const handleVisibility = () => {
-      if (document.visibilityState === 'visible') fetchOrders();
+      if (document.visibilityState === 'visible') refetch();
     };
     document.addEventListener('visibilitychange', handleVisibility);
     return () => {
       channel.unsubscribe();
       document.removeEventListener('visibilitychange', handleVisibility);
     };
-  }, [options?.disableRealtime]);
+  }, [options?.disableRealtime, refetch]);
 
   // expose setOrders for local UI updates
-  return { orders, loading, error, refetch: fetchOrders, setOrders };
+  return { orders, loading, error, refetch, setOrders: () => {} };
 }

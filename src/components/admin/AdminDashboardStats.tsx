@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useAdminOrdersStats } from '@/integrations/supabase/reactQueryHooks';
 import { useLanguage } from '../../utils/languageContextUtils';
-import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import { Package, ShoppingCart, Users, BarChart3 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import type { UserProfile } from '@/types/profile';
+import type { Product } from '@/types/index';
+import { useCategoriesRealtime } from '@/hooks/useCategoriesRealtime';
 
 // Helper types
 interface UsersByType { [key: string]: number; }
@@ -32,14 +36,19 @@ interface AdminDashboardStatsProps {
   onFilterOrders?: (status: string) => void;
   pendingOrders?: { id: string; created_at: string; profiles?: { full_name: string; email?: string; phone?: string } }[];
   lowStockProductsData?: LowStockProduct[];
+  users?: UserProfile[];
+  products?: Product[];
 }
 
 const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({ 
   onFilterUsers, 
   onFilterOrders,
   pendingOrders = [],
-  lowStockProductsData = []
+  lowStockProductsData = [],
+  users = [],
+  products = [],
 }) => {
+  const { categories: categoriesList } = useCategoriesRealtime({ disableRealtime: true });
   const { t, language } = useLanguage();
   const navigate = useNavigate();
   const [isUsersExpanded, setIsUsersExpanded] = useState(false);
@@ -48,158 +57,8 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
   const [showPendingOrdersDetails, setShowPendingOrdersDetails] = useState(false);
   const [showLowStockDetails, setShowLowStockDetails] = useState(false);
 
-  // Fetch users statistics
-  const { data: usersStats = [], isLoading: usersLoading, error: usersError } = useQuery({
-    queryKey: ["admin-users-stats"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('user_type, created_at');
-
-      if (error) throw error;
-
-      const usersByType: UsersByType = data.reduce((acc: UsersByType, user: { user_type: string }) => {
-        acc[user.user_type] = (acc[user.user_type] || 0) + 1;
-        return acc;
-      }, {});
-
-      return [
-        { name: t('admin'), value: usersByType.admin || 0, color: '#ef4444' },
-        { name: t('wholesale'), value: usersByType.wholesale || 0, color: '#3b82f6' },
-        { name: t('retail'), value: usersByType.retail || 0, color: '#10b981' },
-      ];
-    },
-    retry: 3,
-    staleTime: 0,
-    refetchOnWindowFocus: true,
-    refetchInterval: false, // تم تعطيل polling (refetchInterval) لأن المتصفح يوقفه بالخلفية،
-    // والاعتماد على WebSocket أو إعادة الجلب عند العودة للواجهة أفضل
-  });
-
-  // Fetch products statistics
-  const { data: productsStats = [], isLoading: productsLoading, error: productsError } = useQuery({
-    queryKey: ["admin-products-stats", language],
-    queryFn: async () => {
-      const { data: products, error: productsError } = await supabase
-        .from('products')
-        .select('category_id, in_stock, active');
-
-      const { data: categories, error: categoriesError } = await supabase
-        .from('categories')
-        .select('id, name_ar, name_en, name_he');
-
-      if (productsError || categoriesError) throw productsError || categoriesError;
-
-      const getCategoryName = (cat: Category | undefined) => {
-        if (!cat) return t('notProvided');
-        if (language === 'ar') return cat.name_ar || t('notProvided');
-        if (language === 'en') return cat.name_en || t('notProvided');
-        if (language === 'he') return cat.name_he || t('notProvided');
-        return t('notProvided');
-      };
-
-      const productsByCategory: Record<string, ProductsByCategoryStats> = products.reduce((acc: Record<string, ProductsByCategoryStats>, product: { category_id: string; in_stock: boolean; active: boolean }) => {
-        const category = categories.find((cat: { id: string }) => cat.id === product.category_id);
-        const categoryName = getCategoryName(category);
-        if (!acc[categoryName]) {
-          acc[categoryName] = { total: 0, inStock: 0, outOfStock: 0 };
-        }
-        acc[categoryName].total += 1;
-        if (product.in_stock) {
-          acc[categoryName].inStock += 1;
-        } else {
-          acc[categoryName].outOfStock += 1;
-        }
-        return acc;
-      }, {});
-      return Object.entries(productsByCategory).map(([name, stats]: [string, ProductsByCategoryStats]) => ({
-        name,
-        total: stats.total,
-        inStock: stats.inStock,
-        outOfStock: stats.outOfStock,
-      }));
-    },
-    retry: 3,
-    staleTime: 0,
-    refetchOnWindowFocus: true,
-    refetchInterval: false,
-  });
-
-  // Fetch orders statistics
-  const { data: ordersStats, isLoading: ordersLoading, error: ordersError } = useQuery({
-    queryKey: ["admin-orders-stats"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('orders')
-        .select('status, total, created_at');
-
-      if (error) throw error;
-
-      const ordersByStatus: Record<string, number> = data.reduce((acc: Record<string, number>, order: { status: string }) => {
-        acc[order.status] = (acc[order.status] || 0) + 1;
-        return acc;
-      }, {});
-      const revenueByStatus: Record<string, number> = data.reduce((acc: Record<string, number>, order: { status: string; total: number }) => {
-        if (!acc[order.status]) acc[order.status] = 0;
-        // لا نحسب الإيرادات للطلبات الملغية
-        if (order.status !== 'cancelled') {
-          acc[order.status] += order.total || 0;
-        }
-        return acc;
-      }, {});
-
-      const totalRevenue = data
-        .filter(order => order.status !== 'cancelled')
-        .reduce((sum, order) => sum + (order.total || 0), 0);
-
-      return {
-        statusStats: [
-          { 
-            status: 'pending', 
-            label: t('pending'), 
-            value: ordersByStatus.pending || 0, 
-            revenue: revenueByStatus.pending || 0,
-            color: '#8b5cf6' 
-          },
-          { 
-            status: 'processing', 
-            label: t('processing'), 
-            value: ordersByStatus.processing || 0, 
-            revenue: revenueByStatus.processing || 0,
-            color: '#f59e0b' 
-          },
-          { 
-            status: 'shipped', 
-            label: t('shipped'), 
-            value: ordersByStatus.shipped || 0, 
-            revenue: revenueByStatus.shipped || 0,
-            color: '#3b82f6' 
-          },
-          { 
-            status: 'delivered', 
-            label: t('delivered'), 
-            value: ordersByStatus.delivered || 0, 
-            revenue: revenueByStatus.delivered || 0,
-            color: '#10b981' 
-          },
-          { 
-            status: 'cancelled', 
-            label: t('cancelled'), 
-            value: ordersByStatus.cancelled || 0, 
-            revenue: 0,
-            color: '#ef4444' 
-          },
-        ],
-        totalOrders: data.length,
-        totalRevenue
-      };
-    },
-    retry: 3,
-    staleTime: 0,
-    refetchOnWindowFocus: true,
-    refetchInterval: false, // تم تعطيل polling (refetchInterval) لأن المتصفح يوقفه بالخلفية،
-    // والاعتماد على WebSocket أو إعادة الجلب عند العودة للواجهة أفضل
-  });
+  // إحصائيات الطلبات
+  const { data: ordersStats, isLoading: ordersLoading, error: ordersError } = useAdminOrdersStats(t);
 
   const handleUserTypeClick = (userType: string) => {
     if (onFilterUsers) {
@@ -346,8 +205,12 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
     retail: { label: t('retail'), color: '#10b981' },
   };
 
+  // حساب إجمالي المستخدمين والمنتجات من البيانات القادمة من الصفحة الرئيسية
+  const totalUsers = Array.isArray(users) ? users.length : 0;
+  const totalProducts = Array.isArray(products) ? products.length : 0;
+
   // Show loading state
-  if (usersLoading || productsLoading || ordersLoading) {
+  if (ordersLoading) {
     return (
       <div className="space-y-6">
         <h1 className="text-3xl font-bold">{t('adminPanel')}</h1>
@@ -360,7 +223,7 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
   }
 
   // Show error state
-  if (usersError || productsError || ordersError) {
+  if (ordersError) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
@@ -371,11 +234,45 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
           </div>
           <p className="text-red-600 font-medium mb-2">{t('error')}</p>
           <p className="text-muted-foreground text-sm">
-             {usersError?.message || productsError?.message || ordersError?.message || t('unexpectedError')}
+             {ordersError?.message || t('unexpectedError')}
            </p>
         </div>
       </div>
     );
+  }
+
+  // توزيع المستخدمين حسب النوع
+  const usersDistributionData = [
+    { name: t('admin'), value: users.filter(u => u.user_type === 'admin').length, color: '#ef4444' },
+    { name: t('wholesale'), value: users.filter(u => u.user_type === 'wholesale').length, color: '#3b82f6' },
+    { name: t('retail'), value: users.filter(u => u.user_type === 'retail').length, color: '#10b981' },
+  ];
+
+  // المنتجات حسب الفئة (عرض الاسم الصحيح)
+  const categoriesStats: { name: string; inStock: number; outOfStock: number }[] = [];
+  if (Array.isArray(products) && Array.isArray(categoriesList)) {
+    const categoriesMap: Record<string, { name: string; inStock: number; outOfStock: number }> = {};
+    categoriesList.forEach(cat => {
+      // اختر الاسم المناسب حسب اللغة
+      let catName = cat.name;
+      if (language === 'en' && cat.nameEn) catName = cat.nameEn;
+      else if (language === 'he' && cat.nameHe) catName = cat.nameHe;
+      categoriesMap[cat.id] = { name: catName, inStock: 0, outOfStock: 0 };
+    });
+    products.forEach(product => {
+      const catId = product.category;
+      if (categoriesMap[catId]) {
+        if (product.inStock) categoriesMap[catId].inStock += 1;
+        else categoriesMap[catId].outOfStock += 1;
+      } else {
+        // منتجات بدون فئة معروفة
+        const unknown = t('unknown');
+        if (!categoriesMap[unknown]) categoriesMap[unknown] = { name: unknown, inStock: 0, outOfStock: 0 };
+        if (product.inStock) categoriesMap[unknown].inStock += 1;
+        else categoriesMap[unknown].outOfStock += 1;
+      }
+    });
+    for (const key in categoriesMap) categoriesStats.push(categoriesMap[key]);
   }
 
   return (
@@ -394,24 +291,44 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
             {!isUsersExpanded ? (
               <>
                 <div className="text-2xl font-bold">
-                  {usersStats.reduce((sum, stat) => sum + stat.value, 0)}
+                  {totalUsers}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   {t('registeredUsers')}
                 </p>
               </>
             ) : (
-              <div className="grid grid-cols-3 gap-2">
-                {usersStats.map((stat) => (
-                  <div 
-                    key={stat.name} 
-                    className="rounded-lg border bg-card p-2 text-center hover:bg-muted/50 transition-colors cursor-pointer"
-                    onClick={() => handleUserTypeClick(stat.name)}
-                  >
-                    <div className="text-[0.9rem] font-medium">{stat.name}</div>
-                    <div className="text-xl font-bold mt-1">{stat.value}</div>
-                  </div>
-                ))}
+              <div className="grid grid-cols-3 gap-4 py-2">
+                {[{
+                  type: 'admin',
+                  color: 'bg-red-500',
+                  icon: <Users className='w-5 h-5 text-red-500' />
+                },
+                {
+                  type: 'wholesale',
+                  color: 'bg-blue-500',
+                  icon: <Users className='w-5 h-5 text-blue-500' />
+                },
+                {
+                  type: 'retail',
+                  color: 'bg-green-500',
+                  icon: <Users className='w-5 h-5 text-green-500' />
+                }].map(({ type, color, icon }) => {
+                  const count = users.filter(u => u.user_type === type).length;
+                  return (
+                    <button
+                      key={type}
+                      className={`flex flex-col items-center justify-center rounded-lg p-3 shadow-sm border border-gray-200 bg-white hover:shadow-md transition group focus:outline-none focus:ring-2 focus:ring-primary/50`}
+                      style={{ minHeight: 80 }}
+                      onClick={() => handleUserTypeClick(type)}
+                      type="button"
+                    >
+                      <span className={`rounded-full ${color} bg-opacity-10 p-2 mb-1`}>{icon}</span>
+                      <span className="text-lg font-bold text-gray-800 group-hover:text-primary">{count}</span>
+                      <span className="text-xs text-muted-foreground mt-1">{t(type)}</span>
+                    </button>
+                  );
+                })}
               </div>
             )}
           </CardContent>
@@ -424,9 +341,7 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {Array.isArray(productsStats) && productsStats.length > 0
-                ? productsStats.reduce((sum, stat) => sum + (stat?.total || 0), 0)
-                : 0}
+              {totalProducts}
             </div>
             <p className="text-xs text-muted-foreground">
               {t('activeProducts')}
@@ -573,16 +488,17 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
             <ChartContainer config={chartConfig} className="h-80 w-full">
               <PieChart>
                 <Pie
-                  data={usersStats}
+                  data={usersDistributionData}
+                  dataKey="value"
+                  nameKey="name"
                   cx="50%"
                   cy="50%"
                   innerRadius={60}
                   outerRadius={100}
                   paddingAngle={5}
-                  dataKey="value"
                 >
-                  {usersStats.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  {usersDistributionData.map((entry, idx) => (
+                    <Cell key={entry.name} fill={entry.color} />
                   ))}
                 </Pie>
                 <ChartTooltip content={<ChartTooltipContent />} />
@@ -598,7 +514,7 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
           </CardHeader>
           <CardContent className="p-4">
             <ChartContainer config={chartConfig} className="h-80 w-full">
-              <BarChart data={productsStats} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+              <BarChart data={categoriesStats} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                 <XAxis 
                   dataKey="name" 
                   tick={{ fontSize: 12 }}

@@ -74,7 +74,6 @@ const LoadingSpinner = memo(() => (
 const preloadRoutes = () => {
   const routes = [Products, Categories, ProductDetails];
   routes.forEach(route => {
-    // استخدم unknown بدلاً من any
     const componentImport = route as unknown;
     if (typeof componentImport === 'function') {
       setTimeout(() => (componentImport as () => void)(), 100);
@@ -157,9 +156,9 @@ const App = () => {
   const [openCart, setOpenCart] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  useEffect(() => {
-    getSetting('hide_offers_page').then(val => setHideOffers(val === 'true'));
-  }, []);
+  // useEffect(() => {
+  //   getSetting('hide_offers_page').then(val => setHideOffers(val === 'true'));
+  // }, []);
 
   useEffect(() => {
     // حذف setInterval، والإبقاء فقط على التحديث عند التفاعل

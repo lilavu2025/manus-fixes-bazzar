@@ -1,14 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useLanguage } from '@/utils/languageContextUtils';
 import { useAuth } from '@/contexts/useAuth';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { CalendarDays, Package, CreditCard, XCircle, MapPin, Truck, CheckCircle, Loader2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { useUserOrdersWithDetailsQuery, useCancelUserOrderMutation } from '@/integrations/supabase/reactQueryHooks';
 import type { Tables, Json } from '@/integrations/supabase/types';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getDisplayPrice } from '@/utils/priceUtils';
+import { mapOrderFromDb } from '../utils/orderUtils';
+import type { OrdersWithDetails } from '@/integrations/supabase/dataFetchers';
 
 // أنواع الطلب وعناصر الطلب من Supabase
 type ProductDB = {
@@ -53,35 +55,30 @@ type OrderDB = Omit<Tables<'orders'>, 'items' | 'shipping_address'> & {
 const Orders: React.FC = () => {
   const { t, isRTL, language } = useLanguage();
   const { user, profile } = useAuth();
-
-  const [orders, setOrders] = useState<OrderDB[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [search, setSearch] = useState('');
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchOrders = async () => {
-      if (!user) return;
-      setLoading(true);
-      // جلب الطلبات مع تفاصيل المنتجات (كل الحقول)
-      const { data, error } = await supabase
-        .from('orders')
-        .select('*, order_items(*, products(*))')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-      if (error) {
-        setError(error.message);
-        setOrders([]);
-      } else {
-        setError(null);
-        setOrders(data || []);
+  // جلب الطلبات مع تفاصيل المنتجات
+  const { data: orders = [], isLoading: loading, error, refetch } = useUserOrdersWithDetailsQuery(
+    typeof user === 'object' && user && 'id' in user ? (user as { id: string }).id : ''
+  );
+  // إلغاء الطلب
+  const cancelOrderMutation = useCancelUserOrderMutation();
+
+  const handleCancelOrder = async (orderId: string) => {
+    setCancellingId(orderId);
+    await cancelOrderMutation.mutateAsync({
+      orderId,
+      userMeta: {
+        full_name: profile?.full_name,
+        email: typeof user === 'object' && user && 'email' in user ? (user as { email: string }).email : '',
+        displayName: typeof user === 'object' && user && 'user_metadata' in user && user.user_metadata && typeof user.user_metadata === 'object' && 'full_name' in user.user_metadata ? (user.user_metadata as { full_name?: string }).full_name || '' : '',
       }
-      setLoading(false);
-    };
-    fetchOrders();
-  }, [user]);
+    });
+    setCancellingId(null);
+    refetch();
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -95,25 +92,8 @@ const Orders: React.FC = () => {
   };
 
   // منطق إلغاء الطلب
-  const handleCancelOrder = async (orderId: string) => {
-    setCancellingId(orderId);
-    const updateObj: Record<string, unknown> = {
-      status: 'cancelled',
-      cancelled_by: 'user',
-      cancelled_by_name: user?.user_metadata?.full_name || user?.email || t('user'),
-    };
-    const { error: updateError } = await supabase
-      .from('orders')
-      .update(updateObj)
-      .eq('id', orderId);
-    if (!updateError) {
-      setOrders((prev) => prev.map((o) => o.id === orderId ? { ...o, status: 'cancelled', cancelled_by: 'user', cancelled_by_name: user?.user_metadata?.full_name || user?.email || t('user') } : o));
-    }
-    setCancellingId(null);
-  };
-
   // التحقق من إمكانية الإلغاء
-  const canCancel = (order: OrderDB) => {
+  const canCancel = (order: OrdersWithDetails) => {
     if (order.status !== 'pending') return false;
     const created = new Date(order.created_at);
     const now = new Date();
@@ -182,7 +162,7 @@ const Orders: React.FC = () => {
                 <h3 className="text-lg font-medium text-red-600 mb-2">
                   {t('errorLoadingData') || 'خطأ في تحميل الطلبات'}
                 </h3>
-                <p className="text-gray-500">{error}</p>
+                <p className="text-gray-500">{error instanceof Error ? error.message : String(error)}</p>
               </CardContent>
             </Card>
           ) : filteredOrders.length === 0 ? (
@@ -206,6 +186,7 @@ const Orders: React.FC = () => {
                 { key: 'cancelled', label: t('cancelled'), icon: <XCircle className="h-5 w-5" /> },
               ];
               const currentStep = statusSteps.findIndex(s => s.key === order.status);
+              const safeOrder = mapOrderFromDb(order);
               return (
                 <Card key={order.id} className="overflow-hidden border shadow-md">
                   <CardHeader className="bg-gray-50 border-b flex flex-col gap-2">

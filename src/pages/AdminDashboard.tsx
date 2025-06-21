@@ -26,7 +26,12 @@ import AdminOffers from '@/components/admin/AdminOffers';
 import AdminBanners from '@/components/admin/AdminBanners';
 import AdminContactInfo from '@/components/admin/AdminContactInfo';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { supabase } from '@/integrations/supabase/client';
+import { useUsers } from '@/hooks/useSupabaseData';
+import { useProductsRealtime } from '@/hooks/useProductsRealtime';
+import { useOrdersRealtime } from '@/hooks/useOrdersRealtime';
+import { mapProductFromDb } from '@/types/mapProductFromDb';
+import type { Product } from '@/types/index';
+import type { ProductRow } from '@/integrations/supabase/dataFetchers';
 
 // تعريف أنواع الطلب والمنتج بشكل مبسط
 interface PendingOrder {
@@ -47,8 +52,6 @@ const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [pendingOrders, setPendingOrders] = useState<PendingOrder[]>([]);
-  const [lowStockProductsData, setLowStockProductsData] = useState<LowStockProduct[]>([]);
 
   const sidebarItems = [
     { path: '/admin', label: t('dashboard'), icon: LayoutDashboard },
@@ -84,44 +87,36 @@ const AdminDashboard: React.FC = () => {
     // إذا كان أدمن، لا تفعل شيء
   }, [profile, loading, user, navigate]);
 
-  // جلب الطلبات الجديدة (pending)
-  useEffect(() => {
-    const fetchPendingOrders = async () => {
-      const { data } = await supabase
-        .from('orders')
-        .select('id,created_at,profiles(full_name,email,phone)')
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false });
-      // profiles تأتي كمصفوفة من Supabase، نأخذ أول عنصر فقط
-      setPendingOrders(
-        (data || []).map((order) => ({
-          id: order.id,
-          created_at: order.created_at,
-          profiles: Array.isArray(order.profiles) ? order.profiles[0] : order.profiles
-        }))
-      );
-    };
-    fetchPendingOrders();
-  }, []);
+  // جلب بيانات المستخدمين والمنتجات والطلبات
+  const usersQuery = useUsers();
+  const users = usersQuery.data || [];
+  const usersLoading = usersQuery.isLoading;
 
-  // جلب المنتجات منخفضة المخزون
-  useEffect(() => {
-    const fetchLowStockProducts = async () => {
-      const { data } = await supabase
-        .from('products')
-        .select('id,name_ar,name_en,name_he,stock_quantity')
-        .lt('stock_quantity', 5);
-      setLowStockProductsData((data || []).map((p: { id: string; name_ar: string; name_en: string; name_he: string; stock_quantity: number }) => ({
-        id: p.id,
-        name: p.name_ar, // احتياطي فقط، العرض الفعلي حسب اللغة في AdminDashboardStats
-        name_ar: p.name_ar,
-        name_en: p.name_en,
-        name_he: p.name_he,
-        stock_quantity: p.stock_quantity
-      })));
-    };
-    fetchLowStockProducts();
-  }, []);
+  const { products = [], loading: productsLoading } = useProductsRealtime({ disableRealtime: true });
+  const { orders = [], loading: ordersLoading } = useOrdersRealtime({ disableRealtime: true });
+
+  // الطلبات قيد الانتظار
+  const pendingOrders = orders.filter(order => order.status === 'pending');
+  // المنتجات منخفضة المخزون
+  const lowStockProductsData = products.filter(product => product.stock_quantity && product.stock_quantity <= 5).map(product => ({
+    id: product.id,
+    name: product.name_ar || product.name_en || product.name_he || '',
+    name_ar: product.name_ar || '',
+    name_en: product.name_en || '',
+    name_he: product.name_he || '',
+    stock_quantity: product.stock_quantity || 0,
+  }));
+
+  const productsMapped: Product[] = Array.isArray(products)
+    ? products.map((p) => {
+        if ('name' in p) {
+          return p as Product;
+        } else {
+          return mapProductFromDb(p as ProductRow);
+        }
+      })
+    : [];
+  const totalProducts = Array.isArray(productsMapped) ? productsMapped.length : 0;
 
   return (
     <div className={`min-h-screen bg-gray-50 ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
@@ -285,6 +280,8 @@ const AdminDashboard: React.FC = () => {
                   <AdminDashboardStats 
                     pendingOrders={pendingOrders}
                     lowStockProductsData={lowStockProductsData}
+                    users={users}
+                    products={productsMapped}
                   />
                 </>
               )}

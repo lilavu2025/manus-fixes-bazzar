@@ -6,7 +6,6 @@ import CartSidebar from '@/components/CartSidebar';
 import { Badge } from '@/components/ui/badge';
 import { Percent } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useProducts } from '@/hooks/useSupabaseData';
 import { Link, Navigate } from 'react-router-dom';
 import { Heart, Share2 } from 'lucide-react';
 import { useCart } from '@/hooks/useCart';
@@ -20,7 +19,6 @@ import { getSetting } from '@/services/settingsService';
 
 const Offers: React.FC = () => {
   const { t, isRTL } = useLanguage();
-  const { profile } = useAuth();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const { addToCart } = useCart();
@@ -76,8 +74,10 @@ const Offers: React.FC = () => {
       id: offer.id,
       name: offer.title_ar || offer.title_en || '',
       nameEn: offer.title_en || '',
+      nameHe: offer.title_he || '',
       description: offer.description_ar || '',
       descriptionEn: offer.description_en || '',
+      descriptionHe: offer.description_he || '',
       price: offer.discount_percent || 0, // أو يمكن وضع سعر العرض إذا كان متوفرًا
       originalPrice: undefined,
       wholesalePrice: undefined,

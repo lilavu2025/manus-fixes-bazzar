@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Mail, RefreshCw } from 'lucide-react';
 import { useLanguage } from '@/utils/languageContextUtils';
 import { useAuth } from '@/contexts/useAuth';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useResendConfirmationEmail } from '@/integrations/supabase/reactQueryHooks';
 
 interface EmailConfirmationPendingProps {
   email: string;
@@ -22,6 +22,7 @@ const EmailConfirmationPending: React.FC<EmailConfirmationPendingProps> = ({ ema
   const [isResending, setIsResending] = useState(false);
   const [countdown, setCountdown] = useState(60);
   const [canResend, setCanResend] = useState(false);
+  const resendEmailMutation = useResendConfirmationEmail();
 
   // Countdown timer for resend button
   useEffect(() => {
@@ -35,62 +36,32 @@ const EmailConfirmationPending: React.FC<EmailConfirmationPendingProps> = ({ ema
 
   // Check if user gets confirmed automatically and redirect
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        console.log('Auth state changed:', event, session);
-        if (event === 'SIGNED_IN' && session?.user?.email_confirmed_at) {
-          toast({
-            title: t('success'),
-            description: t('emailConfirmedSuccess'),
-          });
-          // Redirect to home page after successful confirmation
-          setTimeout(() => {
-            navigate('/');
-          }, 1500);
-        }
-      }
-    );
-
-    return () => subscription.unsubscribe();
-  }, [t, toast, navigate]);
-
-  // If user is already confirmed, redirect to home
-  useEffect(() => {
-    if (user && user.email_confirmed_at) {
-      navigate('/');
-    }
-  }, [user, navigate]);
-
-  const handleResendEmail = async () => {
-    console.log('Resending email for:', email);
-    setIsResending(true);
-    
-    try {
-      const { error } = await supabase.auth.resend({
-        type: 'signup',
-        email: email,
-      });
-
-      console.log('Resend result:', { error });
-
-      if (error) {
-        console.error('Resend error:', error);
-        throw error;
-      }
-
+    if (user && typeof user === 'object' && 'email_confirmed_at' in user && user.email_confirmed_at) {
       toast({
         title: t('success'),
-        description: t('confirmationEmailResent'),
+        description: t('emailConfirmedSuccess'),
       });
+      setTimeout(() => {
+        navigate('/');
+      }, 1500);
+    }
+  }, [user, t, toast, navigate]);
 
-      // Reset countdown
+  const handleResendEmail = async () => {
+    setIsResending(true);
+    try {
+      await resendEmailMutation.mutateAsync(email);
       setCountdown(60);
       setCanResend(false);
-    } catch (error: unknown) {
-      console.error('Error resending email:', error);
+      toast({
+        title: t('emailConfirmationSent'),
+        description: t('pleaseCheckYourEmail'),
+      });
+    } catch (error) {
+      console.error('Resend error:', error);
       toast({
         title: t('error'),
-        description: typeof error === 'object' && error && 'message' in error ? (error as { message?: string }).message || t('resendEmailError') : t('resendEmailError'),
+        description: t('emailResendFailed'),
       });
     } finally {
       setIsResending(false);

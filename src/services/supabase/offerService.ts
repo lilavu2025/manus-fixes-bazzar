@@ -8,10 +8,8 @@ export class OfferService {
       .select('*')
       .eq('active', true)
       .order('created_at', { ascending: false });
-    if (error) {
-      console.error('Error fetching offers:', error);
-      return [];
-    }
-    return data || [];
+    if (error) throw error;
+    if (!data) throw new Error('لم يتم العثور على بيانات العروض');
+    return data;
   }
 }

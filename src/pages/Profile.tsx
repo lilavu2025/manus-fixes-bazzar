@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { FiEdit2, FiTrash2, FiLogOut, FiMapPin, FiUser, FiPhone, FiMail } from 'react-icons/fi';
-import { supabase } from '@/integrations/supabase/client';
+import { useChangeUserPassword } from '@/integrations/supabase/reactQueryHooks';
 
 const Profile: React.FC = () => {
   const { user, profile, updateProfile, signOut } = useAuth();
@@ -35,6 +35,8 @@ const Profile: React.FC = () => {
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const [profileSuccess, setProfileSuccess] = useState<string | null>(null);
   const [profileError, setProfileError] = useState<string | null>(null);
+
+  const changePasswordMutation = useChangeUserPassword();
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,23 +88,13 @@ const Profile: React.FC = () => {
     }
     setPasswordLoading(true);
     try {
-      // تحقق من كلمة السر الحالية عبر تسجيل الدخول
       const email = user?.email;
       if (!email) throw new Error('لا يوجد بريد إلكتروني للمستخدم');
-      const { error: signInError } = await supabase.auth.signInWithPassword({
+      await changePasswordMutation.mutateAsync({
         email,
-        password: passwordData.current,
+        currentPassword: passwordData.current,
+        newPassword: passwordData.new,
       });
-      if (signInError) {
-        setPasswordError(t('currentPasswordIncorrect') || 'كلمة السر الحالية غير صحيحة');
-        setPasswordLoading(false);
-        return;
-      }
-      // تغيير كلمة السر
-      const { error } = await supabase.auth.updateUser({
-        password: passwordData.new,
-      });
-      if (error) throw error;
       setPasswordSuccess(t('passwordChangedSuccessfully') || 'Password changed successfully');
       setPasswordData({ current: '', new: '', confirm: '' });
       setShowPasswordDialog(false);
@@ -120,6 +112,9 @@ const Profile: React.FC = () => {
       </div>
     );
   }
+
+  // تعريف userEmail بشكل آمن
+  const userEmail: string = typeof user === 'object' && user && 'email' in user && typeof user.email === 'string' ? user.email : '';
 
   return (
     <div className={`min-h-screen bg-gradient-to-br from-gray-50 to-orange-50 ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
@@ -162,7 +157,7 @@ const Profile: React.FC = () => {
                   </div>
                   <div className="flex items-center gap-2">
                     <FiMail className="text-xl text-green-400" />
-                    <span>{user?.email}</span>
+                    <span>{userEmail}</span>
                   </div>
                   <Button variant="outline" className="w-full mt-2" onClick={() => setEditMode(true)}>
                     <FiEdit2 className="inline mr-2" /> {t('editProfile')}
@@ -207,7 +202,7 @@ const Profile: React.FC = () => {
                       name="email"
                       type="email"
                       autoComplete="email"
-                      value={user?.email || ''}
+                      value={userEmail}
                       disabled
                       className="bg-gray-100 w-full"
                       dir={isRTL ? 'rtl' : 'ltr'}

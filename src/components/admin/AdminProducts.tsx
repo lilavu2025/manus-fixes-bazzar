@@ -2,49 +2,16 @@ import React, { useState } from 'react';
 import { useLanguage } from '../../utils/languageContextUtils';
 import { useProductsRealtime } from '@/hooks/useProductsRealtime';
 import { useCategories } from '@/hooks/useSupabaseData';
-import { supabase } from '@/integrations/supabase/client';
+import { useDeleteProduct } from '@/integrations/supabase/reactQueryHooks';
 import { toast } from '@/hooks/use-toast';
 import AdminProductsHeader from './AdminProductsHeader';
 import AdminProductsEmptyState from './AdminProductsEmptyState';
 import AdminProductsTable from './AdminProductsTable';
 import AdminProductsDialogs from './AdminProductsDialogs';
-import { Product, ProductFormData, AdminProductForm } from '@/types/product';
+import { ProductWithOptionalFields, Product, AdminProductForm, Category, mapProductToFormData } from '../../types/productUtils';
 import { mapCategoryToProductCategory } from '@/types/index';
 import { BarChart3, Filter, CheckCircle, XCircle } from 'lucide-react';
-
-// Helper type for flexible product mapping
-export type ProductWithOptionalFields = Product & {
-  name_he?: string;
-  nameHe?: string;
-  description_he?: string;
-  descriptionHe?: string;
-  category_id?: string;
-  discount?: number;
-};
-
-export const mapProductToFormData = (product: ProductWithOptionalFields): AdminProductForm => ({
-  id: product.id,
-  name_ar: product.name || '',
-  name_en: product.nameEn || '',
-  name_he: product.nameHe || product.name_he || '',
-  description_ar: product.description || '',
-  description_en: product.descriptionEn || '',
-  description_he: product.descriptionHe || product.description_he || '',
-  price: product.price,
-  original_price: product.originalPrice || 0,
-  wholesale_price: product.wholesalePrice || 0,
-  category_id: product.category_id || '',
-  category: product.category || '',
-  image: product.image,
-  images: product.images || [],
-  in_stock: product.inStock,
-  stock_quantity: product.stock_quantity || 0,
-  featured: product.featured || false,
-  active: product.active ?? true,
-  discount: typeof product.discount === 'number' ? product.discount : 0,
-  tags: product.tags || [],
-  created_at: product.created_at || '',
-});
+import { mapProductFromDb } from '@/types/mapProductFromDb';
 
 const AdminProducts: React.FC = () => {
   const { t } = useLanguage();
@@ -52,35 +19,16 @@ const AdminProducts: React.FC = () => {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<AdminProductForm | null>(null);
-  const { products, loading: productsLoading, error: productsError, refetch: refetchProducts, setProducts } = useProductsRealtime({ disableRealtime: true });
+  const { products: productsRaw, loading: productsLoading, error: productsError, refetch: refetchProducts, setProducts } = useProductsRealtime({ disableRealtime: true });
+  const products: ProductWithOptionalFields[] = Array.isArray(productsRaw) ? productsRaw.map(mapProductFromDb) : [];
   const { data: categoriesData } = useCategories();
-  const categories = categoriesData && Array.isArray(categoriesData.data) ? categoriesData.data : [];
-  // تحويل قائمة الفئات إلى النوع الصحيح قبل تمريرها للمكونات الفرعية
+  // Accept both Category[] types for now, but cast to any to avoid type error
+  const categories: Category[] = Array.isArray(categoriesData) && categoriesData.length && typeof categoriesData[0] === 'object' && 'id' in categoriesData[0] ? categoriesData as Category[] : [];
   const productCategories = categories.map(mapCategoryToProductCategory);
 
+  const deleteProductMutation = useDeleteProduct();
   const handleDeleteProduct = async (productId: string, productName: string) => {
-    try {
-      const { error } = await supabase
-        .from('products')
-        .delete()
-        .eq('id', productId);
-
-      if (error) throw error;
-
-      toast({
-        title: t('productDeleted'),
-        description: `${t('productDeletedSuccessfully')} ${productName}`,
-      });
-
-      // تحديث الواجهة مباشرة بدون refetch
-      setProducts(prev => prev.filter(product => product.id !== productId));
-    } catch (error) {
-      console.error('Error deleting product:', error);
-      toast({
-        title: t('error'),
-        description: t('errorDeletingProduct'),
-      });
-    }
+    deleteProductMutation.mutate(productId);
   };
 
   const handleViewProduct = (product: Product) => {
@@ -100,13 +48,13 @@ const AdminProducts: React.FC = () => {
   // إحصائيات سريعة
   const totalProducts = products.length;
   const inactiveProducts = products.filter(p => p.active === false).length;
-  const lowStockProducts = products.filter(p => p.stock_quantity <= 5).length;
+  const lowStockProducts = products.filter(p => p.stock_quantity && p.stock_quantity <= 5).length;
 
   // فلترة المنتجات
   const filteredProducts = products.filter(product => {
     let pass = true;
     if (filterCategory !== 'all' && product.category !== filterCategory) pass = false;
-    if (filterStock === 'low' && product.stock_quantity > 5) pass = false;
+    if (filterStock === 'low' && (product.stock_quantity ?? 0) > 5) pass = false;
     if (filterStock === 'in' && !product.inStock) pass = false;
     if (filterStock === 'out' && product.inStock) pass = false;
     if (filterActive === 'active' && product.active === false) pass = false;
@@ -126,9 +74,18 @@ const AdminProducts: React.FC = () => {
     );
   }
 
-
-  // استبدل productsData?.data بـ products مباشرة
-  const productsList = products;
+  if (productsError) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold">{t('manageProducts')}</h1>
+        <div className="text-center py-12">
+          <XCircle className="h-12 w-12 text-red-500 mx-auto" />
+          <p className="mt-4 text-red-600 font-bold">{t('errorLoadingProducts') || 'حدث خطأ أثناء جلب المنتجات'}</p>
+          <p className="text-gray-500">{productsError.message}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto px-2 sm:px-4 md:px-8 py-6">

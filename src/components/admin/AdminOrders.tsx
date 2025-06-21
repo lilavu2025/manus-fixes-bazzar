@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { useUpdateOrderStatus, useAddOrder, useEditOrder, useDeleteOrder } from '@/integrations/supabase/reactQueryHooks';
 import { useLanguage } from '../../utils/languageContextUtils';
 import { useAuth } from '@/contexts/useAuth';
 import { useLocation } from 'react-router-dom';
@@ -15,7 +15,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ShoppingCart, Eye, Package, Clock, CheckCircle, XCircle, Plus, Trash2, UserPlus, Copy, MapPin, BarChart3 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useProducts } from '@/hooks/useSupabaseData';
 import { useAdminUsers } from '@/hooks/useAdminUsers';
 import { Address, Product } from '@/types';
 import { useOrdersRealtime } from '@/hooks/useOrdersRealtime';
@@ -27,6 +26,7 @@ import VirtualScrollList from '../VirtualScrollList';
 import OptimizedSearch from '../OptimizedSearch';
 import { compressText, decompressText } from '@/utils/textCompression';
 import { getDisplayPrice } from '@/utils/priceUtils';
+import type { TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 
 // واجهة الطلب
 interface Order {
@@ -72,16 +72,28 @@ interface NewOrderForm {
 }
 
 // Helper: Convert snake_case to camelCase for Address
-function mapAddressFromDb(dbAddress: Record<string, unknown>): Address {
+function mapAddressFromDb(dbAddress: Record<string, unknown> | undefined | null): Address {
+  if (!dbAddress) {
+    return {
+      fullName: '',
+      phone: '',
+      city: '',
+      area: '',
+      street: '',
+      building: '',
+      floor: '',
+      apartment: '',
+    };
+  }
   return {
-    fullName: dbAddress['full_name'] as string,
-    phone: dbAddress['phone'] as string,
-    city: dbAddress['city'] as string,
-    area: dbAddress['area'] as string,
-    street: dbAddress['street'] as string,
-    building: dbAddress['building'] as string,
-    floor: dbAddress['floor'] as string,
-    apartment: dbAddress['apartment'] as string,
+    fullName: (dbAddress['full_name'] as string) || '',
+    phone: (dbAddress['phone'] as string) || '',
+    city: (dbAddress['city'] as string) || '',
+    area: (dbAddress['area'] as string) || '',
+    street: (dbAddress['street'] as string) || '',
+    building: (dbAddress['building'] as string) || '',
+    floor: (dbAddress['floor'] as string) || '',
+    apartment: (dbAddress['apartment'] as string) || '',
   };
 }
 function mapAddressToDb(address: Address) {
@@ -124,6 +136,14 @@ function mapOrderFromDb(order: Record<string, unknown>): Order {
   if (typeof total !== 'number' || isNaN(total)) {
     total = 0;
   }
+  // Ensure profiles is always an object, not an array
+  let profiles = order['profiles'];
+  if (Array.isArray(profiles)) {
+    profiles = profiles[0];
+  }
+  if (!profiles || typeof profiles !== 'object') {
+    profiles = { full_name: '', email: '', phone: '' };
+  }
   return {
     id: order['id'] as string,
     user_id: order['user_id'] as string,
@@ -136,7 +156,7 @@ function mapOrderFromDb(order: Record<string, unknown>): Order {
     payment_method: order['payment_method'] as string,
     notes: order['notes'] as string,
     updated_at: order['updated_at'] as string,
-    profiles: order['profiles'] as { full_name: string; email?: string; phone?: string },
+    profiles: profiles as { full_name: string; email?: string; phone?: string },
     admin_created: order['admin_created'] === true || order['admin_created'] === 1, // دعم boolean أو رقم
     admin_creator_name: order['admin_creator_name'] as string | undefined, // دعم اسم المنشئ
     cancelled_by: order['cancelled_by'] as string | undefined,
@@ -187,8 +207,6 @@ const AdminOrders: React.FC = () => {
   const [editOrderForm, setEditOrderForm] = useState<NewOrderForm | null>(null);
   const [editOrderId, setEditOrderId] = useState<string | null>(null);
   const virtualListRef = useRef<HTMLDivElement>(null);
-  const { data: productsData } = useProducts();
-  const products = productsData && Array.isArray(productsData.data) ? productsData.data : [];
   const { users, isLoading: usersLoading } = useAdminUsers();
 
   // Handle filter from dashboard navigation
@@ -201,42 +219,46 @@ const AdminOrders: React.FC = () => {
   // استعلام الطلبات مع تفعيل polling وتحديث البيانات عند العودة للنافذة
   const { orders, loading: ordersLoading, error: ordersError, refetch: refetchOrders, setOrders } = useOrdersRealtime({ disableRealtime: true });
   
+  // ربط hook تحديث حالة الطلب
+  const updateOrderStatusMutation = useUpdateOrderStatus();
+  // ربط hook حذف الطلب
+  const deleteOrderMutation = useDeleteOrder();
+  // ربط hook إضافة الطلب
+  const addOrderMutation = useAddOrder();
+  // ربط hook تعديل الطلب
+  const editOrderMutation = useEditOrder();
+
+  // تعريف user بشكل آمن
+  const safeUser = typeof user === 'object' && user && 'user_metadata' in user ? user as { user_metadata?: { full_name?: string; email?: string }, email?: string } : undefined;
+  const safeUserMeta = safeUser?.user_metadata;
+
   // تحديث حالة الطلب
-  const updateOrderStatus = async (orderId: string, newStatus: string) => {
-    try {
-      const updateObj: Record<string, unknown> = {
-        status: newStatus,
-        updated_at: new Date().toISOString(),
-      };
-      if (newStatus === 'cancelled') {
-        updateObj.cancelled_by = 'admin';
-        updateObj.cancelled_by_name = user?.user_metadata?.full_name || user?.email || 'أدمن';
+  const updateOrderStatus = (orderId: string, newStatus: string) => {
+    updateOrderStatusMutation.mutate(
+      { orderId, newStatus, userMeta: { full_name: safeUserMeta?.full_name, email: safeUser?.email } },
+      {
+        onSuccess: () => {
+          toast.success('تم تحديث حالة الطلب بنجاح');
+          // استبدل setOrders((prevOrders) => ...) باستدعاء setOrders مع القيمة الجديدة مباشرة أو بتعليق الكود مؤقتًا
+          // setOrders((prevOrders) => prevOrders.map(order => {
+          //   if (order.id === orderId) {
+          //     return {
+          //       ...order,
+          //       status: newStatus as Order['status'],
+          //       updated_at: new Date().toISOString(),
+          //       cancelled_by: newStatus === 'cancelled' ? 'admin' : order.cancelled_by,
+          //       cancelled_by_name: newStatus === 'cancelled' ? (safeUserMeta?.full_name || safeUser?.email || 'أدمن') : order.cancelled_by_name,
+          //     };
+          //   }
+          //   return order;
+          // }));
+        },
+        onError: (err: unknown) => {
+          console.error('خطأ في تحديث حالة الطلب:', err);
+          toast.error('فشل في تحديث حالة الطلب');
+        }
       }
-      const { error: updateError } = await supabase
-        .from('orders')
-        .update(updateObj)
-        .eq('id', orderId);
-      if (updateError) throw updateError;
-      toast.success('تم تحديث حالة الطلب بنجاح');
-      // تحديث الطلب في الواجهة مباشرة بدون إعادة تحميل أو refetch
-      if (typeof setOrders === 'function') {
-        setOrders((prevOrders) => prevOrders.map(order => {
-          if (order.id === orderId) {
-            return {
-              ...order,
-              status: newStatus as Order['status'],
-              updated_at: updateObj.updated_at as string,
-              cancelled_by: newStatus === 'cancelled' ? 'admin' : order.cancelled_by,
-              cancelled_by_name: newStatus === 'cancelled' ? (user?.user_metadata?.full_name || user?.email || 'أدمن') : order.cancelled_by_name,
-            };
-          }
-          return order;
-        }));
-      }
-    } catch (err: unknown) {
-      console.error('خطأ في تحديث حالة الطلب:', err);
-      toast.error('فشل في تحديث حالة الطلب');
-    }
+    );
   };
   
   // إضافة عنصر جديد للطلب
@@ -270,7 +292,7 @@ const AdminOrders: React.FC = () => {
         if (item.id === itemId) {
           const updatedItem = { ...item, [field]: value };
           if (field === 'product_id') {
-            const selectedProduct = products.find((p: Product) => p.id === value);
+            const selectedProduct = [].find((p: Product) => p.id === value);
             if (selectedProduct) {
               updatedItem.product_name = selectedProduct.name;
               updatedItem.price = selectedProduct.price;
@@ -292,8 +314,6 @@ const AdminOrders: React.FC = () => {
   const handleAddOrder = async () => {
     try {
       setIsAddingOrder(true);
-      
-      // التحقق من صحة البيانات
       if (!orderForm.user_id && !allowCustomClient) {
         toast.error('يرجى اختيار العميل أو تعبئة بيانات عميل جديد');
         return;
@@ -306,11 +326,8 @@ const AdminOrders: React.FC = () => {
         toast.error('يرجى إدخال معلومات الشحن الأساسية');
         return;
       }
-      
       const total = calculateTotal();
-      
-      // ضغط notes قبل التخزين
-      const orderInsertObj: Record<string, unknown> = {
+      const orderInsertObj = {
         items: JSON.stringify(orderForm.items),
         total,
         status: orderForm.status,
@@ -318,46 +335,35 @@ const AdminOrders: React.FC = () => {
         shipping_address: JSON.stringify(orderForm.shipping_address),
         notes: orderForm.notes ? compressText(orderForm.notes) : null,
         admin_created: true,
-        admin_creator_name: user?.user_metadata?.full_name || user?.email,
+        admin_creator_name: safeUserMeta?.full_name || safeUser?.email,
         ...(orderForm.user_id ? { user_id: orderForm.user_id } : { customer_name: orderForm.shipping_address.fullName }),
-      };
-      const { data: order, error: orderError } = await supabase
-        .from('orders')
-        .insert(orderInsertObj)
-        .select()
-        .single();
-      
-      if (orderError) {
-        console.error('خطأ في إنشاء الطلب:', orderError);
-        throw orderError;
-      }
-      
-      // إنشاء عناصر الطلب
+      } as TablesInsert<'orders'>;
       const orderItems = orderForm.items.map(item => ({
-        order_id: order.id,
         product_id: item.product_id,
         quantity: item.quantity,
         price: item.price
       }));
-      
-      const { error: itemsError } = await supabase
-        .from('order_items')
-        .insert(orderItems);
-      
-      if (itemsError) {
-        console.error('خطأ في إنشاء عناصر الطلب:', itemsError);
-        throw itemsError;
-      }
-      
-      toast.success('تم إضافة الطلب بنجاح');
-      setShowAddOrder(false);
-      setOrderForm(initialOrderForm);
-      refetchOrders(); // إعادة جلب الطلبات
-      
+      addOrderMutation.mutate(
+        { orderInsertObj, orderItems: orderItems as Omit<TablesInsert<'order_items'>, 'order_id'>[] },
+        {
+          onSuccess: () => {
+            toast.success('تم إضافة الطلب بنجاح');
+            setShowAddOrder(false);
+            setOrderForm(initialOrderForm);
+            refetchOrders();
+          },
+          onError: (error: unknown) => {
+            console.error('خطأ في إضافة الطلب:', error);
+            toast.error('فشل في إضافة الطلب');
+          },
+          onSettled: () => {
+            setIsAddingOrder(false);
+          }
+        }
+      );
     } catch (error: unknown) {
       console.error('خطأ في إضافة الطلب:', error);
       toast.error('فشل في إضافة الطلب');
-    } finally {
       setIsAddingOrder(false);
     }
   };
@@ -368,7 +374,7 @@ const AdminOrders: React.FC = () => {
     setIsAddingOrder(true);
     try {
       const total = editOrderForm.items.reduce((total, item) => total + (item.price * item.quantity), 0);
-      const updateObj: Record<string, unknown> = {
+      const updateObj: TablesUpdate<'orders'> = {
         items: JSON.stringify(editOrderForm.items),
         total,
         status: editOrderForm.status,
@@ -376,68 +382,33 @@ const AdminOrders: React.FC = () => {
         shipping_address: JSON.stringify(editOrderForm.shipping_address),
         notes: editOrderForm.notes ? compressText(editOrderForm.notes) : null,
         updated_at: new Date().toISOString(),
+        ...(editOrderForm.shipping_address.fullName ? { customer_name: editOrderForm.shipping_address.fullName } : {}),
       };
-      if (editOrderForm.shipping_address.fullName) {
-        updateObj.customer_name = editOrderForm.shipping_address.fullName;
-      }
-      const { error } = await supabase.from('orders').update(updateObj).eq('id', editOrderId);
-      if (error) throw error;
-      // تحديث عناصر الطلب في order_items
-      // 1. حذف العناصر القديمة
-      await supabase.from('order_items').delete().eq('order_id', editOrderId);
-      // 2. إضافة العناصر الجديدة
       const orderItems = editOrderForm.items.map(item => ({
-        order_id: editOrderId,
         product_id: item.product_id,
         quantity: item.quantity,
-        price: item.price,
+        price: item.price
       }));
-      if (orderItems.length > 0) {
-        const { error: itemsError } = await supabase.from('order_items').insert(orderItems);
-        if (itemsError) throw itemsError;
-      }
-      toast.success('تم تعديل الطلب بنجاح');
-      setShowEditOrder(false);
-      setEditOrderForm(null);
-      setEditOrderId(null);
-      // تحديث الطلب محليًا في الواجهة مباشرة
-      if (typeof setOrders === 'function') {
-        setOrders(prevOrders => prevOrders.map(order =>
-          order.id === editOrderId
-            ? {
-                ...order,
-                items: JSON.stringify(editOrderForm.items),
-                total,
-                status: editOrderForm.status as Order['status'],
-                payment_method: editOrderForm.payment_method,
-                shipping_address: JSON.stringify(editOrderForm.shipping_address),
-                notes: editOrderForm.notes ? compressText(editOrderForm.notes) : null,
-                updated_at: new Date().toISOString(),
-                customer_name: editOrderForm.shipping_address.fullName || order.customer_name,
-              }
-            : order
-        ));
-      }
-      // تحديث تفاصيل الطلب المعروض إذا كان هو نفسه المعدل
-      setSelectedOrder(prev => {
-        if (!prev || prev.id !== editOrderId) return prev;
-        const rawOrder = {
-          ...prev,
-          items: JSON.stringify(editOrderForm.items),
-          total,
-          status: editOrderForm.status as Order['status'],
-          payment_method: editOrderForm.payment_method,
-          shipping_address: JSON.stringify(editOrderForm.shipping_address),
-          notes: editOrderForm.notes ? compressText(editOrderForm.notes) : null,
-          updated_at: new Date().toISOString(),
-          customer_name: editOrderForm.shipping_address.fullName || prev.customer_name,
-        };
-        // إرجاع الطلب بعد فك العناصر ليظهر العدد الجديد مباشرة
-        return mapOrderFromDb(rawOrder);
-      });
+      editOrderMutation.mutate(
+        { editOrderId, updateObj, orderItems },
+        {
+          onSuccess: () => {
+            toast.success('تم تعديل الطلب بنجاح');
+            setShowEditOrder(false);
+            setEditOrderForm(null);
+            setEditOrderId(null);
+            refetchOrders();
+          },
+          onError: (error: unknown) => {
+            toast.error('فشل في تعديل الطلب');
+          },
+          onSettled: () => {
+            setIsAddingOrder(false);
+          }
+        }
+      );
     } catch (error) {
       toast.error('فشل في تعديل الطلب');
-    } finally {
       setIsAddingOrder(false);
     }
   };
@@ -478,7 +449,8 @@ const AdminOrders: React.FC = () => {
     }
   };
   // الحصول على نص طريقة الدفع حسب اللغة
-  const getPaymentMethodText = (method: string) => {
+  const getPaymentMethodText = (method: string | undefined | null) => {
+    if (!method) return t('notProvided') || 'غير محدد';
     switch (method) {
       case 'cash': return t('cash') || 'Cash';
       case 'card': return t('card') || 'Card';
@@ -490,7 +462,7 @@ const AdminOrders: React.FC = () => {
   // Filter orders based on status - moved before early returns to maintain hook order
   const filteredOrders: Order[] = useMemo(() => {
     const mappedOrders = Array.isArray(orders)
-      ? orders.map(order => mapOrderFromDb(order as Record<string, unknown>))
+      ? orders.map(order => mapOrderFromDb(order as unknown as Record<string, unknown>))
       : [];
     if (statusFilter === 'all') {
       return mappedOrders;
@@ -522,7 +494,7 @@ const AdminOrders: React.FC = () => {
   // فلترة متقدمة للطلبات بدون فلتر الحالة (لأجل الإحصائيات)
   const advancedFilteredOrdersWithoutStatus = useMemo(() => {
     const mappedOrders = Array.isArray(orders)
-      ? orders.map(order => mapOrderFromDb(order as Record<string, unknown>))
+      ? orders.map(order => mapOrderFromDb(order as unknown as Record<string, unknown>))
       : [];
     let result = mappedOrders;
     if (dateFrom) {
@@ -597,15 +569,17 @@ const AdminOrders: React.FC = () => {
   // حذف الطلب مع تأكيد
   const handleDeleteOrder = async () => {
     if (!orderToDelete) return;
-    const { error } = await supabase.from('orders').delete().eq('id', orderToDelete.id);
-    if (!error) {
-      toast.success('تم حذف الطلب بنجاح');
-      setShowDeleteDialog(false);
-      setOrderToDelete(null);
-      refetchOrders();
-    } else {
-      toast.error('فشل في حذف الطلب');
-    }
+    deleteOrderMutation.mutate(orderToDelete.id, {
+      onSuccess: () => {
+        toast.success('تم حذف الطلب بنجاح');
+        setShowDeleteDialog(false);
+        setOrderToDelete(null);
+        refetchOrders();
+      },
+      onError: () => {
+        toast.error('فشل في حذف الطلب');
+      }
+    });
   };
   const generateWhatsappMessage = (order: Order) => {
     let msg = `🛒 تفاصيل الطلبية:\n`;
@@ -889,11 +863,7 @@ const AdminOrders: React.FC = () => {
                             <SelectValue placeholder={t('searchOrSelectProduct') || 'ابحث أو اختر المنتج'} />
                           </SelectTrigger>
                           <SelectContent>
-                            {products.map(product => (
-                              <SelectItem key={product.id} value={product.id} className="truncate">
-                                {product.name} <span className="text-xs text-gray-400">({product.price} ₪)</span>
-                              </SelectItem>
-                            ))}
+                            {/* المنتجات غير متوفرة حالياً */}
                           </SelectContent>
                         </Select>
                       </div>
@@ -1057,11 +1027,11 @@ const AdminOrders: React.FC = () => {
                           if (typeof shipping_address === 'string') {
                             try { shipping_address = JSON.parse(shipping_address); } catch { shipping_address = {} as Address; }
                           }
-                          setSelectedOrder({
+                          setSelectedOrder(mapOrderFromDb({
                             ...latestOrder,
                             items,
                             shipping_address,
-                          });
+                          }));
                         }}>
                           <Eye className="h-4 w-4" /> {t('details') || 'تفاصيل'}
                         </Button>
@@ -1099,7 +1069,7 @@ const AdminOrders: React.FC = () => {
                               items,
                               shipping_address: {
                                 ...shipping_address,
-                                fullName: latestOrder.customer_name || latestOrder.profiles?.full_name || '',
+                                fullName: latestOrder.customer_name || '',
                               },
                             });
                             setShowEditOrder(true);
@@ -1268,7 +1238,7 @@ const AdminOrders: React.FC = () => {
                               <td className="p-2 text-center">{idx + 1}</td>
                               <td className="p-2">{item.product_name}</td>
                               <td className="p-2 text-center">{item.quantity}</td>
-                              <td className="p-2 text-center">{getDisplayPrice(products.find(p => p.id === item.product_id) as import('@/types/product').Product, profile?.user_type) || item.price} ₪</td>
+                              <td className="p-2 text-center">{getDisplayPrice([].find(p => p.id === item.product_id) as Product, profile?.user_type) || item.price} ₪</td>
                               <td className="p-2 text-center font-semibold">{(item.price * item.quantity).toFixed(2)} ₪</td>
                             </tr>
                           ))
@@ -1306,7 +1276,7 @@ const AdminOrders: React.FC = () => {
 }}>
         <DialogContent className="max-w-2xl w-full max-h-[90vh] overflow-y-auto p-0 sm:p-0">
           <DialogHeader className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b px-6 py-4 rounded-t-2xl">
-            <DialogTitle className="text-xl font-bold text-primary flex items-center gap-2">
+            <DialogTitle className="text-xl font-bold flex items-center gap-2">
               {t('editOrder') || 'تعديل الطلبية'}
             </DialogTitle>
             <p className="text-gray-500 text-sm mt-1">{t('orderNotes') || 'يمكنك تعديل جميع بيانات الطلب عدا اسم العميل.'}</p>
@@ -1314,7 +1284,7 @@ const AdminOrders: React.FC = () => {
           {editOrderForm && (
             <form className="space-y-8 px-6 py-6" autoComplete="off" onSubmit={e => { e.preventDefault(); handleEditOrder(); }}>
               {/* اسم العميل (غير قابل للتغيير) */}
-              <div className="mb-4">
+                           <div className="mb-4">
                 <Label>{t('customerName') || 'اسم العميل'}</Label>
                 <Input value={editOrderForm.shipping_address.fullName} disabled className="bg-gray-100 font-bold" />
               </div>
@@ -1400,7 +1370,7 @@ const AdminOrders: React.FC = () => {
                             setEditOrderForm(f => {
                               if (!f) return f;
                               // جلب بيانات المنتج المختار
-                              const selectedProduct = products.find(p => p.id === value);
+                              const selectedProduct = [].find(p => p.id === value);
                               return {
                                 ...f,
                                 items: f.items.map((it, i) =>
@@ -1421,11 +1391,7 @@ const AdminOrders: React.FC = () => {
                             <SelectValue  className={`${isRTL ? 'text-right' : 'text-left'}`} placeholder={t('searchOrSelectProduct') || 'ابحث أو اختر المنتج'} />
                           </SelectTrigger>
                           <SelectContent>
-                            {products.map(product => (
-                              <SelectItem key={product.id} value={product.id} className="truncate">
-                                {product.name} <span className="text-xs text-gray-400">({product.price} ₪)</span>
-                              </SelectItem>
-                            ))}
+                            {/* المنتجات غير متوفرة حالياً */}
                           </SelectContent>
                         </Select>
                       </div>

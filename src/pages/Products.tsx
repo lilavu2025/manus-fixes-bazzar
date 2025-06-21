@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Filter, X } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { getLocalizedName } from '@/utils/getLocalizedName';
+import { mapProductFromDb } from '@/types/mapProductFromDb';
 
 const Products: React.FC = () => {
   const { t, isRTL, language } = useLanguage();
@@ -23,18 +24,10 @@ const Products: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const { data: categoriesData, loading: categoriesLoading, error: categoriesError } = useCategories();
-  const { products, loading: productsLoading, error: productsError, refetch: refetchProducts } = useProductsRealtime();
-
-  const categories = categoriesData?.data ?? [];
-  const productsList = products;
-
-  useEffect(() => {
-    console.log('[Products] mounted at', new Date().toISOString());
-    return () => {
-      console.log('[Products] unmounted at', new Date().toISOString());
-    };
-  }, []);
+  const { products: productsRaw, loading: productsLoading, error: productsError, refetch: refetchProducts } = useProductsRealtime();
+  const { data: categoriesRaw, isLoading: categoriesLoading, error: categoriesError } = useCategories();
+  const productsList = Array.isArray(productsRaw) ? productsRaw.map(mapProductFromDb) : [];
+  const categories = Array.isArray(categoriesRaw) ? categoriesRaw : [];
 
   // عند تحميل الصفحة أو تغيير الرابط: مزامنة selectedCategory مع URL فقط عند التغيير الحقيقي
   useEffect(() => {

@@ -7,6 +7,7 @@ import UserFilters from './users/UserFilters';
 import UsersTable from './users/UsersTable';
 import UserErrorDisplay from './users/UserErrorDisplay';
 import { useLanguage } from '@/utils/languageContextUtils';
+import { XCircle } from 'lucide-react';
 
 const AdminUsers: React.FC = () => {
   const { isRTL } = useLanguage();
@@ -31,7 +32,7 @@ const AdminUsers: React.FC = () => {
     refetch,
     disableUser,
     deleteUser
-  } = useAdminUsers({ disableRealtime: true });
+  } = useAdminUsers();
 
   // Handle filter from dashboard navigation
   useEffect(() => {
@@ -51,13 +52,33 @@ const AdminUsers: React.FC = () => {
     }
   }, [location.state, setUserTypeFilter]);
 
-  if (error) {
-    return <UserErrorDisplay error={error} />;
-  }
-
   const handleSortOrderChange = (order: string) => {
     setSortOrder(order as 'asc' | 'desc');
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold">لوحة المستخدمين</h1>
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto border-primary"></div>
+          <p className="mt-4 text-gray-600">جاري تحميل المستخدمين...</p>
+        </div>
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold">لوحة المستخدمين</h1>
+        <div className="text-center py-12">
+          <XCircle className="h-12 w-12 text-red-500 mx-auto" />
+          <p className="mt-4 text-red-600 font-bold">حدث خطأ أثناء جلب المستخدمين</p>
+          <p className="text-gray-500">{typeof error === 'string' ? error : error?.message || ''}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`p-4 lg:p-6 ${isRTL ? 'text-right' : 'text-left'}`} dir={isRTL ? 'rtl' : 'ltr'}>
@@ -79,7 +100,7 @@ const AdminUsers: React.FC = () => {
           setSortOrder={handleSortOrderChange}
         />
 
-        <UsersTable users={filteredAndSortedUsers} isLoading={isLoading} error={error} setUsers={setUsers} disableUser={disableUser} deleteUser={deleteUser} refetch={refetch} />
+        <UsersTable users={filteredAndSortedUsers} isLoading={isLoading} error={typeof error === 'string' ? error : error?.message || ''} setUsers={setUsers} disableUser={disableUser} deleteUser={deleteUser} refetch={refetch} />
       </div>
     </div>
   );

@@ -6,13 +6,13 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { useLanguage } from '../../utils/languageContextUtils';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import ImageUpload from '@/components/ImageUpload';
 import ProductCategoryField from './ProductCategoryField';
 import { ProductFormData, Category } from '@/types/product';
 import type { Product } from '@/types/product';
 import pako from 'pako';
+import { useInsertProduct } from '@/integrations/supabase/reactQueryHooks';
 
 interface AddProductDialogProps {
   open: boolean;
@@ -52,6 +52,8 @@ const AddProductDialog: React.FC<AddProductDialogProps> = ({
     tags: [],
   });
 
+  const insertProductMutation = useInsertProduct();
+
   const compressText = (text: string): string => {
     if (!text || text.length < 100) return text;
     try {
@@ -81,7 +83,6 @@ const AddProductDialog: React.FC<AddProductDialogProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
     try {
       const productData = {
         ...formData,
@@ -100,17 +101,36 @@ const AddProductDialog: React.FC<AddProductDialogProps> = ({
         active: formData.active,
         discount: formData.discount || null,
       };
-
-      const { data, error } = await supabase
-        .from('products')
-        .insert([productData])
-        .select();
-
-      if (error) throw error;
-
+      const data = await insertProductMutation.mutateAsync(productData);
+      if (!data) throw new Error('لم يتم إضافة المنتج');
       toast.success(t('productAdded'));
-      // تحديث الواجهة مباشرة
-      if (data && data[0]) setProducts(prev => [data[0], ...prev]);
+      if (data) setProducts(prev => [
+        ...prev,
+        {
+          ...data,
+          name: data.name_ar,
+          nameEn: data.name_en,
+          nameHe: data.name_he,
+          description: data.description_ar,
+          descriptionEn: data.description_en,
+          descriptionHe: data.description_he,
+          price: data.price,
+          originalPrice: data.original_price,
+          wholesalePrice: data.wholesale_price,
+          image: data.image,
+          images: data.images,
+          category: data.category_id,
+          inStock: data.in_stock,
+          rating: 0,
+          reviews: 0,
+          discount: data.discount,
+          featured: data.featured,
+          tags: data.tags,
+          stock_quantity: data.stock_quantity,
+          active: data.active,
+          created_at: data.created_at,
+        }
+      ]);
       onSuccess();
       onOpenChange(false);
       setFormData({
@@ -133,10 +153,8 @@ const AddProductDialog: React.FC<AddProductDialogProps> = ({
         discount: 0,
         tags: [],
       });
-    } catch (error: unknown) {
-      const err = error as Error;
-      console.error('Error adding product:', err);
-      toast.error(err.message || t('error'));
+    } catch (error) {
+      toast.error((error as Error).message);
     } finally {
       setLoading(false);
     }

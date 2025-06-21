@@ -18,8 +18,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const { t } = useLanguage();
   const location = useLocation();
 
-  // Show loading spinner while authentication is being checked
-  if (loading) {
+  // Show loading spinner while authentication/profile is being checked
+  if (loading || (requireAdmin && (!profile || !user))) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
         <div className="text-center">

@@ -15,17 +15,17 @@ const ProductCategoryField: React.FC<ProductCategoryFieldProps> = ({
   setFormData,
 }) => {
   const { t } = useLanguage();
-  const { data, loading, error } = useCategories();
-  const categories = data?.data ?? [];
+  const { data, isLoading, error } = useCategories();
+  const categories = data ?? [];
 
   console.log('ProductCategoryField - categories:', categories);
-  console.log('ProductCategoryField - loading:', loading);
+  console.log('ProductCategoryField - loading:', isLoading);
   console.log('ProductCategoryField - error:', error);
   console.log('ProductCategoryField - formData.category_id:', formData.category_id);
   const found = categories.find((cat) => cat.id === formData.category_id);
   console.log('ProductCategoryField - category_id match:', found ? 'MATCH' : 'NO MATCH', found);
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div>
         <Label htmlFor="category">{t('category')}</Label>

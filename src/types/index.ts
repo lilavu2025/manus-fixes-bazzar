@@ -18,6 +18,9 @@ export interface Product {
   discount?: number;
   featured?: boolean;
   tags?: string[];
+  stock_quantity?: number;
+  active?: boolean;
+  created_at?: string;
 }
 
 export interface Category {

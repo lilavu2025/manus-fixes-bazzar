@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useLanguage } from '../../utils/languageContextUtils';
 import { useCategoriesRealtime } from '@/hooks/useCategoriesRealtime';
-import { supabase } from '@/integrations/supabase/client';
+import { useDeleteCategory } from '@/integrations/supabase/reactQueryHooks';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -41,6 +41,7 @@ import { Category } from '@/types/product';
 import { mapCategoryToProductCategory } from '@/types/index';
 import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
 import OptimizedSearch from '@/components/OptimizedSearch';
+import { useCategoriesWithProductCountQuery } from '@/integrations/supabase/reactQueryHooks'; // تأكد من استيراد الاستعلام الصحيح
 
 const AdminCategories: React.FC = () => {
   const { t, language } = useLanguage();
@@ -54,6 +55,7 @@ const AdminCategories: React.FC = () => {
   const [filterActive, setFilterActive] = useState<'all' | 'active' | 'inactive'>('all');
   const [sortBy, setSortBy] = useState<'name' | 'count'>('name');
   const [categoriesOrder, setCategoriesOrder] = useState(categories.map(c => c.id));
+  const deleteCategoryMutation = useDeleteCategory();
 
   // إحصائيات
   const totalCategories = categories.length;
@@ -103,18 +105,12 @@ const AdminCategories: React.FC = () => {
 
   const handleDeleteCategory = async (categoryId: string, categoryName: string) => {
     try {
-      const { error } = await supabase
-        .from('categories')
-        .delete()
-        .eq('id', categoryId);
-
-      if (error) throw error;
-
+      const ok = await deleteCategoryMutation.mutateAsync(categoryId);
+      if (!ok) throw new Error('Delete failed');
       toast({
         title: t('categoryDeleted'),
         description: `${t('categoryDeletedSuccessfully')} ${categoryName}`,
       });
-
       refetch();
     } catch (error: unknown) {
       const err = error as Error;
@@ -139,8 +135,16 @@ const AdminCategories: React.FC = () => {
 
   // مزامنة ترتيب الفئات مع البيانات الفعلية
   React.useEffect(() => {
-    setCategoriesOrder(categories.map(c => c.id));
-  }, [categories]);
+    // Only reset order if categories changed (e.g. after fetch or add/delete)
+    if (
+      categories.length > 0 &&
+      (categoriesOrder.length === 0 ||
+        categoriesOrder.length !== categories.length ||
+        !categories.every((c, i) => categoriesOrder[i] === c.id))
+    ) {
+      setCategoriesOrder(categories.map(c => c.id));
+    }
+  }, [categories, categoriesOrder]);
 
   if (loading) {
     return (

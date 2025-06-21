@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { useProducts } from '@/hooks/useSupabaseData';
 import { useCart } from '@/hooks/useCart';
 import { useLanguage } from '@/utils/languageContextUtils';
 import { toast } from 'sonner';
@@ -12,7 +11,9 @@ import ProductActions from '@/components/ProductActions';
 import ProductBreadcrumb from '@/components/ProductBreadcrumb';
 import RelatedProducts from '@/components/RelatedProducts';
 import { getLocalizedName } from '@/utils/getLocalizedName';
-import type { Product } from '@/types/product';
+import type { Product } from '@/types/index';
+import { useProductsRealtime } from '@/hooks/useProductsRealtime';
+import { mapProductFromDb } from '@/types/mapProductFromDb';
 
 const ProductDetails = () => {
   const { id } = useParams();
@@ -22,16 +23,13 @@ const ProductDetails = () => {
   const [searchQuery, setSearchQuery] = useState('');
   
   const { buyNow } = useCart();
-  // استخدم الاسم الصحيح للخاصية من useLiveSupabaseQuery
-  const { data: products = [], loading, error } = useProducts();
 
-  // Defensive extraction for products array
-  let productsArray: Product[] = [];
-  if (Array.isArray(products)) {
-    productsArray = products;
-  } else if (products && typeof products === 'object' && 'data' in products && Array.isArray((products as { data?: unknown }).data)) {
-    productsArray = (products as { data: Product[] }).data;
-  }
+  const { products, loading, error } = useProductsRealtime();
+
+  // Map ProductRow[] to Product[]
+  const productsArray: Product[] = Array.isArray(products)
+    ? products.map(mapProductFromDb)
+    : [];
   const product = productsArray.find((p) => p.id === id);
 
   if (loading) {
@@ -78,7 +76,6 @@ const ProductDetails = () => {
   const relatedProducts = product ? productsArray.filter(p => p.category === product.category && p.id !== product.id).slice(0, 4) : [];
 
   const handleBuyNow = async () => {
-    console.log('Buy now clicked');
     if (!product.inStock) {
       toast.error(t('productOutOfStock'));
       return;
@@ -86,7 +83,6 @@ const ProductDetails = () => {
     
     try {
       await buyNow(product, 1);
-      console.log('Product added for buy now, navigating to checkout');
       setTimeout(() => {
         navigate('/checkout');
       }, 200);

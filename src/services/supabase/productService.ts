@@ -11,7 +11,6 @@ export class ProductService {
     userType: Tables<'profiles'>['user_type'] | null,
     categoryId?: string
   ): Promise<AppProduct[]> {
-    console.log('[ProductService.getProducts] called with', { language, userType, categoryId });
     let query = supabase
       .from("products")
       .select(`*, category:categories(id, name_ar, name_en, name_he)`) // join مع جدول الفئات
@@ -21,9 +20,7 @@ export class ProductService {
       query = query.eq("category_id", categoryId);
     }
 
-    console.log('[ProductService.getProducts] about to execute supabase query', query);
     const { data = [], error } = await query.order("created_at", { ascending: false });
-    console.log('[ProductService.getProducts] supabase response', { data, error });
     if (error) {
       console.error("Error fetching products:", error);
       return [];
@@ -58,7 +55,6 @@ export class ProductService {
         active: p.active ?? true,
       };
     });
-    console.log('[ProductService.getProducts] mapped result', mapped);
     return mapped;
   }
 }

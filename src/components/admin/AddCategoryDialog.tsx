@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useLanguage } from '../../utils/languageContextUtils';
-import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,6 +12,7 @@ import {
 } from '@/components/ui/dialog';
 import { toast } from '@/hooks/use-toast';
 import ImageUpload from '@/components/ImageUpload';
+import { useInsertCategory } from '@/integrations/supabase/reactQueryHooks';
 import type { Category } from '@/types';
 
 interface AddCategoryDialogProps {
@@ -39,48 +39,31 @@ const AddCategoryDialog: React.FC<AddCategoryDialogProps> = ({
   });
   const [previewImage, setPreviewImage] = useState<string>('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const insertCategoryMutation = useInsertCategory();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     setErrorMsg(null);
     try {
-      const { data, error } = await supabase
-        .from('categories')
-        .insert([
-          {
-            name_ar: formData.name_ar,
-            name_en: formData.name_en,
-            name_he: formData.name_he,
-            image: formData.image,
-            active: formData.active,
-            icon: '',
-          },
-        ])
-        .select();
-      if (error) throw error;
+      const data = await insertCategoryMutation.mutateAsync({
+        name_ar: formData.name_ar,
+        name_en: formData.name_en,
+        name_he: formData.name_he,
+        image: formData.image,
+        active: formData.active,
+        icon: '',
+      });
+      if (!data) throw new Error('لم يتم إضافة الفئة');
       toast({
         title: t('categoryAdded'),
         description: t('categoryAddedSuccessfully'),
       });
-      setFormData({
-        name_ar: '',
-        name_en: '',
-        name_he: '',
-        image: '',
-        active: true,
-      });
-      setPreviewImage('');
-      onOpenChange(false);
-      // تحديث الواجهة مباشرة
-      if (data && data[0]) setCategories(prev => [data[0], ...prev]);
       onSuccess();
-    } catch (error: unknown) {
-      setErrorMsg((error instanceof Error ? error.message : t('errorAddingCategory')) as string);
-      toast({
-        title: t('error'),
-        description: t('errorAddingCategory'),
-      });
+      onOpenChange(false);
+    } catch (error) {
+      setErrorMsg((error as Error).message);
+      toast({ title: t('error'), description: (error as Error).message });
     } finally {
       setIsSubmitting(false);
     }

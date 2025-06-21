@@ -1,5 +1,4 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -23,6 +22,7 @@ import ImageUpload from '@/components/ImageUpload';
 import { useOffersRealtime } from '@/hooks/useOffersRealtime';
 import { getSetting, setSetting } from '@/services/settingsService';
 import type { Database } from '@/integrations/supabase/types';
+import { useAddOffer, useUpdateOffer, useDeleteOffer } from '@/integrations/supabase/reactQueryHooks';
 
 const AdminOffers: React.FC = () => {
   const { t, isRTL } = useLanguage();
@@ -52,7 +52,13 @@ const AdminOffers: React.FC = () => {
 
   // جلب العروض من قاعدة البيانات
   const { offers, loading, error, refetch, setOffers } = useOffersRealtime({ disableRealtime: true });
+  const offersData = Array.isArray(offers) ? offers : [];
 
+  // ربط hooks العروض
+  const addOfferMutation = useAddOffer();
+  const updateOfferMutation = useUpdateOffer();
+  const deleteOfferMutation = useDeleteOffer();
+  
   // جلب الإعداد عند تحميل الصفحة
   useEffect(() => {
     getSetting('hide_offers_page').then(val => {
@@ -64,28 +70,7 @@ const AdminOffers: React.FC = () => {
   // حذف عرض
   const handleDelete = async (id: string) => {
     if (!id) return;
-    
-    try {
-      const { error } = await supabase
-        .from('offers')
-        .delete()
-        .eq('id', id);
-      
-      if (error) {
-        console.error('خطأ في حذف العرض:', error);
-        toast.error(t('errorDeletingOffer'));
-      } else {
-        toast.success(t('offerDeletedSuccessfully'));
-        // تحديث الواجهة مباشرة بدون refetch
-        setOffers(prev => prev.filter(offer => offer.id !== id));
-      }
-    } catch (error) {
-      console.error('خطأ غير متوقع في حذف العرض:', error);
-      toast.error(t('unexpectedError'));
-    } finally {
-      setShowDelete(false);
-      setSelectedOffer(null);
-    }
+    deleteOfferMutation.mutate(id);
   };
 
   // معالجة تغيير المدخلات
@@ -119,99 +104,79 @@ const AdminOffers: React.FC = () => {
       return;
     }
     
-    try {
-      const offerData = {
-        title_en: form.title_en,
-        title_ar: form.title_ar,
-        title_he: form.title_he || form.title_en,
-        description_en: form.description_en,
-        description_ar: form.description_ar,
-        description_he: form.description_he || form.description_en,
-        discount_percent: Number(form.discount_percent),
-        image_url: form.image_url || null,
-        start_date: form.start_date || new Date().toISOString(),
-        end_date: form.end_date || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-        active: form.active,
-      } as Database['public']['Tables']['offers']['Insert'];
-      
-      const { error } = await supabase
-        .from('offers')
-        .insert([offerData]);
-      
-      if (error) {
-        console.error('خطأ في إضافة العرض:', error);
-        toast.error(t('errorAddingOffer'));
-      } else {
+    const offerData = {
+      title_en: form.title_en,
+      title_ar: form.title_ar,
+      title_he: form.title_he || form.title_en,
+      description_en: form.description_en,
+      description_ar: form.description_ar,
+      description_he: form.description_he || form.description_en,
+      discount_percent: Number(form.discount_percent),
+      image_url: form.image_url || null,
+      start_date: form.start_date || new Date().toISOString(),
+      end_date: form.end_date || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      active: form.active,
+    } as Database['public']['Tables']['offers']['Insert'];
+    
+    addOfferMutation.mutate(offerData, {
+      onSuccess: () => {
         toast.success(t('offerAddedSuccessfully'));
         setShowAdd(false);
         setForm(initialForm);
         refetch();
+      },
+      onError: (error: unknown) => {
+        console.error('خطأ في إضافة العرض:', error);
+        toast.error(t('errorAddingOffer'));
       }
-    } catch (error) {
-      console.error('خطأ غير متوقع في إضافة العرض:', error);
-      toast.error(t('unexpectedError'));
-    }
+    });
   };
 
   // تعديل عرض موجود
   const handleEdit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!selectedOffer) {
       toast.error(t('noOfferSelected'));
       return;
     }
-    
-    // التحقق من صحة البيانات
     if (!form.title_en || !form.title_ar || !form.discount_percent) {
       toast.error(t('pleaseCompleteRequiredFields'));
       return;
     }
-    
     if (Number(form.discount_percent) <= 0 || Number(form.discount_percent) > 100) {
       toast.error(t('invalidDiscountPercent'));
       return;
     }
-    
     if (form.start_date && form.end_date && new Date(form.start_date) >= new Date(form.end_date)) {
       toast.error(t('endDateMustBeAfterStartDate'));
       return;
     }
-    
-    try {
-      const updateData = {
-        title_en: form.title_en,
-        title_ar: form.title_ar,
-        title_he: form.title_he || form.title_en,
-        description_en: form.description_en,
-        description_ar: form.description_ar,
-        description_he: form.description_he || form.description_en,
-        discount_percent: Number(form.discount_percent),
-        image_url: form.image_url || null,
-        start_date: form.start_date,
-        end_date: form.end_date,
-        active: form.active,
-      };
-      
-      const { error } = await supabase
-        .from('offers')
-        .update(updateData)
-        .eq('id', selectedOffer.id);
-      
-      if (error) {
-        console.error('خطأ في تعديل العرض:', error);
-        toast.error(t('errorUpdatingOffer'));
-      } else {
+    const updateData = {
+      title_en: form.title_en,
+      title_ar: form.title_ar,
+      title_he: form.title_he || form.title_en,
+      description_en: form.description_en,
+      description_ar: form.description_ar,
+      description_he: form.description_he || form.description_en,
+      discount_percent: Number(form.discount_percent),
+      image_url: form.image_url || null,
+      start_date: form.start_date,
+      end_date: form.end_date,
+      active: form.active,
+    };
+    updateOfferMutation.mutate({ id: selectedOffer.id, updateData }, {
+      onSuccess: () => {
         toast.success(t('offerUpdatedSuccessfully'));
         setShowEdit(false);
         setSelectedOffer(null);
         setForm(initialForm);
         refetch();
+      },
+      onError: (error: unknown) => {
+        console.error('خطأ في تعديل العرض:', error);
+        toast.error(t('errorUpdatingOffer'));
       }
-    } catch (error) {
-      console.error('خطأ غير متوقع في تعديل العرض:', error);
-      toast.error(t('unexpectedError'));
-    }
+    });
   };
 
   // تحديث النموذج عند تحديد عرض للتعديل
@@ -260,7 +225,7 @@ const AdminOffers: React.FC = () => {
         <div>
           <h1 className="text-3xl font-bold">{t('manageOffers')}</h1>
           <p className="text-gray-600 mt-1">
-            {t('manageOffers')} ({offers.length} {t('offers')})
+            {t('manageOffers')} ({offersData.length} {t('offers')})
           </p>
         </div>
         <Button 
@@ -285,7 +250,7 @@ const AdminOffers: React.FC = () => {
       {/* عرض العروض */}
       {!loading && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {offers.map((offer: Database['public']['Tables']['offers']['Row']) => {
+          {offersData.map((offer: Database['public']['Tables']['offers']['Row']) => {
             const currentTitle = offer.title_ar || offer.title_en;
             const currentDescription = offer.description_ar || offer.description_en;
             const isActive = offer.active;
@@ -397,7 +362,7 @@ const AdminOffers: React.FC = () => {
       )}
 
       {/* رسالة عدم وجود عروض */}
-      {!loading && offers.length === 0 && (
+      {!loading && offersData.length === 0 && (
         <div className="text-center py-12">
           <ImageIcon className="h-16 w-16 text-gray-300 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">{t('noOffers')}</h3>

@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { useLanguage } from '@/utils/languageContextUtils';
-import { ContactInfoService, ContactInfo } from '@/services/supabase/contactInfoService';
-import { useContactInfo } from '@/hooks/useContactInfo';
+import { useGetContactInfo, useUpdateContactInfo } from '@/integrations/supabase/reactQueryHooks';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Copy, Mail, Phone, MapPin, Facebook, Instagram, Clock, MessageCircle } from 'lucide-react';
+import type { ContactInfo } from '@/integrations/supabase/dataFetchers';
 
 const FIELD_COMPONENTS = [
   'email',
@@ -28,7 +28,8 @@ const FIELD_ICONS: Record<string, React.ReactNode> = {
 
 const AdminContactInfo: React.FC = () => {
   const { t } = useLanguage();
-  const { contactInfo, loading, error, refetch } = useContactInfo();
+  const { data: contactInfo, isLoading: loading, error, refetch } = useGetContactInfo();
+  const updateContactInfoMutation = useUpdateContactInfo();
   const [form, setForm] = useState<Partial<ContactInfo>>({});
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -66,11 +67,15 @@ const AdminContactInfo: React.FC = () => {
     e.preventDefault();
     setSaving(true);
     setSuccess(false);
-    const updated = await ContactInfoService.updateContactInfo({ ...form, fields_order: fieldsOrder });
-    setSaving(false);
-    if (updated) {
-      setSuccess(true);
-      refetch();
+    try {
+      const updated = await updateContactInfoMutation.mutateAsync({ ...form, fields_order: fieldsOrder });
+      setSaving(false);
+      if (updated) {
+        setSuccess(true);
+        refetch();
+      }
+    } catch (error) {
+      setSaving(false);
     }
   };
 

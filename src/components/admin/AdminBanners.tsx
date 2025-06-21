@@ -1,7 +1,5 @@
-import React, { useState, useEffect, ReactNode } from 'react';
+import React, { useState, ReactNode } from 'react';
 import { Plus, Edit, Trash2, Eye, EyeOff, Upload, X, Trash } from 'lucide-react';
-import { supabase } from '../../integrations/supabase/client';
-import { useLanguage } from '../../utils/languageContextUtils';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -16,22 +14,17 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-// تعريف واجهة البانر (Banner) كما هو مخزن في قاعدة البيانات
-interface Banner {
-  [x: string]: ReactNode;
-  id: string;
-  title_ar: string;
-  title_en: string;
-  title_he: string;
-  subtitle_ar?: string;
-  subtitle_en?: string;
-  subtitle_he?: string;
-  image: string;
-  link?: string;
-  sort_order: number;
-  active: boolean;
-  created_at: string;
-}
+import {
+  useBannersQuery,
+  useAddBanner,
+  useUpdateBanner,
+  useDeleteBanner,
+  useToggleBannerActive,
+  useUploadBannerImage
+} from '@/integrations/supabase/reactQueryHooks';
+import { useLanguage } from '../../utils/languageContextUtils';
+// إزالة تعريف Banner المحلي واستخدام Banner من dataFetchers
+import type { Banner } from '@/integrations/supabase/dataFetchers';
 
 // تعريف واجهة بيانات النموذج (BannerFormData) لإدارة حالة النموذج
 interface BannerFormData {
@@ -73,33 +66,23 @@ const AdminBanners: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // جلب البانرات عند تحميل الصفحة
-  useEffect(() => {
-    fetchBanners();
-  }, []);
+  // استخدام hooks الجديدة
+  const { data: bannersData = [], isLoading: loadingBanners, error: bannersError, refetch } = useBannersQuery();
+  const addBannerMutation = useAddBanner();
+  const updateBannerMutation = useUpdateBanner();
+  const deleteBannerMutation = useDeleteBanner();
+  const toggleBannerActiveMutation = useToggleBannerActive();
+  const uploadBannerImageMutation = useUploadBannerImage();
 
-  // دالة لجلب البانرات من قاعدة البيانات
-  const fetchBanners = async () => {
-    console.log('جلب البانرات من قاعدة البيانات...');
-    try {
-      setError(null);
-      const { data, error } = await supabase
-        .from('banners')
-        .select('*')
-        .order('sort_order', { ascending: true });
+  // حذف جميع استدعاءات supabase واستخدام الدوال التالية بدلاً منها:
+  // fetchBanners => refetch()
+  // handleSubmit => addBannerMutation.mutate / updateBannerMutation.mutate
+  // handleDelete => deleteBannerMutation.mutate
+  // toggleActive => toggleBannerActiveMutation.mutate
+  // uploadImage => uploadBannerImageMutation.mutateAsync
 
-      if (error) throw error;
-      setBanners(data || []);
-      console.log('تم جلب البانرات:', data);
-    } catch (error: unknown) {
-      const err = error as Error;
-      console.error('خطأ أثناء جلب البانرات:', err);
-      setError(err.message || 'حدث خطأ أثناء تحميل البانرات');
-      toast.error('Error loading banners');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // جلب البانرات عند تحميل الصفحة لم يعد مطلوبًا (react-query يتكفل بذلك)
+  // useEffect(() => { fetchBanners(); }, []);
 
   // إعادة تعيين النموذج وإغلاقه
   const resetForm = () => {
@@ -150,57 +133,26 @@ const AdminBanners: React.FC = () => {
     }
   };
 
-  // رفع الصورة إلى التخزين السحابي وإرجاع الرابط العام
-  const uploadImage = async (file: File): Promise<string> => {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Math.random()}.${fileExt}`;
-    const filePath = `banners/${fileName}`;
-
-    console.log('رفع الصورة إلى التخزين:', filePath);
-
-    const { error: uploadError } = await supabase.storage
-      .from('product-images')
-      .upload(filePath, file);
-
-    if (uploadError) {
-      console.error('خطأ أثناء رفع الصورة:', uploadError);
-      throw uploadError;
-    }
-
-    const { data } = supabase.storage
-      .from('product-images')
-      .getPublicUrl(filePath);
-
-    console.log('تم رفع الصورة، الرابط:', data.publicUrl);
-    return data.publicUrl;
-  };
-
-  // عند إرسال النموذج (إضافة أو تعديل بانر)
+  // handleSubmit الجديد:
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     // التحقق من العناوين
     if (!formData.title_ar || !formData.title_en || !formData.title_he) {
       toast.error(t('pleaseEnterAllTitles'));
       return;
     }
-
     // التحقق من وجود صورة عند الإضافة
     if (!editingBanner && !formData.image) {
       toast.error(t('pleaseSelectImage'));
       return;
     }
-
     setSubmitting(true);
-
     try {
       let imageUrl = formData.imageUrl;
-
       // رفع الصورة إذا تم اختيار صورة جديدة
       if (formData.image) {
-        imageUrl = await uploadImage(formData.image);
+        imageUrl = await uploadBannerImageMutation.mutateAsync(formData.image);
       }
-
       // تجهيز بيانات البانر للإرسال
       const bannerData = {
         title_ar: formData.title_ar,
@@ -214,30 +166,19 @@ const AdminBanners: React.FC = () => {
         sort_order: formData.sort_order,
         active: formData.active
       };
-
       if (editingBanner) {
         // تعديل بانر موجود
         console.log('تعديل بانر:', editingBanner.id, bannerData);
-        const { error } = await supabase
-          .from('banners')
-          .update(bannerData)
-          .eq('id', editingBanner.id);
-
-        if (error) throw error;
+        await updateBannerMutation.mutateAsync({ id: editingBanner.id, bannerData });
         toast.success(t('bannerUpdatedSuccessfully'));
       } else {
         // إضافة بانر جديد
         console.log('إضافة بانر جديد:', bannerData);
-        const { error } = await supabase
-          .from('banners')
-          .insert([bannerData]);
-
-        if (error) throw error;
+        await addBannerMutation.mutateAsync(bannerData);
         toast.success(t('bannerAddedSuccessfully'));
       }
-
       resetForm();
-      fetchBanners();
+      refetch();
     } catch (error) {
       console.error('خطأ أثناء حفظ البانر:', error);
       toast.error(editingBanner ? t('errorUpdatingBanner') : t('errorAddingBanner'));
@@ -246,36 +187,24 @@ const AdminBanners: React.FC = () => {
     }
   };
 
-  // حذف بانر
+  // handleDelete الجديد:
   const handleDelete = async (id: string) => {
     try {
-      console.log('حذف بانر:', id);
-      const { error } = await supabase
-        .from('banners')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
+      await deleteBannerMutation.mutateAsync(id);
       toast.success(t('bannerDeletedSuccessfully'));
-      fetchBanners();
+      refetch();
     } catch (error) {
       console.error('خطأ أثناء حذف البانر:', error);
       toast.error(t('errorDeletingBanner'));
     }
   };
 
-  // تفعيل أو تعطيل البانر
+  // toggleActive الجديد:
   const toggleActive = async (id: string, currentStatus: boolean) => {
     try {
-      console.log('تغيير حالة البانر:', id, 'الحالة الحالية:', currentStatus);
-      const { error } = await supabase
-        .from('banners')
-        .update({ active: !currentStatus })
-        .eq('id', id);
-
-      if (error) throw error;
+      await toggleBannerActiveMutation.mutateAsync({ id, currentStatus });
       toast.success(t('bannerStatusUpdated'));
-      fetchBanners();
+      refetch();
     } catch (error) {
       console.error('خطأ أثناء تحديث حالة البانر:', error);
       toast.error(t('errorUpdatingBannerStatus'));
@@ -283,7 +212,7 @@ const AdminBanners: React.FC = () => {
   };
 
   // عرض مؤشر التحميل إذا كانت البيانات قيد التحميل
-  if (loading) {
+  if (loadingBanners) {
     return (
       <div className="space-y-6">
         <h1 className="text-3xl font-bold">{t('manageBanners')}</h1>
@@ -295,20 +224,20 @@ const AdminBanners: React.FC = () => {
     );
   }
 
-  if (error) {
+  if (bannersError) {
     return (
       <div className="flex flex-col items-center justify-center h-96">
         <div className="text-center">
           <div className="flex flex-col items-center mb-4">
             <X className="h-16 w-16 text-red-300 mb-2" />
             <h3 className="text-lg font-medium text-red-900 mb-2">{t('errorLoadingBanners') || 'خطأ في تحميل البانرات'}</h3>
-            <p className="text-red-600 mb-4">{error}</p>
+            <p className="text-red-600 mb-4">{bannersError.message}</p>
           </div>
           <button
             onClick={() => {
               setLoading(true);
               setError(null);
-              fetchBanners();
+              refetch();
             }}
             className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-700 transition-colors"
           >
@@ -543,7 +472,7 @@ const AdminBanners: React.FC = () => {
 
       {/* جدول عرض البانرات */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        {banners.length === 0 ? (
+        {bannersData.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-500">{t('noBannersFound')}</p>
           </div>
@@ -570,7 +499,7 @@ const AdminBanners: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {banners.map((banner) => (
+                {bannersData.map((banner) => (
                   <tr key={banner.id}>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <img
