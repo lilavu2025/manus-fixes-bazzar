@@ -310,6 +310,7 @@ const AdminOrders: React.FC = () => {
       {
         onSuccess: () => {
           toast.success(t("orderStatusUpdatedSuccess"));
+          refetchOrders();
           // استبدل setOrders((prevOrders) => ...) باستدعاء setOrders مع القيمة الجديدة مباشرة أو بتعليق الكود مؤقتًا
           // setOrders((prevOrders) => prevOrders.map(order => {
           //   if (order.id === orderId) {
