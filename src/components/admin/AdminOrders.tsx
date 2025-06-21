@@ -241,6 +241,15 @@ const initialOrderForm: NewOrderForm = {
   },
 };
 
+// دالة مساعدة لفك الضغط الآمن لملاحظات الطلب
+function safeDecompressNotes(notes: string) {
+  try {
+    return decompressText(notes);
+  } catch {
+    return notes;
+  }
+}
+
 const AdminOrders: React.FC = () => {
   const { t, isRTL, language } = useLanguage();
   const { user, profile } = useAuth();
@@ -847,6 +856,27 @@ const AdminOrders: React.FC = () => {
     }
     return changes;
   }
+
+  // --- DEBUG: طباعة الطلبات عند جلبها من الـ API ---
+  useEffect(() => {
+    if (orders && Array.isArray(orders)) {
+      console.log("[DEBUG] orders from API:", orders.map(o => ({id: o.id, notes: o.notes, customer_name: o.customer_name})));
+    }
+  }, [orders]);
+
+  // --- DEBUG: طباعة selectedOrder عند فتح تفاصيل الطلب ---
+  useEffect(() => {
+    if (selectedOrder) {
+      console.log("[DEBUG] selectedOrder:", selectedOrder);
+    }
+  }, [selectedOrder]);
+
+  // --- DEBUG: طباعة editOrderForm عند فتح التعديل ---
+  useEffect(() => {
+    if (showEditOrder && editOrderForm) {
+      console.log("[DEBUG] editOrderForm:", editOrderForm);
+    }
+  }, [showEditOrder, editOrderForm]);
 
   if (ordersLoading) {
     return (
@@ -1610,7 +1640,7 @@ const AdminOrders: React.FC = () => {
                       <div className="flex flex-col gap-2">
                         {order.notes && (
                           <div className="mb-1 text-xs text-gray-500">
-                            {t("orderNotes")}: {decompressText(order.notes)}
+                            {t("orderNotes")}: {safeDecompressNotes(order.notes)}
                           </div>
                         )}
                         <div className="flex flex-wrap gap-2 text-xs text-gray-500">
@@ -1749,7 +1779,7 @@ const AdminOrders: React.FC = () => {
                               payment_method: latestOrder.payment_method,
                               status: latestOrder.status,
                               notes: latestOrder.notes
-                                ? decompressText(latestOrder.notes)
+                                ? safeDecompressNotes(latestOrder.notes)
                                 : "",
                               items,
                               shipping_address: {
@@ -1889,7 +1919,7 @@ const AdminOrders: React.FC = () => {
         onOpenChange={() => setSelectedOrder(null)}
       >
         <DialogContent className="max-w-2xl w-full max-h-[90vh] overflow-y-auto p-0 sm:p-0">
-          <DialogHeader className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b px-6 py-4 rounded-t-2xl print:bg-white print:border-none print:backdrop-blur-0 print:shadow-none">
+          <DialogHeader className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b px-6 py-4 rounded-t-2xl">
             <DialogTitle className="text-xl font-bold flex items-center gap-2">
               <Package className="h-5 w-5 text-primary print:hidden" />{" "}
               {t("orderDetails") || "تفاصيل الطلبية"} #
@@ -2117,7 +2147,7 @@ const AdminOrders: React.FC = () => {
                       {t("notes") || "ملاحظات"}:
                     </span>{" "}
                     <span className="text-gray-700 print:text-black">
-                      {decompressText(selectedOrder.notes)}
+                      {safeDecompressNotes(selectedOrder.notes)}
                     </span>
                   </div>
                 )}

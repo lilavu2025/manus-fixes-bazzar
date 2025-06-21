@@ -55,6 +55,7 @@ export interface OrderRow {
   };
   order_items?: OrderItemRow[];
   shipping_address?: Json; // إضافة الحقل هنا ليتمكن الكود من قراءته
+  notes?: string; // <--- أضف هذا السطر
 }
 
 // جلب جميع البانرات
@@ -201,6 +202,7 @@ export async function fetchOrdersWithDetails(): Promise<OrdersWithDetails[]> {
           } : undefined,
         }))
       : [],
+    notes: order.notes ?? "",
   }));
 }
 
