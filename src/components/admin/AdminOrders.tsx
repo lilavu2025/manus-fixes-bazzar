@@ -18,6 +18,7 @@ import { toast } from 'sonner';
 import { useAdminUsers } from '@/hooks/useAdminUsers';
 import { Address, Product } from '@/types';
 import { useOrdersRealtime } from '@/hooks/useOrdersRealtime';
+import { useProductsRealtime } from '@/hooks/useProductsRealtime';
 import { saveAs } from 'file-saver';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
@@ -125,7 +126,7 @@ function mapOrderFromDb(order: Record<string, unknown>): Order {
       product_id: item.product_id,
       quantity: item.quantity,
       price: item.price,
-      product_name: item.products?.name_ar || item.products?.name_en || item.products?.name_he || '',
+      product_name: item.products?.name_ar || item.products?.name_en || item.products?.name_he || item.id,
     }));
   } else if (typeof order['items'] === 'string') {
     items = JSON.parse(order['items'] as string);
@@ -208,6 +209,7 @@ const AdminOrders: React.FC = () => {
   const [editOrderId, setEditOrderId] = useState<string | null>(null);
   const virtualListRef = useRef<HTMLDivElement>(null);
   const { users, isLoading: usersLoading } = useAdminUsers();
+  const { products, loading: productsLoading } = useProductsRealtime();
 
   // Handle filter from dashboard navigation
   useEffect(() => {
@@ -863,7 +865,11 @@ const AdminOrders: React.FC = () => {
                             <SelectValue placeholder={t('searchOrSelectProduct') || 'ابحث أو اختر المنتج'} />
                           </SelectTrigger>
                           <SelectContent>
-                            {/* المنتجات غير متوفرة حالياً */}
+                            {products.map(product => (
+                              <SelectItem key={product.id} value={product.id}>
+                                {product.name_ar || product.name_en || product.name_he || product.id}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
@@ -1372,7 +1378,7 @@ const AdminOrders: React.FC = () => {
                             setEditOrderForm(f => {
                               if (!f) return f;
                               // جلب بيانات المنتج المختار
-                              const selectedProduct = [].find(p => p.id === value);
+                              const selectedProduct = products.find(p => p.id === value);
                               return {
                                 ...f,
                                 items: f.items.map((it, i) =>
@@ -1390,10 +1396,14 @@ const AdminOrders: React.FC = () => {
                             });
                           }}>
                           <SelectTrigger className="w-full">
-                            <SelectValue  className={`${isRTL ? 'text-right' : 'text-left'}`} placeholder={t('searchOrSelectProduct') || 'ابحث أو اختر المنتج'} />
+                            <SelectValue className={`${isRTL ? 'text-right' : 'text-left'}`} placeholder={t('searchOrSelectProduct') || 'ابحث أو اختر المنتج'} />
                           </SelectTrigger>
                           <SelectContent>
-                            {/* المنتجات غير متوفرة حالياً */}
+                            {products.map(product => (
+                              <SelectItem key={product.id} value={product.id}>
+                                {product.name_ar || product.name_en || product.name_he || product.id}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
