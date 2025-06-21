@@ -171,11 +171,11 @@ export async function fetchAllUsers(): Promise<UserProfile[]> {
 export async function fetchOrdersWithDetails(): Promise<OrdersWithDetails[]> {
   const { data, error } = await supabase
     .from('orders')
-    .select(`*, payment_method, profiles:profiles(id, full_name, email, phone), order_items(*, products(id, name_ar, name_en, name_he, image))`)
+    .select(`*, payment_method, shipping_address, profiles:profiles(id, full_name, email, phone), order_items(*, products(id, name_ar, name_en, name_he, image))`)
     .order('created_at', { ascending: false });
   if (error) throw error;
   if (!data) throw new Error('لم يتم العثور على بيانات الطلبات');
-  return (data).map((order: OrderRow & { payment_method?: string }) => ({
+  return (data).map((order: OrderRow & { payment_method?: string, shipping_address?: any }) => ({
     id: order.id,
     status: order.status,
     total: order.total,
@@ -183,6 +183,7 @@ export async function fetchOrdersWithDetails(): Promise<OrdersWithDetails[]> {
     updated_at: order.updated_at,
     payment_method: order.payment_method || '',
     profiles: order.profiles,
+    shipping_address: typeof order.shipping_address === 'string' ? JSON.parse(order.shipping_address) : order.shipping_address,
     order_items: Array.isArray(order.order_items)
       ? order.order_items.map((item: OrderItemRow) => ({
           id: item.id,
