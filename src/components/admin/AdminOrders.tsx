@@ -294,9 +294,9 @@ const AdminOrders: React.FC = () => {
         if (item.id === itemId) {
           const updatedItem = { ...item, [field]: value };
           if (field === 'product_id') {
-            const selectedProduct = [].find((p: Product) => p.id === value);
+            const selectedProduct = products.find((p: Product) => p.id === value);
             if (selectedProduct) {
-              updatedItem.product_name = selectedProduct.name;
+              updatedItem.product_name = selectedProduct.name_ar || selectedProduct.name_en || selectedProduct.name_he || selectedProduct.id;
               updatedItem.price = selectedProduct.price;
             }
           }
@@ -1388,7 +1388,7 @@ const AdminOrders: React.FC = () => {
                                         product_id: value,
                                         // إذا تم اختيار منتج جديد، حدث السعر تلقائياً
                                         price: selectedProduct ? selectedProduct.price : 0,
-                                        product_name: selectedProduct ? selectedProduct.name : '',
+                                        product_name: selectedProduct.name_ar || selectedProduct.name_en || selectedProduct.name_he || selectedProduct.id,
                                       }
                                     : it
                                 ),
