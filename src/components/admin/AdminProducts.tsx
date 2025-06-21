@@ -67,6 +67,7 @@ const AdminProducts: React.FC = () => {
   const [filterCategory, setFilterCategory] = useState<string>("all");
   const [filterStock, setFilterStock] = useState<string>("all");
   const [filterActive, setFilterActive] = useState<string>("all");
+  const [searchName, setSearchName] = useState<string>(""); // إضافة حالة البحث بالاسم
 
   // إحصائيات سريعة
   const totalProducts = products.length;
@@ -86,6 +87,14 @@ const AdminProducts: React.FC = () => {
     if (filterStock === "out" && product.inStock) pass = false;
     if (filterActive === "active" && product.active === false) pass = false;
     if (filterActive === "inactive" && product.active !== false) pass = false;
+    if (
+      searchName.trim() &&
+      !(
+        product.name?.toLowerCase().includes(searchName.trim().toLowerCase()) ||
+        product.nameEn?.toLowerCase().includes(searchName.trim().toLowerCase())
+      )
+    )
+      pass = false;
     return pass;
   });
 
@@ -168,6 +177,19 @@ const AdminProducts: React.FC = () => {
       </div>
       {/* شريط الفلاتر */}
       <div className="flex flex-wrap gap-3 items-center bg-white rounded-xl p-4 shadow-md border mt-4 relative">
+        {/* فلتر البحث بالاسم */}
+        <div className="flex flex-col min-w-[180px]">
+          <label className="text-xs text-gray-500 font-medium mb-1 flex items-center gap-1">
+            🔍 {t("searchByName") || "بحث بالاسم"}
+          </label>
+          <input
+            type="text"
+            className="border rounded-lg px-3 py-2 bg-gray-50 focus:ring-2 focus:ring-blue-300"
+            placeholder={t("searchByNamePlaceholder") || "اكتب اسم المنتج..."}
+            value={searchName}
+            onChange={(e) => setSearchName(e.target.value)}
+          />
+        </div>
         {/* فلتر الفئة */}
         <div className="flex flex-col min-w-[160px]">
           <label className="text-xs text-gray-500 font-medium mb-1 flex items-center gap-1">
@@ -228,6 +250,7 @@ const AdminProducts: React.FC = () => {
             setFilterCategory("all");
             setFilterStock("all");
             setFilterActive("all");
+            setSearchName("");
           }}
         >
           <XCircle className="h-4 w-4" />

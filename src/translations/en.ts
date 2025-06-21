@@ -126,6 +126,8 @@ export const enTranslations = {
   search: "Search",
   searchProducts: "Search products...",
   searchUsersPlaceholder: "Search by name, email, or phone...",
+  searchByName: "Search by name",
+  searchByNamePlaceholder: "Type product name...",
   searchResults: "Search Results",
   noProductsFound: "No products found",
   noResults: "No results found",

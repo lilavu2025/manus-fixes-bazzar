@@ -125,6 +125,8 @@ export const heTranslations = {
   search: "חיפוש",
   searchProducts: "חפש מוצרים...",
   searchUsersPlaceholder: "חפש לפי שם, אימייל או טלפון...",
+  searchByName: "חפש לפי שם",
+  searchByNamePlaceholder: "הקלד שם מוצר...",
   searchResults: "תוצאות חיפוש",
   noProductsFound: "לא נמצאו מוצרים",
   noResults: "לא נמצאו תוצאות",
