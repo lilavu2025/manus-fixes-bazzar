@@ -594,7 +594,7 @@ const AdminCategories: React.FC = () => {
             open={showEditDialog}
             onOpenChange={setShowEditDialog}
             category={selectedCategory}
-            onSuccess={() => {}} // No-op: UI updates via setCategories
+            onSuccess={refetch} // تحديث البيانات من السيرفر بعد التعديل
             setCategories={setCategories}
           />
           <ViewCategoryDialog

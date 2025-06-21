@@ -15,6 +15,7 @@ import { toast } from "@/hooks/use-toast";
 import ImageUpload from "@/components/ImageUpload";
 import type { Category } from "@/types";
 import { mapDbCategoryToCategory } from "./categoryMappingUtils";
+import { useCategoriesRealtime } from "@/hooks/useCategoriesRealtime";
 
 interface EditCategoryDialogProps {
   open: boolean;
@@ -40,6 +41,8 @@ const EditCategoryDialog: React.FC<EditCategoryDialogProps> = ({
     image: "",
     active: true,
   });
+
+  const { refetch } = useCategoriesRealtime();
 
   useEffect(() => {
     if (category) {
@@ -88,6 +91,8 @@ const EditCategoryDialog: React.FC<EditCategoryDialogProps> = ({
               : cat,
           ),
         );
+        // تحديث الفئات من السيرفر مباشرة
+        refetch();
       }
       onSuccess();
     } catch (error) {

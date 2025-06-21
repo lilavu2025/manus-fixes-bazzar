@@ -46,7 +46,7 @@ const AdminProductsDialogs: React.FC<AdminProductsDialogsProps> = ({
             onOpenChange={setShowEditDialog}
             product={selectedProduct}
             categories={categories}
-            onSuccess={() => {}} // No-op: UI updates via setProducts
+            onSuccess={onSuccess} // تحديث المنتجات من السيرفر بعد التعديل
             setProducts={setProducts}
           />
           <ViewProductDialog

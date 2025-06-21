@@ -33,6 +33,7 @@ const AdminProducts: React.FC = () => {
     loading: productsLoading,
     error: productsError,
     setProducts,
+    refetch,
   } = useProductsRealtime();
   const products: ProductWithOptionalFields[] = Array.isArray(productsRaw)
     ? productsRaw.map(mapProductFromDb)
@@ -331,7 +332,7 @@ const AdminProducts: React.FC = () => {
         setShowViewDialog={setShowViewDialog}
         selectedProduct={selectedProduct}
         categories={productCategories}
-        onSuccess={() => {}} // لا تعيد التحميل، التحديث يتم عبر setProducts
+        onSuccess={refetch} // تحديث المنتجات من السيرفر بعد التعديل
         setProducts={setProducts}
       />
     </div>

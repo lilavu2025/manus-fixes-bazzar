@@ -21,7 +21,7 @@ export const useAdminUsers = () => {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   // جلب المستخدمين
-  const { data: users = [], isLoading, error } = useAdminUsersQuery();
+  const { data: users = [], isLoading, error, refetch } = useAdminUsersQuery();
   const allUsers = users; // جميع المستخدمين من قاعدة البيانات
 
   // تعطيل/تفعيل مستخدم
@@ -121,10 +121,11 @@ export const useAdminUsers = () => {
     (u) => u.user_type === "wholesale",
   ).length;
   const retailCount = users.filter((u) => u.user_type === "retail").length;
+  const adminCount = users.filter((u) => u.user_type === "admin").length;
 
   return {
     users: filteredAndSortedUsers,
-    allUsers,
+    allUsers: users,
     isLoading,
     error,
     searchQuery,
@@ -139,7 +140,9 @@ export const useAdminUsers = () => {
     setSortOrder,
     disableUser,
     deleteUser,
+    refetch, // إرجاع refetch
     wholesaleCount,
     retailCount,
+    adminCount,
   };
 };

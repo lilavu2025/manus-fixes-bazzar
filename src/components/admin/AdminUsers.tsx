@@ -30,6 +30,7 @@ const AdminUsers: React.FC = () => {
     setSortOrder,
     disableUser,
     deleteUser,
+    refetch, // إضافة refetch
   } = useAdminUsers();
 
   // Handle filter from dashboard navigation
@@ -69,15 +70,7 @@ const AdminUsers: React.FC = () => {
     return (
       <div className="space-y-6">
         <h1 className="text-3xl font-bold">لوحة المستخدمين</h1>
-        <div className="text-center py-12">
-          <XCircle className="h-12 w-12 text-red-500 mx-auto" />
-          <p className="mt-4 text-red-600 font-bold">
-            حدث خطأ أثناء جلب المستخدمين
-          </p>
-          <p className="text-gray-500">
-            {typeof error === "string" ? error : error?.message || ""}
-          </p>
-        </div>
+        <UserErrorDisplay error={error} refetch={refetch} />
       </div>
     );
   }
@@ -111,6 +104,7 @@ const AdminUsers: React.FC = () => {
           error={typeof error === "string" ? error : error?.message || ""}
           disableUser={disableUser}
           deleteUser={deleteUser}
+          refetch={refetch}
         />
       </div>
     </div>

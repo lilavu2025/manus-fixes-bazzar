@@ -3,9 +3,10 @@ import { useLanguage } from "@/utils/languageContextUtils";
 
 interface UserErrorDisplayProps {
   error: Error | unknown;
+  refetch?: () => void; // إضافة refetch كاختياري
 }
 
-const UserErrorDisplay: React.FC<UserErrorDisplayProps> = ({ error }) => {
+const UserErrorDisplay: React.FC<UserErrorDisplayProps> = ({ error, refetch }) => {
   const { t } = useLanguage();
   return (
     <div className="text-center py-8">
@@ -17,7 +18,7 @@ const UserErrorDisplay: React.FC<UserErrorDisplayProps> = ({ error }) => {
           {error instanceof Error ? error.message : t("unexpectedError")}
         </p>
         <button
-          onClick={() => window.location.reload()}
+          onClick={refetch}
           className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-700 transition-colors"
         >
           {t("retry")}

@@ -20,6 +20,7 @@ interface UsersTableProps {
   error?: string | null;
   disableUser: (userId: string, disabled: boolean) => Promise<void>;
   deleteUser: (userId: string) => Promise<void>;
+  refetch?: () => void; // إضافة refetch كخاصية اختيارية
 }
 
 const UsersTable: React.FC<UsersTableProps> = ({
@@ -28,6 +29,7 @@ const UsersTable: React.FC<UsersTableProps> = ({
   error,
   disableUser,
   deleteUser,
+  refetch, // استلام refetch كدالة
 }) => {
   const { t } = useLanguage();
 
@@ -79,7 +81,7 @@ const UsersTable: React.FC<UsersTableProps> = ({
             </h3>
             <p className="text-red-600 mb-4">{error}</p>
             <button
-              onClick={() => window.location.reload()}
+              onClick={refetch}
               className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-700 transition-colors"
             >
               {t("retry") || "إعادة المحاولة"}

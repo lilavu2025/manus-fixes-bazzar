@@ -562,6 +562,7 @@ export const arTranslations = {
   allStatus: "كل الحالات",
   resetFilters: "إعادة تعيين الفلاتر",
   exportExcel: "تصدير Excel",
+  updateProduct: "تحديث المنتج",
 
   // Image upload translations
   imagesUploaded: "صور مرفوعة",

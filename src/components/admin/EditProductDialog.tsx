@@ -22,6 +22,7 @@ import {
   AdminProductForm,
 } from "@/types/product";
 import { mapProductToFormData } from "./productMappingUtils";
+import { useProductsRealtime } from "@/hooks/useProductsRealtime";
 
 interface EditProductDialogProps {
   open: boolean;
@@ -62,6 +63,7 @@ const EditProductDialog: React.FC<EditProductDialogProps> = ({
     tags: [],
     stock_quantity: 0,
   });
+  const { refetch } = useProductsRealtime();
 
   // تهيئة البيانات عند تحميل المنتج والتصنيفات
   useEffect(() => {
@@ -155,7 +157,7 @@ const EditProductDialog: React.FC<EditProductDialogProps> = ({
           prev.map((prod) => (prod.id === product.id ? mapped : prod)),
         );
       }
-      onSuccess();
+      onSuccess(); // تحديث المنتجات من السيرفر بعد التعديل
     } catch (err) {
       console.error(err);
       toast({ title: t("error"), description: t("errorUpdatingProduct") });

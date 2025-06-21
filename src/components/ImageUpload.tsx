@@ -329,17 +329,6 @@ const ImageUpload = ({
             multiple={multiple}
             className="hidden"
           />
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
-            className="flex-1"
-            aria-label={t("uploadImage")}
-          >
-            <Upload className="h-4 w-4 mr-2" />
-            {uploading ? t("uploading") : placeholder}
-          </Button>
           {uploading && (
             <div className="w-32">
               <Progress value={progress} />
