@@ -354,8 +354,11 @@ export function useCategoriesWithProductCountQuery(options?: { enabled?: boolean
   });
 }
 
-// جلب الطلبات مع تفاصيل المستخدم والعناصر
-export function useOrdersWithDetailsQuery(options?: { enabled?: boolean }) {
+// إضافة دعم خيارات useQuery كاملة (بما فيها refetchInterval و refetchOnWindowFocus)
+import type { UseQueryOptions } from '@tanstack/react-query';
+import type { OrdersWithDetails } from './dataFetchers';
+
+export function useOrdersWithDetailsQuery(options?: UseQueryOptions<OrdersWithDetails[], Error>) {
   return useQuery({
     queryKey: ['admin-orders-with-details'],
     queryFn: fetchers.fetchOrdersWithDetails,
@@ -365,8 +368,7 @@ export function useOrdersWithDetailsQuery(options?: { enabled?: boolean }) {
   });
 }
 
-// جلب طلبات مستخدم مع تفاصيل المنتجات
-export function useUserOrdersWithDetailsQuery(userId: string, options?: { enabled?: boolean }) {
+export function useUserOrdersWithDetailsQuery(userId: string, options?: UseQueryOptions<OrdersWithDetails[], Error>) {
   return useQuery({
     queryKey: ['user-orders-with-details', userId],
     queryFn: () => fetchers.fetchUserOrdersWithDetails(userId),

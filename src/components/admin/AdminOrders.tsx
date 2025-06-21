@@ -1014,7 +1014,7 @@ const AdminOrders: React.FC = () => {
                       <div className="flex flex-wrap gap-2 justify-center items-center mt-4 mb-2 w-full">
                         <Button size="sm" variant="default" className="font-bold flex items-center gap-1 px-3 py-2 min-w-[90px] flex-1 sm:flex-none" onClick={() => {
                           // جلب الطلب الأحدث من orders (بعد أي تعديل)
-                          const latestOrder = orders.find(o => o.id === order.id) || order;
+                          const latestOrder = Array.isArray(orders) ? orders.find(o => o.id === order.id) || order : order;
                           // معالجة items إذا كانت نصية
                           let items: OrderItem[] = [];
                           if (typeof latestOrder.items === 'string') {
@@ -1022,10 +1022,12 @@ const AdminOrders: React.FC = () => {
                           } else if (Array.isArray(latestOrder.items)) {
                             items = latestOrder.items as OrderItem[];
                           }
-                          // معالجة العنوان إذا كان نص
-                          let shipping_address: Address = latestOrder.shipping_address as Address;
-                          if (typeof shipping_address === 'string') {
-                            try { shipping_address = JSON.parse(shipping_address); } catch { shipping_address = {} as Address; }
+                          // معالجة العنوان إذا كان نص أو unknown
+                          let shipping_address: Address = {} as Address;
+                          if (latestOrder.shipping_address && typeof latestOrder.shipping_address === 'object') {
+                            shipping_address = latestOrder.shipping_address as Address;
+                          } else if (typeof latestOrder.shipping_address === 'string') {
+                            try { shipping_address = JSON.parse(latestOrder.shipping_address); } catch { shipping_address = {} as Address; }
                           }
                           setSelectedOrder(mapOrderFromDb({
                             ...latestOrder,

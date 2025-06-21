@@ -247,22 +247,9 @@ const Orders: React.FC = () => {
                       <MapPin className="h-4 w-4 shrink-0" />
                       <span className="flex flex-col sm:flex-row sm:flex-wrap gap-1 sm:gap-2 w-full">
                         {(() => {
-                          type AddressType = {
-                            fullName?: string; full_name?: string; phone?: string; city?: string; area?: string; street?: string; building?: string; floor?: string; apartment?: string;
-                            [key: string]: unknown;
-                          };
-                          let addr: AddressType | null = null;
-                          try {
-                            if (typeof order.shipping_address === 'string') {
-                              addr = JSON.parse(order.shipping_address) as AddressType;
-                            } else if (typeof order.shipping_address === 'object' && order.shipping_address !== null) {
-                              addr = order.shipping_address as AddressType;
-                            }
-                          } catch {
-                            addr = null;
-                          }
+                          const addr = safeOrder.shippingAddress;
                           if (!addr) return '-';
-                          const fullName = addr.fullName || addr.full_name || '';
+                          const fullName = addr.fullName || '';
                           const phone = addr.phone || '';
                           const city = addr.city || '';
                           const area = addr.area || '';
@@ -271,11 +258,11 @@ const Orders: React.FC = () => {
                           const floor = addr.floor || '';
                           const apartment = addr.apartment || '';
                           return [
-                            fullName && <span key="fn" className="truncate max-w-xs inline-block">{fullName}</span>,
-                            phone && <span key="ph" className="truncate max-w-xs inline-block">({phone})</span>,
+                            fullName && <span key="fn" className="inline-block break-words whitespace-normal sm:truncate sm:max-w-xs">{fullName}</span>,
+                            phone && <span key="ph" className="inline-block break-words whitespace-normal sm:truncate sm:max-w-xs">({phone})</span>,
                             [city, area, street, building].filter(Boolean).join(t('addressSeparator') || '، '),
                             (floor || apartment) ? `${t('floor')}: ${floor || '-'}${t('addressSeparator') || '، '}${t('apartment')}: ${apartment || '-'}` : null
-                          ].filter(Boolean).map((part, i) => <span key={i} className="truncate max-w-xs inline-block">{part}{i < 2 ? ' - ' : ''}</span>);
+                          ].filter(Boolean).map((part, i) => <span key={i} className="inline-block break-words whitespace-normal sm:truncate sm:max-w-xs">{part}{i < 2 ? ' - ' : ''}</span>);
                         })()}
                       </span>
                     </div>

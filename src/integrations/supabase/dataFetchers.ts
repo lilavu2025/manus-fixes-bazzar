@@ -1,7 +1,7 @@
 // جميع دوال القراءة (select, get, list) من Supabase
 // يمنع أي استدعاء مباشر لـ supabase خارج هذا الملف
 import { supabase } from './client';
-import type { Tables, TablesInsert, TablesUpdate } from './types';
+import type { Tables, TablesInsert, TablesUpdate, Json } from './types';
 import type { Language } from '@/types/language';
 import type { Product as AppProduct } from '@/types/index';
 // تعريف ContactInfo type
@@ -54,6 +54,7 @@ export interface OrderRow {
     phone: string;
   };
   order_items?: OrderItemRow[];
+  shipping_address?: Json; // إضافة الحقل هنا ليتمكن الكود من قراءته
 }
 
 // جلب جميع البانرات
@@ -175,7 +176,7 @@ export async function fetchOrdersWithDetails(): Promise<OrdersWithDetails[]> {
     .order('created_at', { ascending: false });
   if (error) throw error;
   if (!data) throw new Error('لم يتم العثور على بيانات الطلبات');
-  return (data).map((order: OrderRow & { payment_method?: string, shipping_address?: any }) => ({
+  return (data).map((order: OrderRow & { payment_method?: string, shipping_address?: Json }) => ({
     id: order.id,
     status: order.status,
     total: order.total,
@@ -209,7 +210,7 @@ export async function fetchUserOrdersWithDetails(userId: string): Promise<Orders
   try {
     const { data, error } = await supabase
       .from('orders')
-      .select('*, order_items(*, products(id, name_ar, name_en, name_he, description_ar, description_en, description_he, price, original_price, wholesale_price, image, images, category_id, in_stock, rating, reviews_count, discount, featured, tags, stock_quantity, active, created_at))')
+      .select('*, shipping_address, order_items(*, products(id, name_ar, name_en, name_he, description_ar, description_en, description_he, price, original_price, wholesale_price, image, images, category_id, in_stock, rating, reviews_count, discount, featured, tags, stock_quantity, active, created_at))')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
     if (error) throw error;
@@ -220,6 +221,7 @@ export async function fetchUserOrdersWithDetails(userId: string): Promise<Orders
       created_at: order.created_at,
       updated_at: order.updated_at,
       profiles: order.profiles,
+      shipping_address: typeof order.shipping_address === 'string' ? JSON.parse(order.shipping_address) : order.shipping_address,
       order_items: Array.isArray(order.order_items)
         ? order.order_items.map((item: OrderItemRow) => ({
             id: item.id,
@@ -306,7 +308,7 @@ export interface OrdersWithDetails {
   }[];
   // الحقول الإضافية المطلوبة في الطلبات
   items?: unknown[]; // يمكن تحسين النوع لاحقًا
-  shipping_address?: unknown; // يمكن تحسين النوع لاحقًا
+  shipping_address?: Json; // تم تحسين النوع
   user_id?: string;
   payment_method?: string;
   notes?: string;
