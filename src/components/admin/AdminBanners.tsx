@@ -570,13 +570,9 @@ const AdminBanners: React.FC = () => {
         </div>
       )}
 
-      {/* جدول عرض البانرات */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        {filteredBanners.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-500">{t("noBannersFound")}</p>
-          </div>
-        ) : (
+      {/* جدول عرض البانرات أو رسالة عدم وجود بانرات */}
+      {filteredBanners.length > 0 ? (
+        <div className="bg-white rounded-lg shadow overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
@@ -690,8 +686,25 @@ const AdminBanners: React.FC = () => {
               </tbody>
             </table>
           </div>
-        )}
-      </div>
+        </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center py-12 gap-4 bg-white rounded-xl shadow border mx-auto max-w-xl">
+          <EyeOff className="h-20 w-20 text-gray-300 mb-2" />
+          <h3 className="text-2xl font-bold text-gray-900 mb-1">
+            {t("noBanners")}
+          </h3>
+          <p className="text-gray-500 mb-4 text-base text-center">
+            {t("noBannersDesc") || "لا يوجد بانرات مضافة بعد. يمكنك إضافة أول بانر الآن!"}
+          </p>
+          <Button
+            onClick={() => setShowForm(true)}
+            className="gap-2 bg-primary text-white font-bold px-6 py-3 rounded-lg text-base shadow hover:bg-primary/90 transition"
+          >
+            <Plus className="h-5 w-5" />
+            {t("addFirstBanner") || "إضافة أول بانر"}
+          </Button>
+        </div>
+      )}
     </div>
   );
 };
