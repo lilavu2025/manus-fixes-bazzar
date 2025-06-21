@@ -712,4 +712,5 @@ export const heTranslations = {
   orderEditFailed: "נכשל בעריכת ההזמנה",
   orderDeleteFailed: "נכשל במחיקת ההזמנה",
   userUpdatedSuccessfully: "פרטי המשתמש עודכנו בהצלחה",
+  orderMustHaveItems: "ההזמנה חייבת לכלול לפחות פריט אחד"
 };

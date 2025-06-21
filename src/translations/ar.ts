@@ -740,4 +740,5 @@ export const arTranslations = {
   orderAddFailed: "فشل في إضافة الطلب",
   orderEditFailed: "فشل في تعديل الطلب",
   orderDeleteFailed: "فشل في حذف الطلب",
+  orderMustHaveItems: "يجب أن يحتوي الطلب على عناصر"
 };

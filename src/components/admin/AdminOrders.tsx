@@ -467,6 +467,11 @@ const AdminOrders: React.FC = () => {
   // دالة تعديل الطلب (تستخدم في Dialog التعديل)
   const handleEditOrder = async () => {
     if (!editOrderForm || !editOrderId) return;
+    // منع حفظ الطلب إذا كانت الأصناف فارغة
+    if (!editOrderForm.items || editOrderForm.items.length === 0) {
+      toast.error(t("orderMustHaveItems") || "يجب أن تحتوي الطلبية على صنف واحد على الأقل.");
+      return;
+    }
     setIsAddingOrder(true);
     try {
       const total = editOrderForm.items.reduce(
@@ -1798,7 +1803,7 @@ const AdminOrders: React.FC = () => {
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-red-600">
+            <DialogTitle className={`text-xl font-bold text-red-600 ${isRTL ? "text-right" : "text-left"}`}>
               {t("confirmDeleteOrder") || "تأكيد حذف الطلب"}
             </DialogTitle>
           </DialogHeader>

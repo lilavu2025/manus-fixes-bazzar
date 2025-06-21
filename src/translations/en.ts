@@ -722,4 +722,7 @@ export const enTranslations = {
   accountDeletedTitle: "Your account has been deleted",
   accountDeletedDescription: "Your account and all your data have been deleted from the system. If you have any questions or wish to restore your account, please contact support.",
   backToLoginButton: "Back to Login",
+
+
+  orderMustHaveItems: "Order must have at least one item",
 };
