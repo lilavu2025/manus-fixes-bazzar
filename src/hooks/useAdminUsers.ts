@@ -20,6 +20,7 @@ export const useAdminUsers = () => {
 
   // جلب المستخدمين
   const { data: users = [], isLoading, error } = useAdminUsersQuery();
+  const allUsers = users; // جميع المستخدمين من قاعدة البيانات
 
   // تعطيل/تفعيل مستخدم
   const disableUserMutation = useDisableUserMutation();
@@ -123,6 +124,7 @@ export const useAdminUsers = () => {
 
   return {
     users: filteredAndSortedUsers,
+    allUsers,
     isLoading,
     error,
     searchQuery,

@@ -15,6 +15,7 @@ const AdminUsers: React.FC = () => {
 
   const {
     users,
+    allUsers,
     isLoading,
     error,
     searchQuery,
@@ -89,7 +90,7 @@ const AdminUsers: React.FC = () => {
       <AdminUsersHeader />
 
       <div className="space-y-6">
-        <UserStatsCards users={users} />
+        <UserStatsCards users={allUsers} />
 
         <UserFilters
           searchQuery={searchQuery}
