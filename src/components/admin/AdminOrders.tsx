@@ -66,6 +66,14 @@ import { compressText, decompressText } from "@/utils/textCompression";
 import { getDisplayPrice } from "@/utils/priceUtils";
 import type { TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
 import AdminHeader from "./AdminHeader";
+import ConfirmEditOrderDialog from "./ConfirmEditOrderDialog";
+
+// تعريف نوع Change المستخدم في مقارنة التعديلات
+interface Change {
+  label: string;
+  oldValue: string;
+  newValue: string;
+}
 
 // واجهة الطلب
 interface Order {
@@ -257,6 +265,9 @@ const AdminOrders: React.FC = () => {
   const [showEditOrder, setShowEditOrder] = useState(false);
   const [editOrderForm, setEditOrderForm] = useState<NewOrderForm | null>(null);
   const [editOrderId, setEditOrderId] = useState<string | null>(null);
+  const [showConfirmEditDialog, setShowConfirmEditDialog] = useState(false);
+  const [editOrderChanges, setEditOrderChanges] = useState<Change[]>([]);
+  const [originalOrderForEdit, setOriginalOrderForEdit] = useState<Order | null>(null);
   const virtualListRef = useRef<HTMLDivElement>(null);
   const { users, isLoading: usersLoading } = useAdminUsers();
   const { products, loading: productsLoading } = useProductsRealtime();
@@ -789,6 +800,53 @@ const AdminOrders: React.FC = () => {
     },
     [users],
   );
+
+  // دالة مقارنة الطلبين واستخراج التغييرات بشكل مفصل للجدول
+  function getOrderEditChangesDetailed(original: Order | null, edited: NewOrderForm | null): {label: string, oldValue: string, newValue: string}[] {
+    if (!original || !edited) return [];
+    const changes: {label: string, oldValue: string, newValue: string}[] = [];
+    if (original.status !== edited.status)
+      changes.push({
+        label: "حالة الطلب",
+        oldValue: getStatusText(original.status),
+        newValue: getStatusText(edited.status),
+      });
+    if (original.payment_method !== edited.payment_method)
+      changes.push({
+        label: "طريقة الدفع",
+        oldValue: getPaymentMethodText(original.payment_method),
+        newValue: getPaymentMethodText(edited.payment_method),
+      });
+    if (decompressText(original.notes || "") !== (edited.notes || ""))
+      changes.push({
+        label: "الملاحظات",
+        oldValue: decompressText(original.notes || ""),
+        newValue: edited.notes || "",
+      });
+    // مقارنة المنتجات
+    const origItems = original.items.map(i => `${i.product_name} (x${i.quantity}) بسعر ${i.price}`).join("، ");
+    const editItems = edited.items.map(i => `${i.product_name} (x${i.quantity}) بسعر ${i.price}`).join("، ");
+    if (origItems !== editItems)
+      changes.push({
+        label: "الأصناف",
+        oldValue: origItems || "-",
+        newValue: editItems || "-",
+      });
+    // مقارنة العنوان
+    const omitFullName = (addr: Record<string, unknown> | Address | undefined | null) => {
+      if (!addr) return {};
+      const { fullName, ...rest } = addr as Address;
+      return rest;
+    };
+    if (JSON.stringify(omitFullName(original.shipping_address)) !== JSON.stringify(omitFullName(edited.shipping_address))) {
+      changes.push({
+        label: "عنوان الشحن",
+        oldValue: Object.values(omitFullName(original.shipping_address)).join("، "),
+        newValue: Object.values(omitFullName(edited.shipping_address)).join("، "),
+      });
+    }
+    return changes;
+  }
 
   if (ordersLoading) {
     return (
@@ -1699,6 +1757,7 @@ const AdminOrders: React.FC = () => {
                                 fullName: customerName,
                               },
                             });
+                            setOriginalOrderForEdit(mapOrderFromDb(latestOrder as unknown as Record<string, unknown>)); // أضف هذا السطر
                             setShowEditOrder(true);
                           }}
                         >
@@ -2107,7 +2166,9 @@ const AdminOrders: React.FC = () => {
               autoComplete="off"
               onSubmit={(e) => {
                 e.preventDefault();
-                handleEditOrder();
+                // استخراج التغييرات
+                setEditOrderChanges(getOrderEditChangesDetailed(originalOrderForEdit, editOrderForm));
+                setShowConfirmEditDialog(true);
               }}
             >
               {/* اسم العميل (غير قابل للتغيير) */}
@@ -2564,6 +2625,16 @@ const AdminOrders: React.FC = () => {
           )}
         </DialogContent>
       </Dialog>
+      {/* Dialog تأكيد تعديل الطلبية */}
+      <ConfirmEditOrderDialog
+        open={showConfirmEditDialog}
+        changes={editOrderChanges}
+        onCancel={() => setShowConfirmEditDialog(false)}
+        onConfirm={() => {
+          setShowConfirmEditDialog(false);
+          handleEditOrder();
+        }}
+      />
     </div>
   );
 };
