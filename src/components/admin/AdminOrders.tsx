@@ -1635,9 +1635,32 @@ const AdminOrders: React.FC = () => {
                             // جلب الطلب الأحدث من orders
                             const latestOrder =
                               orders.find((o) => o.id === order.id) || order;
-                            // معالجة items إذا كانت نصية
+                            // معالجة المنتجات: جلب من order_items إذا توفرت، أو من items
                             let items: OrderItem[] = [];
-                            if (typeof latestOrder.items === "string") {
+                            if (
+                              'order_items' in latestOrder &&
+                              Array.isArray((latestOrder as { order_items?: unknown }).order_items) &&
+                              ((latestOrder as { order_items: unknown[] }).order_items.length > 0)
+                            ) {
+                              type OrderItemDB = {
+                                id: string;
+                                product_id: string;
+                                quantity: number;
+                                price: number;
+                                products?: { name_ar?: string; name_en?: string; name_he?: string };
+                              };
+                              items = (latestOrder as { order_items: OrderItemDB[] }).order_items.map((item) => ({
+                                id: item.id,
+                                product_id: item.product_id,
+                                quantity: item.quantity,
+                                price: item.price,
+                                product_name:
+                                  item.products?.name_ar ||
+                                  item.products?.name_en ||
+                                  item.products?.name_he ||
+                                  item.id,
+                              }));
+                            } else if (typeof latestOrder.items === "string") {
                               try {
                                 items = JSON.parse(latestOrder.items);
                               } catch {
@@ -1647,8 +1670,7 @@ const AdminOrders: React.FC = () => {
                               items = latestOrder.items as OrderItem[];
                             }
                             // معالجة العنوان إذا كان نص
-                            let shipping_address: Address =
-                              latestOrder.shipping_address as Address;
+                            let shipping_address: Address = latestOrder.shipping_address as Address;
                             if (typeof shipping_address === "string") {
                               try {
                                 shipping_address = JSON.parse(shipping_address);
@@ -1656,6 +1678,8 @@ const AdminOrders: React.FC = () => {
                                 shipping_address = {} as Address;
                               }
                             }
+                            // اسم العميل: من customer_name أو من shipping_address.fullName أو من profiles.full_name
+                            const customerName = latestOrder.customer_name || shipping_address.fullName || latestOrder.profiles?.full_name || "";
                             setEditOrderId(latestOrder.id);
                             setEditOrderForm({
                               user_id: latestOrder.user_id,
@@ -1667,7 +1691,7 @@ const AdminOrders: React.FC = () => {
                               items,
                               shipping_address: {
                                 ...shipping_address,
-                                fullName: latestOrder.customer_name || "",
+                                fullName: customerName,
                               },
                             });
                             setShowEditOrder(true);
