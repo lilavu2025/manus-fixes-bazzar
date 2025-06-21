@@ -90,7 +90,7 @@ const AdminUsers: React.FC = () => {
       <AdminUsersHeader />
 
       <div className="space-y-6">
-        <UserStatsCards users={allUsers} />
+        <UserStatsCards users={allUsers} onFilterByType={setUserTypeFilter} />
 
         <UserFilters
           searchQuery={searchQuery}

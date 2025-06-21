@@ -6,9 +6,10 @@ import type { UserProfile } from '@/types/profile';
 
 interface UserStatsCardsProps {
   users: UserProfile[];
+  onFilterByType?: (type: string) => void;
 }
 
-const UserStatsCards: React.FC<UserStatsCardsProps> = ({ users }) => {
+const UserStatsCards: React.FC<UserStatsCardsProps> = ({ users, onFilterByType }) => {
   const { t } = useLanguage();
 
   const statsCards = [
@@ -18,7 +19,8 @@ const UserStatsCards: React.FC<UserStatsCardsProps> = ({ users }) => {
       icon: Users,
       color: 'from-blue-500 to-blue-600',
       bgColor: 'bg-blue-50',
-      iconColor: 'text-blue-600'
+      iconColor: 'text-blue-600',
+      type: 'all',
     },
     {
       title: t('wholesaleUsers'),
@@ -26,7 +28,8 @@ const UserStatsCards: React.FC<UserStatsCardsProps> = ({ users }) => {
       icon: TrendingUp,
       color: 'from-green-500 to-green-600',
       bgColor: 'bg-green-50',
-      iconColor: 'text-green-600'
+      iconColor: 'text-green-600',
+      type: 'wholesale',
     },
     {
       title: t('retailUsers'),
@@ -34,7 +37,8 @@ const UserStatsCards: React.FC<UserStatsCardsProps> = ({ users }) => {
       icon: UserCheck,
       color: 'from-orange-500 to-orange-600',
       bgColor: 'bg-orange-50',
-      iconColor: 'text-orange-600'
+      iconColor: 'text-orange-600',
+      type: 'retail',
     },
     {
       title: t('adminUsers'),
@@ -42,7 +46,8 @@ const UserStatsCards: React.FC<UserStatsCardsProps> = ({ users }) => {
       icon: TrendingUp,
       color: 'from-red-500 to-red-600',
       bgColor: 'bg-red-50',
-      iconColor: 'text-red-600'
+      iconColor: 'text-red-600',
+      type: 'admin',
     }
   ];
 
@@ -51,7 +56,11 @@ const UserStatsCards: React.FC<UserStatsCardsProps> = ({ users }) => {
       {statsCards.map((stat, index) => {
         const Icon = stat.icon;
         return (
-          <Card key={index} className="hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-0 shadow-lg">
+          <Card
+            key={index}
+            className="hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-0 shadow-lg cursor-pointer"
+            onClick={() => onFilterByType && onFilterByType(stat.type)}
+          >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 lg:pb-3">
               <CardTitle className="text-xs lg:text-sm font-medium text-gray-600 line-clamp-2">{stat.title}</CardTitle>
               <div className={`p-1.5 lg:p-2 rounded-lg ${stat.bgColor}`}>
