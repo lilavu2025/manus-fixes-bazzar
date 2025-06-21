@@ -7,10 +7,12 @@ import {
   useDisableUserMutation,
   useLogUserActivityMutation,
 } from "@/integrations/supabase/reactQueryHooks";
+import { useLanguage } from "@/utils/languageContextUtils";
 
 // هوك مخصص لإدارة المستخدمين من قبل الأدمن
 export const useAdminUsers = () => {
   const { profile } = useAuth();
+  const { t } = useLanguage();
   // فلترة وفرز
   const [searchQuery, setSearchQuery] = useState("");
   const [userTypeFilter, setUserTypeFilter] = useState<string>("all");
@@ -108,12 +110,10 @@ export const useAdminUsers = () => {
       error = err;
     }
     if (error) {
-      toast.error(
-        `فشل حذف المستخدم.${error.message ? " (" + error.message + ")" : ""}`,
-      );
+      toast.error(t("userDeleteFailed") || t("unexpectedError"));
       throw error;
     } else {
-      toast.success("تم حذف المستخدم بنجاح");
+      toast.success(t("userDeletedSuccessfully"));
     }
   };
 

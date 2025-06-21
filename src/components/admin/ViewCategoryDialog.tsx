@@ -53,11 +53,6 @@ const ViewCategoryDialog: React.FC<ViewCategoryDialogProps> = ({
             <Info className="h-5 w-5 text-blue-400" />
             {t("viewCategory")}
           </DialogTitle>
-          <DialogClose asChild>
-            <Button variant="ghost" size="icon" aria-label={t("close")}>
-              ×
-            </Button>
-          </DialogClose>
         </DialogHeader>
         <div className="space-y-6 px-6 py-6 bg-white dark:bg-gray-900">
           <div className="flex flex-col md:flex-row md:items-center gap-4 text-center md:text-start">
@@ -109,18 +104,6 @@ const ViewCategoryDialog: React.FC<ViewCategoryDialogProps> = ({
                 </Badge>
                 <TooltipProvider>
                   <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        type="button"
-                        size="icon"
-                        variant="outline"
-                        className="h-7 w-7 p-0"
-                        onClick={handleCopyId}
-                        aria-label={t("copy") + " ID"}
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
                     <TooltipContent>
                       {t("id")}: {category.id}
                     </TooltipContent>

@@ -326,7 +326,7 @@ const AdminOrders: React.FC = () => {
         },
         onError: (err: unknown) => {
           console.error("خطأ في تحديث حالة الطلب:", err);
-          toast.error("فشل في تحديث حالة الطلب");
+          toast.error(t("orderStatusUpdateFailed"));
         },
       },
     );
@@ -399,18 +399,18 @@ const AdminOrders: React.FC = () => {
     try {
       setIsAddingOrder(true);
       if (!orderForm.user_id && !allowCustomClient) {
-        toast.error("يرجى اختيار العميل أو تعبئة بيانات عميل جديد");
+        toast.error(t("selectCustomerRequired"));
         return;
       }
       if (orderForm.items.length === 0) {
-        toast.error("يرجى إضافة منتج واحد على الأقل");
+        toast.error(t("addAtLeastOneProduct"));
         return;
       }
       if (
         !orderForm.shipping_address.fullName ||
         !orderForm.shipping_address.phone
       ) {
-        toast.error("يرجى إدخال معلومات الشحن الأساسية");
+        toast.error(t("enterShippingInfo"));
         return;
       }
       const total = calculateTotal();
@@ -449,7 +449,7 @@ const AdminOrders: React.FC = () => {
           },
           onError: (error: unknown) => {
             console.error("خطأ في إضافة الطلب:", error);
-            toast.error("فشل في إضافة الطلب");
+            toast.error(t("orderAddFailed"));
           },
           onSettled: () => {
             setIsAddingOrder(false);
@@ -458,7 +458,7 @@ const AdminOrders: React.FC = () => {
       );
     } catch (error: unknown) {
       console.error("خطأ في إضافة الطلب:", error);
-      toast.error("فشل في إضافة الطلب");
+      toast.error(t("orderAddFailed"));
       setIsAddingOrder(false);
     }
   };
@@ -500,7 +500,7 @@ const AdminOrders: React.FC = () => {
             refetchOrders();
           },
           onError: (error: unknown) => {
-            toast.error("فشل في تعديل الطلب");
+            toast.error(t("orderEditFailed"));
           },
           onSettled: () => {
             setIsAddingOrder(false);
@@ -508,7 +508,7 @@ const AdminOrders: React.FC = () => {
         },
       );
     } catch (error) {
-      toast.error("فشل في تعديل الطلب");
+      toast.error(t("orderEditFailed"));
       setIsAddingOrder(false);
     }
   };
@@ -718,7 +718,7 @@ const AdminOrders: React.FC = () => {
         refetchOrders();
       },
       onError: () => {
-        toast.error("فشل في حذف الطلب");
+        toast.error(t("orderDeleteFailed"));
       },
     });
   };

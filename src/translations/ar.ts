@@ -666,7 +666,7 @@ export const arTranslations = {
   orderStats: "إحصائيات الطلبات",
   totalOrdersPlaced: "إجمالي الطلبات المقدمة",
   updateUser: "تحديث المستخدم",
-  userUpdatedSuccessfully: "تم تحديث المستخدم بنجاح",
+  userUpdatedSuccessfully: "تم تحديث بيانات المستخدم بنجاح",
   errorUpdatingUser: "خطأ في تحديث المستخدم",
   editUser: "تعديل بيانات المستخدم",
   deleteUserConfirmation:
@@ -731,4 +731,12 @@ export const arTranslations = {
   orderAddedSuccess: "تم إضافة الطلب بنجاح",
   orderEditedSuccess: "تم تعديل الطلب بنجاح",
   orderDeletedSuccess: "تم حذف الطلب بنجاح",
+  userDeleteFailed: "فشل حذف المستخدم",
+  orderStatusUpdateFailed: "فشل في تحديث حالة الطلب",
+  selectCustomerRequired: "يرجى اختيار العميل أو تعبئة بيانات عميل جديد",
+  addAtLeastOneProduct: "يرجى إضافة منتج واحد على الأقل",
+  enterShippingInfo: "يرجى إدخال معلومات الشحن الأساسية",
+  orderAddFailed: "فشل في إضافة الطلب",
+  orderEditFailed: "فشل في تعديل الطلب",
+  orderDeleteFailed: "فشل في حذف الطلب",
 };
