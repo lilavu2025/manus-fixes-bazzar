@@ -258,11 +258,11 @@ const Orders: React.FC = () => {
                           const floor = addr.floor || '';
                           const apartment = addr.apartment || '';
                           return [
-                            fullName && <span key="fn" className="inline-block break-words whitespace-normal sm:truncate sm:max-w-xs">{fullName}</span>,
-                            phone && <span key="ph" className="inline-block break-words whitespace-normal sm:truncate sm:max-w-xs">({phone})</span>,
+                            fullName && <span key="fn" className="inline-block break-words whitespace-normal">{fullName}</span>,
+                            phone && <span key="ph" className="inline-block break-words whitespace-normal">({phone})</span>,
                             [city, area, street, building].filter(Boolean).join(t('addressSeparator') || '، '),
                             (floor || apartment) ? `${t('floor')}: ${floor || '-'}${t('addressSeparator') || '، '}${t('apartment')}: ${apartment || '-'}` : null
-                          ].filter(Boolean).map((part, i) => <span key={i} className="inline-block break-words whitespace-normal sm:truncate sm:max-w-xs">{part}{i < 2 ? ' - ' : ''}</span>);
+                          ].filter(Boolean).map((part, i) => <span key={i} className="inline-block break-words whitespace-normal">{part}{i < 2 ? ' - ' : ''}</span>);
                         })()}
                       </span>
                     </div>
