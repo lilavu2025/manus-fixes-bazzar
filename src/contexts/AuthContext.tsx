@@ -141,11 +141,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setLoading(false);
       }
     });
-    const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
+    // مراقبة تغيّر حالة المصادقة، وعند وجود مستخدم جديد يتم جلب بياناته بعد التأكد من وجود session.user باستخدام setTimeout
+    const { data: listener } = supabase.auth.onAuthStateChange(async (_, session) => {
       setSession(session);
       sessionRef.current = session;
       if (session?.user?.id) {
-        await fetchAndSetProfile(session.user.id);
+        setTimeout(async () => {
+          // جلب البروفايل عبر الدالة المخصصة فقط (وليس مباشرة من قاعدة البيانات)
+          await fetchAndSetProfile(session.user.id);
+        });
       } else {
         setProfile(null);
       }
