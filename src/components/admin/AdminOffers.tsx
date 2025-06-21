@@ -48,6 +48,7 @@ const AdminOffers: React.FC = () => {
   >(null);
   const [hideOffersPage, setHideOffersPage] = useState<boolean>(false);
   const [loadingSetting, setLoadingSetting] = useState(true);
+  const [searchName, setSearchName] = useState(""); // بحث بالاسم
 
   // نموذج العرض مع جميع الحقول المطلوبة
   const initialForm = useMemo(
@@ -252,6 +253,16 @@ const AdminOffers: React.FC = () => {
     setLoadingSetting(false);
   };
 
+  // تصفية العروض حسب البحث بالاسم
+  const filteredOffers = offersData.filter((offer) => {
+    if (!searchName.trim()) return true;
+    return (
+      offer.title_ar?.toLowerCase().includes(searchName.trim().toLowerCase()) ||
+      offer.title_en?.toLowerCase().includes(searchName.trim().toLowerCase()) ||
+      offer.title_he?.toLowerCase().includes(searchName.trim().toLowerCase())
+    );
+  });
+
   return (
     <div className={`space-y-6 ${isRTL ? "rtl" : "ltr"}`}>
       {/* إعداد إخفاء صفحة العروض */}
@@ -292,6 +303,24 @@ const AdminOffers: React.FC = () => {
         </Button>
       </div>
 
+      {/* شريط الفلاتر */}
+      <div className="flex flex-wrap gap-3 items-center bg-white rounded-xl p-4 shadow-md border mt-4 relative">
+        {/* فلتر البحث بالاسم */}
+        <div className="flex flex-col min-w-[180px]">
+          <label className="text-xs text-gray-500 font-medium mb-1 flex items-center gap-1">
+            🔍 {t("searchByName") || "بحث بالاسم"}
+          </label>
+          <input
+            type="text"
+            className="border rounded-lg px-3 py-2 bg-gray-50 focus:ring-2 focus:ring-blue-300"
+            placeholder={t("searchByNameOfferPlaceholder") || "اكتب اسم العرض..."}
+            value={searchName}
+            onChange={(e) => setSearchName(e.target.value)}
+          />
+        </div>
+        {/* ...باقي الفلاتر إن وجدت... */}
+      </div>
+
       {/* حالة التحميل */}
       {loading && (
         <div className="space-y-6">
@@ -305,7 +334,7 @@ const AdminOffers: React.FC = () => {
       {/* عرض العروض */}
       {!loading && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {offersData.map(
+          {filteredOffers.map(
             (offer: Database["public"]["Tables"]["offers"]["Row"]) => {
               const currentTitle = offer.title_ar || offer.title_en;
               const currentDescription =
@@ -443,6 +472,24 @@ const AdminOffers: React.FC = () => {
           </Button>
         </div>
       )}
+
+      {/* شريط الفلاتر */}
+      <div className="flex flex-wrap gap-3 items-center bg-white rounded-xl p-4 shadow-md border mt-4 relative">
+        {/* فلتر البحث بالاسم */}
+        <div className="flex flex-col min-w-[180px]">
+          <label className="text-xs text-gray-500 font-medium mb-1 flex items-center gap-1">
+            🔍 {t("searchByName") || "بحث بالاسم"}
+          </label>
+          <input
+            type="text"
+            className="border rounded-lg px-3 py-2 bg-gray-50 focus:ring-2 focus:ring-blue-300"
+            placeholder={t("searchByNamePlaceholder") || "اكتب اسم العرض..."}
+            value={searchName}
+            onChange={(e) => setSearchName(e.target.value)}
+          />
+        </div>
+        {/* ...باقي الفلاتر إن وجدت... */}
+      </div>
 
       {/* نافذة إضافة عرض جديد */}
       <Dialog open={showAdd} onOpenChange={setShowAdd}>

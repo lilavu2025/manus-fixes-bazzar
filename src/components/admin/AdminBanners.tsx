@@ -74,6 +74,7 @@ const AdminBanners: React.FC = () => {
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [searchName, setSearchName] = useState(""); // بحث بالاسم
 
   // استخدام hooks الجديدة
   const {
@@ -220,6 +221,16 @@ const AdminBanners: React.FC = () => {
     }
   };
 
+  // تصفية البنرات حسب البحث بالاسم
+  const filteredBanners = banners.filter((banner) => {
+    if (!searchName.trim()) return true;
+    return (
+      banner.title_ar?.toLowerCase().includes(searchName.trim().toLowerCase()) ||
+      banner.title_en?.toLowerCase().includes(searchName.trim().toLowerCase()) ||
+      banner.title_he?.toLowerCase().includes(searchName.trim().toLowerCase())
+    );
+  });
+
   // عرض مؤشر التحميل إذا كانت البيانات قيد التحميل
   if (loadingBanners) {
     return (
@@ -280,6 +291,24 @@ const AdminBanners: React.FC = () => {
           <Plus className="h-4 w-4" />
           {t("addBanner")}
         </button>
+      </div>
+
+      {/* شريط الفلاتر */}
+      <div className="flex flex-wrap gap-3 items-center bg-white rounded-xl p-4 shadow-md border mt-4 relative">
+        {/* فلتر البحث بالاسم */}
+        <div className="flex flex-col min-w-[180px]">
+          <label className="text-xs text-gray-500 font-medium mb-1 flex items-center gap-1">
+            🔍 {t("searchByName") || "بحث بالاسم"}
+          </label>
+          <input
+            type="text"
+            className="border rounded-lg px-3 py-2 bg-gray-50 focus:ring-2 focus:ring-blue-300"
+            placeholder={t("searchByNameBannerPlaceholder") || "اكتب اسم العرض..."}
+            value={searchName}
+            onChange={(e) => setSearchName(e.target.value)}
+          />
+        </div>
+        {/* ...باقي الفلاتر إن وجدت... */}
       </div>
 
       {/* نموذج إضافة/تعديل بانر */}
@@ -533,7 +562,7 @@ const AdminBanners: React.FC = () => {
 
       {/* جدول عرض البانرات */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        {bannersData.length === 0 ? (
+        {filteredBanners.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-500">{t("noBannersFound")}</p>
           </div>
@@ -560,7 +589,7 @@ const AdminBanners: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {bannersData.map((banner) => (
+                {filteredBanners.map((banner) => (
                   <tr key={banner.id}>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <img
