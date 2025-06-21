@@ -39,10 +39,10 @@ const OptimizedSearch: React.FC<OptimizedSearchProps> = ({
 
   return (
     <div
-      className={`relative flex items-center w-full overflow-hidden rounded-xl bg-white shadow-sm ${className} !block`}
+      className={`relative flex items-center w-full overflow-hidden rounded-xl bg-white shadow-sm border-2 border-gray-200 ${className} !block`}
       style={{ minHeight: "40px", minWidth: 0 }}
     >
-      <Search className="absolute right-2 sm:right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 pointer-events-none z-10" />
+      <Search className="absolute right-2 sm:right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5 pointer-events-none z-10" />
       <ClearableInput
         type="text"
         placeholder={placeholder || t("searchProducts")}
@@ -52,7 +52,7 @@ const OptimizedSearch: React.FC<OptimizedSearchProps> = ({
           setSearchQuery("");
           debouncedSearch("");
         }}
-        className="pr-8 sm:pr-10 pl-2 sm:pl-4 py-2 w-full bg-transparent border-none focus:ring-0 text-xs sm:text-sm md:text-base placeholder:truncate placeholder:whitespace-normal placeholder:max-w-full"
+        className="pr-8 sm:pr-10 pl-4 py-2 w-full bg-transparent border-none focus:ring-0 text-sm lg:text-base placeholder:truncate placeholder:whitespace-normal placeholder:max-w-full h-10 lg:h-11"
         dir="rtl"
         style={{ borderRadius: 0, boxShadow: "none", minWidth: 0 }}
       />

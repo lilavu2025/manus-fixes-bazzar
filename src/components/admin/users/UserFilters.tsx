@@ -39,82 +39,87 @@ const UserFilters: React.FC<UserFiltersProps> = ({
   const { isRTL, t } = useLanguage();
 
   return (
-    <Card className="shadow-lg border-0">
-      <CardContent className="p-4 lg:p-6">
-        {/* شريط الفلاتر */}
-        <div className="flex flex-col gap-4">
-          {/* Search */}
-          <div className="flex-1">
-            <div className="relative">
-              <Search
-                className={`absolute top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5 ${isRTL ? "right-3" : "left-3"}`}
-              />
-              <Input
-                placeholder={t("searchUsersPlaceholder")}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className={`${isRTL ? "pr-10 pl-4" : "pl-10 pr-4"} h-10 lg:h-11 border-2 border-gray-200 focus:border-blue-500 transition-colors text-sm lg:text-base`}
-              />
+    <Card className="shadow-lg border-0 mt-2">
+      <CardContent className="p-3 sm:p-4 lg:p-6">
+        <div className="flex flex-col gap-3 lg:gap-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+            {/* بحث المستخدمين */}
+            <div className="w-full sm:w-64 flex-shrink-0">
+                <div className="relative">
+                  <input
+                    type="text"
+                    className="border-2 border-gray-200 rounded-lg pl-10 pr-3 py-2 h-10 text-xs sm:text-sm w-full bg-gray-50 focus:border-blue-500 focus:ring-1 focus:ring-blue-300 transition-colors placeholder:text-gray-400"
+                    placeholder={t("searchUsersPlaceholder")}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    maxLength={60}
+                  />
+                  <span className="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400 text-base">
+                    🔍
+                  </span>
+                </div>
+              </div>
+            {/* نوع المستخدم */}
+            <div className="w-full sm:w-40 flex-shrink-0">
+              <Select value={userTypeFilter} onValueChange={setUserTypeFilter}>
+                <SelectTrigger className="w-full border-2 border-gray-200 rounded-lg h-10 text-xs sm:text-sm bg-blue-50 focus:border-blue-500">
+                  <SelectValue placeholder={t("userType")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t("allTypes")}</SelectItem>
+                  <SelectItem value="admin">{t("admin")}</SelectItem>
+                  <SelectItem value="wholesale">{t("wholesale")}</SelectItem>
+                  <SelectItem value="retail">{t("retail")}</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-          </div>
-
-          <div className="flex flex-col lg:flex-row gap-4">
-            {/* User Type Filter */}
-            <Select value={userTypeFilter} onValueChange={setUserTypeFilter}>
-              <SelectTrigger className="w-full lg:w-48 h-10 lg:h-11 border-2 border-gray-200 text-sm lg:text-base">
-                <SelectValue placeholder={t("userType")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t("allTypes")}</SelectItem>
-                <SelectItem value="admin">{t("admin")}</SelectItem>
-                <SelectItem value="wholesale">{t("wholesale")}</SelectItem>
-                <SelectItem value="retail">{t("retail")}</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {/* Status Filter */}
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full lg:w-48 h-10 lg:h-11 border-2 border-gray-200 text-sm lg:text-base">
-                <SelectValue placeholder={t("confirmationStatus")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t("allStatuses")}</SelectItem>
-                <SelectItem value="confirmed">{t("confirmed")}</SelectItem>
-                <SelectItem value="unconfirmed">{t("unconfirmed")}</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {/* Sort By */}
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-full lg:w-48 h-10 lg:h-11 border-2 border-gray-200 text-sm lg:text-base">
-                <ArrowUpDown className="h-4 w-4 mr-2" />
-                <SelectValue placeholder={t("sortBy")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="created_at">
-                  {t("registrationDate")}
-                </SelectItem>
-                <SelectItem value="last_order_date">
-                  {t("lastOrder")}
-                </SelectItem>
-                <SelectItem value="highest_order_value">
-                  {t("highestOrder")}
-                </SelectItem>
-                <SelectItem value="full_name">{t("name")}</SelectItem>
-                <SelectItem value="email">{t("email")}</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {/* Sort Order */}
-            <Select value={sortOrder} onValueChange={setSortOrder}>
-              <SelectTrigger className="w-full lg:w-32 h-10 lg:h-11 border-2 border-gray-200 text-sm lg:text-base">
-                <SelectValue placeholder={t("sortOrder")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="desc">{t("descending")}</SelectItem>
-                <SelectItem value="asc">{t("ascending")}</SelectItem>
-              </SelectContent>
-            </Select>
+            {/* حالة التفعيل */}
+            <div className="w-full sm:w-40 flex-shrink-0">
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full border-2 border-gray-200 rounded-lg h-10 text-xs sm:text-sm bg-yellow-50 focus:border-yellow-500">
+                  <SelectValue placeholder={t("confirmationStatus")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t("allStatuses")}</SelectItem>
+                  <SelectItem value="confirmed">{t("confirmed")}</SelectItem>
+                  <SelectItem value="unconfirmed">{t("unconfirmed")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {/* فرز حسب */}
+            <div className="w-full sm:w-40 flex-shrink-0">
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-full border-2 border-gray-200 rounded-lg h-10 text-xs sm:text-sm bg-blue-50 focus:border-blue-500">
+                  <ArrowUpDown className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder={t("sortBy")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="created_at">
+                    {t("registrationDate")}
+                  </SelectItem>
+                  <SelectItem value="last_order_date">
+                    {t("lastOrder")}
+                  </SelectItem>
+                  <SelectItem value="highest_order_value">
+                    {t("highestOrder")}
+                  </SelectItem>
+                  <SelectItem value="full_name">{t("name")}</SelectItem>
+                  <SelectItem value="email">{t("email")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {/* ترتيب الفرز */}
+            <div className="w-full sm:w-32 flex-shrink-0">
+              <Select value={sortOrder} onValueChange={setSortOrder}>
+                <SelectTrigger className="w-full border-2 border-gray-200 rounded-lg h-10 text-xs sm:text-sm bg-gray-50 focus:border-blue-500">
+                  <SelectValue placeholder={t("sortOrder")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="desc">{t("descending")}</SelectItem>
+                  <SelectItem value="asc">{t("ascending")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
       </CardContent>
