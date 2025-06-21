@@ -559,7 +559,8 @@ export const enTranslations = {
   imagesUploaded: " Images uploaded",
   sortByName: "Sort by Name",
   sortByProductCount: "Sort by Product Count",
-  searchCategories: "Search Categories",
+  searchCategories: "Search categories...",
+  noCategoriesAvailable: "No categories available",
   updateCategory: "Update Category",
   fillCategoryDetails: "Please fill category details",
   preview: "Preview",
@@ -700,6 +701,11 @@ export const enTranslations = {
   invalidLoginCredentials: "Invalid login credentials",
   addressSeparator: " - ",
 
-  pageNotFound: "Oops! Page not found",
+  pageNotFound: "Sorry, the page was not found.",
   returnToHome: "Return to Home",
+
+  // Account Deleted Page
+  accountDeletedTitle: "Your account has been deleted",
+  accountDeletedDescription: "Your account and all your data have been deleted from the system. If you have any questions or wish to restore your account, please contact support.",
+  backToLoginButton: "Back to Login",
 };

@@ -294,6 +294,10 @@ export const arTranslations = {
   // Categories
   browseProductCategories: "تصفح فئات المنتجات",
   noCategoriesFound: "لم يتم العثور على فئات",
+  errorLoadingData: "خطأ في تحميل البيانات",
+  searchCategories: "ابحث في الفئات...",
+  noCategoriesAvailable: "لا توجد فئات متاحة",
+  showing: "يتم عرض",
 
   // Product Actions
   linkCopied: "تم نسخ الرابط",
@@ -564,7 +568,6 @@ export const arTranslations = {
 
   sortByName: "ترتيب حسب الاسم",
   sortByProductCount: "ترتيب حسب عدد المنتجات",
-  searchCategories: "بحث الفئات",
   updateCategory: "تحديث الفئة",
   fillCategoryDetails: "يرجى تعبئة تفاصيل الفئة",
   preview: "معاينة",
@@ -670,7 +673,6 @@ export const arTranslations = {
   back: "رجوع",
   validUntil: "صالح حتى",
   viewOffer: "عرض العرض",
-  showing: "يظهر",
   createdBy: "أنشأها",
   createdByAdmin: "أنشئت من الأدمن",
   cancelledByAdmin: "أُلغي بواسطة الأدمن",
@@ -709,6 +711,17 @@ export const arTranslations = {
   currentPasswordIncorrect: "كلمة المرور الحالية غير صحيحة.",
   invalidLoginCredentials: "بيانات الدخول غير صحيحة",
   addressSeparator: " - ",
-  pageNotFound: "عذرًا، لم نعثر على الصفحة",
+  pageNotFound: "عذرًا، الصفحة غير موجودة.",
   returnToHome: "العودة للرئيسية",
+
+  // Account Deleted
+  accountDeletedTitle: "تم حذف حسابك",
+  accountDeletedDescription: "تم حذف حسابك وجميع بياناتك من النظام. إذا كان لديك أي استفسار أو ترغب في استعادة حسابك، يرجى التواصل مع الدعم.",
+  backToLoginButton: "العودة لتسجيل الدخول",
+
+  // Orders
+  orderStatusUpdatedSuccess: "تم تحديث حالة الطلب بنجاح",
+  orderAddedSuccess: "تم إضافة الطلب بنجاح",
+  orderEditedSuccess: "تم تعديل الطلب بنجاح",
+  orderDeletedSuccess: "تم حذف الطلب بنجاح",
 };

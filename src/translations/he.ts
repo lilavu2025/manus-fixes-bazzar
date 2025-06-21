@@ -639,7 +639,7 @@ export const heTranslations = {
   order: "הזמנה",
   validUntil: "בתוקף עד",
   viewOffer: "הצג הצעה",
-  showing: "מראה",
+  showing: "מציג",
   createdBy: "נוצר על ידי",
   createdByAdmin: "נוצר על ידי מנהל",
   cancelledByAdmin: "בוטל על ידי מנהל",
@@ -685,6 +685,16 @@ export const heTranslations = {
   invalidLoginCredentials: "פרטי ההתחברות אינם נכונים.",
   addressSeparator: " - ",
 
-  pageNotFound: "הדף לא נמצא",
-  returnToHome: "חזרה לדף הבית",
+  pageNotFound: "מצטערים, הדף לא נמצא.",
+  returnToHome: "חזור לדף הבית",
+
+  // Account Deleted Page
+  accountDeletedTitle: "החשבון שלך נמחק",
+  accountDeletedDescription: "החשבון שלך וכל הנתונים שלך נמחקו מהמערכת. אם יש לך שאלות או ברצונך לשחזר את החשבון, אנא פנה לתמיכה.",
+  backToLoginButton: "חזור להתחברות",
+
+  orderStatusUpdatedSuccess: "הסטטוס של ההזמנה עודכן בהצלחה",
+  orderAddedSuccess: "ההזמנה נוספה בהצלחה",
+  orderEditedSuccess: "ההזמנה נערכה בהצלחה",
+  orderDeletedSuccess: "ההזמנה נמחקה בהצלחה",
 };

@@ -308,7 +308,7 @@ const AdminOrders: React.FC = () => {
       },
       {
         onSuccess: () => {
-          toast.success("تم تحديث حالة الطلب بنجاح");
+          toast.success(t("orderStatusUpdatedSuccess"));
           // استبدل setOrders((prevOrders) => ...) باستدعاء setOrders مع القيمة الجديدة مباشرة أو بتعليق الكود مؤقتًا
           // setOrders((prevOrders) => prevOrders.map(order => {
           //   if (order.id === orderId) {
@@ -441,7 +441,7 @@ const AdminOrders: React.FC = () => {
         },
         {
           onSuccess: () => {
-            toast.success("تم إضافة الطلب بنجاح");
+            toast.success(t("orderAddedSuccess"));
             setShowAddOrder(false);
             setOrderForm(initialOrderForm);
             refetchOrders();
@@ -492,7 +492,7 @@ const AdminOrders: React.FC = () => {
         { editOrderId, updateObj, orderItems },
         {
           onSuccess: () => {
-            toast.success("تم تعديل الطلب بنجاح");
+            toast.success(t("orderEditedSuccess"));
             setShowEditOrder(false);
             setEditOrderForm(null);
             setEditOrderId(null);
@@ -711,7 +711,7 @@ const AdminOrders: React.FC = () => {
     if (!orderToDelete) return;
     deleteOrderMutation.mutate(orderToDelete.id, {
       onSuccess: () => {
-        toast.success("تم حذف الطلب بنجاح");
+        toast.success(t("orderDeletedSuccess"));
         setShowDeleteDialog(false);
         setOrderToDelete(null);
         refetchOrders();

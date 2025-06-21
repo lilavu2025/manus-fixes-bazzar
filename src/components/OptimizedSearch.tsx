@@ -3,6 +3,7 @@ import { useState, useCallback, useMemo } from "react";
 import { Search } from "lucide-react";
 import { ClearableInput } from "@/components/ui/ClearableInput";
 import { debounce } from "@/utils/performanceOptimizations";
+import { useLanguage } from "@/utils/languageContextUtils";
 
 interface OptimizedSearchProps {
   onSearch: (query: string) => void;
@@ -13,10 +14,11 @@ interface OptimizedSearchProps {
 
 const OptimizedSearch: React.FC<OptimizedSearchProps> = ({
   onSearch,
-  placeholder = "البحث...",
+  placeholder,
   debounceMs = 300,
   className = "",
 }) => {
+  const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState("");
 
   // Memoized debounced search function
@@ -43,7 +45,7 @@ const OptimizedSearch: React.FC<OptimizedSearchProps> = ({
       <Search className="absolute right-2 sm:right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 pointer-events-none z-10" />
       <ClearableInput
         type="text"
-        placeholder={placeholder}
+        placeholder={placeholder || t("searchProducts")}
         value={searchQuery}
         onChange={handleInputChange}
         onClear={() => {
@@ -66,7 +68,7 @@ const OptimizedSearch: React.FC<OptimizedSearchProps> = ({
             zIndex: 11,
           }}
         >
-          اشتري الآن
+          {t("buyNow")}
         </button>
       )}
     </div>
