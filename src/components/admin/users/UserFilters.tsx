@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, ArrowUpDown } from "lucide-react";
+import { Search, ArrowUpDown, XCircle } from "lucide-react";
 import { useLanguage } from "@/utils/languageContextUtils";
 
 interface UserFiltersProps {
@@ -45,20 +45,20 @@ const UserFilters: React.FC<UserFiltersProps> = ({
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
             {/* بحث المستخدمين */}
             <div className="w-full sm:w-64 flex-shrink-0">
-                <div className="relative">
-                  <input
-                    type="text"
-                    className="border-2 border-gray-200 rounded-lg pl-10 pr-3 py-2 h-10 text-xs sm:text-sm w-full bg-gray-50 focus:border-blue-500 focus:ring-1 focus:ring-blue-300 transition-colors placeholder:text-gray-400"
-                    placeholder={t("searchUsersPlaceholder")}
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    maxLength={60}
-                  />
-                  <span className="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400 text-base">
-                    🔍
-                  </span>
-                </div>
+              <div className="relative">
+                <input
+                  type="text"
+                  className="border-2 border-gray-200 rounded-lg pl-10 pr-3 py-2 h-10 text-xs sm:text-sm w-full bg-gray-50 focus:border-blue-500 focus:ring-1 focus:ring-blue-300 transition-colors placeholder:text-gray-400"
+                  placeholder={t("searchUsersPlaceholder")}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  maxLength={60}
+                />
+                <span className="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400 text-base">
+                  🔍
+                </span>
               </div>
+            </div>
             {/* نوع المستخدم */}
             <div className="w-full sm:w-40 flex-shrink-0">
               <Select value={userTypeFilter} onValueChange={setUserTypeFilter}>
@@ -119,6 +119,23 @@ const UserFilters: React.FC<UserFiltersProps> = ({
                   <SelectItem value="asc">{t("ascending")}</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            {/* زر تصفير الفلاتر */}
+            <div className="w-full sm:w-auto flex flex-row gap-2 mt-2 sm:mt-0">
+              <button
+                type="button"
+                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-red-50 text-red-700 font-bold shadow border border-red-200 hover:bg-red-100 transition-all duration-200 h-10 text-xs sm:text-sm"
+                onClick={() => {
+                  setSearchQuery("");
+                  setUserTypeFilter("all");
+                  setStatusFilter("all");
+                  setSortBy("created_at");
+                  setSortOrder("desc");
+                }}
+              >
+                <XCircle className="h-4 w-4" />
+                <span>{t("resetFilters") || "مسح الفلاتر"}</span>
+              </button>
             </div>
           </div>
         </div>
