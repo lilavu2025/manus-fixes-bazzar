@@ -121,14 +121,14 @@
 //                 <div>
 //                   <h1 className="text-3xl font-bold">{t('favorites')}</h1>
 //                   <p className="text-gray-600 mt-1">
-//                     {mappedFavoriteProducts.length > 0 
+//                     {mappedFavoriteProducts.length > 0
 //                       ? `${mappedFavoriteProducts.length} ${t('products')}`
 //                       : t('noFavoritesYet')
 //                     }
 //                   </p>
 //                 </div>
 //               </div>
-              
+
 //               {/* أزرار الإجراءات */}
 //               {mappedFavoriteProducts.length > 0 && (
 //                 <div className={`flex gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
@@ -144,7 +144,7 @@
 //                 </div>
 //               )}
 //             </div>
-            
+
 //             {/* إحصائيات سريعة */}
 //             {mappedFavoriteProducts.length > 0 && (
 //               <Card className="mb-6">
@@ -179,7 +179,7 @@
 //                 <Heart className="h-20 w-20 text-gray-300 mx-auto mb-6" />
 //                 <h3 className="text-xl font-medium text-gray-900 mb-3">{t('noFavorites')}</h3>
 //                 <p className="text-gray-500 mb-6 max-w-md mx-auto">{t('addFavoritesHint')}</p>
-//                 <Button 
+//                 <Button
 //                   onClick={() => window.location.href = '/products'}
 //                   className={`flex items-center gap-2 mx-auto ${isRTL ? 'flex-row-reverse' : ''}`}
 //                 >
@@ -197,7 +197,7 @@
 //           )}
 //         </div>
 //       )}
-      
+
 //       {/* سايدبار السلة */}
 //       <CartSidebar isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
 //     </div>

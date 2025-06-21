@@ -1,13 +1,16 @@
 import * as React from "react";
-import { useRef, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Upload, X, Image } from 'lucide-react';
-import { useUploadImageToStorage, useGetPublicImageUrl } from '@/integrations/supabase/reactQueryHooks';
-import { toast } from 'sonner';
-import { Progress } from '@/components/ui/progress';
-import { useLanguage } from '@/utils/languageContextUtils';
+import { useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Upload, X, Image } from "lucide-react";
+import {
+  useUploadImageToStorage,
+  useGetPublicImageUrl,
+} from "@/integrations/supabase/reactQueryHooks";
+import { toast } from "sonner";
+import { Progress } from "@/components/ui/progress";
+import { useLanguage } from "@/utils/languageContextUtils";
 
 interface ImageUploadProps {
   value: string | string[];
@@ -19,14 +22,14 @@ interface ImageUploadProps {
   bucket?: string;
 }
 
-const ImageUpload = ({ 
-  value, 
-  onChange, 
-  label = "Image", 
-  placeholder = "Upload image", 
+const ImageUpload = ({
+  value,
+  onChange,
+  label = "Image",
+  placeholder = "Upload image",
   multiple = false,
   maxImages = 5,
-  bucket = "product-images"
+  bucket = "product-images",
 }: ImageUploadProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -42,19 +45,19 @@ const ImageUpload = ({
     return new Promise((resolve, reject) => {
       const img = new window.Image();
       img.onload = () => {
-        const canvas = document.createElement('canvas');
+        const canvas = document.createElement("canvas");
         canvas.width = img.width;
         canvas.height = img.height;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return reject('No canvas context');
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return reject("No canvas context");
         ctx.drawImage(img, 0, 0);
         canvas.toBlob(
           (blob) => {
             if (blob) resolve(blob);
-            else reject('WebP conversion failed');
+            else reject("WebP conversion failed");
           },
-          'image/webp',
-          0.92
+          "image/webp",
+          0.92,
         );
       };
       img.onerror = reject;
@@ -63,7 +66,11 @@ const ImageUpload = ({
   }
 
   // Resize and compress image before upload
-  async function resizeAndCompressImage(file: File, maxSize = 1024, quality = 0.85): Promise<Blob> {
+  async function resizeAndCompressImage(
+    file: File,
+    maxSize = 1024,
+    quality = 0.85,
+  ): Promise<Blob> {
     return new Promise((resolve, reject) => {
       const img = new window.Image();
       img.onload = () => {
@@ -77,19 +84,19 @@ const ImageUpload = ({
             height = maxSize;
           }
         }
-        const canvas = document.createElement('canvas');
+        const canvas = document.createElement("canvas");
         canvas.width = width;
         canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return reject('No canvas context');
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return reject("No canvas context");
         ctx.drawImage(img, 0, 0, width, height);
         canvas.toBlob(
           (blob) => {
             if (blob) resolve(blob);
-            else reject('Resize/Compress failed');
+            else reject("Resize/Compress failed");
           },
-          'image/webp',
-          quality
+          "image/webp",
+          quality,
         );
       };
       img.onerror = reject;
@@ -99,20 +106,28 @@ const ImageUpload = ({
 
   const uploadImage = async (file: File): Promise<string> => {
     let uploadFile = file;
-    let fileExt = file.name.split('.').pop();
+    let fileExt = file.name.split(".").pop();
     const fileName = `${Math.random()}`;
     let filePath = fileName;
-    if (file.type === 'image/png' || file.type === 'image/jpeg' || file.type === 'image/jpg') {
+    if (
+      file.type === "image/png" ||
+      file.type === "image/jpeg" ||
+      file.type === "image/jpg"
+    ) {
       try {
         const webpBlob = await resizeAndCompressImage(file, 1024, 0.85);
-        uploadFile = new File([webpBlob], fileName + '.webp', { type: 'image/webp' });
-        fileExt = 'webp';
+        uploadFile = new File([webpBlob], fileName + ".webp", {
+          type: "image/webp",
+        });
+        fileExt = "webp";
         filePath = `${fileName}.webp`;
       } catch (e) {
         try {
           const webpBlob = await convertToWebP(file);
-          uploadFile = new File([webpBlob], fileName + '.webp', { type: 'image/webp' });
-          fileExt = 'webp';
+          uploadFile = new File([webpBlob], fileName + ".webp", {
+            type: "image/webp",
+          });
+          fileExt = "webp";
           filePath = `${fileName}.webp`;
         } catch {
           filePath = `${fileName}.${fileExt}`;
@@ -121,12 +136,18 @@ const ImageUpload = ({
     } else {
       filePath = `${fileName}.${fileExt}`;
     }
-    await uploadImageToStorage.mutateAsync({ bucket, filePath, file: uploadFile });
+    await uploadImageToStorage.mutateAsync({
+      bucket,
+      filePath,
+      file: uploadFile,
+    });
     const url = await getPublicImageUrl.mutateAsync({ bucket, filePath });
     return url;
   };
 
-  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
 
@@ -137,7 +158,10 @@ const ImageUpload = ({
     try {
       if (multiple) {
         const currentUrls = Array.isArray(value) ? value : [];
-        const filesToUpload = Array.from(files).slice(0, maxImages - currentUrls.length);
+        const filesToUpload = Array.from(files).slice(
+          0,
+          maxImages - currentUrls.length,
+        );
         let uploadedCount = 0;
         const uploadPromises = filesToUpload.map(async (file, idx) => {
           const url = await uploadImage(file);
@@ -147,22 +171,22 @@ const ImageUpload = ({
         });
         const newUrls = await Promise.all(uploadPromises);
         onChange([...currentUrls, ...newUrls]);
-        toast.success(t('imagesUploadedSuccess'));
+        toast.success(t("imagesUploadedSuccess"));
       } else {
         setProgress(30);
         const url = await uploadImage(files[0]);
         setProgress(100);
         onChange(url);
-        toast.success(t('imageUploadedSuccess'));
+        toast.success(t("imageUploadedSuccess"));
       }
     } catch (error) {
-      console.error('Error uploading image:', error);
-      toast.error(t('imageUploadFailed'));
+      console.error("Error uploading image:", error);
+      toast.error(t("imageUploadFailed"));
     } finally {
       setUploading(false);
       setTimeout(() => setProgress(0), 1000);
       if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+        fileInputRef.current.value = "";
       }
       setSelectedFiles([]);
     }
@@ -170,12 +194,13 @@ const ImageUpload = ({
 
   const removeImage = (indexOrUrl: number | string) => {
     if (multiple && Array.isArray(value)) {
-      const newUrls = typeof indexOrUrl === 'number' 
-        ? value.filter((_, i) => i !== indexOrUrl)
-        : value.filter(url => url !== indexOrUrl);
+      const newUrls =
+        typeof indexOrUrl === "number"
+          ? value.filter((_, i) => i !== indexOrUrl)
+          : value.filter((url) => url !== indexOrUrl);
       onChange(newUrls);
     } else {
-      onChange('');
+      onChange("");
     }
   };
 
@@ -184,15 +209,27 @@ const ImageUpload = ({
       return (
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           {value.map((url, index) => (
-            <div key={index} className="relative group shadow-md rounded-xl border bg-white dark:bg-gray-800 hover:shadow-lg transition-all">
+            <div
+              key={index}
+              className="relative group shadow-md rounded-xl border bg-white dark:bg-gray-800 hover:shadow-lg transition-all"
+            >
               <img
                 src={url}
                 alt={`Preview ${index + 1}`}
                 className="w-full h-28 object-cover rounded-t-xl border-b"
               />
               <div className="px-2 py-1 text-xs text-gray-600 dark:text-gray-300 flex flex-col gap-1 bg-gray-50 dark:bg-gray-900 rounded-b-xl">
-                <span>{t('image')} #{index + 1}</span>
-                <a href={url} target="_blank" rel="noopener noreferrer" className="text-blue-500 underline break-all">{url.split('/').pop()}</a>
+                <span>
+                  {t("image")} #{index + 1}
+                </span>
+                <a
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-500 underline break-all"
+                >
+                  {url.split("/").pop()}
+                </a>
               </div>
               <Button
                 type="button"
@@ -200,7 +237,7 @@ const ImageUpload = ({
                 size="icon"
                 className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
                 onClick={() => removeImage(index)}
-                aria-label={t('removeImage')}
+                aria-label={t("removeImage")}
               >
                 <X className="h-3 w-3" />
               </Button>
@@ -208,7 +245,7 @@ const ImageUpload = ({
           ))}
         </div>
       );
-    } else if (typeof value === 'string' && value) {
+    } else if (typeof value === "string" && value) {
       return (
         <div className="relative group inline-block shadow-md rounded-xl border bg-white dark:bg-gray-800 hover:shadow-lg transition-all">
           <img
@@ -217,7 +254,14 @@ const ImageUpload = ({
             className="w-40 h-28 object-cover rounded-t-xl border-b"
           />
           <div className="px-2 py-1 text-xs text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-900 rounded-b-xl">
-            <a href={value} target="_blank" rel="noopener noreferrer" className="text-blue-500 underline break-all">{value.split('/').pop()}</a>
+            <a
+              href={value}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-500 underline break-all"
+            >
+              {value.split("/").pop()}
+            </a>
           </div>
           <Button
             type="button"
@@ -225,7 +269,7 @@ const ImageUpload = ({
             size="icon"
             className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
             onClick={() => removeImage(value)}
-            aria-label={t('removeImage')}
+            aria-label={t("removeImage")}
           >
             <X className="h-3 w-3" />
           </Button>
@@ -243,15 +287,19 @@ const ImageUpload = ({
     if (files && files.length > 0) {
       // Cast DataTransferList to FileList for handleFileSelect
       const fileList = files as unknown as FileList;
-      handleFileSelect({ target: { files: fileList } } as React.ChangeEvent<HTMLInputElement>);
+      handleFileSelect({
+        target: { files: fileList },
+      } as React.ChangeEvent<HTMLInputElement>);
     }
   };
   const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault();
   };
 
-  const canAddMore = multiple 
-    ? Array.isArray(value) ? value.length < maxImages : true
+  const canAddMore = multiple
+    ? Array.isArray(value)
+      ? value.length < maxImages
+      : true
     : !value;
 
   return (
@@ -264,11 +312,11 @@ const ImageUpload = ({
         onClick={() => fileInputRef.current?.click()}
         tabIndex={0}
         role="button"
-        aria-label={t('dragAndDropArea')}
+        aria-label={t("dragAndDropArea")}
       >
         {renderImagePreview()}
         <div className="text-center text-xs text-gray-500 mt-2">
-          {t('dragAndDropHint')}
+          {t("dragAndDropHint")}
         </div>
       </div>
       {canAddMore && (
@@ -287,10 +335,10 @@ const ImageUpload = ({
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
             className="flex-1"
-            aria-label={t('uploadImage')}
+            aria-label={t("uploadImage")}
           >
             <Upload className="h-4 w-4 mr-2" />
-            {uploading ? t('uploading') : placeholder}
+            {uploading ? t("uploading") : placeholder}
           </Button>
           {uploading && (
             <div className="w-32">
@@ -299,18 +347,23 @@ const ImageUpload = ({
           )}
         </div>
       )}
-      
+
       {multiple && Array.isArray(value) && (
         <p className="text-sm text-gray-500">
-          {value.length} / {maxImages} {t('imagesUploaded')}
+          {value.length} / {maxImages} {t("imagesUploaded")}
         </p>
       )}
       {selectedFiles.length > 0 && (
         <div className="mt-2 space-y-1">
           {selectedFiles.map((file, idx) => (
-            <div key={idx} className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
+            <div
+              key={idx}
+              className="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300"
+            >
               <Image className="h-4 w-4 text-gray-400" />
-              <span className="truncate max-w-[120px]" title={file.name}>{file.name}</span>
+              <span className="truncate max-w-[120px]" title={file.name}>
+                {file.name}
+              </span>
               <span>({(file.size / 1024).toFixed(1)} KB)</span>
             </div>
           ))}
@@ -323,7 +376,7 @@ const ImageUpload = ({
           <div
             className="bg-blue-600 h-2.5 rounded-full"
             style={{ width: `${progress}%` }}
-           />
+          />
         </div>
       )}
     </div>

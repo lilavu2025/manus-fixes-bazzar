@@ -1,25 +1,29 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { AuthContext } from './AuthContext.context';
-import type { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
-import { setCookie, getCookie, deleteCookie } from '../utils/cookieUtils';
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { AuthContext } from "./AuthContext.context";
+import type {
+  Tables,
+  TablesInsert,
+  TablesUpdate,
+} from "@/integrations/supabase/types";
+import { setCookie, getCookie, deleteCookie } from "../utils/cookieUtils";
 import {
   useSignIn,
   useSignUp,
   useSignOut,
   useUpdateProfile,
-} from '@/integrations/supabase/reactQueryHooks';
-import { fetchUserProfile } from '@/integrations/supabase/dataFetchers';
-import { supabase } from '@/integrations/supabase/client';
-import { createProfile } from '@/integrations/supabase/dataSenders';
-import type { Session } from '@supabase/auth-js';
+} from "@/integrations/supabase/reactQueryHooks";
+import { fetchUserProfile } from "@/integrations/supabase/dataFetchers";
+import { supabase } from "@/integrations/supabase/client";
+import { createProfile } from "@/integrations/supabase/dataSenders";
+import type { Session } from "@supabase/auth-js";
 
 export interface Profile {
   id: string;
   full_name: string;
   phone: string | null;
   email?: string;
-  user_type: 'admin' | 'wholesale' | 'retail';
+  user_type: "admin" | "wholesale" | "retail";
   created_at?: string;
 }
 
@@ -45,25 +49,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // حفظ آخر صفحة زارها المستخدم (عدا صفحات auth)
   useEffect(() => {
     if (
-      location.pathname !== '/auth' &&
-      location.pathname !== '/email-confirmation'
+      location.pathname !== "/auth" &&
+      location.pathname !== "/email-confirmation"
     ) {
-      setCookie('lastVisitedPath', location.pathname + location.search + location.hash, 60 * 60 * 24 * 30);
+      setCookie(
+        "lastVisitedPath",
+        location.pathname + location.search + location.hash,
+        60 * 60 * 24 * 30,
+      );
     }
   }, [location.pathname, location.search, location.hash]);
 
   // توجيه الأدمن دائمًا للوحة الإدارة بعد تسجيل الدخول
-  const handleUserRedirection = useCallback((profile: Profile) => {
-    if (profile.user_type === 'admin') {
-      navigate('/admin', { replace: true });
-      return;
-    }
-    if (profile.user_type === 'wholesale') {
-      navigate('/', { replace: true });
-      return;
-    }
-    navigate('/', { replace: true });
-  }, [navigate]);
+  const handleUserRedirection = useCallback(
+    (profile: Profile) => {
+      if (profile.user_type === "admin") {
+        navigate("/admin", { replace: true });
+        return;
+      }
+      if (profile.user_type === "wholesale") {
+        navigate("/", { replace: true });
+        return;
+      }
+      navigate("/", { replace: true });
+    },
+    [navigate],
+  );
 
   // جلب بيانات البروفايل بناءً على session
   const fetchAndSetProfile = useCallback(async (userId: string | undefined) => {
@@ -79,7 +90,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // تسجيل الدخول
   const signIn = async (email: string, password: string) => {
     const data = await signInMutation.mutateAsync({ email, password });
-    setCookie('lastLoginTime', Date.now().toString(), 60 * 60 * 24 * 30);
+    setCookie("lastLoginTime", Date.now().toString(), 60 * 60 * 24 * 30);
     if (data && data.user && data.user.id) {
       await fetchAndSetProfile(data.user.id);
       handleUserRedirection({ ...profile!, id: data.user.id });
@@ -88,10 +99,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   // تسجيل حساب جديد
-  const signUp = async (email: string, password: string, fullName: string, phone?: string) => {
-    const data = await signUpMutation.mutateAsync({ email, password, fullName, phone });
+  const signUp = async (
+    email: string,
+    password: string,
+    fullName: string,
+    phone?: string,
+  ) => {
+    const data = await signUpMutation.mutateAsync({
+      email,
+      password,
+      fullName,
+      phone,
+    });
     if (!data.user) {
-      throw new Error('فشل في إنشاء الحساب. يرجى المحاولة مرة أخرى.');
+      throw new Error("فشل في إنشاء الحساب. يرجى المحاولة مرة أخرى.");
     }
     if (data.user.id) {
       try {
@@ -99,15 +120,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           id: data.user.id,
           email,
           full_name: fullName,
-          phone: phone || '',
-          user_type: 'retail',
+          phone: phone || "",
+          user_type: "retail",
         });
         await fetchAndSetProfile(data.user.id);
         handleUserRedirection({ ...profile!, id: data.user.id });
-      } catch (e) { /* ignore if profile exists */ }
+      } catch (e) {
+        /* ignore if profile exists */
+      }
     }
     if (!data.session) {
-      throw new Error('تم إرسال رابط التأكيد إلى بريدك الإلكتروني. يرجى التحقق من بريدك الإلكتروني وتأكيد حسابك.');
+      throw new Error(
+        "تم إرسال رابط التأكيد إلى بريدك الإلكتروني. يرجى التحقق من بريدك الإلكتروني وتأكيد حسابك.",
+      );
     }
     setSession(data.session);
   };
@@ -117,16 +142,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     await signOutMutation.mutateAsync();
     setProfile(null);
     setSession(null);
-    deleteCookie('lastLoginTime');
-    deleteCookie('lastVisitedPath');
-    navigate('/', { replace: true });
+    deleteCookie("lastLoginTime");
+    deleteCookie("lastVisitedPath");
+    navigate("/", { replace: true });
   };
 
   // تحديث ملف المستخدم
   const updateProfile = async (data: Partial<Profile>) => {
-    if (!profile) throw new Error('المستخدم غير مسجل الدخول');
-    await updateProfileMutation.mutateAsync({ userId: profile.id, updates: data });
-    setProfile(prev => prev ? { ...prev, ...data } : null);
+    if (!profile) throw new Error("المستخدم غير مسجل الدخول");
+    await updateProfileMutation.mutateAsync({
+      userId: profile.id,
+      updates: data,
+    });
+    setProfile((prev) => (prev ? { ...prev, ...data } : null));
   };
 
   // مراقبة جلسة supabase وتحديث البروفايل تلقائياً
@@ -142,18 +170,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     });
     // مراقبة تغيّر حالة المصادقة، وعند وجود مستخدم جديد يتم جلب بياناته بعد التأكد من وجود session.user باستخدام setTimeout
-    const { data: listener } = supabase.auth.onAuthStateChange(async (_, session) => {
-      setSession(session);
-      sessionRef.current = session;
-      if (session?.user?.id) {
-        setTimeout(async () => {
-          // جلب البروفايل عبر الدالة المخصصة فقط (وليس مباشرة من قاعدة البيانات)
-          await fetchAndSetProfile(session.user.id);
-        });
-      } else {
-        setProfile(null);
-      }
-    });
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      async (_, session) => {
+        setSession(session);
+        sessionRef.current = session;
+        if (session?.user?.id) {
+          setTimeout(async () => {
+            // جلب البروفايل عبر الدالة المخصصة فقط (وليس مباشرة من قاعدة البيانات)
+            await fetchAndSetProfile(session.user.id);
+          });
+        } else {
+          setProfile(null);
+        }
+      },
+    );
     return () => {
       ignore = true;
       listener.subscription.unsubscribe();
@@ -181,20 +211,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       lastSessionCheck.current = Date.now();
       await checkSessionValidity();
     };
-    const clickHandler = () => refetchSession('click');
-    const focusHandler = () => refetchSession('focus');
+    const clickHandler = () => refetchSession("click");
+    const focusHandler = () => refetchSession("focus");
     const visibilityHandler = () => {
-      if (document.visibilityState === 'visible') {
-        refetchSession('visibilitychange');
+      if (document.visibilityState === "visible") {
+        refetchSession("visibilitychange");
       }
     };
-    document.addEventListener('click', clickHandler, true);
-    window.addEventListener('focus', focusHandler);
-    document.addEventListener('visibilitychange', visibilityHandler);
+    document.addEventListener("click", clickHandler, true);
+    window.addEventListener("focus", focusHandler);
+    document.addEventListener("visibilitychange", visibilityHandler);
     return () => {
-      document.removeEventListener('click', clickHandler, true);
-      window.removeEventListener('focus', focusHandler);
-      document.removeEventListener('visibilitychange', visibilityHandler);
+      document.removeEventListener("click", clickHandler, true);
+      window.removeEventListener("focus", focusHandler);
+      document.removeEventListener("visibilitychange", visibilityHandler);
     };
   }, [checkSessionValidity]);
 
@@ -209,11 +239,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     updateProfile,
   };
 
-  return (
-    <AuthContext.Provider value={value}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export type AuthContextType = {
@@ -222,8 +248,12 @@ export type AuthContextType = {
   profile: Profile | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, fullName: string, phone?: string) => Promise<void>;
+  signUp: (
+    email: string,
+    password: string,
+    fullName: string,
+    phone?: string,
+  ) => Promise<void>;
   signOut: () => Promise<void>;
   updateProfile: (data: Partial<Profile>) => Promise<void>;
 };
-

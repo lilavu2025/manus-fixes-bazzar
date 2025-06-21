@@ -1,15 +1,15 @@
-import React from 'react';
-import { Star, ShoppingCart } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { CardContent } from '@/components/ui/card';
-import { useLanguage } from '@/utils/languageContextUtils';
-import { useAuth } from '@/contexts/useAuth';
-import type { Product as ProductFull } from '@/types/product';
-import { Product } from '@/types';
-import QuantitySelector from '@/components/QuantitySelector';
-import { getLocalizedName } from '@/utils/getLocalizedName';
-import { getDisplayPrice } from '@/utils/priceUtils';
+import React from "react";
+import { Star, ShoppingCart } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { CardContent } from "@/components/ui/card";
+import { useLanguage } from "@/utils/languageContextUtils";
+import { useAuth } from "@/contexts/useAuth";
+import type { Product as ProductFull } from "@/types/product";
+import { Product } from "@/types";
+import QuantitySelector from "@/components/QuantitySelector";
+import { getLocalizedName } from "@/utils/getLocalizedName";
+import { getDisplayPrice } from "@/utils/priceUtils";
 
 interface ProductCardContentProps {
   product: ProductFull;
@@ -39,13 +39,15 @@ const ProductCardContent: React.FC<ProductCardContentProps> = ({
 
   return (
     <CardContent
-      className={
-        `w-full p-4 sm:p-6 ${isRTL ? 'text-right' : 'text-left'}`
-      }
+      className={`w-full p-4 sm:p-6 ${isRTL ? "text-right" : "text-left"}`}
     >
-      <Link to={`/product/${product.id}`} onClick={onProductClick} className="block w-full">
+      <Link
+        to={`/product/${product.id}`}
+        onClick={onProductClick}
+        className="block w-full"
+      >
         <h3
-          className={`font-semibold text-base sm:text-lg md:text-xl lg:text-2xl mb-2 line-clamp-2 group-hover:text-primary transition-colors ${isRTL ? 'text-right' : 'text-left'}`}
+          className={`font-semibold text-base sm:text-lg md:text-xl lg:text-2xl mb-2 line-clamp-2 group-hover:text-primary transition-colors ${isRTL ? "text-right" : "text-left"}`}
         >
           {getLocalizedName(product, language)}
         </h3>
@@ -53,18 +55,22 @@ const ProductCardContent: React.FC<ProductCardContentProps> = ({
       {/* السعر  */}
       <div className={`flex flex-col gap-2 mb-4 w-full`}>
         <div className={`flex flex-col gap-2 w-full`}>
-          <div className={`flex items-center gap-4 w-full ${isRTL ? 'flex-row-reverse justify-end' : 'justify-start'}`}> 
+          <div
+            className={`flex items-center gap-4 w-full ${isRTL ? "flex-row-reverse justify-end" : "justify-start"}`}
+          >
             {product.originalPrice !== displayPrice && (
               <span className="text-lg text-gray-500 line-through">
-                {product.originalPrice} {t('currency')}
+                {product.originalPrice} {t("currency")}
               </span>
             )}
             <span className="text-3xl font-bold text-primary">
-              {displayPrice} {t('currency')}
+              {displayPrice} {t("currency")}
             </span>
           </div>
         </div>
-        <div className={`flex items-center gap-12 w-full ${isRTL ? 'flex-row-reverse justify-end' : 'justify-start'}`}>
+        <div
+          className={`flex items-center gap-12 w-full ${isRTL ? "flex-row-reverse justify-end" : "justify-start"}`}
+        >
           <QuantitySelector
             quantity={quantity}
             onQuantityChange={onQuantityChange}
@@ -72,12 +78,14 @@ const ProductCardContent: React.FC<ProductCardContentProps> = ({
             min={1}
           />
           <span className="text-sm sm:text-base text-gray-600 whitespace-nowrap">
-            {t('quantity')}:
+            {t("quantity")}:
           </span>
         </div>
       </div>
       {/* أزرار الإجراءات */}
-      <div className={`flex flex-col sm:flex-row gap-3 ${isRTL ? 'justify-end' : 'justify-start'}`}>
+      <div
+        className={`flex flex-col sm:flex-row gap-3 ${isRTL ? "justify-end" : "justify-start"}`}
+      >
         <Button
           onClick={(e) => {
             e.preventDefault();
@@ -86,12 +94,12 @@ const ProductCardContent: React.FC<ProductCardContentProps> = ({
           }}
           disabled={!product.inStock || isLoading}
           className="flex-1 w-full sm:w-auto gap-2 font-semibold"
-          variant={cartQuantity > 0 ? 'secondary' : 'default'}
+          variant={cartQuantity > 0 ? "secondary" : "default"}
         >
           <ShoppingCart className="h-4 w-4" />
           {cartQuantity > 0
-            ? `${t('inCart')} (${cartQuantity})`
-            : t('addToCart')}
+            ? `${t("inCart")} (${cartQuantity})`
+            : t("addToCart")}
         </Button>
         <Button
           onClick={(e) => {
@@ -103,7 +111,7 @@ const ProductCardContent: React.FC<ProductCardContentProps> = ({
           variant="outline"
           className="w-full sm:w-auto px-4"
         >
-          {t('buyNow')}
+          {t("buyNow")}
         </Button>
       </div>
     </CardContent>

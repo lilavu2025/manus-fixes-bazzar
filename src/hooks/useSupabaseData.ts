@@ -1,8 +1,12 @@
 // /home/ubuntu/modern-mobile-bazaar/src/hooks/useSupabaseData.ts
-import { useCategoriesWithProductCountQuery, useBannersQuery, useAdminUsersQuery } from '@/integrations/supabase/reactQueryHooks';
-import { useLanguage } from '@/utils/languageContextUtils';
-import { useAuth } from '@/contexts/useAuth';
-import { Language } from '@/types/language';
+import {
+  useCategoriesWithProductCountQuery,
+  useBannersQuery,
+  useAdminUsersQuery,
+} from "@/integrations/supabase/reactQueryHooks";
+import { useLanguage } from "@/utils/languageContextUtils";
+import { useAuth } from "@/contexts/useAuth";
+import { Language } from "@/types/language";
 
 /**
  * خيارات مشتركة لجميع الـ queries:
@@ -22,8 +26,8 @@ const COMMON_OPTIONS = {
 
 // انقل كل useCategoriesWithProductCountQuery/useActiveProductsQuery/useBannersQuery/useAdminUsersQuery إلى داخل دوال أو custom hooks فقط
 
-/** 
- * Hook لجلب الفئات (Categories) 
+/**
+ * Hook لجلب الفئات (Categories)
  */
 export const useCategories = () => {
   const categoriesQuery = useCategoriesWithProductCountQuery();

@@ -1,38 +1,49 @@
-import React, { createContext, useContext, useReducer, ReactNode } from 'react';
-import { Product } from '@/types';
-import { useAuth } from '@/contexts/useAuth';
-import { useState, useEffect } from 'react';
-import type { CartContextType, CartItem, CartState, CartAction } from './CartContext.types';
-import { getDisplayPrice } from '@/utils/priceUtils';
-import type { Product as ProductFull } from '@/types/product';
-import { setCookie, getCookie, deleteCookie } from '../utils/cookieUtils';
+import React, { createContext, useContext, useReducer, ReactNode } from "react";
+import { Product } from "@/types";
+import { useAuth } from "@/contexts/useAuth";
+import { useState, useEffect } from "react";
+import type {
+  CartContextType,
+  CartItem,
+  CartState,
+  CartAction,
+} from "./CartContext.types";
+import { getDisplayPrice } from "@/utils/priceUtils";
+import type { Product as ProductFull } from "@/types/product";
+import { setCookie, getCookie, deleteCookie } from "../utils/cookieUtils";
 import {
   useAddToCart,
   useUpdateCartItem,
   useRemoveFromCart,
-  useClearUserCart
-} from '@/integrations/supabase/reactQueryHooks';
+  useClearUserCart,
+} from "@/integrations/supabase/reactQueryHooks";
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 const cartReducer = (state: CartState, action: CartAction): CartState => {
   switch (action.type) {
-    case 'ADD_ITEM': {
+    case "ADD_ITEM": {
       const { product, quantity = 1 } = action.payload;
       const itemId = `${product.id}`;
-      
-      const existingItem = state.items.find(item => item.id === itemId);
-      
+
+      const existingItem = state.items.find((item) => item.id === itemId);
+
       if (existingItem) {
-        const updatedItems = state.items.map(item =>
+        const updatedItems = state.items.map((item) =>
           item.id === itemId
             ? { ...item, quantity: item.quantity + quantity }
-            : item
+            : item,
         );
-        
-        const total = updatedItems.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
-        const itemCount = updatedItems.reduce((sum, item) => sum + item.quantity, 0);
-        
+
+        const total = updatedItems.reduce(
+          (sum, item) => sum + item.product.price * item.quantity,
+          0,
+        );
+        const itemCount = updatedItems.reduce(
+          (sum, item) => sum + item.quantity,
+          0,
+        );
+
         return { items: updatedItems, total, itemCount };
       } else {
         const newItem: CartItem = {
@@ -40,51 +51,74 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
           product,
           quantity,
         };
-        
+
         const updatedItems = [...state.items, newItem];
-        const total = updatedItems.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
-        const itemCount = updatedItems.reduce((sum, item) => sum + item.quantity, 0);
-        
+        const total = updatedItems.reduce(
+          (sum, item) => sum + item.product.price * item.quantity,
+          0,
+        );
+        const itemCount = updatedItems.reduce(
+          (sum, item) => sum + item.quantity,
+          0,
+        );
+
         return { items: updatedItems, total, itemCount };
       }
     }
-    
-    case 'REMOVE_ITEM': {
-      const updatedItems = state.items.filter(item => item.id !== action.payload.id);
-      const total = updatedItems.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
-      const itemCount = updatedItems.reduce((sum, item) => sum + item.quantity, 0);
-      
-      return { items: updatedItems, total, itemCount };
-    }
-    
-    case 'UPDATE_QUANTITY': {
-      const { id, quantity } = action.payload;
-      
-      if (quantity <= 0) {
-        return cartReducer(state, { type: 'REMOVE_ITEM', payload: { id } });
-      }
-      
-      const updatedItems = state.items.map(item =>
-        item.id === id ? { ...item, quantity } : item
+
+    case "REMOVE_ITEM": {
+      const updatedItems = state.items.filter(
+        (item) => item.id !== action.payload.id,
       );
-      
-      const total = updatedItems.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
-      const itemCount = updatedItems.reduce((sum, item) => sum + item.quantity, 0);
-      
+      const total = updatedItems.reduce(
+        (sum, item) => sum + item.product.price * item.quantity,
+        0,
+      );
+      const itemCount = updatedItems.reduce(
+        (sum, item) => sum + item.quantity,
+        0,
+      );
+
       return { items: updatedItems, total, itemCount };
     }
-    
-    case 'CLEAR_CART':
+
+    case "UPDATE_QUANTITY": {
+      const { id, quantity } = action.payload;
+
+      if (quantity <= 0) {
+        return cartReducer(state, { type: "REMOVE_ITEM", payload: { id } });
+      }
+
+      const updatedItems = state.items.map((item) =>
+        item.id === id ? { ...item, quantity } : item,
+      );
+
+      const total = updatedItems.reduce(
+        (sum, item) => sum + item.product.price * item.quantity,
+        0,
+      );
+      const itemCount = updatedItems.reduce(
+        (sum, item) => sum + item.quantity,
+        0,
+      );
+
+      return { items: updatedItems, total, itemCount };
+    }
+
+    case "CLEAR_CART":
       return { items: [], total: 0, itemCount: 0 };
-    
-    case 'LOAD_CART': {
+
+    case "LOAD_CART": {
       const items = action.payload;
-      const total = items.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+      const total = items.reduce(
+        (sum, item) => sum + item.product.price * item.quantity,
+        0,
+      );
       const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
-      
+
       return { items, total, itemCount };
     }
-    
+
     default:
       return state;
   }
@@ -100,14 +134,22 @@ const initialState: CartState = {
  * مزود سياق السلة CartProvider
  * يدير حالة السلة ويوفر دوال التعامل معها.
  */
-export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const CartProvider: React.FC<{ children: ReactNode }> = ({
+  children,
+}) => {
   const [state, dispatch] = useReducer(cartReducer, initialState);
   const { user, profile } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
   // hooks
-  const userId = user && typeof user === 'object' && 'id' in user && typeof user.id === 'string' ? user.id : '';
+  const userId =
+    user &&
+    typeof user === "object" &&
+    "id" in user &&
+    typeof user.id === "string"
+      ? user.id
+      : "";
   const addToCartMutation = useAddToCart();
   const updateCartItemMutation = useUpdateCartItem();
   const removeFromCartMutation = useRemoveFromCart();
@@ -116,13 +158,13 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // تحميل السلة من الكوكيز عند عدم وجود مستخدم
   useEffect(() => {
     if (!user) {
-      const savedCart = getCookie('cart');
+      const savedCart = getCookie("cart");
       if (savedCart) {
         try {
           const cartItems = JSON.parse(savedCart);
-          dispatch({ type: 'LOAD_CART', payload: cartItems });
+          dispatch({ type: "LOAD_CART", payload: cartItems });
         } catch (error) {
-          console.error('Error loading cart from cookies:', error);
+          console.error("Error loading cart from cookies:", error);
         }
       }
     }
@@ -130,21 +172,25 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // حفظ السلة في الكوكيز عند التغيير
   useEffect(() => {
-    setCookie('cart', JSON.stringify(state.items), 60 * 60 * 24 * 7);
+    setCookie("cart", JSON.stringify(state.items), 60 * 60 * 24 * 7);
   }, [state.items]);
 
   // إضافة منتج للسلة
   const addItem = async (product: Product, quantity = 1) => {
-    dispatch({ type: 'ADD_ITEM', payload: { product, quantity } });
+    dispatch({ type: "ADD_ITEM", payload: { product, quantity } });
     if (userId) {
-      await addToCartMutation.mutateAsync({ userId, productId: product.id, quantity });
+      await addToCartMutation.mutateAsync({
+        userId,
+        productId: product.id,
+        quantity,
+      });
       // refetchCart();
     }
   };
 
   // حذف منتج من السلة
   const removeItem = async (id: string, productId?: string) => {
-    dispatch({ type: 'REMOVE_ITEM', payload: { id } });
+    dispatch({ type: "REMOVE_ITEM", payload: { id } });
     if (userId && productId) {
       await removeFromCartMutation.mutateAsync({ userId, productId });
       // refetchCart();
@@ -152,8 +198,12 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   // تحديث كمية منتج في السلة
-  const updateQuantity = async (id: string, quantity: number, productId?: string) => {
-    dispatch({ type: 'UPDATE_QUANTITY', payload: { id, quantity } });
+  const updateQuantity = async (
+    id: string,
+    quantity: number,
+    productId?: string,
+  ) => {
+    dispatch({ type: "UPDATE_QUANTITY", payload: { id, quantity } });
     if (userId && productId) {
       await updateCartItemMutation.mutateAsync({ userId, productId, quantity });
       // refetchCart();
@@ -162,7 +212,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   // حذف كل السلة
   const clearCart = async () => {
-    dispatch({ type: 'CLEAR_CART' });
+    dispatch({ type: "CLEAR_CART" });
     if (userId) {
       await clearUserCartMutation.mutateAsync(userId);
       // refetchCart();
@@ -170,21 +220,25 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const isInCart = (productId: string) => {
-    return state.items.some(item => item.product.id === productId);
+    return state.items.some((item) => item.product.id === productId);
   };
 
   const getCartItem = (productId: string) => {
-    return state.items.find(item => item.product.id === productId);
+    return state.items.find((item) => item.product.id === productId);
   };
 
   // Add this function to CartContextType and value
   const getTotalItems = () => {
     return state.items.reduce((sum, item) => sum + item.quantity, 0);
   };
-  
+
   // Helper: حساب المجموع الكلي للسلة حسب نوع المستخدم
   const getTotalPrice = () => {
-    return (state.items as unknown as CartItemFull[]).reduce((sum, item) => sum + (getDisplayPrice(item.product, profile?.user_type) * item.quantity), 0);
+    return (state.items as unknown as CartItemFull[]).reduce(
+      (sum, item) =>
+        sum + getDisplayPrice(item.product, profile?.user_type) * item.quantity,
+      0,
+    );
   };
 
   // Aliases for compatibility with old code
@@ -214,7 +268,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       getCartItem,
       getTotalItems,
       getItemQuantity: (productId: string) => {
-        const item = state.items.find(item => item.product.id === productId);
+        const item = state.items.find((item) => item.product.id === productId);
         return item ? item.quantity : 0;
       },
     },
@@ -224,12 +278,8 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     buyNow,
     isLoading,
   };
-  
-  return (
-    <CartContext.Provider value={value}>
-      {children}
-    </CartContext.Provider>
-  );
+
+  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 };
 export default CartContext;
 

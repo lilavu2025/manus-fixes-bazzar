@@ -1,15 +1,19 @@
 import * as React from "react";
-import { useState } from 'react';
-import { Mail, Share2, ShoppingCart, Copy, MessageCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { isRTL, useLanguage } from '@/utils/languageContextUtils';
-import { useCart } from '@/hooks/useCart';
-import { toast } from 'sonner';
-import { Product } from '@/types';
-import QuantitySelector from '@/components/QuantitySelector';
+import { useState } from "react";
+import { Mail, Share2, ShoppingCart, Copy, MessageCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { isRTL, useLanguage } from "@/utils/languageContextUtils";
+import { useCart } from "@/hooks/useCart";
+import { toast } from "sonner";
+import { Product } from "@/types";
+import QuantitySelector from "@/components/QuantitySelector";
 // import FavoriteButton from '@/components/ProductCard/FavoriteButton';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 interface ProductActionsProps {
   product: Product;
@@ -25,29 +29,34 @@ const ProductActions = ({ product, onBuyNow }: ProductActionsProps) => {
   const cartQuantity = getItemQuantity(product.id);
 
   const handleAddToCart = async () => {
-    console.log('Add to cart clicked with quantity:', quantity);
+    console.log("Add to cart clicked with quantity:", quantity);
     if (!product.inStock) {
-      toast.error(t('productOutOfStock'));
+      toast.error(t("productOutOfStock"));
       return;
     }
-    
+
     try {
       await addToCart(product, quantity);
-      console.log('Product added to cart successfully');
+      console.log("Product added to cart successfully");
       setQuantity(1);
     } catch (error) {
-      console.error(t('errorAddingToCartLog') || 'Error adding to cart:', error);
-      toast.error(t('errorAddingToCart'));
+      console.error(
+        t("errorAddingToCartLog") || "Error adding to cart:",
+        error,
+      );
+      toast.error(t("errorAddingToCart"));
     }
   };
 
   const productUrl = `${window.location.origin}/product/${product.id}`;
-  const shareText = encodeURIComponent(`${product.name}\n${product.description}\n${productUrl}`);
+  const shareText = encodeURIComponent(
+    `${product.name}\n${product.description}\n${productUrl}`,
+  );
 
   // مشاركة عبر واتساب
   const handleShareWhatsapp = () => {
     const whatsappUrl = `https://wa.me/?text=${shareText}`;
-    window.open(whatsappUrl, '_blank');
+    window.open(whatsappUrl, "_blank");
     setShareOpen(false);
   };
 
@@ -62,21 +71,24 @@ const ProductActions = ({ product, onBuyNow }: ProductActionsProps) => {
   // نسخ الرابط
   const handleCopyLink = async () => {
     try {
-      if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+      if (
+        navigator.clipboard &&
+        typeof navigator.clipboard.writeText === "function"
+      ) {
         await navigator.clipboard.writeText(productUrl);
-        toast.success(t('linkCopied'));
+        toast.success(t("linkCopied"));
       } else {
         // fallback
-        const tempInput = document.createElement('input');
+        const tempInput = document.createElement("input");
         tempInput.value = productUrl;
         document.body.appendChild(tempInput);
         tempInput.select();
-        document.execCommand('copy');
+        document.execCommand("copy");
         document.body.removeChild(tempInput);
-        toast.success(t('linkCopied'));
+        toast.success(t("linkCopied"));
       }
     } catch {
-      toast.error(t('shareError'));
+      toast.error(t("shareError"));
     }
     setShareOpen(false);
   };
@@ -88,14 +100,14 @@ const ProductActions = ({ product, onBuyNow }: ProductActionsProps) => {
         await navigator.share({
           title: product.name,
           text: product.description,
-          url: productUrl
+          url: productUrl,
         });
-        toast.success(t('sharedSuccessfully'));
+        toast.success(t("sharedSuccessfully"));
       } catch {
         // تجاهل إغلاق المستخدم
       }
     } else {
-      toast.error(t('shareError'));
+      toast.error(t("shareError"));
     }
     setShareOpen(false);
   };
@@ -105,14 +117,18 @@ const ProductActions = ({ product, onBuyNow }: ProductActionsProps) => {
       {/* Quantity & Add to Cart */}
       {product.inStock && (
         <div className="space-y-4">
-          <div className={`flex items-center gap-12 w-full ${isRTL ? 'flex-row-reverse justify-end' : 'justify-start'}`}>
+          <div
+            className={`flex items-center gap-12 w-full ${isRTL ? "flex-row-reverse justify-end" : "justify-start"}`}
+          >
             <QuantitySelector
               quantity={quantity}
               onQuantityChange={setQuantity}
               max={99}
               min={1}
             />
-            <label className="block text-sm font-semibold mb-2">{t('quantity')}</label>
+            <label className="block text-sm font-semibold mb-2">
+              {t("quantity")}
+            </label>
           </div>
 
           <div className="flex gap-3">
@@ -123,14 +139,14 @@ const ProductActions = ({ product, onBuyNow }: ProductActionsProps) => {
               disabled={!product.inStock}
             >
               <ShoppingCart className="h-5 w-5" />
-              {t('addToCart')}
+              {t("addToCart")}
               {cartQuantity > 0 && (
                 <Badge variant="secondary" className="mr-2">
                   {cartQuantity}
                 </Badge>
               )}
             </Button>
-            
+
             <Button
               onClick={onBuyNow}
               variant="secondary"
@@ -138,7 +154,7 @@ const ProductActions = ({ product, onBuyNow }: ProductActionsProps) => {
               className="flex-1"
               disabled={!product.inStock}
             >
-              {t('buyNow')}
+              {t("buyNow")}
             </Button>
           </div>
         </div>
@@ -159,22 +175,34 @@ const ProductActions = ({ product, onBuyNow }: ProductActionsProps) => {
             </Button>
           </PopoverTrigger>
           <PopoverContent align="end" className="w-44 p-2 space-y-1">
-            <button className="flex items-center gap-2 w-full px-2 py-1 hover:bg-gray-100 rounded text-sm" onClick={handleShareWhatsapp}>
+            <button
+              className="flex items-center gap-2 w-full px-2 py-1 hover:bg-gray-100 rounded text-sm"
+              onClick={handleShareWhatsapp}
+            >
               <MessageCircle className="h-4 w-4 text-green-600" />
-              {t('shareViaWhatsapp')}
+              {t("shareViaWhatsapp")}
             </button>
-            <button className="flex items-center gap-2 w-full px-2 py-1 hover:bg-gray-100 rounded text-sm" onClick={handleShareEmail}>
+            <button
+              className="flex items-center gap-2 w-full px-2 py-1 hover:bg-gray-100 rounded text-sm"
+              onClick={handleShareEmail}
+            >
               <Mail className="h-4 w-4 text-blue-600" />
-              {t('shareViaEmail')}
+              {t("shareViaEmail")}
             </button>
-            <button className="flex items-center gap-2 w-full px-2 py-1 hover:bg-gray-100 rounded text-sm" onClick={handleCopyLink}>
+            <button
+              className="flex items-center gap-2 w-full px-2 py-1 hover:bg-gray-100 rounded text-sm"
+              onClick={handleCopyLink}
+            >
               <Copy className="h-4 w-4" />
-              {t('copyLink')}
+              {t("copyLink")}
             </button>
             {navigator.share && (
-              <button className="flex items-center gap-2 w-full px-2 py-1 hover:bg-gray-100 rounded text-sm" onClick={handleNativeShare}>
+              <button
+                className="flex items-center gap-2 w-full px-2 py-1 hover:bg-gray-100 rounded text-sm"
+                onClick={handleNativeShare}
+              >
                 <Share2 className="h-4 w-4 text-gray-600" />
-                {t('shareSystem')}
+                {t("shareSystem")}
               </button>
             )}
           </PopoverContent>

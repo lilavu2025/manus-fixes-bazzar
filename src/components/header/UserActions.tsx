@@ -1,20 +1,20 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { ShoppingCart, User, LogOut } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import React from "react";
+import { Link } from "react-router-dom";
+import { ShoppingCart, User, LogOut } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu';
-import { useCart } from '@/hooks/useCart';
+} from "@/components/ui/dropdown-menu";
+import { useCart } from "@/hooks/useCart";
 //import { useFavorites } from '@/hooks/useFavorites';
-import { useAuth } from '@/contexts/useAuth';
-import { useLanguage } from '@/utils/languageContextUtils';
-import LanguageSwitcher from '@/components/LanguageSwitcher';
+import { useAuth } from "@/contexts/useAuth";
+import { useLanguage } from "@/utils/languageContextUtils";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 interface UserActionsProps {
   onCartClick: () => void;
@@ -30,7 +30,7 @@ const UserActions: React.FC<UserActionsProps> = ({ onCartClick }) => {
     try {
       await signOut();
     } catch (error) {
-      console.error('Error signing out:', error);
+      console.error("Error signing out:", error);
     }
   };
 
@@ -41,7 +41,7 @@ const UserActions: React.FC<UserActionsProps> = ({ onCartClick }) => {
       <div className="hidden md:block">
         <LanguageSwitcher />
       </div>
-      
+
       {/* <Button 
         asChild
         variant="ghost" 
@@ -60,28 +60,33 @@ const UserActions: React.FC<UserActionsProps> = ({ onCartClick }) => {
           )}
         </Link>
       </Button> */}
-      
-      <Button 
-        variant="ghost" 
-        size="icon" 
+
+      <Button
+        variant="ghost"
+        size="icon"
         onClick={onCartClick}
         className="relative h-10 w-10"
       >
         <ShoppingCart className="h-5 w-5" />
         {getTotalItems() > 0 && (
-          <Badge 
-            variant="destructive" 
+          <Badge
+            variant="destructive"
             className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs animate-bounce-in"
           >
             {getTotalItems()}
           </Badge>
         )}
       </Button>
-      
+
       {user ? (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-10 w-10 hidden md:flex" aria-label="القائمة الجانبية">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10 hidden md:flex"
+              aria-label="القائمة الجانبية"
+            >
               <User className="h-5 w-5" />
             </Button>
           </DropdownMenuTrigger>
@@ -89,12 +94,12 @@ const UserActions: React.FC<UserActionsProps> = ({ onCartClick }) => {
             <DropdownMenuItem asChild>
               <Link to="/profile" className="cursor-pointer">
                 <User className="h-4 w-4 mr-2" />
-                {t('profile')}
+                {t("profile")}
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
               <Link to="/orders" className="cursor-pointer">
-                {t('orders')}
+                {t("orders")}
               </Link>
             </DropdownMenuItem>
             {/*
@@ -105,26 +110,29 @@ const UserActions: React.FC<UserActionsProps> = ({ onCartClick }) => {
               </Link>
             </DropdownMenuItem>
             */}
-            {profile?.user_type === 'admin' && (
+            {profile?.user_type === "admin" && (
               <>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                   <Link to="/admin" className="cursor-pointer">
-                    {t('admin')}
+                    {t("admin")}
                   </Link>
                 </DropdownMenuItem>
               </>
             )}
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer text-red-600">
+            <DropdownMenuItem
+              onClick={handleSignOut}
+              className="cursor-pointer text-red-600"
+            >
               <LogOut className="h-4 w-4 mr-2" />
-              {t('logout')}
+              {t("logout")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       ) : (
         <Button asChild variant="default" size="sm" className="hidden md:flex">
-          <Link to="/auth">{t('login')}</Link>
+          <Link to="/auth">{t("login")}</Link>
         </Button>
       )}
     </div>

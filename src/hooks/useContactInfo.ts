@@ -1,5 +1,8 @@
-import { useEffect, useState } from 'react';
-import { ContactInfoService, ContactInfo } from '@/services/supabase/contactInfoService';
+import { useEffect, useState } from "react";
+import {
+  ContactInfoService,
+  ContactInfo,
+} from "@/services/supabase/contactInfoService";
 
 export function useContactInfo() {
   // فارغ - استخدم AuthContext فقط

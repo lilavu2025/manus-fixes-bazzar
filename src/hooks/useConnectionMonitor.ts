@@ -1,5 +1,5 @@
-import { useEffect, useRef, useCallback, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { useEffect, useRef, useCallback, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface UseConnectionMonitorOptions {
   onReconnect?: () => void;
@@ -7,11 +7,13 @@ interface UseConnectionMonitorOptions {
   checkInterval?: number; // بالميلي ثانية
 }
 
-export const useConnectionMonitor = (options: UseConnectionMonitorOptions = {}) => {
+export const useConnectionMonitor = (
+  options: UseConnectionMonitorOptions = {},
+) => {
   const {
     onReconnect,
     onDisconnect,
-    checkInterval = 30000 // 30 ثانية افتراضياً
+    checkInterval = 30000, // 30 ثانية افتراضياً
   } = options;
 
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -23,12 +25,12 @@ export const useConnectionMonitor = (options: UseConnectionMonitorOptions = {}) 
   const checkDatabaseConnection = useCallback(async () => {
     try {
       const { data, error } = await supabase
-        .from('profiles')
-        .select('id')
+        .from("profiles")
+        .select("id")
         .limit(1);
       return !error;
     } catch (error) {
-      console.error('Database connection check failed:', error);
+      console.error("Database connection check failed:", error);
       return false;
     }
   }, []);
@@ -52,7 +54,7 @@ export const useConnectionMonitor = (options: UseConnectionMonitorOptions = {}) 
   useEffect(() => {
     const startPeriodicCheck = () => {
       intervalRef.current = setInterval(async () => {
-        if (document.visibilityState === 'visible') {
+        if (document.visibilityState === "visible") {
           const isConnected = await checkDatabaseConnection();
           const wasOnline = isOnlineRef.current;
           if (!isConnected && wasOnline) {
@@ -78,7 +80,6 @@ export const useConnectionMonitor = (options: UseConnectionMonitorOptions = {}) 
 
   return {
     isOnline,
-    checkConnection: checkDatabaseConnection
+    checkConnection: checkDatabaseConnection,
   };
 };
-

@@ -1,9 +1,9 @@
-import React from 'react';
-import { useLanguage } from '../../utils/languageContextUtils';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Edit, Trash, Eye } from 'lucide-react';
+import React from "react";
+import { useLanguage } from "../../utils/languageContextUtils";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Edit, Trash, Eye } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -11,7 +11,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from "@/components/ui/table";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,10 +22,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
-import { Product } from '@/types/product';
-import { getDisplayPrice } from '@/utils/priceUtils';
-import { useAuth } from '@/contexts/useAuth';
+} from "@/components/ui/alert-dialog";
+import { Product } from "@/types/product";
+import { getDisplayPrice } from "@/utils/priceUtils";
+import { useAuth } from "@/contexts/useAuth";
 
 interface AdminProductsTableProps {
   products: Product[];
@@ -47,9 +47,9 @@ const AdminProductsTable: React.FC<AdminProductsTableProps> = ({
 
   // دالة لجلب اسم المنتج حسب اللغة
   const getProductName = (product: Product) => {
-    if (language === 'ar') return product.name;
-    if (language === 'en') return product.nameEn || product.name;
-    if (language === 'he') return product.nameHe || product.name;
+    if (language === "ar") return product.name;
+    if (language === "en") return product.nameEn || product.name;
+    if (language === "he") return product.nameHe || product.name;
     return product.name;
   };
 
@@ -62,20 +62,22 @@ const AdminProductsTable: React.FC<AdminProductsTableProps> = ({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{t('products')}</CardTitle>
+        <CardTitle>{t("products")}</CardTitle>
       </CardHeader>
       <CardContent>
         <Table>
           <TableHeader className="text-center">
             <TableRow>
-              <TableHead className="text-center">{t('productImage')}</TableHead>
-              <TableHead className="text-center">{t('productName')}</TableHead>
-              <TableHead className="text-center">{t('category')}</TableHead>
-              <TableHead className="text-center">{t('price')}</TableHead>
-              <TableHead className="text-center">{t('stockQuantity')}</TableHead>
-              <TableHead className="text-center">{t('inStock')}</TableHead>
-              <TableHead className="text-center">{t('status')}</TableHead>
-              <TableHead className="text-center">{t('actions')}</TableHead>
+              <TableHead className="text-center">{t("productImage")}</TableHead>
+              <TableHead className="text-center">{t("productName")}</TableHead>
+              <TableHead className="text-center">{t("category")}</TableHead>
+              <TableHead className="text-center">{t("price")}</TableHead>
+              <TableHead className="text-center">
+                {t("stockQuantity")}
+              </TableHead>
+              <TableHead className="text-center">{t("inStock")}</TableHead>
+              <TableHead className="text-center">{t("status")}</TableHead>
+              <TableHead className="text-center">{t("actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -83,64 +85,74 @@ const AdminProductsTable: React.FC<AdminProductsTableProps> = ({
               <TableRow key={product.id}>
                 <TableCell>
                   <img
-                    src={product.image || '/placeholder.svg'}
+                    src={product.image || "/placeholder.svg"}
                     alt={product.name}
                     className="w-16 h-16 object-cover rounded-lg border shadow-sm bg-white mx-auto"
-                    onError={e => { e.currentTarget.src = '/placeholder.svg'; }}
+                    onError={(e) => {
+                      e.currentTarget.src = "/placeholder.svg";
+                    }}
                   />
                 </TableCell>
-                <TableCell className="font-medium max-w-[120px] truncate">{getProductName(product)}</TableCell>
+                <TableCell className="font-medium max-w-[120px] truncate">
+                  {getProductName(product)}
+                </TableCell>
                 <TableCell>{getCategoryName(product.category)}</TableCell>
-                <TableCell>{getDisplayPrice(product, profile?.user_type)} {t('currency')}</TableCell>
+                <TableCell>
+                  {getDisplayPrice(product, profile?.user_type)} {t("currency")}
+                </TableCell>
                 <TableCell>{product.stock_quantity || 0}</TableCell>
                 <TableCell>
-                  <Badge variant={product.inStock ? 'default' : 'destructive'}>
-                    {product.inStock ? t('inStock') : t('outOfStock')}
+                  <Badge variant={product.inStock ? "default" : "destructive"}>
+                    {product.inStock ? t("inStock") : t("outOfStock")}
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <Badge variant={product.active ? 'default' : 'destructive'}>
-                    {product.active ? t('active') : t('inactive')}
+                  <Badge variant={product.active ? "default" : "destructive"}>
+                    {product.active ? t("active") : t("inactive")}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex items-center gap-2 justify-end">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      title={t('view')}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      title={t("view")}
                       onClick={() => onViewProduct(product)}
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      title={t('edit')}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      title={t("edit")}
                       onClick={() => onEditProduct(product)}
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="sm" title={t('delete')}>
+                        <Button variant="ghost" size="sm" title={t("delete")}>
                           <Trash className="h-4 w-4" />
                         </Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                          <AlertDialogTitle>{t('deleteProduct')}</AlertDialogTitle>
+                          <AlertDialogTitle>
+                            {t("deleteProduct")}
+                          </AlertDialogTitle>
                           <AlertDialogDescription>
-                            {t('deleteProductConfirmation')} "{product.name}"?
+                            {t("deleteProductConfirmation")} "{product.name}"?
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                          <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
-                          <AlertDialogAction 
-                            onClick={() => onDeleteProduct(product.id, product.name)}
+                          <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() =>
+                              onDeleteProduct(product.id, product.name)
+                            }
                             className="bg-red-600 hover:bg-red-700"
                           >
-                            {t('delete')}
+                            {t("delete")}
                           </AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>

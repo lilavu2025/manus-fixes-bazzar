@@ -1,19 +1,19 @@
-import React, { useState } from 'react';
-import { useLanguage } from '../../utils/languageContextUtils';
-import { useCategoriesRealtime } from '@/hooks/useCategoriesRealtime';
-import { useDeleteCategory } from '@/integrations/supabase/reactQueryHooks';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { 
+import React, { useState } from "react";
+import { useLanguage } from "../../utils/languageContextUtils";
+import { useCategoriesRealtime } from "@/hooks/useCategoriesRealtime";
+import { useDeleteCategory } from "@/integrations/supabase/reactQueryHooks";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
   Plus,
   Edit,
   Trash,
   Eye,
   FolderOpen,
   XCircle,
-  BarChart3
-} from 'lucide-react';
+  BarChart3,
+} from "lucide-react";
 import {
   Table,
   TableBody,
@@ -21,7 +21,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from "@/components/ui/table";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,29 +32,41 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
-import { toast } from '@/hooks/use-toast';
-import AddCategoryDialog from './AddCategoryDialog';
-import EditCategoryDialog from './EditCategoryDialog';
-import ViewCategoryDialog from './ViewCategoryDialog';
-import { Category } from '@/types/product';
-import { mapCategoryToProductCategory } from '@/types/index';
-import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
-import OptimizedSearch from '@/components/OptimizedSearch';
-import { useCategoriesWithProductCountQuery } from '@/integrations/supabase/reactQueryHooks'; // تأكد من استيراد الاستعلام الصحيح
+} from "@/components/ui/alert-dialog";
+import { toast } from "@/hooks/use-toast";
+import AddCategoryDialog from "./AddCategoryDialog";
+import EditCategoryDialog from "./EditCategoryDialog";
+import ViewCategoryDialog from "./ViewCategoryDialog";
+import { Category } from "@/types/product";
+import { mapCategoryToProductCategory } from "@/types/index";
+import {
+  DragDropContext,
+  Droppable,
+  Draggable,
+  DropResult,
+} from "react-beautiful-dnd";
+import OptimizedSearch from "@/components/OptimizedSearch";
+import { useCategoriesWithProductCountQuery } from "@/integrations/supabase/reactQueryHooks"; // تأكد من استيراد الاستعلام الصحيح
 
 const AdminCategories: React.FC = () => {
   const { t, language } = useLanguage();
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showViewDialog, setShowViewDialog] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(
+    null,
+  );
   // استخدم الهوك بدون أي باراميتر
-  const { categories, loading, error, refetch, setCategories } = useCategoriesRealtime();
-  const [search, setSearch] = useState('');
-  const [filterActive, setFilterActive] = useState<'all' | 'active' | 'inactive'>('all');
-  const [sortBy, setSortBy] = useState<'name' | 'count'>('name');
-  const [categoriesOrder, setCategoriesOrder] = useState(categories.map(c => c.id));
+  const { categories, loading, error, refetch, setCategories } =
+    useCategoriesRealtime();
+  const [search, setSearch] = useState("");
+  const [filterActive, setFilterActive] = useState<
+    "all" | "active" | "inactive"
+  >("all");
+  const [sortBy, setSortBy] = useState<"name" | "count">("name");
+  const [categoriesOrder, setCategoriesOrder] = useState(
+    categories.map((c) => c.id),
+  );
   const deleteCategoryMutation = useDeleteCategory();
 
   // إحصائيات
@@ -65,28 +77,32 @@ const AdminCategories: React.FC = () => {
 
   // فلترة وبحث
   const filteredCategories = categories
-    .filter(c => {
+    .filter((c) => {
       // فلترة حسب البحث
-      const name = typeof c.name === 'string' ? c.name : '';
+      const name = typeof c.name === "string" ? c.name : "";
       const matchesSearch = name.toLowerCase().includes(search.toLowerCase());
       // فلترة حسب الحالة
       const matchesActive =
-        filterActive === 'all' ||
-        (filterActive === 'active' && c.active === true) ||
-        (filterActive === 'inactive' && c.active === false);
+        filterActive === "all" ||
+        (filterActive === "active" && c.active === true) ||
+        (filterActive === "inactive" && c.active === false);
       return matchesSearch && matchesActive;
     })
-    .sort((a, b) => sortBy === 'name' ? (a.name || '').localeCompare(b.name || '') : (b.count || 0) - (a.count || 0));
+    .sort((a, b) =>
+      sortBy === "name"
+        ? (a.name || "").localeCompare(b.name || "")
+        : (b.count || 0) - (a.count || 0),
+    );
 
   // ترتيب حسب السحب أو حسب الفرز
   let orderedCategories: typeof filteredCategories;
-  if (sortBy === 'count') {
+  if (sortBy === "count") {
     // عند الفرز بعدد المنتجات، تجاهل ترتيب السحب
     orderedCategories = filteredCategories;
   } else {
     // عند الفرز بالاسم، استخدم ترتيب السحب
     orderedCategories = categoriesOrder
-      .map(id => filteredCategories.find(c => c.id === id))
+      .map((id) => filteredCategories.find((c) => c.id === id))
       .filter(Boolean) as typeof filteredCategories;
   }
 
@@ -103,21 +119,24 @@ const AdminCategories: React.FC = () => {
     // ));
   };
 
-  const handleDeleteCategory = async (categoryId: string, categoryName: string) => {
+  const handleDeleteCategory = async (
+    categoryId: string,
+    categoryName: string,
+  ) => {
     try {
       const ok = await deleteCategoryMutation.mutateAsync(categoryId);
-      if (!ok) throw new Error('Delete failed');
+      if (!ok) throw new Error("Delete failed");
       toast({
-        title: t('categoryDeleted'),
-        description: `${t('categoryDeletedSuccessfully')} ${categoryName}`,
+        title: t("categoryDeleted"),
+        description: `${t("categoryDeletedSuccessfully")} ${categoryName}`,
       });
       refetch();
     } catch (error: unknown) {
       const err = error as Error;
-      console.error('Error deleting category:', err);
+      console.error("Error deleting category:", err);
       toast({
-        title: t('error'),
-        description: t('errorDeletingCategory'),
+        title: t("error"),
+        description: t("errorDeletingCategory"),
       });
     }
   };
@@ -142,17 +161,17 @@ const AdminCategories: React.FC = () => {
         categoriesOrder.length !== categories.length ||
         !categories.every((c, i) => categoriesOrder[i] === c.id))
     ) {
-      setCategoriesOrder(categories.map(c => c.id));
+      setCategoriesOrder(categories.map((c) => c.id));
     }
   }, [categories, categoriesOrder]);
 
   if (loading) {
     return (
       <div className="space-y-6">
-        <h1 className="text-3xl font-bold">{t('manageCategories')}</h1>
+        <h1 className="text-3xl font-bold">{t("manageCategories")}</h1>
         <div className="text-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto animate-spin rounded-full border-primary"></div>
-          <p className="mt-4 text-gray-600">{t('loadingCategories')}</p>
+          <p className="mt-4 text-gray-600">{t("loadingCategories")}</p>
         </div>
       </div>
     );
@@ -162,42 +181,77 @@ const AdminCategories: React.FC = () => {
     <div className="space-y-6 max-w-7xl mx-auto px-2 sm:px-4 md:px-8 py-6">
       {/* شريط الإحصائيات */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-2">
-        <div className="bg-gradient-to-r from-blue-100 to-blue-50 rounded-xl p-4 flex flex-col items-center shadow-sm cursor-pointer hover:shadow-md transition" onClick={() => { setFilterActive('all'); }}>
+        <div
+          className="bg-gradient-to-r from-blue-100 to-blue-50 rounded-xl p-4 flex flex-col items-center shadow-sm cursor-pointer hover:shadow-md transition"
+          onClick={() => {
+            setFilterActive("all");
+          }}
+        >
           <div className="text-lg font-bold">{totalCategories}</div>
-          <div className="text-xs text-gray-600">{t('categories')}</div>
+          <div className="text-xs text-gray-600">{t("categories")}</div>
         </div>
-        <div className="bg-gradient-to-r from-green-100 to-green-50 rounded-xl p-4 flex flex-col items-center shadow-sm cursor-pointer hover:shadow-md transition" onClick={() => { setFilterActive('active'); }}>
+        <div
+          className="bg-gradient-to-r from-green-100 to-green-50 rounded-xl p-4 flex flex-col items-center shadow-sm cursor-pointer hover:shadow-md transition"
+          onClick={() => {
+            setFilterActive("active");
+          }}
+        >
           <div className="text-lg font-bold">{activeCategories}</div>
-          <div className="text-xs text-gray-600">{t('active')}</div>
+          <div className="text-xs text-gray-600">{t("active")}</div>
         </div>
-        <div className="bg-gradient-to-r from-yellow-100 to-yellow-50 rounded-xl p-4 flex flex-col items-center shadow-sm cursor-pointer hover:shadow-md transition" onClick={() => { setFilterActive('inactive'); }}>
+        <div
+          className="bg-gradient-to-r from-yellow-100 to-yellow-50 rounded-xl p-4 flex flex-col items-center shadow-sm cursor-pointer hover:shadow-md transition"
+          onClick={() => {
+            setFilterActive("inactive");
+          }}
+        >
           <div className="text-lg font-bold">{inactiveCategories}</div>
-          <div className="text-xs text-gray-600">{t('inactive')}</div>
+          <div className="text-xs text-gray-600">{t("inactive")}</div>
         </div>
         <div className="bg-gradient-to-r from-purple-100 to-purple-50 rounded-xl p-4 flex flex-col items-center shadow-sm cursor-pointer hover:shadow-md transition">
           <div className="text-lg font-bold">{totalProducts}</div>
-          <div className="text-xs text-gray-600">{t('products')}</div>
+          <div className="text-xs text-gray-600">{t("products")}</div>
         </div>
       </div>
       {/* شريط الفلاتر */}
       <div className="flex flex-wrap gap-2 items-center bg-white rounded-xl p-3 shadow-sm border mt-2 relative">
-        <OptimizedSearch onSearch={setSearch} placeholder={t('searchCategories') || 'بحث الفئات...'} className="w-48" />
-        <select className="border rounded px-2 py-1" value={filterActive} onChange={e => setFilterActive(e.target.value as 'all' | 'active' | 'inactive')}>
-          <option value="all">{t('allStatus')}</option>
-          <option value="active">{t('active')}</option>
-          <option value="inactive">{t('inactive')}</option>
+        <OptimizedSearch
+          onSearch={setSearch}
+          placeholder={t("searchCategories") || "بحث الفئات..."}
+          className="w-48"
+        />
+        <select
+          className="border rounded px-2 py-1"
+          value={filterActive}
+          onChange={(e) =>
+            setFilterActive(e.target.value as "all" | "active" | "inactive")
+          }
+        >
+          <option value="all">{t("allStatus")}</option>
+          <option value="active">{t("active")}</option>
+          <option value="inactive">{t("inactive")}</option>
         </select>
-        <select className="border rounded px-2 py-1" value={sortBy} onChange={e => setSortBy(e.target.value as 'name' | 'count')}>
-          <option value="name">{t('sortByName')}</option>
-          <option value="count">{t('sortByProductCount')}</option>
+        <select
+          className="border rounded px-2 py-1"
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value as "name" | "count")}
+        >
+          <option value="name">{t("sortByName")}</option>
+          <option value="count">{t("sortByProductCount")}</option>
         </select>
         <button
           type="button"
           className="ml-auto flex items-center gap-2 px-4 py-2 rounded-lg bg-red-50 text-red-700 font-bold shadow border border-red-200 hover:bg-red-100 transition-all duration-200"
-          onClick={() => { setSearch(''); setFilterActive('all'); setSortBy('name'); }}
+          onClick={() => {
+            setSearch("");
+            setFilterActive("all");
+            setSortBy("name");
+          }}
         >
           <XCircle className="h-4 w-4" />
-          <span className="inline-block align-middle">{t('resetFilters') || 'مسح الفلاتر'}</span>
+          <span className="inline-block align-middle">
+            {t("resetFilters") || "مسح الفلاتر"}
+          </span>
         </button>
         <button
           type="button"
@@ -205,24 +259,32 @@ const AdminCategories: React.FC = () => {
           onClick={() => {
             // تصدير CSV
             const csv = [
-              ['ID', 'Name', 'ProductCount'],
-              ...orderedCategories.map(c => [c.id, c.name, c.count])
-            ].map(row => row.join(',')).join('\n');
-            const BOM = '\uFEFF'; // UTF-8 BOM
-            const blob = new Blob([BOM + csv], { type: 'text/csv;charset=utf-8;' });
+              ["ID", "Name", "ProductCount"],
+              ...orderedCategories.map((c) => [c.id, c.name, c.count]),
+            ]
+              .map((row) => row.join(","))
+              .join("\n");
+            const BOM = "\uFEFF"; // UTF-8 BOM
+            const blob = new Blob([BOM + csv], {
+              type: "text/csv;charset=utf-8;",
+            });
             const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
+            const a = document.createElement("a");
             a.href = url;
-            a.download = 'categories.csv';
+            a.download = "categories.csv";
             a.click();
             URL.revokeObjectURL(url);
           }}
         >
           <BarChart3 className="h-4 w-4" />
-          {t('exportExcel') || 'تصدير Excel'} </button>
-        <Button onClick={() => setShowAddDialog(true)} className="gap-2 bg-primary text-white font-bold ml-2">
+          {t("exportExcel") || "تصدير Excel"}{" "}
+        </button>
+        <Button
+          onClick={() => setShowAddDialog(true)}
+          className="gap-2 bg-primary text-white font-bold ml-2"
+        >
           <Plus className="h-4 w-4" />
-          {t('addCategory')}
+          {t("addCategory")}
         </Button>
       </div>
 
@@ -231,11 +293,13 @@ const AdminCategories: React.FC = () => {
           <CardContent className="p-12">
             <div className="text-center">
               <FolderOpen className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">{t('noCategories')}</h3>
-              <p className="text-gray-500 mb-6">{t('addYourFirstCategory')}</p>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                {t("noCategories")}
+              </h3>
+              <p className="text-gray-500 mb-6">{t("addYourFirstCategory")}</p>
               <Button onClick={() => setShowAddDialog(true)} className="gap-2">
                 <Plus className="h-4 w-4" />
-                {t('addCategory')}
+                {t("addCategory")}
               </Button>
             </div>
           </CardContent>
@@ -243,7 +307,7 @@ const AdminCategories: React.FC = () => {
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle>{t('categories')}</CardTitle>
+            <CardTitle>{t("categories")}</CardTitle>
           </CardHeader>
           <CardContent>
             <DragDropContext onDragEnd={handleDragEnd}>
@@ -254,24 +318,42 @@ const AdminCategories: React.FC = () => {
                       <TableHeader className="text-center">
                         <TableRow>
                           <TableHead className="text-center">#</TableHead>
-                          <TableHead className="text-center">{t('categoryImage')}</TableHead>
-                          <TableHead className="text-center">{t('categoryName')}</TableHead>
-                          <TableHead className="text-center">{t('productCount')}</TableHead>
-                          <TableHead className="text-center">{t('status')}</TableHead>
-                          <TableHead className="text-center">{t('actions')}</TableHead>
+                          <TableHead className="text-center">
+                            {t("categoryImage")}
+                          </TableHead>
+                          <TableHead className="text-center">
+                            {t("categoryName")}
+                          </TableHead>
+                          <TableHead className="text-center">
+                            {t("productCount")}
+                          </TableHead>
+                          <TableHead className="text-center">
+                            {t("status")}
+                          </TableHead>
+                          <TableHead className="text-center">
+                            {t("actions")}
+                          </TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {orderedCategories.map((category, idx) => (
-                          <Draggable key={category.id} draggableId={category.id} index={idx}>
+                          <Draggable
+                            key={category.id}
+                            draggableId={category.id}
+                            index={idx}
+                          >
                             {(provided, snapshot) => (
                               <TableRow
                                 ref={provided.innerRef}
                                 {...provided.draggableProps}
                                 {...provided.dragHandleProps}
-                                className={snapshot.isDragging ? 'bg-blue-50' : ''}
+                                className={
+                                  snapshot.isDragging ? "bg-blue-50" : ""
+                                }
                               >
-                                <TableCell className="text-center font-bold">{idx + 1}</TableCell>
+                                <TableCell className="text-center font-bold">
+                                  {idx + 1}
+                                </TableCell>
                                 <TableCell>
                                   <img
                                     src={category.image}
@@ -281,78 +363,177 @@ const AdminCategories: React.FC = () => {
                                 </TableCell>
                                 <TableCell className="font-medium">
                                   {(() => {
-                                    if (typeof category.name === 'string' && category.name) {
+                                    if (
+                                      typeof category.name === "string" &&
+                                      category.name
+                                    ) {
                                       // دعم البنية القديمة
-                                      if (t && typeof t === 'function' && t('lang') === 'ar') return category.name;
-                                      if (t && typeof t === 'function' && t('lang') === 'en' && category.nameEn) return category.nameEn;
-                                      if (t && typeof t === 'function' && t('lang') === 'he' && category.nameHe) return category.nameHe;
+                                      if (
+                                        t &&
+                                        typeof t === "function" &&
+                                        t("lang") === "ar"
+                                      )
+                                        return category.name;
+                                      if (
+                                        t &&
+                                        typeof t === "function" &&
+                                        t("lang") === "en" &&
+                                        category.nameEn
+                                      )
+                                        return category.nameEn;
+                                      if (
+                                        t &&
+                                        typeof t === "function" &&
+                                        t("lang") === "he" &&
+                                        category.nameHe
+                                      )
+                                        return category.nameHe;
                                     }
                                     // دعم البنية الجديدة
-                                    if (typeof category === 'object') {
-                                      if (language === 'ar' && category.name) return category.name;
-                                      if (language === 'en' && category.nameEn) return category.nameEn;
-                                      if (language === 'he' && category.nameHe) return category.nameHe;
+                                    if (typeof category === "object") {
+                                      if (language === "ar" && category.name)
+                                        return category.name;
+                                      if (language === "en" && category.nameEn)
+                                        return category.nameEn;
+                                      if (language === "he" && category.nameHe)
+                                        return category.nameHe;
                                     }
                                     // fallback
-                                    return category.name || category.nameEn || category.nameHe || '';
+                                    return (
+                                      category.name ||
+                                      category.nameEn ||
+                                      category.nameHe ||
+                                      ""
+                                    );
                                   })()}
                                 </TableCell>
                                 <TableCell>
-                                  <Badge variant="secondary">{category.count}</Badge>
+                                  <Badge variant="secondary">
+                                    {category.count}
+                                  </Badge>
                                 </TableCell>
                                 <TableCell>
-                                  <Badge variant={category.active ? 'default' : 'destructive'}>
-                                    {category.active ? t('active') : t('inactive')}
+                                  <Badge
+                                    variant={
+                                      category.active
+                                        ? "default"
+                                        : "destructive"
+                                    }
+                                  >
+                                    {category.active
+                                      ? t("active")
+                                      : t("inactive")}
                                   </Badge>
                                 </TableCell>
                                 <TableCell className="text-right">
                                   <div className="flex items-center gap-2 justify-end">
-                                    <Button 
-                                      variant="ghost" 
-                                      size="sm" 
-                                      title={t('view')}
-                                      onClick={() => handleViewCategory(mapCategoryToProductCategory(category))}
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      title={t("view")}
+                                      onClick={() =>
+                                        handleViewCategory(
+                                          mapCategoryToProductCategory(
+                                            category,
+                                          ),
+                                        )
+                                      }
                                     >
                                       <Eye className="h-4 w-4" />
                                     </Button>
-                                    <Button 
-                                      variant="ghost" 
-                                      size="sm" 
-                                      title={t('edit')}
-                                      onClick={() => handleEditCategory(mapCategoryToProductCategory(category))}
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      title={t("edit")}
+                                      onClick={() =>
+                                        handleEditCategory(
+                                          mapCategoryToProductCategory(
+                                            category,
+                                          ),
+                                        )
+                                      }
                                     >
                                       <Edit className="h-4 w-4" />
                                     </Button>
                                     <AlertDialog>
                                       <AlertDialogTrigger asChild>
-                                        <Button variant="ghost" size="sm" title={t('delete')}>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          title={t("delete")}
+                                        >
                                           <Trash className="h-4 w-4" />
                                         </Button>
                                       </AlertDialogTrigger>
                                       <AlertDialogContent>
                                         <AlertDialogHeader>
-                                          <AlertDialogTitle>{t('deleteCategory')}</AlertDialogTitle>
+                                          <AlertDialogTitle>
+                                            {t("deleteCategory")}
+                                          </AlertDialogTitle>
                                           <AlertDialogDescription>
-                                            {t('deleteCategoryConfirmation')} "{(() => {
-                                              if (language === 'ar' && category.name) return category.name;
-                                              if (language === 'en' && category.nameEn) return category.nameEn;
-                                              if (language === 'he' && category.nameHe) return category.nameHe;
-                                              return category.name || category.nameEn || category.nameHe || '';
-                                            })()}"?
-                                        </AlertDialogDescription>
+                                            {t("deleteCategoryConfirmation")} "
+                                            {(() => {
+                                              if (
+                                                language === "ar" &&
+                                                category.name
+                                              )
+                                                return category.name;
+                                              if (
+                                                language === "en" &&
+                                                category.nameEn
+                                              )
+                                                return category.nameEn;
+                                              if (
+                                                language === "he" &&
+                                                category.nameHe
+                                              )
+                                                return category.nameHe;
+                                              return (
+                                                category.name ||
+                                                category.nameEn ||
+                                                category.nameHe ||
+                                                ""
+                                              );
+                                            })()}
+                                            "?
+                                          </AlertDialogDescription>
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
-                                          <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
-                                          <AlertDialogAction 
-                                            onClick={() => handleDeleteCategory(category.id, (() => {
-                                              if (language === 'ar' && category.name) return category.name;
-                                              if (language === 'en' && category.nameEn) return category.nameEn;
-                                              if (language === 'he' && category.nameHe) return category.nameHe;
-                                              return category.name || category.nameEn || category.nameHe || '';
-                                            })())}
+                                          <AlertDialogCancel>
+                                            {t("cancel")}
+                                          </AlertDialogCancel>
+                                          <AlertDialogAction
+                                            onClick={() =>
+                                              handleDeleteCategory(
+                                                category.id,
+                                                (() => {
+                                                  if (
+                                                    language === "ar" &&
+                                                    category.name
+                                                  )
+                                                    return category.name;
+                                                  if (
+                                                    language === "en" &&
+                                                    category.nameEn
+                                                  )
+                                                    return category.nameEn;
+                                                  if (
+                                                    language === "he" &&
+                                                    category.nameHe
+                                                  )
+                                                    return category.nameHe;
+                                                  return (
+                                                    category.name ||
+                                                    category.nameEn ||
+                                                    category.nameHe ||
+                                                    ""
+                                                  );
+                                                })(),
+                                              )
+                                            }
                                             className="bg-red-600 hover:bg-red-700"
                                           >
-                                            {t('delete')}
+                                            {t("delete")}
                                           </AlertDialogAction>
                                         </AlertDialogFooter>
                                       </AlertDialogContent>
@@ -375,8 +556,8 @@ const AdminCategories: React.FC = () => {
       )}
 
       {/* الحوارات */}
-      <AddCategoryDialog 
-        open={showAddDialog} 
+      <AddCategoryDialog
+        open={showAddDialog}
         onOpenChange={setShowAddDialog}
         onSuccess={() => refetch()}
         setCategories={setCategories}

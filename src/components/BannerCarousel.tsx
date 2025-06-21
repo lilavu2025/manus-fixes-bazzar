@@ -1,9 +1,9 @@
 import * as React from "react";
-import { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Banner } from '@/types';
-import LazyImage from '@/components/LazyImage';
+import { useState, useEffect } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Banner } from "@/types";
+import LazyImage from "@/components/LazyImage";
 
 interface BannerCarouselProps {
   banners: Banner[];
@@ -34,7 +34,7 @@ const BannerCarousel: React.FC<BannerCarouselProps> = ({ banners }) => {
         <div
           key={banner.id}
           className={`absolute inset-0 transition-opacity duration-500 ${
-            index === currentSlide ? 'opacity-100' : 'opacity-0'
+            index === currentSlide ? "opacity-100" : "opacity-0"
           }`}
         >
           <LazyImage
@@ -44,7 +44,7 @@ const BannerCarousel: React.FC<BannerCarouselProps> = ({ banners }) => {
             priority={index === 0}
           />
           <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent" />
-          
+
           <div className="absolute inset-0 flex items-center justify-start p-8">
             <div className="text-white max-w-md animate-fade-in">
               <h2 className="text-2xl md:text-4xl font-bold mb-4">
@@ -53,7 +53,7 @@ const BannerCarousel: React.FC<BannerCarouselProps> = ({ banners }) => {
               <p className="text-lg md:text-xl opacity-90 mb-6">
                 {banner.subtitle}
               </p>
-              <Button 
+              <Button
                 size="lg"
                 className="bg-primary hover:bg-primary/90 text-white font-semibold px-8"
               >
@@ -73,7 +73,7 @@ const BannerCarousel: React.FC<BannerCarouselProps> = ({ banners }) => {
       >
         <ChevronLeft className="h-6 w-6" />
       </Button>
-      
+
       <Button
         variant="ghost"
         size="icon"
@@ -91,8 +91,8 @@ const BannerCarousel: React.FC<BannerCarouselProps> = ({ banners }) => {
             onClick={() => setCurrentSlide(index)}
             className={`w-3 h-3 rounded-full transition-all ${
               index === currentSlide
-                ? 'bg-white'
-                : 'bg-white/50 hover:bg-white/70'
+                ? "bg-white"
+                : "bg-white/50 hover:bg-white/70"
             }`}
           />
         ))}

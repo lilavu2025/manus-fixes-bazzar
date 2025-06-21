@@ -1,18 +1,18 @@
-import React, { useEffect } from 'react';
-import { useAdminUsers } from '@/hooks/useAdminUsers';
-import { useLocation } from 'react-router-dom';
-import AdminUsersHeader from './users/AdminUsersHeader';
-import UserStatsCards from './users/UserStatsCards';
-import UserFilters from './users/UserFilters';
-import UsersTable from './users/UsersTable';
-import UserErrorDisplay from './users/UserErrorDisplay';
-import { useLanguage } from '@/utils/languageContextUtils';
-import { XCircle } from 'lucide-react';
+import React, { useEffect } from "react";
+import { useAdminUsers } from "@/hooks/useAdminUsers";
+import { useLocation } from "react-router-dom";
+import AdminUsersHeader from "./users/AdminUsersHeader";
+import UserStatsCards from "./users/UserStatsCards";
+import UserFilters from "./users/UserFilters";
+import UsersTable from "./users/UsersTable";
+import UserErrorDisplay from "./users/UserErrorDisplay";
+import { useLanguage } from "@/utils/languageContextUtils";
+import { XCircle } from "lucide-react";
 
 const AdminUsers: React.FC = () => {
   const { isRTL } = useLanguage();
   const location = useLocation();
-  
+
   const {
     users,
     isLoading,
@@ -28,7 +28,7 @@ const AdminUsers: React.FC = () => {
     sortOrder,
     setSortOrder,
     disableUser,
-    deleteUser
+    deleteUser,
   } = useAdminUsers();
 
   // Handle filter from dashboard navigation
@@ -37,12 +37,12 @@ const AdminUsers: React.FC = () => {
       const filterType = location.state.filterType;
       // Map Arabic names to English for filtering
       const typeMapping: { [key: string]: string } = {
-        'مدير': 'admin',
-        'جملة': 'wholesale', 
-        'تجزئة': 'retail',
-        'admin': 'admin',
-        'wholesale': 'wholesale',
-        'retail': 'retail'
+        مدير: "admin",
+        جملة: "wholesale",
+        تجزئة: "retail",
+        admin: "admin",
+        wholesale: "wholesale",
+        retail: "retail",
       };
       const mappedType = typeMapping[filterType] || filterType;
       setUserTypeFilter(mappedType);
@@ -50,7 +50,7 @@ const AdminUsers: React.FC = () => {
   }, [location.state, setUserTypeFilter]);
 
   const handleSortOrderChange = (order: string) => {
-    setSortOrder(order as 'asc' | 'desc');
+    setSortOrder(order as "asc" | "desc");
   };
 
   if (isLoading) {
@@ -70,21 +70,28 @@ const AdminUsers: React.FC = () => {
         <h1 className="text-3xl font-bold">لوحة المستخدمين</h1>
         <div className="text-center py-12">
           <XCircle className="h-12 w-12 text-red-500 mx-auto" />
-          <p className="mt-4 text-red-600 font-bold">حدث خطأ أثناء جلب المستخدمين</p>
-          <p className="text-gray-500">{typeof error === 'string' ? error : error?.message || ''}</p>
+          <p className="mt-4 text-red-600 font-bold">
+            حدث خطأ أثناء جلب المستخدمين
+          </p>
+          <p className="text-gray-500">
+            {typeof error === "string" ? error : error?.message || ""}
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={`p-4 lg:p-6 ${isRTL ? 'text-right' : 'text-left'}`} dir={isRTL ? 'rtl' : 'ltr'}>
+    <div
+      className={`p-4 lg:p-6 ${isRTL ? "text-right" : "text-left"}`}
+      dir={isRTL ? "rtl" : "ltr"}
+    >
       <AdminUsersHeader />
 
       <div className="space-y-6">
         <UserStatsCards users={users} />
-        
-        <UserFilters 
+
+        <UserFilters
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
           userTypeFilter={userTypeFilter}
@@ -97,7 +104,13 @@ const AdminUsers: React.FC = () => {
           setSortOrder={handleSortOrderChange}
         />
 
-        <UsersTable users={users} isLoading={isLoading} error={typeof error === 'string' ? error : error?.message || ''} disableUser={disableUser} deleteUser={deleteUser} />
+        <UsersTable
+          users={users}
+          isLoading={isLoading}
+          error={typeof error === "string" ? error : error?.message || ""}
+          disableUser={disableUser}
+          deleteUser={deleteUser}
+        />
       </div>
     </div>
   );

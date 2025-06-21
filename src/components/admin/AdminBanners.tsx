@@ -1,8 +1,17 @@
-import React, { useState, ReactNode } from 'react';
-import { Plus, Edit, Trash2, Eye, EyeOff, Upload, X, Trash } from 'lucide-react';
-import { toast } from 'sonner';
+import React, { useState, ReactNode } from "react";
+import {
+  Plus,
+  Edit,
+  Trash2,
+  Eye,
+  EyeOff,
+  Upload,
+  X,
+  Trash,
+} from "lucide-react";
+import { toast } from "sonner";
 
-import { Button } from '@/components/ui/button';
+import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,18 +22,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
+} from "@/components/ui/alert-dialog";
 import {
   useBannersQuery,
   useAddBanner,
   useUpdateBanner,
   useDeleteBanner,
   useToggleBannerActive,
-  useUploadBannerImage
-} from '@/integrations/supabase/reactQueryHooks';
-import { useLanguage } from '../../utils/languageContextUtils';
+  useUploadBannerImage,
+} from "@/integrations/supabase/reactQueryHooks";
+import { useLanguage } from "../../utils/languageContextUtils";
 // إزالة تعريف Banner المحلي واستخدام Banner من dataFetchers
-import type { Banner } from '@/integrations/supabase/dataFetchers';
+import type { Banner } from "@/integrations/supabase/dataFetchers";
 
 // تعريف واجهة بيانات النموذج (BannerFormData) لإدارة حالة النموذج
 interface BannerFormData {
@@ -51,23 +60,28 @@ const AdminBanners: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingBanner, setEditingBanner] = useState<Banner | null>(null);
   const [formData, setFormData] = useState<BannerFormData>({
-    title_ar: '',
-    title_en: '',
-    title_he: '',
-    subtitle_ar: '',
-    subtitle_en: '',
-    subtitle_he: '',
+    title_ar: "",
+    title_en: "",
+    title_he: "",
+    subtitle_ar: "",
+    subtitle_en: "",
+    subtitle_he: "",
     image: null,
-    imageUrl: '',
-    link: '',
+    imageUrl: "",
+    link: "",
     sort_order: 0,
-    active: true
+    active: true,
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // استخدام hooks الجديدة
-  const { data: bannersData = [], isLoading: loadingBanners, error: bannersError, refetch } = useBannersQuery();
+  const {
+    data: bannersData = [],
+    isLoading: loadingBanners,
+    error: bannersError,
+    refetch,
+  } = useBannersQuery();
   const addBannerMutation = useAddBanner();
   const updateBannerMutation = useUpdateBanner();
   const deleteBannerMutation = useDeleteBanner();
@@ -76,19 +90,19 @@ const AdminBanners: React.FC = () => {
 
   // إعادة تعيين النموذج وإغلاقه
   const resetForm = () => {
-    console.log('إعادة تعيين النموذج');
+    console.log("إعادة تعيين النموذج");
     setFormData({
-      title_ar: '',
-      title_en: '',
-      title_he: '',
-      subtitle_ar: '',
-      subtitle_en: '',
-      subtitle_he: '',
+      title_ar: "",
+      title_en: "",
+      title_he: "",
+      subtitle_ar: "",
+      subtitle_en: "",
+      subtitle_he: "",
       image: null,
-      imageUrl: '',
-      link: '',
+      imageUrl: "",
+      link: "",
       sort_order: 0,
-      active: true
+      active: true,
     });
     setEditingBanner(null);
     setShowForm(false);
@@ -96,20 +110,20 @@ const AdminBanners: React.FC = () => {
 
   // عند الضغط على زر التعديل، تعبئة النموذج ببيانات البانر المحدد
   const handleEdit = (banner: Banner) => {
-    console.log('تعديل البانر:', banner);
+    console.log("تعديل البانر:", banner);
     setEditingBanner(banner);
     setFormData({
       title_ar: banner.title_ar,
       title_en: banner.title_en,
       title_he: banner.title_he,
-      subtitle_ar: banner.subtitle_ar || '',
-      subtitle_en: banner.subtitle_en || '',
-      subtitle_he: banner.subtitle_he || '',
+      subtitle_ar: banner.subtitle_ar || "",
+      subtitle_en: banner.subtitle_en || "",
+      subtitle_he: banner.subtitle_he || "",
       image: null,
       imageUrl: banner.image,
-      link: banner.link || '',
+      link: banner.link || "",
       sort_order: banner.sort_order,
-      active: banner.active
+      active: banner.active,
     });
     setShowForm(true);
   };
@@ -118,8 +132,8 @@ const AdminBanners: React.FC = () => {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      console.log('تم اختيار صورة:', file.name);
-      setFormData(prev => ({ ...prev, image: file }));
+      console.log("تم اختيار صورة:", file.name);
+      setFormData((prev) => ({ ...prev, image: file }));
     }
   };
 
@@ -128,12 +142,12 @@ const AdminBanners: React.FC = () => {
     e.preventDefault();
     // التحقق من العناوين
     if (!formData.title_ar || !formData.title_en || !formData.title_he) {
-      toast.error(t('pleaseEnterAllTitles'));
+      toast.error(t("pleaseEnterAllTitles"));
       return;
     }
     // التحقق من وجود صورة عند الإضافة
     if (!editingBanner && !formData.image) {
-      toast.error(t('pleaseSelectImage'));
+      toast.error(t("pleaseSelectImage"));
       return;
     }
     setSubmitting(true);
@@ -154,24 +168,29 @@ const AdminBanners: React.FC = () => {
         image: imageUrl,
         link: formData.link || null,
         sort_order: formData.sort_order,
-        active: formData.active
+        active: formData.active,
       };
       if (editingBanner) {
         // تعديل بانر موجود
-        console.log('تعديل بانر:', editingBanner.id, bannerData);
-        await updateBannerMutation.mutateAsync({ id: editingBanner.id, bannerData });
-        toast.success(t('bannerUpdatedSuccessfully'));
+        console.log("تعديل بانر:", editingBanner.id, bannerData);
+        await updateBannerMutation.mutateAsync({
+          id: editingBanner.id,
+          bannerData,
+        });
+        toast.success(t("bannerUpdatedSuccessfully"));
       } else {
         // إضافة بانر جديد
-        console.log('إضافة بانر جديد:', bannerData);
+        console.log("إضافة بانر جديد:", bannerData);
         await addBannerMutation.mutateAsync(bannerData);
-        toast.success(t('bannerAddedSuccessfully'));
+        toast.success(t("bannerAddedSuccessfully"));
       }
       resetForm();
       refetch();
     } catch (error) {
-      console.error('خطأ أثناء حفظ البانر:', error);
-      toast.error(editingBanner ? t('errorUpdatingBanner') : t('errorAddingBanner'));
+      console.error("خطأ أثناء حفظ البانر:", error);
+      toast.error(
+        editingBanner ? t("errorUpdatingBanner") : t("errorAddingBanner"),
+      );
     } finally {
       setSubmitting(false);
     }
@@ -181,11 +200,11 @@ const AdminBanners: React.FC = () => {
   const handleDelete = async (id: string) => {
     try {
       await deleteBannerMutation.mutateAsync(id);
-      toast.success(t('bannerDeletedSuccessfully'));
+      toast.success(t("bannerDeletedSuccessfully"));
       refetch();
     } catch (error) {
-      console.error('خطأ أثناء حذف البانر:', error);
-      toast.error(t('errorDeletingBanner'));
+      console.error("خطأ أثناء حذف البانر:", error);
+      toast.error(t("errorDeletingBanner"));
     }
   };
 
@@ -193,11 +212,11 @@ const AdminBanners: React.FC = () => {
   const toggleActive = async (id: string, currentStatus: boolean) => {
     try {
       await toggleBannerActiveMutation.mutateAsync({ id, currentStatus });
-      toast.success(t('bannerStatusUpdated'));
+      toast.success(t("bannerStatusUpdated"));
       refetch();
     } catch (error) {
-      console.error('خطأ أثناء تحديث حالة البانر:', error);
-      toast.error(t('errorUpdatingBannerStatus'));
+      console.error("خطأ أثناء تحديث حالة البانر:", error);
+      toast.error(t("errorUpdatingBannerStatus"));
     }
   };
 
@@ -205,10 +224,10 @@ const AdminBanners: React.FC = () => {
   if (loadingBanners) {
     return (
       <div className="space-y-6">
-        <h1 className="text-3xl font-bold">{t('manageBanners')}</h1>
+        <h1 className="text-3xl font-bold">{t("manageBanners")}</h1>
         <div className="text-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto animate-spin rounded-full border-primary"></div>
-          <p className="mt-4 text-gray-600">{t('loadingBanners')}</p>
+          <p className="mt-4 text-gray-600">{t("loadingBanners")}</p>
         </div>
       </div>
     );
@@ -220,7 +239,9 @@ const AdminBanners: React.FC = () => {
         <div className="text-center">
           <div className="flex flex-col items-center mb-4">
             <X className="h-16 w-16 text-red-300 mb-2" />
-            <h3 className="text-lg font-medium text-red-900 mb-2">{t('errorLoadingBanners') || 'خطأ في تحميل البانرات'}</h3>
+            <h3 className="text-lg font-medium text-red-900 mb-2">
+              {t("errorLoadingBanners") || "خطأ في تحميل البانرات"}
+            </h3>
             <p className="text-red-600 mb-4">{bannersError.message}</p>
           </div>
           <button
@@ -231,7 +252,7 @@ const AdminBanners: React.FC = () => {
             }}
             className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-700 transition-colors"
           >
-            {t('retry') || 'إعادة المحاولة'}
+            {t("retry") || "إعادة المحاولة"}
           </button>
         </div>
       </div>
@@ -244,18 +265,20 @@ const AdminBanners: React.FC = () => {
       {/* رأس الصفحة وزر إضافة بانر */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{t('manageBanners')}</h1>
-          <p className="text-gray-600">{t('manageBannersDescription')}</p>
+          <h1 className="text-2xl font-bold text-gray-900">
+            {t("manageBanners")}
+          </h1>
+          <p className="text-gray-600">{t("manageBannersDescription")}</p>
         </div>
         <button
           onClick={() => {
-            console.log('فتح نموذج إضافة بانر جديد');
+            console.log("فتح نموذج إضافة بانر جديد");
             setShowForm(true);
           }}
           className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg flex items-center gap-2"
         >
           <Plus className="h-4 w-4" />
-          {t('addBanner')}
+          {t("addBanner")}
         </button>
       </div>
 
@@ -265,7 +288,7 @@ const AdminBanners: React.FC = () => {
           <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold">
-                {editingBanner ? t('editBanner') : t('addNewBanner')}
+                {editingBanner ? t("editBanner") : t("addNewBanner")}
               </h2>
               <button
                 onClick={resetForm}
@@ -280,39 +303,54 @@ const AdminBanners: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t('title')} ({t('arabic')})
+                    {t("title")} ({t("arabic")})
                   </label>
                   <input
                     type="text"
                     value={formData.title_ar}
-                    onChange={(e) => setFormData(prev => ({ ...prev, title_ar: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        title_ar: e.target.value,
+                      }))
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder={t('enterTitleArabic')}
+                    placeholder={t("enterTitleArabic")}
                     required
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t('title')} ({t('english')})
+                    {t("title")} ({t("english")})
                   </label>
                   <input
                     type="text"
                     value={formData.title_en}
-                    onChange={(e) => setFormData(prev => ({ ...prev, title_en: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        title_en: e.target.value,
+                      }))
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder={t('enterTitleEnglish')}
+                    placeholder={t("enterTitleEnglish")}
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t('title')} ({t('hebrew')})
+                    {t("title")} ({t("hebrew")})
                   </label>
                   <input
                     type="text"
                     value={formData.title_he}
-                    onChange={(e) => setFormData(prev => ({ ...prev, title_he: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        title_he: e.target.value,
+                      }))
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder={t('enterTitleHebrew')}
+                    placeholder={t("enterTitleHebrew")}
                   />
                 </div>
               </div>
@@ -321,38 +359,53 @@ const AdminBanners: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t('subtitleArabic')} ({t('optional')})
+                    {t("subtitleArabic")} ({t("optional")})
                   </label>
                   <input
                     type="text"
                     value={formData.subtitle_ar}
-                    onChange={(e) => setFormData(prev => ({ ...prev, subtitle_ar: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        subtitle_ar: e.target.value,
+                      }))
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder={t('enterSubtitleArabic')}
+                    placeholder={t("enterSubtitleArabic")}
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t('subtitleEnglish')} ({t('optional')})
+                    {t("subtitleEnglish")} ({t("optional")})
                   </label>
                   <input
                     type="text"
                     value={formData.subtitle_en}
-                    onChange={(e) => setFormData(prev => ({ ...prev, subtitle_en: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        subtitle_en: e.target.value,
+                      }))
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder={t('enterSubtitleEnglish')}
+                    placeholder={t("enterSubtitleEnglish")}
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t('subtitleHebrew')} ({t('optional')})
+                    {t("subtitleHebrew")} ({t("optional")})
                   </label>
                   <input
                     type="text"
                     value={formData.subtitle_he}
-                    onChange={(e) => setFormData(prev => ({ ...prev, subtitle_he: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        subtitle_he: e.target.value,
+                      }))
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder={t('enterSubtitleHebrew')}
+                    placeholder={t("enterSubtitleHebrew")}
                   />
                 </div>
               </div>
@@ -360,7 +413,7 @@ const AdminBanners: React.FC = () => {
               {/* رفع صورة البانر */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('bannerImage')}
+                  {t("bannerImage")}
                 </label>
                 <div className="flex items-center gap-4">
                   <input
@@ -375,11 +428,11 @@ const AdminBanners: React.FC = () => {
                     className="bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200 cursor-pointer flex items-center gap-2"
                   >
                     <Upload className="h-4 w-4" />
-                    {formData.image ? t('changeImage') : t('selectImage')}
+                    {formData.image ? t("changeImage") : t("selectImage")}
                   </label>
                   {(formData.imageUrl || formData.image) && (
                     <span className="text-sm text-green-600">
-                      {formData.image ? formData.image.name : t('currentImage')}
+                      {formData.image ? formData.image.name : t("currentImage")}
                     </span>
                   )}
                 </div>
@@ -396,26 +449,33 @@ const AdminBanners: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t('bannerLink')} ({t('optional')})
+                    {t("bannerLink")} ({t("optional")})
                   </label>
                   <input
                     type="url"
                     value={formData.link}
-                    onChange={(e) => setFormData(prev => ({ ...prev, link: e.target.value }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, link: e.target.value }))
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder={t('enterBannerLink')}
+                    placeholder={t("enterBannerLink")}
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t('sortOrder')}
+                    {t("sortOrder")}
                   </label>
                   <input
                     type="number"
                     value={formData.sort_order}
-                    onChange={(e) => setFormData(prev => ({ ...prev, sort_order: parseInt(e.target.value) || 0 }))}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        sort_order: parseInt(e.target.value) || 0,
+                      }))
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder={t('enterSortOrder')}
+                    placeholder={t("enterSortOrder")}
                     min="0"
                   />
                 </div>
@@ -427,11 +487,19 @@ const AdminBanners: React.FC = () => {
                   type="checkbox"
                   id="active"
                   checked={formData.active}
-                  onChange={(e) => setFormData(prev => ({ ...prev, active: e.target.checked }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      active: e.target.checked,
+                    }))
+                  }
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                 />
-                <label htmlFor="active" className="ml-2 block text-sm text-gray-900">
-                  {t('activeBanner')}
+                <label
+                  htmlFor="active"
+                  className="ml-2 block text-sm text-gray-900"
+                >
+                  {t("activeBanner")}
                 </label>
               </div>
 
@@ -442,7 +510,7 @@ const AdminBanners: React.FC = () => {
                   onClick={resetForm}
                   className="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300"
                 >
-                  {t('cancel')}
+                  {t("cancel")}
                 </button>
                 <button
                   type="submit"
@@ -450,9 +518,12 @@ const AdminBanners: React.FC = () => {
                   className="bg-primary hover:bg-primary/90 px-4 py-2 text-white rounded-md disabled:opacity-50"
                 >
                   {submitting
-                    ? (editingBanner ? t('updating') : t('adding'))
-                    : (editingBanner ? t('updateBanner') : t('addBanner'))
-                  }
+                    ? editingBanner
+                      ? t("updating")
+                      : t("adding")
+                    : editingBanner
+                      ? t("updateBanner")
+                      : t("addBanner")}
                 </button>
               </div>
             </form>
@@ -464,7 +535,7 @@ const AdminBanners: React.FC = () => {
       <div className="bg-white rounded-lg shadow overflow-hidden">
         {bannersData.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-gray-500">{t('noBannersFound')}</p>
+            <p className="text-gray-500">{t("noBannersFound")}</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -472,19 +543,19 @@ const AdminBanners: React.FC = () => {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t('image')}
+                    {t("image")}
                   </th>
                   <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t('title')}
+                    {t("title")}
                   </th>
                   <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t('sortOrder')}
+                    {t("sortOrder")}
                   </th>
                   <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t('status')}
+                    {t("status")}
                   </th>
                   <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {t('actions')}
+                    {t("actions")}
                   </th>
                 </tr>
               </thead>
@@ -517,14 +588,18 @@ const AdminBanners: React.FC = () => {
                         onClick={() => toggleActive(banner.id, banner.active)}
                         className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
                           banner.active
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-red-100 text-red-800'
+                            ? "bg-green-100 text-green-800"
+                            : "bg-red-100 text-red-800"
                         }`}
                       >
                         {banner.active ? (
-                          <><Eye className="h-3 w-3" /> {t('active')}</>
+                          <>
+                            <Eye className="h-3 w-3" /> {t("active")}
+                          </>
                         ) : (
-                          <><EyeOff className="h-3 w-3" /> {t('inactive')}</>
+                          <>
+                            <EyeOff className="h-3 w-3" /> {t("inactive")}
+                          </>
                         )}
                       </button>
                     </td>
@@ -538,24 +613,33 @@ const AdminBanners: React.FC = () => {
                         </button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="sm" title={t('delete')}>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              title={t("delete")}
+                            >
                               <Trash className="h-4 w-4" />
                             </Button>
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
-                              <AlertDialogTitle>{t('deleteCategory')}</AlertDialogTitle>
+                              <AlertDialogTitle>
+                                {t("deleteCategory")}
+                              </AlertDialogTitle>
                               <AlertDialogDescription>
-                                {t('deleteCategoryConfirmation')} "{banner.title_ar}"?
+                                {t("deleteCategoryConfirmation")} "
+                                {banner.title_ar}"?
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                              <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
-                              <AlertDialogAction 
+                              <AlertDialogCancel>
+                                {t("cancel")}
+                              </AlertDialogCancel>
+                              <AlertDialogAction
                                 onClick={() => handleDelete(banner.id)}
                                 className="bg-red-600 hover:bg-red-700"
                               >
-                                {t('delete')}
+                                {t("delete")}
                               </AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>

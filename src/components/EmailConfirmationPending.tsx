@@ -1,20 +1,29 @@
 import * as React from "react";
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Mail, RefreshCw } from 'lucide-react';
-import { useLanguage } from '@/utils/languageContextUtils';
-import { useAuth } from '@/contexts/useAuth';
-import { useToast } from '@/hooks/use-toast';
-import { useResendConfirmationEmail } from '@/integrations/supabase/reactQueryHooks';
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Mail, RefreshCw } from "lucide-react";
+import { useLanguage } from "@/utils/languageContextUtils";
+import { useAuth } from "@/contexts/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { useResendConfirmationEmail } from "@/integrations/supabase/reactQueryHooks";
 
 interface EmailConfirmationPendingProps {
   email: string;
   onBack: () => void;
 }
 
-const EmailConfirmationPending: React.FC<EmailConfirmationPendingProps> = ({ email, onBack }) => {
+const EmailConfirmationPending: React.FC<EmailConfirmationPendingProps> = ({
+  email,
+  onBack,
+}) => {
   const { t } = useLanguage();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -36,13 +45,18 @@ const EmailConfirmationPending: React.FC<EmailConfirmationPendingProps> = ({ ema
 
   // Check if user gets confirmed automatically and redirect
   useEffect(() => {
-    if (user && typeof user === 'object' && 'email_confirmed_at' in user && user.email_confirmed_at) {
+    if (
+      user &&
+      typeof user === "object" &&
+      "email_confirmed_at" in user &&
+      user.email_confirmed_at
+    ) {
       toast({
-        title: t('success'),
-        description: t('emailConfirmedSuccess'),
+        title: t("success"),
+        description: t("emailConfirmedSuccess"),
       });
       setTimeout(() => {
-        navigate('/');
+        navigate("/");
       }, 1500);
     }
   }, [user, t, toast, navigate]);
@@ -54,14 +68,14 @@ const EmailConfirmationPending: React.FC<EmailConfirmationPendingProps> = ({ ema
       setCountdown(60);
       setCanResend(false);
       toast({
-        title: t('emailConfirmationSent'),
-        description: t('pleaseCheckYourEmail'),
+        title: t("emailConfirmationSent"),
+        description: t("pleaseCheckYourEmail"),
       });
     } catch (error) {
-      console.error('Resend error:', error);
+      console.error("Resend error:", error);
       toast({
-        title: t('error'),
-        description: t('emailResendFailed'),
+        title: t("error"),
+        description: t("emailResendFailed"),
       });
     } finally {
       setIsResending(false);
@@ -74,18 +88,30 @@ const EmailConfirmationPending: React.FC<EmailConfirmationPendingProps> = ({ ema
       <button
         onClick={onBack}
         className="absolute -top-4 ltr:-left-4 rtl:-right-4 w-10 h-10 rounded-full bg-gradient-to-r from-orange-500 to-red-500 text-white flex items-center justify-center shadow-lg hover:from-orange-600 hover:to-red-600 transition-all duration-200 z-10 border-4 border-white dark:border-neutral-900"
-        aria-label={t('back')}
+        aria-label={t("back")}
         type="button"
       >
-        <svg className="h-5 w-5 rtl:rotate-180" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+        <svg
+          className="h-5 w-5 rtl:rotate-180"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M15 19l-7-7 7-7"
+          />
+        </svg>
       </button>
 
       <CardHeader className="text-center">
         <div className="w-16 h-16 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
           <span className="text-white font-bold text-2xl">م</span>
         </div>
-        <CardTitle className="text-2xl">{t('storeName')}</CardTitle>
-        <CardDescription>{t('confirmYourEmail')}</CardDescription>
+        <CardTitle className="text-2xl">{t("storeName")}</CardTitle>
+        <CardDescription>{t("confirmYourEmail")}</CardDescription>
       </CardHeader>
 
       <CardContent className="text-center space-y-6">
@@ -96,13 +122,11 @@ const EmailConfirmationPending: React.FC<EmailConfirmationPendingProps> = ({ ema
         </div>
 
         <div className="space-y-2">
-          <h3 className="text-lg font-semibold">{t('checkYourEmail')}</h3>
+          <h3 className="text-lg font-semibold">{t("checkYourEmail")}</h3>
           <p className="text-gray-600">
-            {t('sentConfirmationEmail')} <strong>{email}</strong>
+            {t("sentConfirmationEmail")} <strong>{email}</strong>
           </p>
-          <p className="text-sm text-gray-500">
-            {t('clickLinkToConfirm')}
-          </p>
+          <p className="text-sm text-gray-500">{t("clickLinkToConfirm")}</p>
         </div>
 
         <div className="space-y-4">
@@ -117,20 +141,19 @@ const EmailConfirmationPending: React.FC<EmailConfirmationPendingProps> = ({ ema
             ) : (
               <RefreshCw className="h-4 w-4 mr-2" />
             )}
-            {canResend 
-              ? t('resendEmail') 
-              : `${t('resendIn')} ${countdown}${t('seconds')}`
-            }
+            {canResend
+              ? t("resendEmail")
+              : `${t("resendIn")} ${countdown}${t("seconds")}`}
           </Button>
 
           <Button variant="ghost" onClick={onBack} className="w-full">
-            {t('backToSignup')}
+            {t("backToSignup")}
           </Button>
         </div>
 
         <div className="text-xs text-gray-500">
-          <p>{t('didntReceiveEmail')}</p>
-          <p>{t('checkSpamFolder')}</p>
+          <p>{t("didntReceiveEmail")}</p>
+          <p>{t("checkSpamFolder")}</p>
         </div>
       </CardContent>
     </Card>

@@ -1,6 +1,6 @@
-import { useEffect, useState, useCallback } from 'react';
-import { fetchAllProducts } from '@/integrations/supabase/dataFetchers';
-import type { ProductRow } from '@/integrations/supabase/dataFetchers';
+import { useEffect, useState, useCallback } from "react";
+import { fetchAllProducts } from "@/integrations/supabase/dataFetchers";
+import type { ProductRow } from "@/integrations/supabase/dataFetchers";
 
 // حذف كل منطق الجلسة أو الأحداث من الهوك، والاكتفاء بجلب المنتجات فقط عند التحميل الأول
 export function useProductsRealtime() {
