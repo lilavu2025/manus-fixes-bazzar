@@ -1,9 +1,13 @@
-import { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useOrdersWithDetailsQuery } from '@/integrations/supabase/reactQueryHooks';
 
-// تم حذف كل منطق التحديث التلقائي أو مراقبة الأحداث أو الاشتراك في realtime. استخدم AuthContext فقط لأي منطق جلسة أو تحديث تلقائي.
+// Hook جلب الطلبات مع تفاصيلها للوحة تحكم الأدمن
 export function useOrdersRealtime() {
-  // فارغ - استخدم AuthContext فقط
-  return { orders: [], loading: false, error: null, refetch: () => {}, setOrders: () => {} };
+  const { data, isLoading, error, refetch } = useOrdersWithDetailsQuery();
+  return {
+    orders: data || [],
+    loading: isLoading,
+    error,
+    refetch,
+    setOrders: () => {}, // placeholder للتوافق مع الكود القديم
+  };
 }
