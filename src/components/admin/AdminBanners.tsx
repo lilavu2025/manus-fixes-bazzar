@@ -8,6 +8,7 @@ import {
   Upload,
   X,
   Trash,
+  XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -23,6 +24,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   useBannersQuery,
   useAddBanner,
@@ -32,6 +34,7 @@ import {
   useUploadBannerImage,
 } from "@/integrations/supabase/reactQueryHooks";
 import { useLanguage } from "../../utils/languageContextUtils";
+import AdminHeader from "./AdminHeader";
 // إزالة تعريف Banner المحلي واستخدام Banner من dataFetchers
 import type { Banner } from "@/integrations/supabase/dataFetchers";
 
@@ -274,42 +277,49 @@ const AdminBanners: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* رأس الصفحة وزر إضافة بانر */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            {t("manageBanners")}
-          </h1>
-          <p className="text-gray-600">{t("manageBannersDescription")}</p>
-        </div>
-        <button
-          onClick={() => {
-            console.log("فتح نموذج إضافة بانر جديد");
-            setShowForm(true);
-          }}
-          className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg flex items-center gap-2"
-        >
-          <Plus className="h-4 w-4" />
-          {t("addBanner")}
-        </button>
-      </div>
+      <AdminHeader
+        title={t("banners") || "البانرات"}
+        count={banners.length}
+        addLabel={t("addBanner") || "إضافة بانر"}
+        onAdd={() => setShowForm(true)}
+      />
 
-      {/* شريط الفلاتر */}
-      <div className="flex flex-wrap gap-3 items-center bg-white rounded-xl p-4 shadow-md border mt-4 relative">
-        {/* فلتر البحث بالاسم */}
-        <div className="flex flex-col min-w-[180px]">
-          <label className="text-xs text-gray-500 font-medium mb-1 flex items-center gap-1">
-            🔍 {t("searchByName") || "بحث بالاسم"}
-          </label>
-          <input
-            type="text"
-            className="border rounded-lg px-3 py-2 bg-gray-50 focus:ring-2 focus:ring-blue-300"
-            placeholder={t("searchByNameBannerPlaceholder") || "اكتب اسم العرض..."}
-            value={searchName}
-            onChange={(e) => setSearchName(e.target.value)}
-          />
-        </div>
-        {/* ...باقي الفلاتر إن وجدت... */}
-      </div>
+      {/* شريط الفلاتر الموحد (تصميم متجاوب ومحسّن) */}
+      <Card className="shadow-lg border-0 mt-4">
+        <CardContent className="p-3 sm:p-4 lg:p-6">
+          <div className="flex flex-col gap-3 lg:gap-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+              {/* بحث بالاسم */}
+              <div className="w-full sm:w-64 flex-shrink-0">
+                <div className="relative">
+                  <input
+                    type="text"
+                    className="border-2 border-gray-200 rounded-lg pl-10 pr-3 py-2 h-10 text-xs sm:text-sm w-full bg-gray-50 focus:border-blue-500 focus:ring-1 focus:ring-blue-300 transition-colors placeholder:text-gray-400"
+                    placeholder={t("searchByNameBannerPlaceholder") || "اكتب اسم البانر..."}
+                    value={searchName}
+                    onChange={(e) => setSearchName(e.target.value)}
+                    maxLength={60}
+                  />
+                  <span className="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400 text-base">🔍</span>
+                </div>
+              </div>
+              {/* زر تصفير الفلاتر */}
+              <div className="w-full sm:w-auto flex flex-row gap-2 mt-2 sm:mt-0">
+                <button
+                  type="button"
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-red-50 text-red-700 font-bold shadow border border-red-200 hover:bg-red-100 transition-all duration-200 h-10 text-xs sm:text-sm"
+                  onClick={() => {
+                    setSearchName("");
+                  }}
+                >
+                  <XCircle className="h-4 w-4" />
+                  <span>{t("resetFilters") || "مسح الفلاتر"}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* نموذج إضافة/تعديل بانر */}
       {showForm && (

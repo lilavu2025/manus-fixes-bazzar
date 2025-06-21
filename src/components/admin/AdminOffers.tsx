@@ -12,6 +12,7 @@ import {
   Image as ImageIcon,
   Eye,
   EyeOff,
+  XCircle,
 } from "lucide-react";
 import { useLanguage } from "../../utils/languageContextUtils";
 import {
@@ -22,6 +23,7 @@ import {
   DialogFooter,
   DialogClose,
   DialogDescription,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -37,6 +39,7 @@ import {
   useUpdateOffer,
   useDeleteOffer,
 } from "@/integrations/supabase/reactQueryHooks";
+import AdminHeader from "./AdminHeader";
 
 const AdminOffers: React.FC = () => {
   const { t, isRTL } = useLanguage();
@@ -287,39 +290,231 @@ const AdminOffers: React.FC = () => {
       </div>
 
       {/* رأس الصفحة */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">{t("manageOffers")}</h1>
-          <p className="text-gray-600 mt-1">
-            {t("manageOffers")} ({offersData.length} {t("offers")})
-          </p>
-        </div>
-        <Button
-          onClick={() => setShowAdd(true)}
-          className="bg-primary hover:bg-primary/90"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          {t("addOffer")}
-        </Button>
-      </div>
+      <AdminHeader
+        title={t("offers") || "العروض"}
+        count={offersData.length}
+        addLabel={t("addOffer") || "إضافة عرض"}
+        onAdd={() => setShowAdd(true)}
+      />
 
-      {/* شريط الفلاتر */}
-      <div className="flex flex-wrap gap-3 items-center bg-white rounded-xl p-4 shadow-md border mt-4 relative">
-        {/* فلتر البحث بالاسم */}
-        <div className="flex flex-col min-w-[180px]">
-          <label className="text-xs text-gray-500 font-medium mb-1 flex items-center gap-1">
-            🔍 {t("searchByName") || "بحث بالاسم"}
-          </label>
-          <input
-            type="text"
-            className="border rounded-lg px-3 py-2 bg-gray-50 focus:ring-2 focus:ring-blue-300"
-            placeholder={t("searchByNameOfferPlaceholder") || "اكتب اسم العرض..."}
-            value={searchName}
-            onChange={(e) => setSearchName(e.target.value)}
-          />
-        </div>
-        {/* ...باقي الفلاتر إن وجدت... */}
-      </div>
+      {/* شريط الفلاتر الموحد (تصميم متجاوب ومحسّن) */}
+      <Card className="shadow-lg border-0 mt-4">
+        <CardContent className="p-3 sm:p-4 lg:p-6">
+          <div className="flex flex-col gap-3 lg:gap-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+              {/* بحث بالاسم */}
+              <div className="w-full sm:w-64 flex-shrink-0">
+                <div className="relative">
+                  <input
+                    type="text"
+                    className="border-2 border-gray-200 rounded-lg pl-10 pr-3 py-2 h-10 text-xs sm:text-sm w-full bg-gray-50 focus:border-blue-500 focus:ring-1 focus:ring-blue-300 transition-colors placeholder:text-gray-400"
+                    placeholder={t("searchByNameOfferPlaceholder") || "اكتب اسم العرض..."}
+                    value={searchName}
+                    onChange={(e) => setSearchName(e.target.value)}
+                    maxLength={60}
+                  />
+                  <span className="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400 text-base">🔍</span>
+                </div>
+              </div>
+              {/* زر تصفير الفلاتر */}
+              <div className="w-full sm:w-auto flex flex-row gap-2 mt-2 sm:mt-0">
+                <button
+                  type="button"
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-red-50 text-red-700 font-bold shadow border border-red-200 hover:bg-red-100 transition-all duration-200 h-10 text-xs sm:text-sm"
+                  onClick={() => {
+                    setSearchName("");
+                  }}
+                >
+                  <XCircle className="h-4 w-4" />
+                  <span>{t("resetFilters") || "مسح الفلاتر"}</span>
+                </button>
+                {/* زر إضافة عرض داخل Dialog */}
+                <Dialog open={showAdd} onOpenChange={setShowAdd}>
+                  <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                      <DialogTitle className="text-xl font-bold">
+                        {t("addOffer")}
+                      </DialogTitle>
+                      <DialogDescription>
+                        {t("addOfferDesc") || "أدخل بيانات العرض الجديد"}
+                      </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleAdd} className="space-y-6">
+                      {/* العناوين متعددة اللغات */}
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-semibold">{t("titles")}</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <Label className="text-sm font-medium">
+                              {t("titleEnglish")} <span className="text-red-500">*</span>
+                            </Label>
+                            <Input
+                              name="title_en"
+                              value={form.title_en}
+                              onChange={handleInput}
+                              placeholder="Enter English title"
+                              required
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium">
+                              {t("titleArabic")} <span className="text-red-500">*</span>
+                            </Label>
+                            <Input
+                              name="title_ar"
+                              value={form.title_ar}
+                              onChange={handleInput}
+                              placeholder="أدخل العنوان بالعربية"
+                              required
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium">
+                              {t("titleHebrew")}
+                            </Label>
+                            <Input
+                              name="title_he"
+                              value={form.title_he}
+                              onChange={handleInput}
+                              placeholder="הכנס כותרת בעברית"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* الأوصاف متعددة اللغات */}
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-semibold">{t("descriptions")}</h3>
+                        <div className="space-y-4">
+                          <div>
+                            <Label className="text-sm font-medium">
+                              {t("descriptionEnglish")}
+                            </Label>
+                            <Textarea
+                              name="description_en"
+                              value={form.description_en}
+                              onChange={handleInput}
+                              placeholder="Enter English description"
+                              rows={3}
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium">
+                              {t("descriptionArabic")}
+                            </Label>
+                            <Textarea
+                              name="description_ar"
+                              value={form.description_ar}
+                              onChange={handleInput}
+                              placeholder="أدخل الوصف بالعربية"
+                              rows={3}
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium">
+                              {t("descriptionHebrew")}
+                            </Label>
+                            <Textarea
+                              name="description_he"
+                              value={form.description_he}
+                              onChange={handleInput}
+                              placeholder="הכנס תיאור בעברית"
+                              rows={3}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* تفاصيل العرض */}
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-semibold">{t("offerDetails")}</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <Label className="text-sm font-medium">
+                              {t("discountPercent")}{" "}
+                              <span className="text-red-500">*</span>
+                            </Label>
+                            <Input
+                              name="discount_percent"
+                              type="number"
+                              min="1"
+                              max="100"
+                              value={form.discount_percent}
+                              onChange={handleInput}
+                              placeholder="0"
+                              required
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium">{t("image")}</Label>
+                            <ImageUpload
+                              value={form.image_url}
+                              onChange={(url) =>
+                                setForm((prev) => ({ ...prev, image_url: url as string }))
+                              }
+                              label={t("image")}
+                              placeholder={t("uploadImage")}
+                              bucket="product-images"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* التواريخ والحالة */}
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-semibold">{t("dateAndStatus")}</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <Label className="text-sm font-medium">
+                              {t("startDate")}
+                            </Label>
+                            <Input
+                              name="start_date"
+                              type="date"
+                              value={form.start_date}
+                              onChange={handleInput}
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-sm font-medium">{t("endDate")}</Label>
+                            <Input
+                              name="end_date"
+                              type="date"
+                              value={form.end_date}
+                              onChange={handleInput}
+                            />
+                          </div>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            checked={form.active}
+                            onCheckedChange={handleSwitchChange}
+                          />
+                          <Label className="text-sm font-medium">
+                            {t("activeOffer")}
+                          </Label>
+                        </div>
+                      </div>
+
+                      <DialogFooter className="gap-2">
+                        <DialogClose asChild>
+                          <Button type="button" variant="outline">
+                            {t("cancel")}
+                          </Button>
+                        </DialogClose>
+                        <Button type="submit" className="bg-primary hover:bg-primary/90">
+                          <Plus className="h-4 w-4 mr-2" />
+                          {t("add")}
+                        </Button>
+                      </DialogFooter>
+                    </form>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* حالة التحميل */}
       {loading && (
@@ -460,36 +655,23 @@ const AdminOffers: React.FC = () => {
 
       {/* رسالة عدم وجود عروض */}
       {!loading && offersData.length === 0 && (
-        <div className="text-center py-12">
-          <ImageIcon className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
+        <div className="flex flex-col items-center justify-center py-12 gap-4 bg-white rounded-xl shadow border mx-auto max-w-xl">
+          <ImageIcon className="h-20 w-20 text-gray-300 mb-2" />
+          <h3 className="text-2xl font-bold text-gray-900 mb-1">
             {t("noOffers")}
           </h3>
-          <p className="text-gray-600 mb-4">{t("noOffersDesc")}</p>
-          <Button onClick={() => setShowAdd(true)}>
-            <Plus className="h-4 w-4 mr-2" />
+          <p className="text-gray-500 mb-4 text-base text-center">
+            {t("noOffersDesc")}
+          </p>
+          <Button
+            onClick={() => setShowAdd(true)}
+            className="gap-2 bg-primary text-white font-bold px-6 py-3 rounded-lg text-base shadow hover:bg-primary/90 transition"
+          >
+            <Plus className="h-5 w-5" />
             {t("addFirstOffer")}
           </Button>
         </div>
       )}
-
-      {/* شريط الفلاتر */}
-      <div className="flex flex-wrap gap-3 items-center bg-white rounded-xl p-4 shadow-md border mt-4 relative">
-        {/* فلتر البحث بالاسم */}
-        <div className="flex flex-col min-w-[180px]">
-          <label className="text-xs text-gray-500 font-medium mb-1 flex items-center gap-1">
-            🔍 {t("searchByName") || "بحث بالاسم"}
-          </label>
-          <input
-            type="text"
-            className="border rounded-lg px-3 py-2 bg-gray-50 focus:ring-2 focus:ring-blue-300"
-            placeholder={t("searchByNamePlaceholder") || "اكتب اسم العرض..."}
-            value={searchName}
-            onChange={(e) => setSearchName(e.target.value)}
-          />
-        </div>
-        {/* ...باقي الفلاتر إن وجدت... */}
-      </div>
 
       {/* نافذة إضافة عرض جديد */}
       <Dialog open={showAdd} onOpenChange={setShowAdd}>

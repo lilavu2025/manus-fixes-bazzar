@@ -47,6 +47,7 @@ import {
 } from "react-beautiful-dnd";
 import OptimizedSearch from "@/components/OptimizedSearch";
 import { useCategoriesWithProductCountQuery } from "@/integrations/supabase/reactQueryHooks"; // تأكد من استيراد الاستعلام الصحيح
+import AdminHeader from "./AdminHeader";
 
 const AdminCategories: React.FC = () => {
   const { t, language } = useLanguage();
@@ -213,80 +214,104 @@ const AdminCategories: React.FC = () => {
           <div className="text-xs text-gray-600">{t("products")}</div>
         </div>
       </div>
-      {/* شريط الفلاتر */}
-      <div className="flex flex-wrap gap-2 items-center bg-white rounded-xl p-3 shadow-sm border mt-2 relative">
-        <OptimizedSearch
-          onSearch={setSearch}
-          placeholder={t("searchCategories") || "بحث الفئات..."}
-          className="w-48"
-        />
-        <select
-          className="border rounded px-2 py-1"
-          value={filterActive}
-          onChange={(e) =>
-            setFilterActive(e.target.value as "all" | "active" | "inactive")
-          }
-        >
-          <option value="all">{t("allStatus")}</option>
-          <option value="active">{t("active")}</option>
-          <option value="inactive">{t("inactive")}</option>
-        </select>
-        <select
-          className="border rounded px-2 py-1"
-          value={sortBy}
-          onChange={(e) => setSortBy(e.target.value as "name" | "count")}
-        >
-          <option value="name">{t("sortByName")}</option>
-          <option value="count">{t("sortByProductCount")}</option>
-        </select>
-        <button
-          type="button"
-          className="ml-auto flex items-center gap-2 px-4 py-2 rounded-lg bg-red-50 text-red-700 font-bold shadow border border-red-200 hover:bg-red-100 transition-all duration-200"
-          onClick={() => {
-            setSearch("");
-            setFilterActive("all");
-            setSortBy("name");
-          }}
-        >
-          <XCircle className="h-4 w-4" />
-          <span className="inline-block align-middle">
-            {t("resetFilters") || "مسح الفلاتر"}
-          </span>
-        </button>
-        <button
-          type="button"
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white font-bold shadow border border-blue-700 hover:bg-blue-700 transition-all duration-200"
-          onClick={() => {
-            // تصدير CSV
-            const csv = [
-              ["ID", "Name", "ProductCount"],
-              ...orderedCategories.map((c) => [c.id, c.name, c.count]),
-            ]
-              .map((row) => row.join(","))
-              .join("\n");
-            const BOM = "\uFEFF"; // UTF-8 BOM
-            const blob = new Blob([BOM + csv], {
-              type: "text/csv;charset=utf-8;",
-            });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = "categories.csv";
-            a.click();
-            URL.revokeObjectURL(url);
-          }}
-        >
-          <BarChart3 className="h-4 w-4" />
-          {t("exportExcel") || "تصدير Excel"}{" "}
-        </button>
-        <Button
-          onClick={() => setShowAddDialog(true)}
-          className="gap-2 bg-primary text-white font-bold ml-2"
-        >
-          <Plus className="h-4 w-4" />
-          {t("addCategory")}
-        </Button>
-      </div>
+      {/* شريط الفلاتر الموحد (تصميم متجاوب ومحسّن) */}
+      <Card className="shadow-lg border-0 mt-2">
+        <CardContent className="p-3 sm:p-4 lg:p-6">
+          <div className="flex flex-col gap-3 lg:gap-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+              {/* بحث الفئات */}
+              <div className="w-full sm:w-64 flex-shrink-0">
+                <div className="relative">
+                  <input
+                    type="text"
+                    className="border-2 border-gray-200 rounded-lg pl-10 pr-3 py-2 h-10 text-xs sm:text-sm w-full bg-gray-50 focus:border-blue-500 focus:ring-1 focus:ring-blue-300 transition-colors placeholder:text-gray-400"
+                    placeholder={t("searchCategories") || "بحث الفئات..."}
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    maxLength={60}
+                  />
+                  <span className="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400 text-base">
+                    🔍
+                  </span>
+                </div>
+              </div>
+              {/* فلتر الحالة */}
+              <div className="w-full sm:w-40 flex-shrink-0">
+                <select
+                  className="border-2 border-gray-200 rounded-lg px-3 py-2 h-10 text-xs sm:text-sm w-full bg-yellow-50 focus:border-yellow-500"
+                  value={filterActive}
+                  onChange={(e) =>
+                    setFilterActive(e.target.value as "all" | "active" | "inactive")
+                  }
+                >
+                  <option value="all">{t("allStatus")}</option>
+                  <option value="active">{t("active")}</option>
+                  <option value="inactive">{t("inactive")}</option>
+                </select>
+              </div>
+              {/* فرز حسب */}
+              <div className="w-full sm:w-40 flex-shrink-0">
+                <select
+                  className="border-2 border-gray-200 rounded-lg px-3 py-2 h-10 text-xs sm:text-sm w-full bg-blue-50 focus:border-blue-500"
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as "name" | "count")}
+                >
+                  <option value="name">{t("sortByName")}</option>
+                  <option value="count">{t("sortByProductCount")}</option>
+                </select>
+              </div>
+              {/* زر تصفير الفلاتر */}
+              <div className="w-full sm:w-auto flex flex-row gap-2 mt-2 sm:mt-0">
+                <button
+                  type="button"
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-red-50 text-red-700 font-bold shadow border border-red-200 hover:bg-red-100 transition-all duration-200 h-10 text-xs sm:text-sm"
+                  onClick={() => {
+                    setSearch("");
+                    setFilterActive("all");
+                    setSortBy("name");
+                  }}
+                >
+                  <XCircle className="h-4 w-4" />
+                  <span>{t("resetFilters") || "مسح الفلاتر"}</span>
+                </button>
+                <button
+                  type="button"
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-blue-600 text-white font-bold shadow border border-blue-700 hover:bg-blue-700 transition-all duration-200 h-10 text-xs sm:text-sm"
+                  onClick={() => {
+                    // تصدير CSV
+                    const csv = [
+                      ["ID", "Name", "ProductCount"],
+                      ...orderedCategories.map((c) => [c.id, c.name, c.count]),
+                    ]
+                      .map((row) => row.join(","))
+                      .join("\n");
+                    const BOM = "\uFEFF"; // UTF-8 BOM
+                    const blob = new Blob([BOM + csv], {
+                      type: "text/csv;charset=utf-8;",
+                    });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = "categories.csv";
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  }}
+                >
+                  <BarChart3 className="h-4 w-4" />
+                  <span>{t("exportExcel") || "تصدير Excel"}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <AdminHeader
+        title={t("categories") || "التصنيفات"}
+        count={filteredCategories.length}
+        addLabel={t("addCategory") || "إضافة تصنيف"}
+        onAdd={() => setShowAddDialog(true)}
+      />
 
       {categories.length === 0 ? (
         <Card>

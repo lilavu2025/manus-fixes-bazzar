@@ -65,6 +65,7 @@ import OptimizedSearch from "../OptimizedSearch";
 import { compressText, decompressText } from "@/utils/textCompression";
 import { getDisplayPrice } from "@/utils/priceUtils";
 import type { TablesInsert, TablesUpdate } from "@/integrations/supabase/types";
+import AdminHeader from "./AdminHeader";
 
 // واجهة الطلب
 interface Order {
@@ -865,541 +866,552 @@ const AdminOrders: React.FC = () => {
           <span className="text-xs text-gray-600">{t("cancelled")}</span>
         </div>
       </div>
-      {/* شريط الفلاتر والبحث والتصدير */}
-      <div className="flex flex-wrap gap-2 items-center bg-white rounded-xl p-3 shadow-sm border mt-2 relative">
-        <OptimizedSearch
-          onSearch={setSearchQuery}
-          placeholder={
-            t("searchByClientOrOrderNumber") || "بحث بالعميل أو رقم الطلب..."
-          }
-        />
-        <Input
-          type="date"
-          value={dateFrom}
-          onChange={(e) => setDateFrom(e.target.value)}
-          className="w-36"
-          placeholder={t("fromDate") || "من تاريخ"}
-        />
-        <Input
-          type="date"
-          value={dateTo}
-          onChange={(e) => setDateTo(e.target.value)}
-          className="w-36"
-          placeholder={t("toDate") || "إلى تاريخ"}
-        />
-        <Select value={paymentFilter} onValueChange={setPaymentFilter}>
-          <SelectTrigger className="w-36">
-            <SelectValue placeholder={t("paymentMethod") || "طريقة الدفع"} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t("all") || "الكل"}</SelectItem>
-            <SelectItem value="cash">{t("cash") || "نقداً"}</SelectItem>
-            <SelectItem value="card">{t("card") || "بطاقة ائتمان"}</SelectItem>
-            <SelectItem value="bank_transfer">
-              {t("bankTransfer") || "تحويل بنكي"}
-            </SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-36">
-            <SelectValue placeholder={t("status") || "الحالة"} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t("all") || "الكل"}</SelectItem>
-            <SelectItem value="pending">
-              {t("pending") || "قيد الانتظار"}
-            </SelectItem>
-            <SelectItem value="processing">
-              {t("processing") || "قيد التنفيذ"}
-            </SelectItem>
-            <SelectItem value="shipped">
-              {t("shipped") || "تم الشحن"}
-            </SelectItem>
-            <SelectItem value="delivered">
-              {t("delivered") || "تم التوصيل"}
-            </SelectItem>
-            <SelectItem value="cancelled">
-              {t("cancelled") || "ملغي"}
-            </SelectItem>
-          </SelectContent>
-        </Select>
-        <Button
-          type="button"
-          variant="destructive"
-          className="ml-auto flex items-center gap-2 px-4 py-2 rounded-lg bg-red-50 text-red-700 font-bold shadow border border-red-200 hover:bg-red-100 transition-all duration-200"
-          onClick={() => {
-            setStatusFilter("all");
-            setDateFrom("");
-            setDateTo("");
-            setPaymentFilter("all");
-            setSearchQuery("");
-          }}
-        >
-          <XCircle className="h-4 w-4" />
-          <span className="inline-block align-middle">
-            {t("resetFilters") || "مسح الفلاتر"}
-          </span>
-        </Button>
-        {/* أزرار التصدير */}
-        <div className="flex gap-2 ml-auto">
-          <Button
-            variant="outline"
-            onClick={exportOrdersToExcel}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white font-bold shadow border border-blue-700 hover:bg-blue-700 transition-all duration-200"
-          >
-            <BarChart3 className="h-4 w-4" />
-            {t("exportExcel") || "تصدير Excel"}
-          </Button>
-        </div>
-        <Dialog open={showAddOrder} onOpenChange={setShowAddOrder}>
-          <DialogTrigger asChild>
-            <Button className="bg-primary text-white font-bold ml-2">
-              <Plus className="h-4 w-4" />
-              {t("addNewOrder") || "إضافة طلب جديد"}
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl w-full max-h-[90vh] overflow-y-auto p-0 sm:p-0">
-            <DialogHeader className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b px-6 py-4 rounded-t-2xl">
-              <DialogTitle className="text-xl font-bold text-primary flex items-center gap-2">
-                <Plus className="h-5 w-5 text-primary" />{" "}
-                {t("addNewOrder") || "إضافة طلب جديد"}
-              </DialogTitle>
-              <p className="text-gray-500 text-sm mt-1">
-                {t("fillAllRequiredFields") ||
-                  "يرجى تعبئة جميع الحقول المطلوبة بعناية. جميع الحقول بعلامة * مطلوبة."}
-              </p>
-            </DialogHeader>
-            <form
-              className="space-y-8 px-6 py-6"
-              autoComplete="off"
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleAddOrder();
-              }}
-            >
-              {/* اختيار العميل */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div>
-                  <Label htmlFor="user_id">
-                    {t("customer") || "العميل"}{" "}
-                    <span className="text-red-500">*</span>
-                  </Label>
-                  <Select
-                    value={allowCustomClient ? "" : orderForm.user_id}
-                    onValueChange={(value) => {
-                      if (value === "__custom__") {
-                        setAllowCustomClient(true);
-                        setOrderForm((prev) => ({
-                          ...prev,
-                          user_id: "",
-                          shipping_address: {
-                            ...prev.shipping_address,
-                            fullName: "",
-                            phone: "",
-                          },
-                        }));
-                      } else {
-                        setAllowCustomClient(false);
-                        handleSelectUser(value);
-                      }
-                    }}
-                  >
-                    <SelectTrigger id="user_id" className="w-full">
-                      <SelectValue
-                        placeholder={
-                          t("searchOrSelectCustomer") || "ابحث أو اختر العميل"
-                        }
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {users.map((user) => (
-                        <SelectItem
-                          key={user.id}
-                          value={user.id}
-                          className="truncate"
-                        >
-                          {user.full_name}{" "}
-                          <span className="text-xs text-gray-400">
-                            ({user.email})
-                          </span>
-                        </SelectItem>
-                      ))}
-                      <SelectItem
-                        value="__custom__"
-                        className="text-blue-600 font-bold"
-                      >
-                        {t("newCustomer") || "عميل جديد"}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
+      {/* شريط الفلاتر الموحد (تصميم متجاوب ومحسّن) */}
+      <Card className="shadow-lg border-0 mt-2">
+        <CardContent className="p-3 sm:p-4 lg:p-6">
+          <div className="flex flex-col gap-3 lg:gap-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+              {/* بحث الطلبات */}
+              <div className="w-full sm:w-64 flex-shrink-0">
+                <div className="relative">
+                  <input
+                    type="text"
+                    className="border-2 border-gray-200 rounded-lg pl-10 pr-3 py-2 h-10 text-xs sm:text-sm w-full bg-gray-50 focus:border-blue-500 focus:ring-1 focus:ring-blue-300 transition-colors placeholder:text-gray-400"
+                    placeholder={t("searchByClientOrOrderNumber") || "بحث بالعميل أو رقم الطلب..."}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    maxLength={60}
+                  />
+                  <span className="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400 text-base">
+                    🔍
+                  </span>
                 </div>
-                <div>
-                  <Label htmlFor="payment_method">
-                    {t("paymentMethod") || "طريقة الدفع"}{" "}
-                    <span className="text-red-500">*</span>
-                  </Label>
-                  <Select
-                    value={orderForm.payment_method}
-                    onValueChange={(value) =>
+              </div>
+              {/* من تاريخ */}
+              <div className="w-full sm:w-40 flex-shrink-0">
+                <Input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className="w-full border-2 border-gray-200 rounded-lg h-10 text-xs sm:text-sm bg-gray-50 focus:border-blue-500 focus:ring-1 focus:ring-blue-300 placeholder:text-gray-400"
+                  placeholder={t("fromDate") || "من تاريخ"}
+                />
+              </div>
+              {/* إلى تاريخ */}
+              <div className="w-full sm:w-40 flex-shrink-0">
+                <Input
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  className="w-full border-2 border-gray-200 rounded-lg h-10 text-xs sm:text-sm bg-gray-50 focus:border-blue-500 focus:ring-1 focus:ring-blue-300 placeholder:text-gray-400"
+                  placeholder={t("toDate") || "إلى تاريخ"}
+                />
+              </div>
+              {/* طريقة الدفع */}
+              <div className="w-full sm:w-40 flex-shrink-0">
+                <select
+                  className="border-2 border-gray-200 rounded-lg px-3 py-2 h-10 text-xs sm:text-sm w-full bg-blue-50 focus:border-blue-500"
+                  value={paymentFilter}
+                  onChange={(e) => setPaymentFilter(e.target.value)}
+                >
+                  <option value="all">{t("all") || "الكل"}</option>
+                  <option value="cash">{t("cash") || "نقداً"}</option>
+                  <option value="card">{t("card") || "بطاقة ائتمان"}</option>
+                  <option value="bank_transfer">{t("bankTransfer") || "تحويل بنكي"}</option>
+                </select>
+              </div>
+              {/* الحالة */}
+              <div className="w-full sm:w-40 flex-shrink-0">
+                <select
+                  className="border-2 border-gray-200 rounded-lg px-3 py-2 h-10 text-xs sm:text-sm w-full bg-yellow-50 focus:border-yellow-500"
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                >
+                  <option value="all">{t("all") || "الكل"}</option>
+                  <option value="pending">{t("pending") || "قيد الانتظار"}</option>
+                  <option value="processing">{t("processing") || "قيد التنفيذ"}</option>
+                  <option value="shipped">{t("shipped") || "تم الشحن"}</option>
+                  <option value="delivered">{t("delivered") || "تم التوصيل"}</option>
+                  <option value="cancelled">{t("cancelled") || "ملغي"}</option>
+                </select>
+              </div>
+            </div>
+            {/* أزرار الفلاتر (تحت الفلاتر على الجوال، يمينها على الديسكتوب) */}
+            <div className="flex flex-col sm:flex-row gap-2 mt-2 sm:mt-0 justify-end">
+              <button
+                type="button"
+                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-red-50 text-red-700 font-bold shadow border border-red-200 hover:bg-red-100 transition-all duration-200 h-10 text-xs sm:text-sm"
+                onClick={() => {
+                  setStatusFilter("all");
+                  setDateFrom("");
+                  setDateTo("");
+                  setPaymentFilter("all");
+                  setSearchQuery("");
+                }}
+              >
+                <XCircle className="h-4 w-4" />
+                <span>{t("resetFilters") || "مسح الفلاتر"}</span>
+              </button>
+              <button
+                type="button"
+                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-blue-600 text-white font-bold shadow border border-blue-700 hover:bg-blue-700 transition-all duration-200 h-10 text-xs sm:text-sm"
+                onClick={exportOrdersToExcel}
+              >
+                <BarChart3 className="h-4 w-4" />
+                <span>{t("exportExcel") || "تصدير Excel"}</span>
+              </button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+      {/* إضافة طلب جديد */}
+      <Dialog open={showAddOrder} onOpenChange={setShowAddOrder}>
+        <AdminHeader
+          title={t("orders") || "الطلبات"}
+          count={advancedFilteredOrders.length}
+          addLabel={t("addNewOrder") || "إضافة طلب جديد"}
+          onAdd={() => setShowAddOrder(true)}
+        />
+        <DialogContent className="max-w-2xl w-full max-h-[90vh] overflow-y-auto p-0 sm:p-0">
+          <DialogHeader className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b px-6 py-4 rounded-t-2xl">
+            <DialogTitle className="text-xl font-bold text-primary flex items-center gap-2">
+              <Plus className="h-5 w-5 text-primary" />{" "}
+              {t("addNewOrder") || "إضافة طلب جديد"}
+            </DialogTitle>
+            <p className="text-gray-500 text-sm mt-1">
+              {t("fillAllRequiredFields") ||
+                "يرجى تعبئة جميع الحقول المطلوبة بعناية. جميع الحقول بعلامة * مطلوبة."}
+            </p>
+          </DialogHeader>
+          <form
+            className="space-y-8 px-6 py-6"
+            autoComplete="off"
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleAddOrder();
+            }}
+          >
+            {/* اختيار العميل */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div>
+                <Label htmlFor="user_id">
+                  {t("customer") || "العميل"}{" "}
+                  <span className="text-red-500">*</span>
+                </Label>
+                <Select
+                  value={allowCustomClient ? "" : orderForm.user_id}
+                  onValueChange={(value) => {
+                    if (value === "__custom__") {
+                      setAllowCustomClient(true);
                       setOrderForm((prev) => ({
                         ...prev,
-                        payment_method: value,
-                      }))
+                        user_id: "",
+                        shipping_address: {
+                          ...prev.shipping_address,
+                          fullName: "",
+                          phone: "",
+                        },
+                      }));
+                    } else {
+                      setAllowCustomClient(false);
+                      handleSelectUser(value);
                     }
-                  >
-                    <SelectTrigger id="payment_method" className="w-full">
-                      <SelectValue
-                        placeholder={
-                          t("selectPaymentMethod") || "اختر طريقة الدفع"
-                        }
-                      />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="cash">
-                        {t("cash") || "نقداً"}
-                      </SelectItem>
-                      <SelectItem value="card">
-                        {t("card") || "بطاقة ائتمان"}
-                      </SelectItem>
-                      <SelectItem value="bank_transfer">
-                        {t("bankTransfer") || "تحويل بنكي"}
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              {/* معلومات الشحن */}
-              <div className="bg-gray-50 rounded-xl p-4 border mt-2">
-                <h3 className="text-lg font-semibold mb-4 text-primary">
-                  {t("shippingInfo") || "معلومات الشحن"}
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <div>
-                    <Label htmlFor="full_name">
-                      {t("fullName") || "الاسم الكامل"}{" "}
-                      <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="full_name"
-                      value={orderForm.shipping_address.fullName}
-                      onChange={(e) =>
-                        setOrderForm((prev) => ({
-                          ...prev,
-                          shipping_address: {
-                            ...prev.shipping_address,
-                            fullName: e.target.value,
-                          },
-                        }))
-                      }
-                      placeholder={t("enterFullName") || "أدخل الاسم الكامل"}
-                      required
-                      disabled={!allowCustomClient && !!orderForm.user_id}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="phone">
-                      {t("phone") || "رقم الهاتف"}{" "}
-                      <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="phone"
-                      value={orderForm.shipping_address.phone}
-                      onChange={(e) =>
-                        setOrderForm((prev) => ({
-                          ...prev,
-                          shipping_address: {
-                            ...prev.shipping_address,
-                            phone: e.target.value,
-                          },
-                        }))
-                      }
-                      placeholder={t("enterPhoneNumber") || "أدخل رقم الهاتف"}
-                      required
-                      disabled={!allowCustomClient && !!orderForm.user_id}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="city">{t("city") || "المدينة"}</Label>
-                    <Input
-                      id="city"
-                      value={orderForm.shipping_address.city}
-                      onChange={(e) =>
-                        setOrderForm((prev) => ({
-                          ...prev,
-                          shipping_address: {
-                            ...prev.shipping_address,
-                            city: e.target.value,
-                          },
-                        }))
-                      }
-                      placeholder={t("enterCity") || "أدخل المدينة"}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="area">{t("area") || "المنطقة"}</Label>
-                    <Input
-                      id="area"
-                      value={orderForm.shipping_address.area}
-                      onChange={(e) =>
-                        setOrderForm((prev) => ({
-                          ...prev,
-                          shipping_address: {
-                            ...prev.shipping_address,
-                            area: e.target.value,
-                          },
-                        }))
-                      }
-                      placeholder={t("enterArea") || "أدخل المنطقة"}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="street">{t("street") || "الشارع"}</Label>
-                    <Input
-                      id="street"
-                      value={orderForm.shipping_address.street}
-                      onChange={(e) =>
-                        setOrderForm((prev) => ({
-                          ...prev,
-                          shipping_address: {
-                            ...prev.shipping_address,
-                            street: e.target.value,
-                          },
-                        }))
-                      }
-                      placeholder={t("enterStreet") || "أدخل الشارع"}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="building">
-                      {t("building") || "رقم المبنى"}
-                    </Label>
-                    <Input
-                      id="building"
-                      value={orderForm.shipping_address.building}
-                      onChange={(e) =>
-                        setOrderForm((prev) => ({
-                          ...prev,
-                          shipping_address: {
-                            ...prev.shipping_address,
-                            building: e.target.value,
-                          },
-                        }))
-                      }
+                  }}
+                >
+                  <SelectTrigger id="user_id" className="w-full">
+                    <SelectValue
                       placeholder={
-                        t("enterBuildingNumber") || "أدخل رقم المبنى"
+                        t("searchOrSelectCustomer") || "ابحث أو اختر العميل"
                       }
                     />
-                  </div>
-                  <div>
-                    <Label htmlFor="floor">{t("floor") || "الطابق"}</Label>
-                    <Input
-                      id="floor"
-                      value={orderForm.shipping_address.floor}
-                      onChange={(e) =>
-                        setOrderForm((prev) => ({
-                          ...prev,
-                          shipping_address: {
-                            ...prev.shipping_address,
-                            floor: e.target.value,
-                          },
-                        }))
-                      }
-                      placeholder={
-                        t("enterFloorOptional") || "أدخل الطابق (اختياري)"
-                      }
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="apartment">
-                      {t("apartment") || "رقم الشقة"}
-                    </Label>
-                    <Input
-                      id="apartment"
-                      value={orderForm.shipping_address.apartment}
-                      onChange={(e) =>
-                        setOrderForm((prev) => ({
-                          ...prev,
-                          shipping_address: {
-                            ...prev.shipping_address,
-                            apartment: e.target.value,
-                          },
-                        }))
-                      }
-                      placeholder={
-                        t("enterApartmentNumber") || "أدخل رقم الشقة"
-                      }
-                    />
-                  </div>
-                </div>
-              </div>
-              {/* المنتجات */}
-              <div className="bg-gray-50 rounded-xl p-4 border mt-2">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-semibold text-primary">
-                    {t("products") || "المنتجات"}
-                  </h3>
-                  <Button
-                    type="button"
-                    onClick={addOrderItem}
-                    variant="outline"
-                    size="sm"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />{" "}
-                    {t("addProduct") || "إضافة منتج"}
-                  </Button>
-                </div>
-                <div className="space-y-3">
-                  {orderForm.items.map((item, index) => (
-                    <div
-                      key={item.id}
-                      className="flex flex-col sm:flex-row gap-3 items-end p-3 border rounded-lg bg-white shadow-sm"
-                    >
-                      <div className="flex-1 min-w-[180px]">
-                        <Label>
-                          {t("product") || "المنتج"}{" "}
-                          <span className="text-red-500">*</span>
-                        </Label>
-                        <Select
-                          value={item.product_id}
-                          onValueChange={(value) =>
-                            updateOrderItem(item.id, "product_id", value)
-                          }
-                        >
-                          <SelectTrigger className="w-full">
-                            <SelectValue
-                              placeholder={
-                                t("searchOrSelectProduct") ||
-                                "ابحث أو اختر المنتج"
-                              }
-                            />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {products.map((product) => (
-                              <SelectItem key={product.id} value={product.id}>
-                                {product.name_ar ||
-                                  product.name_en ||
-                                  product.name_he ||
-                                  product.id}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="w-full sm:w-24">
-                        <Label>
-                          {t("quantity") || "الكمية"}{" "}
-                          <span className="text-red-500">*</span>
-                        </Label>
-                        <Input
-                          type="number"
-                          min="1"
-                          value={item.quantity}
-                          onChange={(e) =>
-                            updateOrderItem(
-                              item.id,
-                              "quantity",
-                              parseInt(e.target.value) || 1,
-                            )
-                          }
-                          required
-                        />
-                      </div>
-                      <div className="w-full sm:w-24">
-                        <Label>
-                          {t("price") || "السعر"}{" "}
-                          <span className="text-red-500">*</span>
-                        </Label>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          value={item.price}
-                          onChange={(e) =>
-                            updateOrderItem(
-                              item.id,
-                              "price",
-                              parseFloat(e.target.value) || 0,
-                            )
-                          }
-                          required
-                        />
-                      </div>
-                      <Button
-                        type="button"
-                        onClick={() => removeOrderItem(item.id)}
-                        variant="destructive"
-                        size="sm"
-                        className="self-end"
+                  </SelectTrigger>
+                  <SelectContent>
+                    {users.map((user) => (
+                      <SelectItem
+                        key={user.id}
+                        value={user.id}
+                        className="truncate"
                       >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-                {orderForm.items.length > 0 && (
-                  <div className="text-right mt-3">
-                    <p className="text-lg font-semibold">
-                      {t("total") || "المجموع الكلي"}:{" "}
-                      {calculateTotal().toFixed(2)} ₪
-                    </p>
-                  </div>
-                )}
+                        {user.full_name}{" "}
+                        <span className="text-xs text-gray-400">
+                          ({user.email})
+                        </span>
+                      </SelectItem>
+                    ))}
+                    <SelectItem
+                      value="__custom__"
+                      className="text-blue-600 font-bold"
+                    >
+                      {t("newCustomer") || "عميل جديد"}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              {/* ملاحظات + تمييز منشئ الطلب */}
+              <div>
+                <Label htmlFor="payment_method">
+                  {t("paymentMethod") || "طريقة الدفع"}{" "}
+                  <span className="text-red-500">*</span>
+                </Label>
+                <Select
+                  value={orderForm.payment_method}
+                  onValueChange={(value) =>
+                    setOrderForm((prev) => ({
+                      ...prev,
+                      payment_method: value,
+                    }))
+                  }
+                >
+                  <SelectTrigger id="payment_method" className="w-full">
+                    <SelectValue
+                      placeholder={
+                        t("selectPaymentMethod") || "اختر طريقة الدفع"
+                      }
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cash">
+                      {t("cash") || "نقداً"}
+                    </SelectItem>
+                    <SelectItem value="card">
+                      {t("card") || "بطاقة ائتمان"}
+                    </SelectItem>
+                    <SelectItem value="bank_transfer">
+                      {t("bankTransfer") || "تحويل بنكي"}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            {/* معلومات الشحن */}
+            <div className="bg-gray-50 rounded-xl p-4 border mt-2">
+              <h3 className="text-lg font-semibold mb-4 text-primary">
+                {t("shippingInfo") || "معلومات الشحن"}
+              </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div>
-                  <Label htmlFor="notes">{t("notes") || "ملاحظات"}</Label>
-                  <Textarea
-                    id="notes"
-                    value={orderForm.notes}
+                  <Label htmlFor="full_name">
+                    {t("fullName") || "الاسم الكامل"}{" "}
+                    <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="full_name"
+                    value={orderForm.shipping_address.fullName}
                     onChange={(e) =>
                       setOrderForm((prev) => ({
                         ...prev,
-                        notes: e.target.value,
+                        shipping_address: {
+                          ...prev.shipping_address,
+                          fullName: e.target.value,
+                        },
+                      }))
+                    }
+                    placeholder={t("enterFullName") || "أدخل الاسم الكامل"}
+                    required
+                    disabled={!allowCustomClient && !!orderForm.user_id}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="phone">
+                    {t("phone") || "رقم الهاتف"}{" "}
+                    <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="phone"
+                    value={orderForm.shipping_address.phone}
+                    onChange={(e) =>
+                      setOrderForm((prev) => ({
+                        ...prev,
+                        shipping_address: {
+                          ...prev.shipping_address,
+                          phone: e.target.value,
+                        },
+                      }))
+                    }
+                    placeholder={t("enterPhoneNumber") || "أدخل رقم الهاتف"}
+                    required
+                    disabled={!allowCustomClient && !!orderForm.user_id}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="city">{t("city") || "المدينة"}</Label>
+                  <Input
+                    id="city"
+                    value={orderForm.shipping_address.city}
+                    onChange={(e) =>
+                      setOrderForm((prev) => ({
+                        ...prev,
+                        shipping_address: {
+                          ...prev.shipping_address,
+                          city: e.target.value,
+                        },
+                      }))
+                    }
+                    placeholder={t("enterCity") || "أدخل المدينة"}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="area">{t("area") || "المنطقة"}</Label>
+                  <Input
+                    id="area"
+                    value={orderForm.shipping_address.area}
+                    onChange={(e) =>
+                      setOrderForm((prev) => ({
+                        ...prev,
+                        shipping_address: {
+                          ...prev.shipping_address,
+                          area: e.target.value,
+                        },
+                      }))
+                    }
+                    placeholder={t("enterArea") || "أدخل المنطقة"}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="street">{t("street") || "الشارع"}</Label>
+                  <Input
+                    id="street"
+                    value={orderForm.shipping_address.street}
+                    onChange={(e) =>
+                      setOrderForm((prev) => ({
+                        ...prev,
+                        shipping_address: {
+                          ...prev.shipping_address,
+                          street: e.target.value,
+                        },
+                      }))
+                    }
+                    placeholder={t("enterStreet") || "أدخل الشارع"}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="building">
+                    {t("building") || "رقم المبنى"}
+                  </Label>
+                  <Input
+                    id="building"
+                    value={orderForm.shipping_address.building}
+                    onChange={(e) =>
+                      setOrderForm((prev) => ({
+                        ...prev,
+                        shipping_address: {
+                          ...prev.shipping_address,
+                          building: e.target.value,
+                        },
                       }))
                     }
                     placeholder={
-                      t("orderNotesPlaceholder") ||
-                      "أدخل ملاحظات إضافية (اختياري)"
+                      t("enterBuildingNumber") || "أدخل رقم المبنى"
                     }
                   />
                 </div>
-                <div className="flex flex-col gap-2 mt-2">
-                  <Label>{t("orderCreator") || "منشئ الطلبية"}</Label>
-                  <div className="flex items-center gap-2">
-                    <Badge className="bg-blue-100 text-blue-800 border-blue-200">
-                      {t("admin") || "أدمن"}
-                    </Badge>
-                    <span className="text-xs text-gray-500">
-                      {t("orderCreatedFromAdminPanel") ||
-                        "سيتم تمييز هذه الطلبية أنها أُنشئت من لوحة التحكم"}
-                    </span>
-                  </div>
+                <div>
+                  <Label htmlFor="floor">{t("floor") || "الطابق"}</Label>
+                  <Input
+                    id="floor"
+                    value={orderForm.shipping_address.floor}
+                    onChange={(e) =>
+                      setOrderForm((prev) => ({
+                        ...prev,
+                        shipping_address: {
+                          ...prev.shipping_address,
+                          floor: e.target.value,
+                        },
+                      }))
+                    }
+                    placeholder={
+                      t("enterFloorOptional") || "أدخل الطابق (اختياري)"
+                    }
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="apartment">
+                    {t("apartment") || "رقم الشقة"}
+                  </Label>
+                  <Input
+                    id="apartment"
+                    value={orderForm.shipping_address.apartment}
+                    onChange={(e) =>
+                      setOrderForm((prev) => ({
+                        ...prev,
+                        shipping_address: {
+                          ...prev.shipping_address,
+                          apartment: e.target.value,
+                        },
+                      }))
+                    }
+                    placeholder={
+                      t("enterApartmentNumber") || "أدخل رقم الشقة"
+                    }
+                  />
                 </div>
               </div>
-              {/* أزرار الحفظ */}
-              <div className="flex flex-col sm:flex-row justify-end gap-2 mt-6">
+            </div>
+            {/* المنتجات */}
+            <div className="bg-gray-50 rounded-xl p-4 border mt-2">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-primary">
+                  {t("products") || "المنتجات"}
+                </h3>
                 <Button
                   type="button"
+                  onClick={addOrderItem}
                   variant="outline"
-                  onClick={() => setShowAddOrder(false)}
-                  disabled={isAddingOrder}
+                  size="sm"
                 >
-                  {t("cancel") || "إلغاء"}
-                </Button>
-                <Button
-                  type="submit"
-                  className="bg-primary text-white font-bold"
-                  disabled={isAddingOrder}
-                >
-                  {isAddingOrder
-                    ? t("adding") || "جاري الإضافة..."
-                    : t("addOrder") || "إضافة الطلب"}
+                  <Plus className="h-4 w-4 mr-2" />{" "}
+                  {t("addProduct") || "إضافة منتج"}
                 </Button>
               </div>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
+              <div className="space-y-3">
+                {orderForm.items.map((item, index) => (
+                  <div
+                    key={item.id}
+                    className="flex flex-col sm:flex-row gap-3 items-end p-3 border rounded-lg bg-white shadow-sm"
+                  >
+                    <div className="flex-1 min-w-[180px]">
+                      <Label>
+                        {t("product") || "المنتج"}{" "}
+                        <span className="text-red-500">*</span>
+                      </Label>
+                      <Select
+                        value={item.product_id}
+                        onValueChange={(value) =>
+                          updateOrderItem(item.id, "product_id", value)
+                        }
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue
+                            placeholder={
+                              t("searchOrSelectProduct") ||
+                              "ابحث أو اختر المنتج"
+                            }
+                          />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {products.map((product) => (
+                            <SelectItem key={product.id} value={product.id}>
+                              {product.name_ar ||
+                                product.name_en ||
+                                product.name_he ||
+                                product.id}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="w-full sm:w-24">
+                      <Label>
+                        {t("quantity") || "الكمية"}{" "}
+                        <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        type="number"
+                        min="1"
+                        value={item.quantity}
+                        onChange={(e) =>
+                          updateOrderItem(
+                            item.id,
+                            "quantity",
+                            parseInt(e.target.value) || 1,
+                          )
+                        }
+                        required
+                      />
+                    </div>
+                    <div className="w-full sm:w-24">
+                      <Label>
+                        {t("price") || "السعر"}{" "}
+                        <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={item.price}
+                        onChange={(e) =>
+                          updateOrderItem(
+                            item.id,
+                            "price",
+                            parseFloat(e.target.value) || 0,
+                          )
+                        }
+                        required
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      onClick={() => removeOrderItem(item.id)}
+                      variant="destructive"
+                      size="sm"
+                      className="self-end"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+              {orderForm.items.length > 0 && (
+                <div className="text-right mt-3">
+                  <p className="text-lg font-semibold">
+                    {t("total") || "المجموع الكلي"}:{" "}
+                    {calculateTotal().toFixed(2)} ₪
+                  </p>
+                </div>
+              )}
+            </div>
+            {/* ملاحظات + تمييز منشئ الطلب */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div>
+                <Label htmlFor="notes">{t("notes") || "ملاحظات"}</Label>
+                <Textarea
+                  id="notes"
+                  value={orderForm.notes}
+                  onChange={(e) =>
+                    setOrderForm((prev) => ({
+                      ...prev,
+                      notes: e.target.value,
+                    }))
+                  }
+                  placeholder={
+                    t("orderNotesPlaceholder") ||
+                    "أدخل ملاحظات إضافية (اختياري)"
+                  }
+                />
+              </div>
+              <div className="flex flex-col gap-2 mt-2">
+                <Label>{t("orderCreator") || "منشئ الطلبية"}</Label>
+                <div className="flex items-center gap-2">
+                  <Badge className="bg-blue-100 text-blue-800 border-blue-200">
+                    {t("admin") || "أدمن"}
+                  </Badge>
+                  <span className="text-xs text-gray-500">
+                    {t("orderCreatedFromAdminPanel") ||
+                      "سيتم تمييز هذه الطلبية أنها أُنشئت من لوحة التحكم"}
+                  </span>
+                </div>
+              </div>
+            </div>
+            {/* أزرار الحفظ */}
+            <div className="flex flex-col sm:flex-row justify-end gap-2 mt-6">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowAddOrder(false)}
+                disabled={isAddingOrder}
+              >
+                {t("cancel") || "إلغاء"}
+              </Button>
+              <Button
+                type="submit"
+                className="bg-primary text-white font-bold"
+                disabled={isAddingOrder}
+              >
+                {isAddingOrder
+                  ? t("adding") || "جاري الإضافة..."
+                  : t("addOrder") || "إضافة الطلب"}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Virtual Scroll للطلبات */}
       {advancedFilteredOrders.length === 0 ? (

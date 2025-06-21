@@ -41,6 +41,7 @@ const UserFilters: React.FC<UserFiltersProps> = ({
   return (
     <Card className="shadow-lg border-0">
       <CardContent className="p-4 lg:p-6">
+        {/* شريط الفلاتر */}
         <div className="flex flex-col gap-4">
           {/* Search */}
           <div className="flex-1">

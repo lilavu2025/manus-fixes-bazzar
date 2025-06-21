@@ -52,7 +52,7 @@ const OptimizedSearch: React.FC<OptimizedSearchProps> = ({
           setSearchQuery("");
           debouncedSearch("");
         }}
-        className="pr-8 sm:pr-10 pl-2 sm:pl-4 py-2 w-full bg-transparent border-none focus:ring-0 text-xs sm:text-sm md:text-base"
+        className="pr-8 sm:pr-10 pl-2 sm:pl-4 py-2 w-full bg-transparent border-none focus:ring-0 text-xs sm:text-sm md:text-base placeholder:truncate placeholder:whitespace-normal placeholder:max-w-full"
         dir="rtl"
         style={{ borderRadius: 0, boxShadow: "none", minWidth: 0 }}
       />

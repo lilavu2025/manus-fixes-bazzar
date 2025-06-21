@@ -8,6 +8,7 @@ import AdminProductsHeader from "./AdminProductsHeader";
 import AdminProductsEmptyState from "./AdminProductsEmptyState";
 import AdminProductsTable from "./AdminProductsTable";
 import AdminProductsDialogs from "./AdminProductsDialogs";
+import AdminHeader from "./AdminHeader";
 import {
   ProductWithOptionalFields,
   Product,
@@ -18,6 +19,7 @@ import {
 import { mapCategoryToProductCategory } from "@/types/index";
 import { BarChart3, Filter, CheckCircle, XCircle } from "lucide-react";
 import { mapProductFromDb } from "@/types/mapProductFromDb";
+import { Card, CardContent } from "@/components/ui/card";
 
 const AdminProducts: React.FC = () => {
   const { t } = useLanguage();
@@ -175,143 +177,137 @@ const AdminProducts: React.FC = () => {
           </div>
         </div>
       </div>
-      {/* شريط الفلاتر */}
-      <div className="flex flex-wrap gap-3 items-center bg-white rounded-xl p-4 shadow-md border mt-4 relative">
-        {/* فلتر البحث بالاسم */}
-        <div className="flex flex-col min-w-[180px]">
-          <label className="text-xs text-gray-500 font-medium mb-1 flex items-center gap-1">
-            🔍 {t("searchByName") || "بحث بالاسم"}
-          </label>
-          <input
-            type="text"
-            className="border rounded-lg px-3 py-2 bg-gray-50 focus:ring-2 focus:ring-blue-300"
-            placeholder={t("searchByNameProductPlaceholder") || "اكتب اسم المنتج..."}
-            value={searchName}
-            onChange={(e) => setSearchName(e.target.value)}
-          />
-        </div>
-        {/* فلتر الفئة */}
-        <div className="flex flex-col min-w-[160px]">
-          <label className="text-xs text-gray-500 font-medium mb-1 flex items-center gap-1">
-            <Filter className="h-4 w-4 text-blue-400" />
-            {t("category")}
-          </label>
-          <select
-            className="border rounded-lg px-3 py-2 bg-blue-50 focus:ring-2 focus:ring-blue-300"
-            value={filterCategory}
-            onChange={(e) => setFilterCategory(e.target.value)}
-          >
-            <option value="all">{t("allCategories")}</option>
-            {productCategories.map((cat) => (
-              <option key={cat.id} value={cat.id}>
-                {cat.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        {/* فلتر المخزون */}
-        <div className="flex flex-col min-w-[140px]">
-          <label className="text-xs text-gray-500 font-medium mb-1 flex items-center gap-1">
-            <CheckCircle className="h-4 w-4 text-green-400" />
-            {t("stock")}
-          </label>
-          <select
-            className="border rounded-lg px-3 py-2 bg-green-50 focus:ring-2 focus:ring-green-300"
-            value={filterStock}
-            onChange={(e) => setFilterStock(e.target.value)}
-          >
-            <option value="all">{t("allStock")}</option>
-            <option value="low">{t("lowStock")}</option>
-            <option value="in">{t("inStock")}</option>
-            <option value="out">{t("outOfStock")}</option>
-          </select>
-        </div>
-        {/* فلتر الحالة */}
-        <div className="flex flex-col min-w-[120px]">
-          <label className="text-xs text-gray-500 font-medium mb-1 flex items-center gap-1">
-            <XCircle className="h-4 w-4 text-yellow-400" />
-            {t("status")}
-          </label>
-          <select
-            className="border rounded-lg px-3 py-2 bg-yellow-50 focus:ring-2 focus:ring-yellow-300"
-            value={filterActive}
-            onChange={(e) => setFilterActive(e.target.value)}
-          >
-            <option value="all">{t("allStatus")}</option>
-            <option value="active">{t("active")}</option>
-            <option value="inactive">{t("inactive")}</option>
-          </select>
-        </div>
-        {/* زر تصفير الفلاتر */}
-        <button
-          type="button"
-          className="ml-auto flex items-center gap-2 px-4 py-2 rounded-lg bg-red-50 text-red-700 font-bold shadow border border-red-200 hover:bg-red-100 transition-all duration-200"
-          onClick={() => {
-            setFilterCategory("all");
-            setFilterStock("all");
-            setFilterActive("all");
-            setSearchName("");
-          }}
-        >
-          <XCircle className="h-4 w-4" />
-          <span className="inline-block align-middle">
-            {t("resetFilters") || "مسح الفلاتر"}
-          </span>
-        </button>
-        {/* زر التصدير */}
-        <button
-          type="button"
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white font-bold shadow border border-blue-700 hover:bg-blue-700 transition-all duration-200"
-          onClick={() => {
-            // تصدير المنتجات إلى CSV
-            const csv = [
-              [
-                "ID",
-                "Name",
-                "NameEn",
-                "Category",
-                "Price",
-                "InStock",
-                "Quantity",
-                "Active",
-                "CreatedAt",
-              ],
-              ...filteredProducts.map((p) => [
-                p.id,
-                p.name,
-                p.nameEn,
-                productCategories.find((c) => c.id === p.category)?.name || "",
-                p.price,
-                p.inStock ? "Yes" : "No",
-                p.stock_quantity ?? "",
-                p.active === false ? "Inactive" : "Active",
-                p.created_at ? new Date(p.created_at).toISOString() : "",
-              ]),
-            ]
-              .map((row) => row.join(","))
-              .join("\n");
-            const BOM = "\uFEFF";
-            const blob = new Blob([BOM + csv], {
-              type: "text/csv;charset=utf-8;",
-            });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = "products.csv";
-            a.click();
-            URL.revokeObjectURL(url);
-          }}
-        >
-          <BarChart3 className="h-4 w-4" />
-          {t("exportExcel") || "تصدير Excel"}
-        </button>
-      </div>
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-6">
-        <AdminProductsHeader
-          productCount={filteredProducts.length}
-          onAddProduct={() => setShowAddDialog(true)}
-        />
-      </div>
+      {/* شريط الفلاتر الموحد (تصميم متجاوب ومحسّن) */}
+      <Card className="shadow-lg border-0 mt-4">
+        <CardContent className="p-3 sm:p-4 lg:p-6">
+          <div className="flex flex-col gap-3 lg:gap-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+              {/* بحث بالاسم */}
+              <div className="w-full sm:w-64 flex-shrink-0">
+                <div className="relative">
+                  <input
+                    type="text"
+                    className="border-2 border-gray-200 rounded-lg pl-10 pr-3 py-2 h-10 text-xs sm:text-sm w-full bg-gray-50 focus:border-blue-500 focus:ring-1 focus:ring-blue-300 transition-colors placeholder:text-gray-400"
+                    placeholder={t("searchByNameProductPlaceholder") || "اكتب اسم المنتج..."}
+                    value={searchName}
+                    onChange={(e) => setSearchName(e.target.value)}
+                    maxLength={60}
+                  />
+                  <span className="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400 text-base">🔍</span>
+                </div>
+              </div>
+              {/* فلتر الفئة */}
+              <div className="w-full sm:w-48 flex-shrink-0">
+                <select
+                  className="border-2 border-gray-200 rounded-lg px-3 py-2 h-10 text-xs sm:text-sm w-full bg-blue-50 focus:border-blue-500"
+                  value={filterCategory}
+                  onChange={(e) => setFilterCategory(e.target.value)}
+                >
+                  <option value="all">{t("allCategories")}</option>
+                  {productCategories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {/* فلتر المخزون */}
+              <div className="w-full sm:w-40 flex-shrink-0">
+                <select
+                  className="border-2 border-gray-200 rounded-lg px-3 py-2 h-10 text-xs sm:text-sm w-full bg-green-50 focus:border-green-500"
+                  value={filterStock}
+                  onChange={(e) => setFilterStock(e.target.value)}
+                >
+                  <option value="all">{t("allStock")}</option>
+                  <option value="low">{t("lowStock")}</option>
+                  <option value="in">{t("inStock")}</option>
+                  <option value="out">{t("outOfStock")}</option>
+                </select>
+              </div>
+              {/* فلتر الحالة */}
+              <div className="w-full sm:w-36 flex-shrink-0">
+                <select
+                  className="border-2 border-gray-200 rounded-lg px-3 py-2 h-10 text-xs sm:text-sm w-full bg-yellow-50 focus:border-yellow-500"
+                  value={filterActive}
+                  onChange={(e) => setFilterActive(e.target.value)}
+                >
+                  <option value="all">{t("allStatus")}</option>
+                  <option value="active">{t("active")}</option>
+                  <option value="inactive">{t("inactive")}</option>
+                </select>
+              </div>
+              {/* زر تصفير الفلاتر */}
+              <div className="w-full sm:w-auto flex flex-row gap-2 mt-2 sm:mt-0">
+                <button
+                  type="button"
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-red-50 text-red-700 font-bold shadow border border-red-200 hover:bg-red-100 transition-all duration-200 h-10 text-xs sm:text-sm"
+                  onClick={() => {
+                    setFilterCategory("all");
+                    setFilterStock("all");
+                    setFilterActive("all");
+                    setSearchName("");
+                  }}
+                >
+                  <XCircle className="h-4 w-4" />
+                  <span>{t("resetFilters") || "مسح الفلاتر"}</span>
+                </button>
+                <button
+                  type="button"
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-blue-600 text-white font-bold shadow border border-blue-700 hover:bg-blue-700 transition-all duration-200 h-10 text-xs sm:text-sm"
+                  onClick={() => {
+                    // تصدير المنتجات إلى CSV
+                    const csv = [
+                      [
+                        "ID",
+                        "Name",
+                        "NameEn",
+                        "Category",
+                        "Price",
+                        "InStock",
+                        "Quantity",
+                        "Active",
+                        "CreatedAt",
+                      ],
+                      ...filteredProducts.map((p) => [
+                        p.id,
+                        p.name,
+                        p.nameEn,
+                        productCategories.find((c) => c.id === p.category)?.name || "",
+                        p.price,
+                        p.inStock ? "Yes" : "No",
+                        p.stock_quantity ?? "",
+                        p.active === false ? "Inactive" : "Active",
+                        p.created_at ? new Date(p.created_at).toISOString() : "",
+                      ]),
+                    ]
+                      .map((row) => row.join(","))
+                      .join("\n");
+                    const BOM = "\uFEFF";
+                    const blob = new Blob([BOM + csv], {
+                      type: "text/csv;charset=utf-8;",
+                    });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = "products.csv";
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  }}
+                >
+                  <BarChart3 className="h-4 w-4" />
+                  <span>{t("exportExcel") || "تصدير Excel"}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+      <AdminHeader
+        title={t("products") || "المنتجات"}
+        count={filteredProducts.length}
+        addLabel={t("addProduct") || "إضافة منتج"}
+        onAdd={() => setShowAddDialog(true)}
+      />
       {filteredProducts.length === 0 ? (
         <AdminProductsEmptyState onAddProduct={() => setShowAddDialog(true)} />
       ) : (
