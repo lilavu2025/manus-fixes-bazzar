@@ -46,6 +46,7 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({ user }) => {
       if (error) throw error;
 
       toast.success("تم تحديث بيانات المستخدم بنجاح");
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
       setOpen(false);
     } catch (error) {
       console.error("Error updating user:", error);
