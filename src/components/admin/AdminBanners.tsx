@@ -74,16 +74,6 @@ const AdminBanners: React.FC = () => {
   const toggleBannerActiveMutation = useToggleBannerActive();
   const uploadBannerImageMutation = useUploadBannerImage();
 
-  // حذف جميع استدعاءات supabase واستخدام الدوال التالية بدلاً منها:
-  // fetchBanners => refetch()
-  // handleSubmit => addBannerMutation.mutate / updateBannerMutation.mutate
-  // handleDelete => deleteBannerMutation.mutate
-  // toggleActive => toggleBannerActiveMutation.mutate
-  // uploadImage => uploadBannerImageMutation.mutateAsync
-
-  // جلب البانرات عند تحميل الصفحة لم يعد مطلوبًا (react-query يتكفل بذلك)
-  // useEffect(() => { fetchBanners(); }, []);
-
   // إعادة تعيين النموذج وإغلاقه
   const resetForm = () => {
     console.log('إعادة تعيين النموذج');

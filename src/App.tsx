@@ -8,18 +8,17 @@ import { HelmetProvider } from "react-helmet-async";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
-import { useConnectionMonitor } from "@/hooks/useConnectionMonitor";
-import { useSmartRefresh } from "@/hooks/useSmartRefresh";
-import ProtectedRoute from "@/components/ProtectedRoute";
-import ErrorBoundary from "@/components/ErrorBoundary";
-import SEO from "@/components/SEO";
-import PerformanceMonitorComponent from "@/components/PerformanceMonitor";
 import { lazy, Suspense, memo, useEffect, useRef, useState } from "react";
 import ScrollToTop from "@/components/ScrollToTop";
 import { getSetting } from '@/services/settingsService';
 import MobileBottomNavBar from '@/components/MobileBottomNavBar';
 import Header from '@/components/Header';
 import CartSidebar from '@/components/CartSidebar';
+import { useConnectionMonitor } from "@/hooks/useConnectionMonitor";
+import ErrorBoundary from "@/components/ErrorBoundary";
+import SEO from "@/components/SEO";
+import PerformanceMonitorComponent from "@/components/PerformanceMonitor";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 // Critical pages - Regular imports for initial load
 import Index from "./pages/Index";
@@ -52,6 +51,7 @@ const Checkout = lazy(() =>
 const AdminDashboard = lazy(() => 
   import("./pages/AdminDashboard").then(module => ({ default: module.default }))
 );
+const CartPage = lazy(() => import('./pages/Cart'));
 
 // Enhanced loading component with better UX
 const PageLoader = memo(() => (
@@ -123,14 +123,6 @@ const ConnectionManager = memo(() => {
     }
   });
 
-  // التحديث الذكي
-  const { refresh } = useSmartRefresh({
-    refreshFunction: async () => {
-      queryClient.refetchQueries({ type: 'all' });
-    },
-    interval: 300000 // 5 دقائق
-  });
-
   // عرض رسالة عدم الاتصال
   if (!isOnline) {
     return (
@@ -159,31 +151,6 @@ const App = () => {
   // useEffect(() => {
   //   getSetting('hide_offers_page').then(val => setHideOffers(val === 'true'));
   // }, []);
-
-  useEffect(() => {
-    // حذف setInterval، والإبقاء فقط على التحديث عند التفاعل
-    const refetchAll = (source?: string) => {
-      console.log(`[refetchAll] called from: ${source || 'manual'} at`, new Date().toISOString());
-      queryClient.refetchQueries({ type: 'all' });
-    };
-    const clickHandler = () => refetchAll('click');
-    const focusHandler = () => refetchAll('focus');
-    const visibilityHandler = () => {
-      if (document.visibilityState === 'visible') {
-        refetchAll('visibilitychange');
-      }
-    };
-    document.addEventListener('click', clickHandler, true);
-    window.addEventListener('focus', focusHandler);
-    document.addEventListener('visibilitychange', visibilityHandler);
-    console.log('[refetchAll] event listeners added');
-    return () => {
-      document.removeEventListener('click', clickHandler, true);
-      window.removeEventListener('focus', focusHandler);
-      document.removeEventListener('visibilitychange', visibilityHandler);
-      console.log('[refetchAll] event listeners removed');
-    };
-  }, [queryClient]);
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -232,6 +199,7 @@ const App = () => {
                               <Contact />
                             </Suspense>
                           } />
+                          <Route path="/cart" element={<Suspense fallback={<PageLoader />}><CartPage /></Suspense>} />
                           
                           {/* Protected Routes */}
                           <Route path="/orders" element={

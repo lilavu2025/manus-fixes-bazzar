@@ -12,13 +12,11 @@ interface UsersTableProps {
   users: UserProfile[];
   isLoading: boolean;
   error?: string | null;
-  refetch: () => void;
-  setUsers: React.Dispatch<React.SetStateAction<UserProfile[]>>;
   disableUser: (userId: string, disabled: boolean) => Promise<void>;
   deleteUser: (userId: string) => Promise<void>;
 }
 
-const UsersTable: React.FC<UsersTableProps> = ({ users, isLoading, error, refetch, setUsers, disableUser, deleteUser }) => {
+const UsersTable: React.FC<UsersTableProps> = ({ users, isLoading, error, disableUser, deleteUser }) => {
   const { t } = useLanguage();
 
   // زر ودالة تصدير المستخدمين
@@ -122,8 +120,6 @@ const UsersTable: React.FC<UsersTableProps> = ({ users, isLoading, error, refetc
                   key={user.id}
                   user={user}
                   index={index}
-                  refetch={refetch}
-                  setUsers={setUsers}
                   disableUser={disableUser}
                   deleteUser={deleteUser}
                 />

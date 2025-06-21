@@ -173,7 +173,7 @@ const ViewProductDialog: React.FC<ViewProductDialogProps> = ({
             )}
           </div>
 
-          {/* معرض صور احترافي */}
+          {/* معرض صور احترافية */}
           <div className="w-full md:w-1/2 flex flex-col items-center md:items-start">
             <ProductImageGallery product={{
               name: product.name_ar || product.name_en || '',

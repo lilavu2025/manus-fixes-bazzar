@@ -69,4 +69,5 @@ const OptimizedSearch: React.FC<OptimizedSearchProps> = ({
 
 export default React.memo(OptimizedSearch);
 
+// تم حذف كل منطق الجلسة أو الأحداث (addEventListener, refetch, supabase.auth, visibilitychange) من هذا الملف. استخدم AuthContext فقط.
 // ملاحظة: إذا كنت تستخدم هذا الكرت ضمن شبكة (grid) أو flex في صفحة المنتجات أو أي مكان آخر، تأكد أن الكلاس grid-cols-1 أو flex-col مفعّل على الشاشات الصغيرة (مثلاً: grid-cols-1 sm:grid-cols-2 ...).

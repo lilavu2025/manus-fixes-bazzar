@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   Dialog,
@@ -14,16 +13,14 @@ import UserInfoDisplay from './edit-user/UserInfoDisplay';
 import EditUserForm from './edit-user/EditUserForm';
 import { useLanguage } from '@/utils/languageContextUtils';
 import { useAuth } from '@/contexts/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import type { UserProfile } from '@/types/profile';
-import type { Json } from '@/integrations/supabase/types';
 
 interface EditUserDialogProps {
   user: UserProfile;
-  refetch: () => void;
-  setUsers: React.Dispatch<React.SetStateAction<UserProfile[]>>;
 }
 
-const EditUserDialog: React.FC<EditUserDialogProps> = ({ user, refetch, setUsers }) => {
+const EditUserDialog: React.FC<EditUserDialogProps> = ({ user }) => {
   const { isRTL, t } = useLanguage();
   const { profile } = useAuth();
   const queryClient = useQueryClient();
@@ -34,19 +31,6 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({ user, refetch, setUsers
     phone: user.phone || '',
     user_type: user.user_type,
   });
-
-  // دالة تسجيل النشاط
-  const logUserActivity = async (userId: string, action: string, details: Record<string, unknown> = {}) => {
-    if (!profile?.id) return;
-    await supabase.from('user_activity_log').insert([
-      {
-        admin_id: profile.id,
-        user_id: userId,
-        action,
-        details: details as Json,
-      }
-    ]);
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,16 +49,7 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({ user, refetch, setUsers
 
       if (error) throw error;
 
-      // تسجيل النشاط
-      await logUserActivity(user.id, 'update', {
-        full_name: formData.full_name,
-        phone: formData.phone,
-        user_type: formData.user_type,
-      });
-
       toast.success('تم تحديث بيانات المستخدم بنجاح');
-      // تحديث المستخدم في القائمة مباشرة
-      setUsers(prev => prev.map(u => u.id === user.id ? { ...u, ...formData } : u));
       setOpen(false);
     } catch (error) {
       console.error('Error updating user:', error);

@@ -15,8 +15,6 @@ const AdminUsers: React.FC = () => {
   
   const {
     users,
-    setUsers,
-    filteredAndSortedUsers,
     isLoading,
     error,
     searchQuery,
@@ -29,7 +27,6 @@ const AdminUsers: React.FC = () => {
     setSortBy,
     sortOrder,
     setSortOrder,
-    refetch,
     disableUser,
     deleteUser
   } = useAdminUsers();
@@ -100,7 +97,7 @@ const AdminUsers: React.FC = () => {
           setSortOrder={handleSortOrderChange}
         />
 
-        <UsersTable users={filteredAndSortedUsers} isLoading={isLoading} error={typeof error === 'string' ? error : error?.message || ''} setUsers={setUsers} disableUser={disableUser} deleteUser={deleteUser} refetch={refetch} />
+        <UsersTable users={users} isLoading={isLoading} error={typeof error === 'string' ? error : error?.message || ''} disableUser={disableUser} deleteUser={deleteUser} />
       </div>
     </div>
   );

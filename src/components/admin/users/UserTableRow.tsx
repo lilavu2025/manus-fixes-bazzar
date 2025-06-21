@@ -4,7 +4,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Mail, Phone, Calendar, CheckCircle, XCircle, Eye, ShoppingBag, MoreVertical } from 'lucide-react';
-import { format } from 'date-fns';
 import { isRTL, useLanguage } from '@/utils/languageContextUtils';
 import EditUserDialog from '../EditUserDialog';
 import UserDetailsDialog from './UserDetailsDialog';
@@ -15,13 +14,11 @@ import type { UserProfile } from '@/types/profile';
 interface UserTableRowProps {
   user: UserProfile;
   index: number;
-  refetch: () => void;
-  setUsers: React.Dispatch<React.SetStateAction<UserProfile[]>>;
   disableUser: (userId: string, disabled: boolean) => Promise<void>;
   deleteUser: (userId: string) => Promise<void>;
 }
 
-const UserTableRow: React.FC<UserTableRowProps> = ({ user, index, refetch, setUsers, disableUser, deleteUser }) => {
+const UserTableRow: React.FC<UserTableRowProps> = ({ user, index, disableUser, deleteUser }) => {
   const { t } = useLanguage();
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [showOrdersDialog, setShowOrdersDialog] = useState(false);
@@ -122,7 +119,7 @@ const UserTableRow: React.FC<UserTableRowProps> = ({ user, index, refetch, setUs
         
         <TableCell className="p-2 lg:p-4">
           <div className="flex items-center gap-1 lg:gap-2">
-            <EditUserDialog user={user} refetch={refetch} setUsers={setUsers} />
+            <EditUserDialog user={user} />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="h-6 w-6 lg:h-8 lg:w-8 p-0">

@@ -48,7 +48,7 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
   users = [],
   products = [],
 }) => {
-  const { categories: categoriesList } = useCategoriesRealtime({ disableRealtime: true });
+  const { categories: categoriesList } = useCategoriesRealtime();
   const { t, language } = useLanguage();
   const navigate = useNavigate();
   const [isUsersExpanded, setIsUsersExpanded] = useState(false);
@@ -630,4 +630,5 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
 
 export default AdminDashboardStats;
 
+// تم حذف كل منطق الجلسة أو الأحداث (addEventListener, refetch, supabase.auth, visibilitychange) من هذا الملف. استخدم AuthContext فقط.
 // ملاحظة: للحصول على إحصائيات حية، يمكنك استخدام useProductsRealtime/useCategoriesRealtime لجلب المنتجات والفئات ثم حساب الإحصائيات منها مباشرة، أو إضافة اشتراك Realtime مخصص لجداول الإحصائيات إذا لزم الأمر.

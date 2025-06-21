@@ -2,7 +2,8 @@ import { useEffect, useState, useCallback } from 'react';
 import { fetchAllProducts } from '@/integrations/supabase/dataFetchers';
 import type { ProductRow } from '@/integrations/supabase/dataFetchers';
 
-export function useProductsRealtime(options?: { disableRealtime?: boolean }) {
+// حذف كل منطق الجلسة أو الأحداث من الهوك، والاكتفاء بجلب المنتجات فقط عند التحميل الأول
+export function useProductsRealtime() {
   const [products, setProducts] = useState<ProductRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -21,11 +22,8 @@ export function useProductsRealtime(options?: { disableRealtime?: boolean }) {
   }, []);
 
   useEffect(() => {
-    fetchProducts(); // جلب المنتجات دائماً عند أول تحميل
-    if (!options?.disableRealtime) {
-      // يمكنك إضافة اشتراك Realtime هنا إذا أردت
-    }
-  }, [fetchProducts, options?.disableRealtime]);
+    fetchProducts();
+  }, [fetchProducts]);
 
   return { products, loading, error, refetch: fetchProducts, setProducts };
 }

@@ -217,7 +217,7 @@ const AdminOrders: React.FC = () => {
   }, [location.state]);
   
   // استعلام الطلبات مع تفعيل polling وتحديث البيانات عند العودة للنافذة
-  const { orders, loading: ordersLoading, error: ordersError, refetch: refetchOrders, setOrders } = useOrdersRealtime({ disableRealtime: true });
+  const { orders, loading: ordersLoading, error: ordersError, refetch: refetchOrders, setOrders } = useOrdersRealtime();
   
   // ربط hook تحديث حالة الطلب
   const updateOrderStatusMutation = useUpdateOrderStatus();

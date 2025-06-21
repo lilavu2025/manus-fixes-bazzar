@@ -51,7 +51,7 @@ const AdminOffers: React.FC = () => {
   const [form, setForm] = useState(initialForm);
 
   // جلب العروض من قاعدة البيانات
-  const { offers, loading, error, refetch, setOffers } = useOffersRealtime({ disableRealtime: true });
+  const { offers, loading, error, refetch, setOffers } = useOffersRealtime();
   const offersData = Array.isArray(offers) ? offers : [];
 
   // ربط hooks العروض

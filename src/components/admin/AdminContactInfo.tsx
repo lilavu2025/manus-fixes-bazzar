@@ -28,7 +28,7 @@ const FIELD_ICONS: Record<string, React.ReactNode> = {
 
 const AdminContactInfo: React.FC = () => {
   const { t } = useLanguage();
-  const { data: contactInfo, isLoading: loading, error, refetch } = useGetContactInfo();
+  const { data: contactInfo, isLoading: loading, error } = useGetContactInfo();
   const updateContactInfoMutation = useUpdateContactInfo();
   const [form, setForm] = useState<Partial<ContactInfo>>({});
   const [saving, setSaving] = useState(false);
@@ -72,7 +72,6 @@ const AdminContactInfo: React.FC = () => {
       setSaving(false);
       if (updated) {
         setSuccess(true);
-        refetch();
       }
     } catch (error) {
       setSaving(false);

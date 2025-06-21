@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from './AuthContext.context';
 import type { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
@@ -12,6 +12,7 @@ import {
 import { fetchUserProfile } from '@/integrations/supabase/dataFetchers';
 import { supabase } from '@/integrations/supabase/client';
 import { createProfile } from '@/integrations/supabase/dataSenders';
+import type { Session } from '@supabase/auth-js';
 
 export interface Profile {
   id: string;
@@ -29,19 +30,17 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [session, setSession] = useState<Session | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
+  const sessionRef = useRef<Session | null>(null);
+  const lastSessionCheck = useRef<number>(Date.now());
 
   // hooks
   const signInMutation = useSignIn();
   const signUpMutation = useSignUp();
   const signOutMutation = useSignOut();
   const updateProfileMutation = useUpdateProfile();
-
-  useEffect(() => {
-    setProfile(null);
-    setLoading(false);
-  }, []);
 
   // حفظ آخر صفحة زارها المستخدم (عدا صفحات auth)
   useEffect(() => {
@@ -66,18 +65,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     navigate('/', { replace: true });
   }, [navigate]);
 
+  // جلب بيانات البروفايل بناءً على session
+  const fetchAndSetProfile = useCallback(async (userId: string | undefined) => {
+    if (!userId) {
+      setProfile(null);
+      return;
+    }
+    const profileData = await fetchUserProfile(userId);
+    if (profileData) setProfile(profileData);
+    else setProfile(null);
+  }, []);
+
   // تسجيل الدخول
   const signIn = async (email: string, password: string) => {
     const data = await signInMutation.mutateAsync({ email, password });
     setCookie('lastLoginTime', Date.now().toString(), 60 * 60 * 24 * 30);
-    // جلب بيانات البروفايل بعد تسجيل الدخول
     if (data && data.user && data.user.id) {
-      const profileData = await fetchUserProfile(data.user.id);
-      if (profileData) {
-        setProfile(profileData);
-        handleUserRedirection(profileData); // التوجيه فقط بعد تسجيل الدخول
-      }
+      await fetchAndSetProfile(data.user.id);
+      handleUserRedirection({ ...profile!, id: data.user.id });
     }
+    if (data.session) setSession(data.session);
   };
 
   // تسجيل حساب جديد
@@ -86,7 +93,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (!data.user) {
       throw new Error('فشل في إنشاء الحساب. يرجى المحاولة مرة أخرى.');
     }
-    // إذا تم إنشاء الحساب بنجاح، أنشئ بروفايل للمستخدم في جدول profiles
     if (data.user.id) {
       try {
         await createProfile({
@@ -96,25 +102,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           phone: phone || '',
           user_type: 'retail',
         });
-        // جلب البروفايل وتوجيه المستخدم بعد التسجيل
-        const profileData = await fetchUserProfile(data.user.id);
-        if (profileData) {
-          setProfile(profileData);
-          handleUserRedirection(profileData);
-        }
-      } catch (e) {
-        // تجاهل الخطأ إذا كان البروفايل موجود مسبقاً
-      }
+        await fetchAndSetProfile(data.user.id);
+        handleUserRedirection({ ...profile!, id: data.user.id });
+      } catch (e) { /* ignore if profile exists */ }
     }
     if (!data.session) {
       throw new Error('تم إرسال رابط التأكيد إلى بريدك الإلكتروني. يرجى التحقق من بريدك الإلكتروني وتأكيد حسابك.');
     }
+    setSession(data.session);
   };
 
   // تسجيل الخروج
   const signOut = async () => {
     await signOutMutation.mutateAsync();
     setProfile(null);
+    setSession(null);
     deleteCookie('lastLoginTime');
     deleteCookie('lastVisitedPath');
     navigate('/', { replace: true });
@@ -129,22 +131,72 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // مراقبة جلسة supabase وتحديث البروفايل تلقائياً
   useEffect(() => {
+    let ignore = false;
+    setLoading(true);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!ignore) {
+        setSession(session);
+        sessionRef.current = session;
+        fetchAndSetProfile(session?.user?.id);
+        setLoading(false);
+      }
+    });
     const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
+      setSession(session);
+      sessionRef.current = session;
       if (session?.user?.id) {
-        const profileData = await fetchUserProfile(session.user.id);
-        if (profileData) setProfile(profileData);
+        await fetchAndSetProfile(session.user.id);
       } else {
         setProfile(null);
       }
     });
     return () => {
+      ignore = true;
       listener.subscription.unsubscribe();
     };
-  }, []);
+  }, [fetchAndSetProfile]);
+
+  // التعامل مع انتهاء التوكن أو انقطاع الجلسة
+  const checkSessionValidity = useCallback(async () => {
+    const { data } = await supabase.auth.getSession();
+    if (!data.session || !data.session.user) {
+      setProfile(null);
+      setSession(null);
+      return;
+    }
+    setSession(data.session);
+    sessionRef.current = data.session;
+    await fetchAndSetProfile(data.session.user.id);
+  }, [fetchAndSetProfile]);
+
+  // refetch عند click/focus/visibilitychange
+  useEffect(() => {
+    const refetchSession = async (source?: string) => {
+      // لا تكرر الفحص أكثر من مرة كل 3 ثواني
+      if (Date.now() - lastSessionCheck.current < 3000) return;
+      lastSessionCheck.current = Date.now();
+      await checkSessionValidity();
+    };
+    const clickHandler = () => refetchSession('click');
+    const focusHandler = () => refetchSession('focus');
+    const visibilityHandler = () => {
+      if (document.visibilityState === 'visible') {
+        refetchSession('visibilitychange');
+      }
+    };
+    document.addEventListener('click', clickHandler, true);
+    window.addEventListener('focus', focusHandler);
+    document.addEventListener('visibilitychange', visibilityHandler);
+    return () => {
+      document.removeEventListener('click', clickHandler, true);
+      window.removeEventListener('focus', focusHandler);
+      document.removeEventListener('visibilitychange', visibilityHandler);
+    };
+  }, [checkSessionValidity]);
 
   const value = {
     user: profile,
-    session: null,
+    session,
     profile,
     loading,
     signIn,

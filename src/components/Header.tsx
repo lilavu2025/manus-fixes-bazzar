@@ -1,5 +1,5 @@
 import * as React from "react";
-import { memo, useCallback, useMemo, useEffect, } from 'react';
+import { memo, useEffect, } from 'react';
 import { Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetTrigger } from '@/components/ui/sheet';
@@ -43,7 +43,7 @@ const Header: React.FC<HeaderProps> = memo(({ searchQuery, onSearchChange, onCar
   const mobileSearch = typeof showMobileSearch === 'boolean' ? showMobileSearch : false;
   const setMobileSearch = setShowMobileSearch || (() => {});
 
-  const navigationItems = useMemo(() => {
+  const navigationItems = React.useMemo(() => {
     if (loadingSetting) return [
       { path: '/', label: t('home'), icon: Home },
       { path: '/products', label: t('products') },

@@ -19,7 +19,7 @@ const AdminProducts: React.FC = () => {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<AdminProductForm | null>(null);
-  const { products: productsRaw, loading: productsLoading, error: productsError, refetch: refetchProducts, setProducts } = useProductsRealtime({ disableRealtime: true });
+  const { products: productsRaw, loading: productsLoading, error: productsError, setProducts } = useProductsRealtime();
   const products: ProductWithOptionalFields[] = Array.isArray(productsRaw) ? productsRaw.map(mapProductFromDb) : [];
   const { data: categoriesData } = useCategories();
   // Accept both Category[] types for now, but cast to any to avoid type error

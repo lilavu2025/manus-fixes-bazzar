@@ -49,8 +49,8 @@ const AdminCategories: React.FC = () => {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showViewDialog, setShowViewDialog] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
-  // Use disableRealtime and get setCategories for instant UI update
-  const { categories, loading, error, refetch, setCategories } = useCategoriesRealtime({ disableRealtime: true });
+  // استخدم الهوك بدون أي باراميتر
+  const { categories, loading, error, refetch, setCategories } = useCategoriesRealtime();
   const [search, setSearch] = useState('');
   const [filterActive, setFilterActive] = useState<'all' | 'active' | 'inactive'>('all');
   const [sortBy, setSortBy] = useState<'name' | 'count'>('name');

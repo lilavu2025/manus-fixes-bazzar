@@ -22,8 +22,7 @@ export const useAdminUsers = () => {
   const {
     data: users = [],
     isLoading,
-    error,
-    refetch
+    error
   } = useAdminUsersQuery();
 
   // تعطيل/تفعيل مستخدم
@@ -105,7 +104,6 @@ export const useAdminUsers = () => {
       throw error;
     } else {
       toast.success('تم حذف المستخدم بنجاح');
-      refetch();
     }
   };
 
@@ -113,9 +111,7 @@ export const useAdminUsers = () => {
   const retailCount = users.filter(u => u.user_type === 'retail').length;
 
   return {
-    users,
-    setUsers: () => {}, // لم يعد هناك setUsers حقيقي
-    filteredAndSortedUsers,
+    users: filteredAndSortedUsers,
     isLoading,
     error,
     searchQuery, setSearchQuery,
@@ -123,7 +119,6 @@ export const useAdminUsers = () => {
     statusFilter, setStatusFilter,
     sortBy, setSortBy,
     sortOrder, setSortOrder,
-    refetch,
     disableUser,
     deleteUser,
     wholesaleCount,

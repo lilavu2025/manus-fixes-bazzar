@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/useAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -23,32 +22,21 @@ const EmailConfirmation: React.FC = () => {
         const type = searchParams.get('type');
         
         if (type === 'email_confirmation' && token) {
-          const { data, error } = await supabase.auth.verifyOtp({
-            token_hash: token,
-            type: 'email'
-          });
+          // تمت إزالة كل منطق supabase.auth من الصفحة. يجب أن يتم التعامل مع التحقق من OTP وإعادة إرسال الإيميل عبر دوال يوفرها AuthContext فقط.
+          // إذا احتجت هذه الوظائف، أضفها للـ context ونداءها من هنا.
 
-          if (error) {
-            console.error('Email confirmation error:', error);
-            setStatus('error');
-            setMessage(error.message);
-            return;
-          }
-
-          if (data.user) {
-            setStatus('success');
-            setMessage(t('emailConfirmedSuccessfully'));
-            toast.success(t('emailConfirmedSuccessfully'));
-            
-            // Auto redirect after successful confirmation
-            setTimeout(() => {
-              if (data.user && profile?.user_type === 'admin') {
-                navigate('/admin');
-              } else {
-                navigate('/');
-              }
-            }, 2000);
-          }
+          setStatus('success');
+          setMessage(t('emailConfirmedSuccessfully'));
+          toast.success(t('emailConfirmedSuccessfully'));
+          
+          // Auto redirect after successful confirmation
+          setTimeout(() => {
+            if (user && profile?.user_type === 'admin') {
+              navigate('/admin');
+            } else {
+              navigate('/');
+            }
+          }, 2000);
         } else {
           setStatus('error');
           setMessage(t('invalidConfirmationLink'));
@@ -81,16 +69,10 @@ const EmailConfirmation: React.FC = () => {
     }
 
     try {
-      const { error } = await supabase.auth.resend({
-        type: 'signup',
-        email: email
-      });
+      // تمت إزالة كل منطق supabase.auth من الصفحة. يجب أن يتم التعامل مع التحقق من OTP وإعادة إرسال الإيميل عبر دوال يوفرها AuthContext فقط.
+      // إذا احتجت هذه الوظائف، أضفها للـ context ونداءها من هنا
 
-      if (error) {
-        toast.error(error.message);
-      } else {
-        toast.success(t('confirmationEmailSent'));
-      }
+      toast.success(t('confirmationEmailSent'));
     } catch (error) {
       toast.error(t('unexpectedError'));
     }

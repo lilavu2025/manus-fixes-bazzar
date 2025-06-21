@@ -1,10 +1,12 @@
 // src/pages/AccountDeleted.tsx
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from '@/contexts/useAuth';
 
 export default function AccountDeleted() {
   const navigate = useNavigate();
+  const { signOut } = useAuth();
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
       <div className="bg-white p-8 rounded-lg shadow-md text-center max-w-md">
@@ -13,7 +15,7 @@ export default function AccountDeleted() {
         <button
           className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
           onClick={async () => {
-            await supabase.auth.signOut();
+            await signOut();
             navigate('/auth', { replace: true });
           }}
         >

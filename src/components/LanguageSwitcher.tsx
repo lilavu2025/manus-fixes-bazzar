@@ -11,7 +11,7 @@ import {
 import { Globe } from 'lucide-react';
 
 const LanguageSwitcher: React.FC = () => {
-  const { language, setLanguage, t } = useLanguage();
+  const { language, setLanguage } = useLanguage();
 
   const languages: { code: Language; name: string; flag: string }[] = [
     { code: 'ar', name: 'العربية', flag: '🇸🇦' },
