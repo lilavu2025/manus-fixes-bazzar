@@ -33,54 +33,19 @@ export const useConnectionMonitor = (options: UseConnectionMonitorOptions = {}) 
     }
   }, []);
 
-  // مراقبة حالة الاتصال بالإنترنت
+  // تم حذف مراقبة الاتصال من خارج AuthContext. استخدم AuthContext فقط لأي منطق جلسة أو مراقبة اتصال.
   useEffect(() => {
-    const handleOnline = () => {
-      if (!isOnlineRef.current) {
-        isOnlineRef.current = true;
-        setIsOnline(true);
-        onReconnect?.();
-      }
-    };
-
-    const handleOffline = () => {
-      if (isOnlineRef.current) {
-        isOnlineRef.current = false;
-        setIsOnline(false);
-        onDisconnect?.();
-      }
-    };
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
     return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
+      // window.removeEventListener('online', handleOnline);
+      // window.removeEventListener('offline', handleOffline);
     };
   }, [onReconnect, onDisconnect]);
 
-  // مراقبة حالة visibility للصفحة
+  // تم حذف مراقبة حالة visibility من خارج AuthContext. استخدم AuthContext فقط لأي منطق جلسة أو مراقبة اتصال.
   useEffect(() => {
-    const handleVisibilityChange = async () => {
-      if (document.visibilityState === 'visible') {
-        const now = Date.now();
-        const timeSinceLastCheck = now - lastCheckRef.current;
-        if (timeSinceLastCheck > 60000) {
-          const isConnected = await checkDatabaseConnection();
-          if (!isConnected && isOnlineRef.current) {
-            isOnlineRef.current = false;
-            setIsOnline(false);
-            onDisconnect?.();
-          } else if (isConnected && !isOnlineRef.current) {
-            isOnlineRef.current = true;
-            setIsOnline(true);
-            onReconnect?.();
-          }
-          lastCheckRef.current = now;
-        }
-      }
+    return () => {
+      // document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [checkDatabaseConnection, onReconnect, onDisconnect]);
 
   // فحص دوري للاتصال (فقط عندما تكون الصفحة مرئية)

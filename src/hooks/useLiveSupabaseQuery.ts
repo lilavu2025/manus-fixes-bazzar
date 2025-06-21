@@ -65,28 +65,15 @@ export function useLiveSupabaseQuery<T = unknown>({
   };
 
   useEffect(() => {
-    // start initial fetch + polling
+    // تم حذف أي منطق متعلق بمراقبة الأحداث أو الجلسة. استخدم AuthContext فقط لأي refetch أو مراقبة للجلسة.
     fetchData();
     if (interval > 0) {
       intervalRef.current = window.setInterval(fetchData, interval);
     }
-
-    // handle tab visibility changes
-    const onVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        // فقط عند العودة: جلب جديد بدون إيقاف أي شيء
-        fetchData();
-      }
-      // عند الخروج: لا تفعل شيئاً (لا توقف الفيتش ولا التايمر)
-    };
-    document.addEventListener('visibilitychange', onVisibilityChange);
-
     return () => {
-      document.removeEventListener('visibilitychange', onVisibilityChange);
       abortRef.current?.abort();
       clearTimers();
     };
-    // run once on mount; caller should wrap queryFn in useCallback
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
