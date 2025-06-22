@@ -713,6 +713,8 @@ export const enTranslations = {
     "New password must be different from the current password.",
   currentPasswordIncorrect: "Current password is incorrect. Please try again.",
   invalidLoginCredentials: "Invalid login credentials",
+  passwordsDoNotMatch: "Passwords do not match",
+
   addressSeparator: " - ",
 
   pageNotFound: "Sorry, the page was not found.",

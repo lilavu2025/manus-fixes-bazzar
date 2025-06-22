@@ -122,11 +122,20 @@ const Profile: React.FC = () => {
       setPasswordData({ current: "", new: "", confirm: "" });
       setShowPasswordDialog(false);
     } catch (err) {
-      setPasswordError((err as Error).message || t("errorChangingPassword"));
+      let msg = (err as Error).message;
+      if (msg === "Invalid login credentials") msg = "invalidLoginCredentials";
+      setPasswordError(msg || t("errorChangingPassword"));
     } finally {
       setPasswordLoading(false);
     }
   };
+
+  React.useEffect(() => {
+    if (profileSuccess) {
+      const timer = setTimeout(() => setProfileSuccess(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [profileSuccess]);
 
   if (!user) {
     return (
@@ -151,7 +160,7 @@ const Profile: React.FC = () => {
       dir={isRTL ? "rtl" : "ltr"}
     >
       {/* <Header onSearchChange={() => {}} onCartClick={() => {}} onMenuClick={() => {}} /> */}
-      <div className="container mx-auto px-4 py-8 max-w-3xl">
+      <div className="container mx-auto px-4 py-8 max-w-2xl">
         <div className="mb-8 flex flex-col items-center justify-center gap-2">
           <h1 className="text-3xl font-bold mt-2">{t("profile")}</h1>
           <p className="text-gray-600">{t("manageYourAccount")}</p>
@@ -180,14 +189,14 @@ const Profile: React.FC = () => {
               <CardTitle>{t("accountInfo")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {profileSuccess && (
+              {(!passwordSuccess && profileSuccess) && (
                 <div className="bg-green-100 text-green-700 px-3 py-2 rounded text-sm">
                   {profileSuccess}
                 </div>
               )}
-              {profileError && (
-                <div className="bg-red-100 text-red-700 px-3 py-2 rounded text-sm">
-                  {profileError}
+              {passwordSuccess && !showPasswordDialog && (
+                <div className="bg-green-100 text-green-700 px-3 py-2 rounded text-sm">
+                  {passwordSuccess}
                 </div>
               )}
               {!editMode ? (
@@ -389,7 +398,7 @@ const Profile: React.FC = () => {
               )}
               {passwordError && (
                 <div className="bg-red-100 text-red-700 px-3 py-2 rounded text-sm mb-2">
-                  {passwordError}
+                  {typeof passwordError === "string" ? t(passwordError) : passwordError}
                 </div>
               )}
               <form onSubmit={handleChangePassword} className="space-y-2">

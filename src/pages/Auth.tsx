@@ -90,7 +90,9 @@ const Auth: React.FC = () => {
           title: t("error"),
           description:
             typeof error === "object" && error && "message" in error
-              ? (error as { message?: string }).message || t("loginError")
+              ? ((error as { message?: string }).message === "Invalid login credentials"
+                  ? "invalidLoginCredentials"
+                  : (error as { message?: string }).message) || t("loginError")
               : t("loginError"),
         });
       }

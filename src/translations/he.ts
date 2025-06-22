@@ -688,7 +688,9 @@ export const heTranslations = {
   weakPassword: "סיסמה חלשה. היא חייבת להכיל לפחות 6 תווים.",
   newPasswordSameAsCurrent: "הסיסמה החדשה חייבת להיות שונה מהנוכחית.",
   currentPasswordIncorrect: "הסיסמה הנוכחית שגויה. אנא נסה שוב.",
-  invalidLoginCredentials: "פרטי ההתחברות אינם נכונים.",
+  invalidLoginCredentials: "פרטי התחברות לא נכונים",
+  passwordsDoNotMatch: "הסיסמאות אינן תואמות",
+
   addressSeparator: " - ",
 
   pageNotFound: "מצטערים, הדף לא נמצא.",

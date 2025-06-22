@@ -717,7 +717,9 @@ export const arTranslations = {
     "كلمة المرور الجديدة وتأكيد كلمة المرور غير متطابقتين.",
   newPasswordSameAsCurrent: "كلمة المرور الجديدة يجب أن تختلف عن الحالية.",
   currentPasswordIncorrect: "كلمة المرور الحالية غير صحيحة.",
-  invalidLoginCredentials: "بيانات الدخول غير صحيحة",
+  invalidLoginCredentials: "بيانات تسجيل الدخول غير صحيحة",
+  passwordsDoNotMatch: "كلمتا المرور غير متطابقتين",
+
   addressSeparator: " - ",
   pageNotFound: "عذرًا، الصفحة غير موجودة.",
   returnToHome: "العودة للرئيسية",
