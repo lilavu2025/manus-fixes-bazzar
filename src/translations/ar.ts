@@ -742,5 +742,9 @@ export const arTranslations = {
   orderDeleteFailed: "فشل في حذف الطلب",
   orderMustHaveItems: "يجب أن يحتوي الطلب على عناصر",
   adminOrderInfoTitle: "طلب أنشئ من الأدمن",
-  adminOrderInfoDesc: "تم إنشاء هذا الطلب من قبل الأدمن عبر لوحة التحكم. غالبًا تم إنشاؤه لمساعدتك أو بناءً على تواصلك مع خدمة العملاء."
+  adminOrderInfoDesc: "تم إنشاء هذا الطلب من قبل الأدمن عبر لوحة التحكم. غالبًا تم إنشاؤه لمساعدتك أو بناءً على تواصلك مع خدمة العملاء.",
+  profileUpdatedSuccessfully: "تم تحديث الملف الشخصي بنجاح",
+  profileUpdateFailed: "فشل في تحديث الملف الشخصي",
+  passwordChangedSuccessfully: "تم تغيير كلمة المرور بنجاح",
+  passwordChangeFailed: "فشل في تغيير كلمة المرور",
 };

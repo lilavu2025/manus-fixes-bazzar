@@ -7,8 +7,11 @@ export function mapOrderFromDb(order: OrdersWithDetails): Order {
   let shippingAddress: Address | undefined = undefined;
   if (typeof order.shipping_address === 'string') {
     try { shippingAddress = JSON.parse(order.shipping_address) as Address; } catch { shippingAddress = undefined; }
+  } else if (Array.isArray(order.shipping_address)) {
+    // إذا كانت مصفوفة (وهو خطأ بيانات)، تجاهلها
+    shippingAddress = undefined;
   } else if (typeof order.shipping_address === 'object' && order.shipping_address !== null) {
-    shippingAddress = order.shipping_address as Address;
+    shippingAddress = order.shipping_address as unknown as Address;
   }
   // Infer status and paymentMethod types
   const status = (order.status as Order['status']) || 'pending';

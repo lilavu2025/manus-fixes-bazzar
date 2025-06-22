@@ -715,5 +715,9 @@ export const heTranslations = {
   orderMustHaveItems: "ההזמנה חייבת לכלול לפחות פריט אחד",
 
   adminOrderInfoTitle: "הזמנה שנוצרה על ידי מנהל",
-  adminOrderInfoDesc: "ההזמנה נוצרה על ידי מנהל דרך מערכת הניהול, בדרך כלל כדי לעזור לך או לפי בקשתך לשירות הלקוחות."
+  adminOrderInfoDesc: "ההזמנה נוצרה על ידי מנהל דרך מערכת הניהול, בדרך כלל כדי לעזור לך או לפי בקשתך לשירות הלקוחות.",
+  profileUpdatedSuccessfully: "הפרופיל עודכן בהצלחה",
+  profileUpdateFailed: "נכשל בעדכון הפרופיל",
+  passwordChangedSuccessfully: "הסיסמה שונתה בהצלחה",
+  passwordChangeFailed: "נכשל בשינוי הסיסמה"
 };

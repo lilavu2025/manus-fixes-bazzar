@@ -728,4 +728,8 @@ export const enTranslations = {
 
   adminOrderInfoTitle: "Order created by admin",
   adminOrderInfoDesc: "This order was created by an admin through the dashboard, usually to help you or based on your request to customer service.",
+  profileUpdatedSuccessfully: "Profile updated successfully",
+  profileUpdateFailed: "Failed to update profile",
+  passwordChangedSuccessfully: "Password changed successfully",
+  passwordChangeFailed: "Failed to change password"
 };

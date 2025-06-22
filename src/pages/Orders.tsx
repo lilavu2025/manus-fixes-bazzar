@@ -308,7 +308,6 @@ const Orders: React.FC = () => {
                                   t("adminOrderInfoDesc") ||
                                   "تم إنشاء هذا الطلب من قبل الأدمن عبر لوحة التحكم. غالبًا تم إنشاؤه لمساعدتك أو بناءً على تواصلك مع خدمة العملاء.",
                                 duration: 5000,
-                                variant: "info",
                               })
                             }
                             tabIndex={0}
