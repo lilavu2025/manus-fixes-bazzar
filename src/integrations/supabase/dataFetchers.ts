@@ -203,6 +203,8 @@ export async function fetchOrdersWithDetails(): Promise<OrdersWithDetails[]> {
         }))
       : [],
     notes: order.notes ?? "",
+    admin_created: order.admin_created === true || order.admin_created === 1,
+    admin_creator_name: order.admin_creator_name,
   }));
 }
 
