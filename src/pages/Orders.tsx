@@ -19,6 +19,7 @@ import {
   Truck,
   CheckCircle,
   Loader2,
+  PackageOpen,
 } from "lucide-react";
 import {
   useUserOrdersWithDetailsQuery,
@@ -248,7 +249,7 @@ const Orders: React.FC = () => {
                 {
                   key: "processing",
                   label: t("processing"),
-                  icon: <Truck className="h-5 w-5" />,
+                  icon: <PackageOpen className="h-5 w-5" />,
                 },
                 {
                   key: "shipped",
