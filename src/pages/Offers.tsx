@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useOffersRealtime } from "@/hooks/useOffersRealtime";
 import { useLanguage } from "@/utils/languageContextUtils";
-import Header from "@/components/Header";
 import CartSidebar from "@/components/CartSidebar";
 import { Badge } from "@/components/ui/badge";
 import { Percent } from "lucide-react";
@@ -177,13 +176,6 @@ const Offers: React.FC = () => {
       className={`min-h-screen bg-gray-50 ${isRTL ? "rtl" : "ltr"}`}
       dir={isRTL ? "rtl" : "ltr"}
     >
-      <Header
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        onCartClick={() => setIsCartOpen(true)}
-        onMenuClick={() => {}}
-      />
-
       <div className="container mx-auto px-4 py-6">
         {/* Page Header */}
         <div className="text-center mb-8">
