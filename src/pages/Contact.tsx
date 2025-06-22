@@ -31,7 +31,6 @@ const Contact: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // إرسال الرسالة عبر EmailJS إلى البريد الموجود في contactInfo
       if (contactInfo?.email) {
         await emailjs.send(
           "service_xxx", // ضع هنا ID خدمة EmailJS
@@ -73,37 +72,18 @@ const Contact: React.FC = () => {
       className={`min-h-screen bg-gray-50 ${isRTL ? "rtl" : "ltr"}`}
       dir={isRTL ? "rtl" : "ltr"}
     >
-      {/* <Header onSearchChange={() => {}} onCartClick={() => setIsCartOpen(true)} onMenuClick={() => {}} /> */}
       <div className="mb-4" />
       <div className="text-center">
         <h1 className="text-3xl font-bold mb-2">{t("contact")}</h1>
-        {/* <p className="text-gray-600">
-            {t('getInTouch')}
-          </p> */}
       </div>
 
-      <div className="container mx-auto px-2 sm:px-4 py-6">
-        {/* Features Bar */}
-        {/* <section className="mb-8">
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 bg-orange-50 rounded-xl p-4 shadow-sm">
-            <div className="flex items-center gap-2 text-orange-600 font-semibold">
-              <Mail className="w-6 h-6" /> دعم فني سريع
-            </div>
-            <div className="flex items-center gap-2 text-orange-600 font-semibold">
-              <Phone className="w-6 h-6" /> استجابة خلال 24 ساعة
-            </div>
-            <div className="flex items-center gap-2 text-orange-600 font-semibold">
-              <MapPin className="w-6 h-6" /> نخدم جميع المناطق
-            </div>
-          </div>
-        </section> */}
-
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Quick Contact Section */}
-        <section className="mt-2 text-center">
+        <section className="mt-8 text-center">
           <h2 className="text-xl font-bold mb-4 text-orange-600">
             {t("quickContacts")}
           </h2>
-          <div className="flex flex-col sm:flex-row justify-center gap-4">
+          <div className="max-w-2xl mx-auto flex flex-col sm:flex-row justify-center gap-4 items-center text-center">
             <a
               href={`https://wa.me/${contactInfo?.phone || t("defaultPhone")}`}
               target="_blank"
@@ -124,115 +104,10 @@ const Contact: React.FC = () => {
             </a>
           </div>
         </section>
-        <div className="mb-8" />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-          {/* Contact Form */}
-          <Card className="lg:col-span-1 xl:col-span-2 bg-white/90 shadow-md">
-            <CardHeader>
-              <CardTitle>{t("sendMessage")}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">{t("fullName")}</Label>
-                    <Input
-                      id="name"
-                      name="name"
-                      autoComplete="name"
-                      value={formData.name}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          name: e.target.value,
-                        }))
-                      }
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email">{t("email")}</Label>
-                    <Input
-                      id="email"
-                      name="email"
-                      type="email"
-                      autoComplete="email"
-                      value={formData.email}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          email: e.target.value,
-                        }))
-                      }
-                      required
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">{t("phone")}</Label>
-                    <Input
-                      id="phone"
-                      name="phone"
-                      type="tel"
-                      autoComplete="tel"
-                      value={formData.phone}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          phone: e.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="subject">{t("subject")}</Label>
-                    <Input
-                      id="subject"
-                      name="subject"
-                      autoComplete="off"
-                      value={formData.subject}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          subject: e.target.value,
-                        }))
-                      }
-                      required
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="message">{t("message")}</Label>
-                  <Textarea
-                    id="message"
-                    name="message"
-                    rows={6}
-                    autoComplete="off"
-                    value={formData.message}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        message: e.target.value,
-                      }))
-                    }
-                    required
-                  />
-                </div>
-                <Button
-                  type="submit"
-                  className="w-full font-bold bg-orange-500 hover:bg-orange-600 text-white transition-colors"
-                  disabled={isLoading}
-                >
-                  {isLoading ? t("sending") : t("sendMessage")}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-
-          {/* Contact Information */}
-          <div className="space-y-6 xl:col-span-1">
+        {/* Contact Info Cards */}
+        <section className="mt-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
             <Card className="bg-white/90 shadow-md">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -272,23 +147,23 @@ const Contact: React.FC = () => {
                 </p>
               </CardContent>
             </Card>
-            <Card className="bg-white/90 shadow-md">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Clock className="h-5 w-5" />
-                  {t("workingHours")}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600">
-                  {t("sunday")} - {t("thursday")}: 9:00 - 18:00
-                  <br />
-                  {t("friday")} - {t("saturday")}: 10:00 - 16:00
-                </p>
-              </CardContent>
-            </Card>
+            <Card className="bg-white/90 shadow-md lg:col-span-3">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="h-5 w-5" />
+                {t("workingHours")}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-600">
+                {t("sunday")} - {t("thursday")}: 9:00 - 18:00
+                <br />
+                {t("friday")} - {t("saturday")}: 10:00 - 16:00
+              </p>
+            </CardContent>
+          </Card>
           </div>
-        </div>
+        </section>
       </div>
 
       <CartSidebar isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
