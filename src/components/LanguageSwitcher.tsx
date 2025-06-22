@@ -31,7 +31,11 @@ const LanguageSwitcher: React.FC = () => {
           </span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="bg-white z-50">
+      <DropdownMenuContent
+        align="end"
+        className={`bg-white z-50 ${isRTL(language) ? "rtl" : "ltr"}`}
+        style={{ direction: isRTL(language) ? "rtl" : "ltr" }}
+      >
         {languages.map((lang) => (
           <DropdownMenuItem
             key={lang.code}
@@ -48,3 +52,7 @@ const LanguageSwitcher: React.FC = () => {
 };
 
 export default LanguageSwitcher;
+
+function isRTL(language: Language) {
+  return language === "ar" || language === "he";
+}

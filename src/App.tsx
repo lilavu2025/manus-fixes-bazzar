@@ -378,7 +378,6 @@ function MobileBottomNavBarWrapper(props: {
   const location = useLocation();
   // طباعة المسار الحالي للتشخيص
   if (typeof window !== 'undefined') {
-    // eslint-disable-next-line no-console
     console.log('MobileBottomNavBarWrapper pathname:', location.pathname);
   }
   if (location.pathname.startsWith("/admin")) return null;
