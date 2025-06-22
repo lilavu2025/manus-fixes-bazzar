@@ -416,8 +416,7 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
               </div>
             </div>
             {isRevenueExpanded &&
-              Array.isArray(ordersStats?.statusStats) &&
-              ordersStats.statusStats.length > 0 && (
+              Array.isArray(ordersStats?.statusStats) && (
                 <div className="w-full mt-4">
                   <table className="w-full text-sm border rounded-lg bg-white">
                     <thead>
@@ -427,25 +426,26 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
                       </tr>
                     </thead>
                     <tbody>
-                      {ordersStats.statusStats
-                        .filter((stat) => stat.status !== "cancelled")
-                        .map((stat) => (
+                      {['pending', 'processing', 'shipped', 'delivered', 'cancelled'].map((statusKey) => {
+                        const stat = ordersStats.statusStats.find(s => s.status === statusKey);
+                        return (
                           <tr
-                            key={stat.status}
+                            key={statusKey}
                             className="hover:bg-blue-50 cursor-pointer"
-                            onClick={() => navigate('/admin/orders', { state: { filterStatus: stat.status } })}
+                            onClick={() => navigate('/admin/orders', { state: { filterStatus: statusKey } })}
                           >
-                            <td className="p-2">{stat.label}</td>
+                            <td className="p-2">{t(statusKey)}</td>
                             <td
                               className="p-2 text-right font-bold"
-                              style={{ color: stat.color }}
+                              style={{ color: stat?.color || undefined }}
                             >
-                              {typeof stat.revenue === "number"
+                              {stat && typeof stat.revenue === "number"
                                 ? stat.revenue.toLocaleString()
                                 : 0} {t("currency")}
                             </td>
                           </tr>
-                        ))}
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -670,7 +670,8 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
                       return [
                         { key: 'pending', label: t('pending'), color: 'text-yellow-700', status: 'pending' },
                         { key: 'processing', label: t('processing'), color: 'text-blue-700', status: 'processing' },
-                        { key: 'delivered', label: t('completed'), color: 'text-green-700', status: 'delivered' },
+                        { key: 'shipped', label: t('shipped'), color: 'text-purple-700', status: 'shipped' },
+                        { key: 'delivered', label: t('delivered'), color: 'text-green-700', status: 'delivered' },
                         { key: 'cancelled', label: t('cancelled'), color: 'text-red-700', status: 'cancelled' },
                       ].map(row => (
                         <tr

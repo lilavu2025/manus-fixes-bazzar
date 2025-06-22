@@ -119,21 +119,29 @@ export async function fetchAdminOrdersStats(t: (key: string) => string) {
     }, {});
     const revenueByStatus: Record<string, number> = data.reduce((acc: Record<string, number>, order: { status: string; total: number }) => {
       if (!acc[order.status]) acc[order.status] = 0;
-      if (order.status !== 'cancelled') {
-        acc[order.status] += order.total || 0;
-      }
+      // احسب الإيراد لكل الحالات، حتى الملغية
+      acc[order.status] += order.total || 0;
       return acc;
     }, {});
     const totalRevenue = data
       .filter(order => order.status !== 'cancelled')
       .reduce((sum, order) => sum + (order.total || 0), 0);
+    // الحالات الفعلية المطلوبة
+    const statusList = [
+      { status: 'pending', color: '#8b5cf6' },
+      { status: 'processing', color: '#f59e0b' },
+      { status: 'shipped', color: '#6366f1' },
+      { status: 'delivered', color: '#10b981' },
+      { status: 'cancelled', color: '#ef4444' },
+    ];
     return {
-      statusStats: [
-        { status: 'pending', label: t('pending'), value: ordersByStatus.pending || 0, revenue: revenueByStatus.pending || 0, color: '#8b5cf6' },
-        { status: 'processing', label: t('processing'), value: ordersByStatus.processing || 0, revenue: revenueByStatus.processing || 0, color: '#f59e0b' },
-        { status: 'completed', label: t('completed'), value: ordersByStatus.completed || 0, revenue: revenueByStatus.completed || 0, color: '#10b981' },
-        { status: 'cancelled', label: t('cancelled'), value: ordersByStatus.cancelled || 0, revenue: revenueByStatus.cancelled || 0, color: '#ef4444' },
-      ],
+      statusStats: statusList.map(({ status, color }) => ({
+        status,
+        label: t(status),
+        value: ordersByStatus[status] || 0,
+        revenue: revenueByStatus[status] || 0,
+        color,
+      })),
       totalRevenue,
       totalOrders: data.length,
     };
