@@ -230,6 +230,8 @@ export const enTranslations = {
   productOutOfStock: "Product is out of stock",
   errorBuyingNow: "Error processing purchase",
   buyNow: "Buy Now",
+  completed: "Completed",
+
 
   // Orders
   trackYourOrders: "Track and manage your orders",
@@ -338,6 +340,7 @@ export const enTranslations = {
   noProductsAdded: "No products added yet",
   browseProducts: "Browse Products",
   continueShopping: "Continue Shopping",
+  count: "Count",
 
   // Product
   featured: "Featured",

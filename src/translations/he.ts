@@ -695,6 +695,8 @@ export const heTranslations = {
 
   pageNotFound: "מצטערים, הדף לא נמצא.",
   returnToHome: "חזור לדף הבית",
+  completed: "מושלם",
+  count: "מספר",
 
   // Account Deleted Page
   accountDeletedTitle: "החשבון שלך נמחק",

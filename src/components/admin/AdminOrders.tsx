@@ -286,6 +286,9 @@ const AdminOrders: React.FC = () => {
     if (location.state?.filterStatus) {
       setStatusFilter(location.state.filterStatus);
     }
+    if (location.state?.filterOrderId) {
+      setSearchQuery(location.state.filterOrderId);
+    }
   }, [location.state]);
 
   // استعلام الطلبات مع تفعيل polling وتحديث البيانات عند العودة للنافذة

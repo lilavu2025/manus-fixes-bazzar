@@ -81,6 +81,8 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
   const [showPendingOrdersDetails, setShowPendingOrdersDetails] =
     useState(false);
   const [showLowStockDetails, setShowLowStockDetails] = useState(false);
+  const [isTotalOrdersExpanded, setIsTotalOrdersExpanded] = useState(false);
+  const [isProductsExpanded, setIsProductsExpanded] = useState(false);
 
   // إحصائيات الطلبات
   const {
@@ -369,279 +371,305 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 mt-2">
+        {/* إجمالي الإيرادات */}
         <Card
-          className="hover:shadow-lg transition-shadow cursor-pointer"
-          onClick={() => setIsUsersExpanded(!isUsersExpanded)}
+          className="group relative overflow-hidden shadow-lg border-0 bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 transition-all cursor-pointer"
+          onClick={() => setIsRevenueExpanded((v) => !v)}
         >
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              {t("totalUsers")}
-            </CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {!isUsersExpanded ? (
-              <>
-                <div className="text-2xl font-bold">{totalUsers}</div>
-                <p className="text-xs text-muted-foreground">
-                  {t("registeredUsers")}
-                </p>
-              </>
-            ) : (
-              <div className="grid grid-cols-3 gap-4 py-2">
-                {[
-                  {
-                    type: "admin",
-                    color: "bg-red-500",
-                    icon: <Users className="w-5 h-5 text-red-500" />,
-                  },
-                  {
-                    type: "wholesale",
-                    color: "bg-blue-500",
-                    icon: <Users className="w-5 h-5 text-blue-500" />,
-                  },
-                  {
-                    type: "retail",
-                    color: "bg-green-500",
-                    icon: <Users className="w-5 h-5 text-green-500" />,
-                  },
-                ].map(({ type, color, icon }) => {
-                  const count = users.filter(
-                    (u) => u.user_type === type,
-                  ).length;
-                  return (
-                    <button
-                      key={type}
-                      className={`flex flex-col items-center justify-center rounded-lg p-3 shadow-sm border border-gray-200 bg-white hover:shadow-md transition group focus:outline-none focus:ring-2 focus:ring-primary/50`}
-                      style={{ minHeight: 80 }}
-                      onClick={() => handleUserTypeClick(type)}
-                      type="button"
-                    >
-                      <span
-                        className={`rounded-full ${color} bg-opacity-10 p-2 mb-1`}
-                      >
-                        {icon}
-                      </span>
-                      <span className="text-lg font-bold text-gray-800 group-hover:text-primary">
-                        {count}
-                      </span>
-                      <span className="text-xs text-muted-foreground mt-1">
-                        {t(type)}
-                      </span>
-                    </button>
-                  );
-                })}
+          <div className="absolute -top-6 -right-6 bg-blue-400/20 rounded-full w-24 h-24 z-0 group-hover:scale-110 transition-transform" />
+          <CardContent className="relative z-10 flex flex-col items-center justify-center py-8">
+            <div className="flex items-center gap-4 mb-2">
+              <div className="bg-blue-500 text-white rounded-full p-4 shadow-lg flex items-center justify-center">
+                <BarChart3 className="h-8 w-8" />
               </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-lg transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              {t("totalProducts")}
-            </CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalProducts}</div>
-            <p className="text-xs text-muted-foreground">
-              {t("activeProducts")}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card
-          className="hover:shadow-lg transition-shadow cursor-pointer"
-          onClick={() => setIsOrdersExpanded(!isOrdersExpanded)}
-        >
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              {t("totalOrders")}
-            </CardTitle>
-            <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {!isOrdersExpanded ? (
-              <>
-                <div className="text-2xl font-bold">
-                  {ordersStats && typeof ordersStats.totalOrders === "number"
-                    ? ordersStats.totalOrders
-                    : 0}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {t("totalOrders")}
-                </p>
-              </>
-            ) : (
-              <div className="grid grid-cols-2 gap-2">
-                {Array.isArray(ordersStats?.statusStats) &&
-                ordersStats.statusStats.length > 0
-                  ? ordersStats.statusStats.map((stat) => (
-                      <div
-                        key={stat.status}
-                        className="rounded-lg border bg-card p-2 text-center hover:bg-muted/50 transition-colors cursor-pointer"
-                        onClick={() => handleOrderStatusClick(stat.status)}
-                      >
-                        <div className="text-[0.9rem] font-medium">
-                          {stat.label}
-                        </div>
-                        <div
-                          className="text-xl font-bold mt-1"
-                          style={{ color: stat.color }}
-                        >
-                          {typeof stat.value === "number" ? stat.value : 0}
-                        </div>
-                      </div>
-                    ))
-                  : null}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card
-          className="hover:shadow-lg transition-shadow cursor-pointer"
-          onClick={() => setIsRevenueExpanded(!isRevenueExpanded)}
-        >
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              {t("totalRevenue")}
-            </CardTitle>
-            <BarChart3 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {!isRevenueExpanded ? (
-              <>
-                <div className="text-2xl font-bold">
+              <div>
+                <div className="text-4xl font-extrabold text-blue-900">
                   {ordersStats && typeof ordersStats.totalRevenue === "number"
                     ? ordersStats.totalRevenue.toLocaleString()
-                    : 0}{" "}
-                  {t("currency")}
+                    : 0}
+                  <span className="text-lg font-bold text-blue-600 ml-1">
+                    {t("currency")}
+                  </span>
                 </div>
-                <p className="text-xs text-muted-foreground">
+                <div className="text-base font-semibold text-blue-700 mt-1">
                   {t("totalRevenue")}
-                </p>
-              </>
-            ) : (
-              <div className="grid grid-cols-1 gap-2">
-                {Array.isArray(ordersStats?.statusStats) &&
-                ordersStats.statusStats.length > 0
-                  ? ordersStats.statusStats
-                      .filter((stat) => stat.status !== "cancelled")
-                      .map((stat) => (
-                        <div
-                          key={stat.status}
-                          className="rounded-lg border bg-card p-2 hover:bg-muted/50 transition-colors"
-                        >
-                          <div className="text-[0.8rem] font-medium">
-                            {stat.label}
-                          </div>
-                          <div
-                            className="text-lg font-bold mt-1"
-                            style={{ color: stat.color }}
+                </div>
+              </div>
+            </div>
+            {isRevenueExpanded &&
+              Array.isArray(ordersStats?.statusStats) &&
+              ordersStats.statusStats.length > 0 && (
+                <div className="w-full mt-4">
+                  <table className="w-full text-sm border rounded-lg bg-white">
+                    <thead>
+                      <tr className="bg-blue-100">
+                        <th className="p-2 text-left">{t("status")}</th>
+                        <th className="p-2 text-right">{t("revenue")}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {ordersStats.statusStats
+                        .filter((stat) => stat.status !== "cancelled")
+                        .map((stat) => (
+                          <tr
+                            key={stat.status}
+                            className="hover:bg-blue-50 cursor-pointer"
+                            onClick={() => navigate('/admin/orders', { state: { filterStatus: stat.status } })}
                           >
-                            {typeof stat.revenue === "number"
-                              ? stat.revenue.toLocaleString()
-                              : 0}{" "}
-                            {t("currency")}
-                          </div>
-                        </div>
-                      ))
-                  : null}
+                            <td className="p-2">{stat.label}</td>
+                            <td
+                              className="p-2 text-right font-bold"
+                              style={{ color: stat.color }}
+                            >
+                              {typeof stat.revenue === "number"
+                                ? stat.revenue.toLocaleString()
+                                : 0} {t("currency")}
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+          </CardContent>
+        </Card>
+
+        {/* إجمالي المستخدمين */}
+        <Card
+          className="group relative overflow-hidden shadow-lg border-0 bg-gradient-to-br from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 transition-all cursor-pointer"
+          onClick={() => setIsUsersExpanded((v) => !v)}
+        >
+          <div className="absolute -top-6 -right-6 bg-green-400/20 rounded-full w-24 h-24 z-0 group-hover:scale-110 transition-transform" />
+          <CardContent className="relative z-10 flex flex-col items-center justify-center py-8">
+            <div className="flex items-center gap-4 mb-2">
+              <div className="bg-green-500 text-white rounded-full p-4 shadow-lg flex items-center justify-center">
+                <Users className="h-8 w-8" />
+              </div>
+              <div>
+                <div className="text-4xl font-extrabold text-green-900">{totalUsers}</div>
+                <div className="text-base font-semibold text-green-700 mt-1">{t("users")}</div>
+              </div>
+            </div>
+            {isUsersExpanded && (
+              <div className="w-full mt-4">
+                <table className="w-full text-sm border rounded-lg bg-white">
+                  <thead>
+                    <tr className="bg-green-100">
+                      <th className="p-2 text-left">{t("userType")}</th>
+                      <th className="p-2 text-right">{t("count")}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {usersDistributionData.map((type) => (
+                      <tr key={type.name} className="hover:bg-green-50 cursor-pointer" onClick={() => navigate('/admin/users', { state: { filterType: type.name } })}>
+                        <td className="p-2">{type.name}</td>
+                        <td className="p-2 text-right font-bold" style={{ color: type.color }}>{type.value}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </CardContent>
         </Card>
-      </div>
 
-      {/* إشعارات الطلبات الجديدة والمنتجات منخفضة المخزون */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-8 mt-2">
+        {/* إجمالي المنتجات */}
         <Card
-          className="hover:shadow-lg transition-shadow cursor-pointer border-yellow-300 bg-yellow-50"
+          className="group relative overflow-hidden shadow-lg border-0 bg-gradient-to-br from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 transition-all cursor-pointer"
+          onClick={() => setIsProductsExpanded((v) => !v)}
+        >
+          <div className="absolute -top-6 -right-6 bg-purple-400/20 rounded-full w-24 h-24 z-0 group-hover:scale-110 transition-transform" />
+          <CardContent className="relative z-10 flex flex-col items-center justify-center py-8">
+            <div className="flex items-center gap-4 mb-2">
+              <div className="bg-purple-500 text-white rounded-full p-4 shadow-lg flex items-center justify-center">
+                <Package className="h-8 w-8" />
+              </div>
+              <div>
+                <div className="text-4xl font-extrabold text-purple-900">{totalProducts}</div>
+                <div className="text-base font-semibold text-purple-700 mt-1">{t("products")}</div>
+              </div>
+            </div>
+            {/* تفاصيل المنتجات حسب الفئة */}
+            {isProductsExpanded && categoriesStats.length > 0 && (
+              <div className="w-full mt-4">
+                <table className="w-full text-sm border rounded-lg bg-white">
+                  <thead>
+                    <tr className="bg-purple-100">
+                      <th className="p-2 text-left">{t("category")}</th>
+                      <th className="p-2 text-right">{t("inStock")}</th>
+                      <th className="p-2 text-right">{t("outOfStock")}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {categoriesStats.map((cat) => (
+                      <tr
+                        key={cat.name}
+                        className="hover:bg-purple-50 cursor-pointer"
+                        onClick={() => {
+                          // إذا كان اسم الفئة "الكل" أو "غير معروف" لا ترسل فلتر
+                          if (cat.name === t("allCategories") || cat.name === t("unknown")) {
+                            navigate('/admin/products');
+                          } else {
+                            navigate('/admin/products', { state: { filterCategory: cat.name } });
+                          }
+                        }}
+                      >
+                        <td className="p-2">{cat.name}</td>
+                        <td className="p-2 text-right text-green-700 font-bold">{cat.inStock}</td>
+                        <td className="p-2 text-right text-red-700 font-bold">{cat.outOfStock}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* الطلبات الجديدة */}
+        <Card
+          className="group relative overflow-hidden shadow-lg border-0 bg-gradient-to-br from-yellow-50 to-yellow-100 hover:from-yellow-100 hover:to-yellow-200 transition-all cursor-pointer"
           onClick={() => setShowPendingOrdersDetails((v) => !v)}
         >
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-yellow-900">
-              {t("newOrders")}
-            </CardTitle>
-            <ShoppingCart className="h-4 w-4 text-yellow-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-yellow-900">
-              {pendingOrders.length}
+          <div className="absolute -top-6 -right-6 bg-yellow-400/20 rounded-full w-24 h-24 z-0 group-hover:scale-110 transition-transform" />
+          <CardContent className="relative z-10 flex flex-col items-center justify-center py-8">
+            <div className="flex items-center gap-4 mb-2">
+              <div className="bg-yellow-400 text-white rounded-full p-4 shadow-lg flex items-center justify-center">
+                <ShoppingCart className="h-8 w-8" />
+              </div>
+              <div>
+                <div className="text-4xl font-extrabold text-yellow-900">{pendingOrders.length}</div>
+                <div className="text-base font-semibold text-yellow-700 mt-1">{t("newOrders")}</div>
+              </div>
             </div>
-            <p className="text-xs text-yellow-800">
-              {t("ordersPendingProcessing")}
-            </p>
             {showPendingOrdersDetails && pendingOrders.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-2">
-                {pendingOrders.slice(0, 3).map((order) => (
-                  <button
-                    key={order.id}
-                    className="underline text-yellow-700 hover:text-yellow-900 text-xs"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/admin/orders?orderId=${order.id}`);
-                    }}
-                  >
-                    {t("orderDetails")}{" "}
-                    {order.profiles?.full_name
-                      ? order.profiles.full_name
-                      : t("unknownCustomer")}
-                  </button>
-                ))}
-                {pendingOrders.length > 3 && (
-                  <span className="text-xs text-yellow-700">
-                    {t("andMore")}
-                  </span>
-                )}
+              <div className="w-full mt-4 max-h-64 overflow-y-auto">
+                <table className="w-full text-sm border rounded-lg bg-white">
+                  <thead>
+                    <tr className="bg-yellow-100">
+                      <th className="p-2 text-left">{t("customer")}</th>
+                      <th className="p-2 text-right">{t("orderDate")}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pendingOrders.map((order) => (
+                      <tr
+                        key={order.id}
+                        className="hover:bg-yellow-50 cursor-pointer"
+                        onClick={() => navigate(`/admin/orders`, { state: { filterOrderId: order.id } })}
+                      >
+                        <td className="p-2">{order.profiles?.full_name || t("unknownCustomer")}</td>
+                        <td className="p-2 text-right font-mono">
+                          {order.created_at ? new Date(order.created_at).toLocaleString() : "-"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </CardContent>
         </Card>
+
+        {/* المنتجات منخفضة المخزون */}
         <Card
-          className="hover:shadow-lg transition-shadow cursor-pointer border-red-300 bg-red-50"
+          className="group relative overflow-hidden shadow-lg border-0 bg-gradient-to-br from-red-50 to-red-100 hover:from-red-100 hover:to-red-200 transition-all cursor-pointer"
           onClick={() => setShowLowStockDetails((v) => !v)}
         >
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-red-900">
-              {t("lowStockProducts")}
-            </CardTitle>
-            <Package className="h-4 w-4 text-red-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-900">
-              {lowStockProductsData.length}
+          <div className="absolute -top-6 -right-6 bg-red-400/20 rounded-full w-24 h-24 z-0 group-hover:scale-110 transition-transform" />
+          <CardContent className="relative z-10 flex flex-col items-center justify-center py-8">
+            <div className="flex items-center gap-4 mb-2">
+              <div className="bg-red-500 text-white rounded-full p-4 shadow-lg flex items-center justify-center">
+                <Package className="h-8 w-8" />
+              </div>
+              <div>
+                <div className="text-4xl font-extrabold text-red-900">{lowStockProductsData.length}</div>
+                <div className="text-base font-semibold text-red-700 mt-1">{t("lowStockProducts")}</div>
+              </div>
             </div>
-            <p className="text-xs text-red-800">{t("restockNeededProducts")}</p>
             {showLowStockDetails && lowStockProductsData.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-2">
-                {lowStockProductsData.slice(0, 3).map((product) => {
-                  let productName = product.name;
-                  if (language === "ar" && product.name_ar)
-                    productName = product.name_ar;
-                  else if (language === "en" && product.name_en)
-                    productName = product.name_en;
-                  else if (language === "he" && product.name_he)
-                    productName = product.name_he;
-                  return (
-                    <button
-                      key={product.id}
-                      className="underline text-red-700 hover:text-red-900 text-xs"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/admin/products?productId=${product.id}`);
-                      }}
-                    >
-                      {productName} ({product.stock_quantity})
-                    </button>
-                  );
-                })}
-                {lowStockProductsData.length > 3 && (
-                  <span className="text-xs text-red-700">{t("andMore")}</span>
-                )}
+              <div className="w-full mt-4 max-h-64 overflow-y-auto">
+                <table className="w-full text-sm border rounded-lg bg-white">
+                  <thead>
+                    <tr className="bg-red-100">
+                      <th className="p-2 text-left">{t("productName")}</th>
+                      <th className="p-2 text-right">{t("stockQuantity")}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {lowStockProductsData.map(product => {
+                      let productName = product.name;
+                      if (language === "ar" && product.name_ar)
+                        productName = product.name_ar;
+                      else if (language === "en" && product.name_en)
+                        productName = product.name_en;
+                      else if (language === "he" && product.name_he)
+                        productName = product.name_he;
+                      return (
+                        <tr key={product.id} className="hover:bg-red-50 cursor-pointer" onClick={() => navigate(`/admin/products`, { state: { filterProductId: product.id } })}>
+                          <td className="p-2">{productName}</td>
+                          <td className="p-2 text-right">{product.stock_quantity}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* كرت إجمالي الطلبات */}
+        <Card
+          className="group relative overflow-hidden shadow-lg border-0 bg-gradient-to-br from-orange-50 to-orange-100 hover:from-orange-100 hover:to-orange-200 transition-all cursor-pointer"
+          onClick={() => setIsTotalOrdersExpanded((v) => !v)}
+        >
+          <div className="absolute -top-6 -right-6 bg-orange-400/20 rounded-full w-24 h-24 z-0 group-hover:scale-110 transition-transform" />
+          <CardContent className="relative z-10 flex flex-col items-center justify-center py-8">
+            <div className="flex items-center gap-4 mb-2">
+              <div className="bg-orange-500 text-white rounded-full p-4 shadow-lg flex items-center justify-center">
+                <ShoppingCart className="h-8 w-8" />
+              </div>
+              <div>
+                <div className="text-4xl font-extrabold text-orange-900">
+                  {ordersStats?.totalOrders ?? (ordersStats?.statusStats?.reduce((acc, s) => acc + (s.count || 0), 0) ?? 0)}
+                </div>
+                <div className="text-base font-semibold text-orange-700 mt-1">{t("totalOrders")}</div>
+              </div>
+            </div>
+            {isTotalOrdersExpanded && (
+              <div className="w-full mt-4">
+                <table className="w-full text-sm border rounded-lg bg-white">
+                  <tbody>
+                    {(() => {
+                      // استخدم statusStats إذا لم تتوفر القيم مباشرة
+                      const stats = ordersStats?.statusStats || [];
+                      const getCount = (status) => {
+                        const found = stats.find(s => s.status === status);
+                        return found ? found.value : 0;
+                      };
+                      return [
+                        { key: 'pending', label: t('pending'), color: 'text-yellow-700', status: 'pending' },
+                        { key: 'processing', label: t('processing'), color: 'text-blue-700', status: 'processing' },
+                        { key: 'delivered', label: t('completed'), color: 'text-green-700', status: 'delivered' },
+                        { key: 'cancelled', label: t('cancelled'), color: 'text-red-700', status: 'cancelled' },
+                      ].map(row => (
+                        <tr
+                          key={row.key}
+                          className={`hover:bg-orange-50 cursor-pointer`}
+                          onClick={e => {
+                            e.stopPropagation();
+                            navigate(`/admin/orders`, { state: { filterStatus: row.status } });
+                          }}
+                        >
+                          <td className="p-2 font-medium">{row.label}</td>
+                          <td className={`p-2 text-right font-bold ${row.color}`}>{ordersStats?.[row.key] ?? getCount(row.status)}</td>
+                        </tr>
+                      ));
+                    })()}
+                  </tbody>
+                </table>
               </div>
             )}
           </CardContent>
@@ -790,41 +818,39 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
 
                   if (diffInMinutes < 1) return t("now");
                   if (diffInMinutes < 60)
-                    return t("minutesAgo").replace(
-                      "{count}",
-                      diffInMinutes.toString(),
-                    );
+                    return `${diffInMinutes} ${t("minutesAgo")}`;
                   if (diffInMinutes < 1440)
-                    return t("hoursAgo").replace(
-                      "{count}",
-                      Math.floor(diffInMinutes / 60).toString(),
-                    );
-                  return t("daysAgo").replace(
-                    "{count}",
-                    Math.floor(diffInMinutes / 1440).toString(),
-                  );
-                };
-
-                const colorClasses = {
-                  green: "bg-green-500",
-                  blue: "bg-blue-500",
-                  yellow: "bg-yellow-500",
-                  red: "bg-red-500",
+                    return `${Math.floor(diffInMinutes / 60)} ${t("hoursAgo")}`;
+                  return `${Math.floor(diffInMinutes / 1440)} ${t("daysAgo")}`;
                 };
 
                 return (
                   <div
                     key={index}
-                    className="flex items-start space-x-4 rtl:space-x-reverse"
+                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-all"
                   >
                     <div
-                      className={`w-3 h-3 ${colorClasses[activity.color as keyof typeof colorClasses]} rounded-full mt-1 flex-shrink-0`}
-                    ></div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">
+                      className="w-10 h-10 rounded-full flex items-center justify-center"
+                      style={{
+                        backgroundColor: activity.color,
+                        color: "white",
+                      }}
+                    >
+                      {activity.type === "user" && (
+                        <Users className="w-5 h-5" />
+                      )}
+                      {activity.type === "order" && (
+                        <ShoppingCart className="w-5 h-5" />
+                      )}
+                      {activity.type === "stock" && (
+                        <Package className="w-5 h-5" />
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm text-gray-800">
                         {activity.message}
                       </p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-gray-500">
                         {getTimeAgo(activity.time)}
                       </p>
                     </div>
@@ -832,8 +858,8 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
                 );
               })
             ) : (
-              <div className="text-center text-muted-foreground py-8">
-                <p className="text-sm">{t("noRecentActivity")}</p>
+              <div className="text-center text-gray-500 py-12">
+                {t("noRecentActivity")}
               </div>
             )}
           </CardContent>
@@ -844,6 +870,3 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
 };
 
 export default AdminDashboardStats;
-
-// تم حذف كل منطق الجلسة أو الأحداث (addEventListener, refetch, supabase.auth, visibilitychange) من هذا الملف. استخدم AuthContext فقط.
-// ملاحظة: للحصول على إحصائيات حية، يمكنك استخدام useProductsRealtime/useCategoriesRealtime لجلب المنتجات والفئات ثم حساب الإحصائيات منها مباشرة، أو إضافة اشتراك Realtime مخصص لجداول الإحصائيات إذا لزم الأمر.

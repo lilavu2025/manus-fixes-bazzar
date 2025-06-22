@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useLanguage } from "../../utils/languageContextUtils";
 import { useProductsRealtime } from "@/hooks/useProductsRealtime";
 import { useCategories } from "@/hooks/useSupabaseData";
@@ -100,6 +100,31 @@ const AdminProducts: React.FC = () => {
       pass = false;
     return pass;
   });
+
+  // استقبال الفلتر من state عند الدخول من لوحة الأدمن
+  useEffect(() => {
+    if (
+      typeof window !== 'undefined' &&
+      window.location.pathname === "/admin/products" &&
+      window.history.state &&
+      window.history.state.usr
+    ) {
+      // فلترة حسب الفئة
+      if (window.history.state.usr.filterCategory) {
+        const filterCategoryName = window.history.state.usr.filterCategory;
+        const foundCat = productCategories.find((c) => c.name === filterCategoryName);
+        if (foundCat) {
+          setFilterCategory(foundCat.id);
+        }
+      }
+      // فلترة حسب المنتج منخفض المخزون
+      if (window.history.state.usr.filterProductId) {
+        setFilterCategory("all");
+        setFilterStock("low");
+        // يمكن لاحقاً إضافة منطق لتحديد المنتج مباشرة إذا أردت
+      }
+    }
+  }, [productCategories]);
 
   if (productsLoading) {
     return (

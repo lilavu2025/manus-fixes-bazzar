@@ -198,6 +198,7 @@ export const arTranslations = {
   sortOrder: "الترتيب",
   ascending: "تصاعدي",
   descending: "تنازلي",
+  count: "العدد",
 
   // Profile & Account
   profileUpdated: "تم تحديث الملف الشخصي بنجاح",
@@ -294,6 +295,7 @@ export const arTranslations = {
   orderSummary: "ملخص الطلب",
   placingOrder: "جاري تقديم الطلب...",
   placeOrder: "تقديم الطلب",
+  completed: "مكتمل",
 
   // Categories
   browseProductCategories: "تصفح فئات المنتجات",
