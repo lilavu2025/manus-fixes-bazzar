@@ -103,6 +103,7 @@ export const arTranslations = {
   wholesaleUsers: "مستخدمو الجملة",
   retailUsers: "مستخدمو التجزئة",
   recentUsers: "المستخدمون الجدد",
+  ordersByStatus: "توزيع الطلبات حسب الحالة",
 
   // Common
   success: "نجح",

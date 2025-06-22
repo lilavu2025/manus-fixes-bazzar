@@ -377,6 +377,15 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
     for (const key in categoriesMap) categoriesStats.push(categoriesMap[key]);
   }
 
+  // بيانات رسم توزيع الطلبات حسب الحالة
+  const ordersStatusData = Array.isArray(ordersStats?.statusStats)
+    ? ordersStats.statusStats.map((s) => ({
+        name: s.label || s.status,
+        value: s.value,
+        color: s.color || "#8884d8",
+      }))
+    : [];
+
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
       {/* Summary Cards */}
@@ -747,6 +756,36 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
                 />
                 <ChartTooltip content={<ChartTooltipContent />} />
               </BarChart>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+
+        {/* Orders by Status Chart */}
+        <Card className="hover:shadow-lg transition-shadow">
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold">
+              {t("ordersByStatus")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4">
+            <ChartContainer config={chartConfig} className="h-80 w-full">
+              <PieChart>
+                <Pie
+                  data={ordersStatusData}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={100}
+                  paddingAngle={5}
+                >
+                  {ordersStatusData.map((entry, idx) => (
+                    <Cell key={entry.name} fill={entry.color} />
+                  ))}
+                </Pie>
+                <ChartTooltip content={<ChartTooltipContent />} />
+              </PieChart>
             </ChartContainer>
           </CardContent>
         </Card>

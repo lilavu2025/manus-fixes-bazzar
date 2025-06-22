@@ -736,5 +736,8 @@ export const enTranslations = {
   profileUpdatedSuccessfully: "Profile updated successfully",
   profileUpdateFailed: "Failed to update profile",
   passwordChangedSuccessfully: "Password changed successfully",
-  passwordChangeFailed: "Failed to change password"
+  passwordChangeFailed: "Failed to change password",
+
+  // New Translation Key
+  ordersByStatus: "Orders by Status",
 };
