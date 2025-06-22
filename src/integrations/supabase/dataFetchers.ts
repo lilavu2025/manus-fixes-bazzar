@@ -257,6 +257,7 @@ export async function fetchUserOrdersWithDetails(userId: string): Promise<Orders
             } : undefined,
           }))
         : [],
+      notes: order.notes ?? "",
     }));
   } catch (error) {
     console.error('Error fetching user orders:', error);

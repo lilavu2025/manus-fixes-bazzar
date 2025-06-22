@@ -37,6 +37,7 @@ import {
 import { getDisplayPrice } from "@/utils/priceUtils";
 import { mapOrderFromDb } from "../utils/orderUtils";
 import type { OrdersWithDetails } from "@/integrations/supabase/dataFetchers";
+import { decompressText } from "@/utils/textCompression";
 
 // أنواع الطلب وعناصر الطلب من Supabase
 type ProductDB = {
@@ -170,6 +171,15 @@ const Orders: React.FC = () => {
     }
     return true;
   });
+
+  // دالة فك الضغط لملاحظات الطلب
+  function safeDecompressNotes(notes: string) {
+    try {
+      return decompressText(notes);
+    } catch {
+      return notes;
+    }
+  }
 
   return (
     <div
@@ -606,12 +616,12 @@ const Orders: React.FC = () => {
                       )}
                     </div>
                     {/* ملاحظات الطلب */}
-                    {order.notes && (
+                    {safeOrder.notes && (
                       <div className="mt-2 text-sm text-gray-500">
                         <span className="font-semibold">
                           {t("orderNotes")}:
                         </span>{" "}
-                        {order.notes}
+                        {safeDecompressNotes(safeOrder.notes)}
                       </div>
                     )}
                   </CardContent>
