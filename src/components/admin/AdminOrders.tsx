@@ -2074,6 +2074,17 @@ const AdminOrders: React.FC = () => {
                     </div>
                   </div>
                 </div>
+                {/* ملاحظات الطلب */}
+                {selectedOrder.notes && (
+                  <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 rounded print:bg-white print:border print:border-yellow-400 print:rounded print:p-2 print:mt-2 print:mb-0">
+                    <span className="font-semibold text-yellow-800 print:text-black">
+                      {t("notes") || "ملاحظات"}:
+                    </span>{" "}
+                    <span className="text-gray-700 print:text-black">
+                      {safeDecompressNotes(selectedOrder.notes)}
+                    </span>
+                  </div>
+                )}
                 {/* المنتجات */}
                 <div className="space-y-2 border-b pb-4 print:border print:rounded print:p-4 print:mb-4 print:border-gray-300">
                   <h4 className="font-semibold text-primary flex items-center gap-1 print:justify-center print:text-lg">
@@ -2140,17 +2151,6 @@ const AdminOrders: React.FC = () => {
                     </table>
                   </div>
                 </div>
-                {/* ملاحظات الطلب */}
-                {selectedOrder.notes && (
-                  <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 rounded print:bg-white print:border print:border-yellow-400 print:rounded print:p-2 print:mt-2 print:mb-0">
-                    <span className="font-semibold text-yellow-800 print:text-black">
-                      {t("notes") || "ملاحظات"}:
-                    </span>{" "}
-                    <span className="text-gray-700 print:text-black">
-                      {safeDecompressNotes(selectedOrder.notes)}
-                    </span>
-                  </div>
-                )}
                 {/* تذييل رسمي للطباعة */}
                 <div className="print:flex flex-col items-center mt-8 hidden">
                   <div className="w-full border-t border-gray-300 my-2" />
