@@ -725,4 +725,7 @@ export const enTranslations = {
 
 
   orderMustHaveItems: "Order must have at least one item",
+
+  adminOrderInfoTitle: "Order created by admin",
+  adminOrderInfoDesc: "This order was created by an admin through the dashboard, usually to help you or based on your request to customer service.",
 };

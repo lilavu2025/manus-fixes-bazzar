@@ -740,5 +740,7 @@ export const arTranslations = {
   orderAddFailed: "فشل في إضافة الطلب",
   orderEditFailed: "فشل في تعديل الطلب",
   orderDeleteFailed: "فشل في حذف الطلب",
-  orderMustHaveItems: "يجب أن يحتوي الطلب على عناصر"
+  orderMustHaveItems: "يجب أن يحتوي الطلب على عناصر",
+  adminOrderInfoTitle: "طلب أنشئ من الأدمن",
+  adminOrderInfoDesc: "تم إنشاء هذا الطلب من قبل الأدمن عبر لوحة التحكم. غالبًا تم إنشاؤه لمساعدتك أو بناءً على تواصلك مع خدمة العملاء."
 };

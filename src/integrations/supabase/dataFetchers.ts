@@ -173,11 +173,11 @@ export async function fetchAllUsers(): Promise<UserProfile[]> {
 export async function fetchOrdersWithDetails(): Promise<OrdersWithDetails[]> {
   const { data, error } = await supabase
     .from('orders')
-    .select(`*, payment_method, shipping_address, profiles:profiles(id, full_name, email, phone), order_items(*, products(id, name_ar, name_en, name_he, image))`)
+    .select(`*, payment_method, shipping_address, cancelled_by, cancelled_by_name, profiles:profiles(id, full_name, email, phone), order_items(*, products(id, name_ar, name_en, name_he, image))`)
     .order('created_at', { ascending: false });
   if (error) throw error;
   if (!data) throw new Error('لم يتم العثور على بيانات الطلبات');
-  return (data).map((order: OrderRow & { payment_method?: string, shipping_address?: Json }) => ({
+  return (data).map((order: OrderRow & { payment_method?: string, shipping_address?: Json, admin_created?: boolean | null, admin_creator_name?: string | null, cancelled_by?: string | null, cancelled_by_name?: string | null }) => ({
     id: order.id,
     status: order.status,
     total: order.total,
@@ -203,8 +203,10 @@ export async function fetchOrdersWithDetails(): Promise<OrdersWithDetails[]> {
         }))
       : [],
     notes: order.notes ?? "",
-    admin_created: order.admin_created === true || order.admin_created === 1,
+    admin_created: !!order.admin_created,
     admin_creator_name: order.admin_creator_name,
+    cancelled_by: order.cancelled_by ?? undefined,
+    cancelled_by_name: order.cancelled_by_name ?? undefined,
   }));
 }
 
@@ -214,11 +216,11 @@ export async function fetchUserOrdersWithDetails(userId: string): Promise<Orders
   try {
     const { data, error } = await supabase
       .from('orders')
-      .select('*, shipping_address, order_items(*, products(id, name_ar, name_en, name_he, description_ar, description_en, description_he, price, original_price, wholesale_price, image, images, category_id, in_stock, rating, reviews_count, discount, featured, tags, stock_quantity, active, created_at))')
+      .select('*, shipping_address, admin_created, admin_creator_name, order_items(*, products(id, name_ar, name_en, name_he, description_ar, description_en, description_he, price, original_price, wholesale_price, image, images, category_id, in_stock, rating, reviews_count, discount, featured, tags, stock_quantity, active, created_at))')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
     if (error) throw error;
-    return (data || []).map((order: OrderRow) => ({
+    return (data || []).map((order: OrderRow & { admin_created?: boolean; admin_creator_name?: string }) => ({
       id: order.id,
       status: order.status,
       total: order.total,
@@ -260,6 +262,8 @@ export async function fetchUserOrdersWithDetails(userId: string): Promise<Orders
           }))
         : [],
       notes: order.notes ?? "",
+      admin_created: !!order.admin_created,
+      admin_creator_name: order.admin_creator_name ?? undefined,
     }));
   } catch (error) {
     console.error('Error fetching user orders:', error);
@@ -319,6 +323,8 @@ export interface OrdersWithDetails {
   notes?: string;
   cancelled_by?: string;
   customer_name?: string;
+  admin_created?: boolean;
+  admin_creator_name?: string;
 }
 
 // جلب الفئات مع عدد المنتجات لكل فئة (للاستخدام الإداري)

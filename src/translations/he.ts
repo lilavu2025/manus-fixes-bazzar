@@ -712,5 +712,8 @@ export const heTranslations = {
   orderEditFailed: "נכשל בעריכת ההזמנה",
   orderDeleteFailed: "נכשל במחיקת ההזמנה",
   userUpdatedSuccessfully: "פרטי המשתמש עודכנו בהצלחה",
-  orderMustHaveItems: "ההזמנה חייבת לכלול לפחות פריט אחד"
+  orderMustHaveItems: "ההזמנה חייבת לכלול לפחות פריט אחד",
+
+  adminOrderInfoTitle: "הזמנה שנוצרה על ידי מנהל",
+  adminOrderInfoDesc: "ההזמנה נוצרה על ידי מנהל דרך מערכת הניהול, בדרך כלל כדי לעזור לך או לפי בקשתך לשירות הלקוחות."
 };

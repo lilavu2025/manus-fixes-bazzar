@@ -20,7 +20,9 @@ import {
   CheckCircle,
   Loader2,
   PackageOpen,
+  UserPlus,
 } from "lucide-react";
+import { toast } from "@/components/ui/use-toast";
 import {
   useUserOrdersWithDetailsQuery,
   useCancelUserOrderMutation,
@@ -295,6 +297,27 @@ const Orders: React.FC = () => {
                         <span className="font-bold text-lg tracking-wider">
                           #{order.id.slice(0, 8)}
                         </span>
+                        {/* شارة منشئ الطلب */}
+                        {safeOrder.admin_created && (
+                          <Badge
+                            className="ml-0 bg-blue-100 text-blue-800 border-blue-200 flex items-center gap-1 animate-pulse cursor-pointer text-[11px] px-2 py-0.5 w-fit max-w-[90vw] sm:max-w-xs whitespace-normal break-words overflow-hidden block"
+                            onClick={() =>
+                              toast({
+                                title: t("adminOrderInfoTitle") || "طلب أنشئ من الأدمن",
+                                description:
+                                  t("adminOrderInfoDesc") ||
+                                  "تم إنشاء هذا الطلب من قبل الأدمن عبر لوحة التحكم. غالبًا تم إنشاؤه لمساعدتك أو بناءً على تواصلك مع خدمة العملاء.",
+                                duration: 5000,
+                                variant: "info",
+                              })
+                            }
+                            tabIndex={0}
+                            title={t("orderCreatedFromAdminPanel") || "تم إنشاء الطلب من قبل الأدمن"}
+                          >
+                            <UserPlus className="h-4 w-4 min-w-[16px] min-h-[16px]" />
+                            <span className="block">{t("admin") || "أدمن"}</span>
+                          </Badge>
+                        )}
                         {/* شارة إلغاء الطلب */}
                         {order.status === "cancelled" &&
                           order.cancelled_by === "admin" && (

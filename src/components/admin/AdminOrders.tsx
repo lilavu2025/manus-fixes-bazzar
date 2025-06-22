@@ -421,10 +421,12 @@ const AdminOrders: React.FC = () => {
       setIsAddingOrder(true);
       if (!orderForm.user_id && !allowCustomClient) {
         toast.error(t("selectCustomerRequired"));
+        setIsAddingOrder(false);
         return;
       }
       if (orderForm.items.length === 0) {
         toast.error(t("addAtLeastOneProduct"));
+        setIsAddingOrder(false);
         return;
       }
       if (
@@ -432,6 +434,7 @@ const AdminOrders: React.FC = () => {
         !orderForm.shipping_address.phone
       ) {
         toast.error(t("enterShippingInfo"));
+        setIsAddingOrder(false);
         return;
       }
       const total = calculateTotal();

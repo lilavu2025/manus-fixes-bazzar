@@ -49,6 +49,8 @@ export interface Order {
   shippingAddress: Address;
   paymentMethod: 'cash' | 'card';
   notes?: string;
+  admin_created?: boolean;
+  admin_creator_name?: string;
 }
 
 export interface Address {

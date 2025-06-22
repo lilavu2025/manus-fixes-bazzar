@@ -23,5 +23,7 @@ export function mapOrderFromDb(order: OrdersWithDetails): Order {
     shippingAddress: shippingAddress || ({} as Address),
     paymentMethod,
     notes: order.notes,
+    admin_created: order.admin_created ?? false,
+    admin_creator_name: order.admin_creator_name ?? undefined,
   };
 }
