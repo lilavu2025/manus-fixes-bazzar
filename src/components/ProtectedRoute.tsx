@@ -19,7 +19,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const location = useLocation();
 
   // Show loading spinner while authentication/profile is being checked
-  if (loading || (requireAdmin && (!profile || !user))) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
         <div className="text-center">
@@ -31,8 +31,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   // For authentication requirement
-  if (requireAuth && !user) {
-    // إذا لم يكن هناك مستخدم، أرسل إلى صفحة auth مع حفظ المسار الحالي
+  if (requireAuth && !user && !loading) {
+    // إذا لم يكن هناك مستخدم بعد انتهاء التحميل، أرسل إلى صفحة auth مع حفظ المسار الحالي
     return <Navigate to="/auth" state={{ from: location.pathname + location.search + location.hash }} replace />;
   }
 

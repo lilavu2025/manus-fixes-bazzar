@@ -53,7 +53,9 @@ const Auth: React.FC = () => {
 
   useEffect(() => {
     if (user && !loading) {
-      if (state && state.from) {
+      if (user.user_type === "admin") {
+        navigate("/admin", { replace: true });
+      } else if (state && state.from) {
         navigate(state.from, { replace: true });
       } else {
         navigate("/");
