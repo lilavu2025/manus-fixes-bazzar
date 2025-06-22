@@ -61,7 +61,7 @@ const Auth: React.FC = () => {
         navigate("/");
       }
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, navigate, state]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -633,7 +633,7 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
               </div>
               <div>
                 <div className="text-4xl font-extrabold text-orange-900">
-                  {ordersStats?.totalOrders ?? (ordersStats?.statusStats?.reduce((acc, s) => acc + (s.count || 0), 0) ?? 0)}
+                  {ordersStats?.totalOrders ?? (ordersStats?.statusStats?.reduce((acc, s) => acc + (s.value || 0), 0) ?? 0)}
                 </div>
                 <div className="text-base font-semibold text-orange-700 mt-1">{t("totalOrders")}</div>
               </div>
