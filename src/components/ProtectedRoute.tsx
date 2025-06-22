@@ -32,7 +32,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // For authentication requirement
   if (requireAuth && !user) {
-    return <Navigate to="/auth" state={{ from: location }} replace />;
+    // إذا لم يكن هناك مستخدم، أرسل إلى صفحة auth مع حفظ المسار الحالي
+    return <Navigate to="/auth" state={{ from: location.pathname + location.search + location.hash }} replace />;
   }
 
   // For admin requirement - check both user and profile

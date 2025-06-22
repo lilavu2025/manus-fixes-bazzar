@@ -43,6 +43,9 @@ const Auth: React.FC = () => {
   const [showEmailConfirmation, setShowEmailConfirmation] = useState(false);
   const [pendingEmail, setPendingEmail] = useState("");
 
+  const location = window.location;
+  const state = (window.history.state && window.history.state.usr && window.history.state.usr.from) ? window.history.state.usr : undefined;
+
   const isValidEmail = (email: string) =>
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
@@ -50,7 +53,11 @@ const Auth: React.FC = () => {
 
   useEffect(() => {
     if (user && !loading) {
-      navigate("/");
+      if (state && state.from) {
+        navigate(state.from, { replace: true });
+      } else {
+        navigate("/");
+      }
     }
   }, [user, loading, navigate]);
 
