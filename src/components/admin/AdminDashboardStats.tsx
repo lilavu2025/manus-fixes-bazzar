@@ -826,11 +826,19 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
                   );
 
                   if (diffInMinutes < 1) return t("now");
-                  if (diffInMinutes < 60)
-                    return `${diffInMinutes} ${t("minutesAgo")}`;
-                  if (diffInMinutes < 1440)
-                    return `${Math.floor(diffInMinutes / 60)} ${t("hoursAgo")}`;
-                  return `${Math.floor(diffInMinutes / 1440)} ${t("daysAgo")}`;
+                  if (diffInMinutes < 60) {
+                    // ترجمة دقيقة
+                    const minutes = diffInMinutes.toString();
+                    return t("minutesAgo").replace("{count}", minutes);
+                  }
+                  if (diffInMinutes < 1440) {
+                    // ترجمة ساعة
+                    const hours = Math.floor(diffInMinutes / 60).toString();
+                    return t("hoursAgo").replace("{count}", hours);
+                  }
+                  // ترجمة يوم
+                  const days = Math.floor(diffInMinutes / 1440).toString();
+                  return t("daysAgo").replace("{count}", days);
                 };
 
                 return (
