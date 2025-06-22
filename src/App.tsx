@@ -304,31 +304,29 @@ const App = () => {
                         </Routes>
                       </Suspense>
                       {/* البوتوم ناف بار يظهر فقط على الجوال */}
-                      <div className="md:hidden">
-                        <MobileBottomNavBar
-                          onMenuClick={() => {
-                            setOpenMobileMenu(true);
-                            setOpenCart(false);
-                            setShowMobileSearch(false);
-                          }}
-                          onSearchClick={() => {
-                            setShowMobileSearch(true);
-                            setOpenCart(false);
-                            setOpenMobileMenu(false);
-                          }}
-                          onCartClick={() => {
-                            setOpenCart(true);
-                            setOpenMobileMenu(false);
-                            setShowMobileSearch(false);
-                          }}
-                          onHomeClick={() => {
-                            setOpenCart(false);
-                            setOpenMobileMenu(false);
-                            setShowMobileSearch(false);
-                            window.location.pathname = "/";
-                          }}
-                        />
-                      </div>
+                      <MobileBottomNavBarWrapper
+                        onMenuClick={() => {
+                          setOpenMobileMenu(true);
+                          setOpenCart(false);
+                          setShowMobileSearch(false);
+                        }}
+                        onSearchClick={() => {
+                          setShowMobileSearch(true);
+                          setOpenCart(false);
+                          setOpenMobileMenu(false);
+                        }}
+                        onCartClick={() => {
+                          setOpenCart(true);
+                          setOpenMobileMenu(false);
+                          setShowMobileSearch(false);
+                        }}
+                        onHomeClick={() => {
+                          setOpenCart(false);
+                          setOpenMobileMenu(false);
+                          setShowMobileSearch(false);
+                          window.location.pathname = "/";
+                        }}
+                      />
                     </div>
                   </TooltipProvider>
                 </CartProvider>
@@ -367,5 +365,26 @@ function AppHeaderWrapper(props: {
       showMobileSearch={props.showMobileSearch}
       setShowMobileSearch={props.setShowMobileSearch}
     />
+  );
+}
+
+// MobileBottomNavBarWrapper لإخفاء البوتوم بار في صفحات لوحة الإدارة
+function MobileBottomNavBarWrapper(props: {
+  onMenuClick: () => void;
+  onSearchClick: () => void;
+  onCartClick: () => void;
+  onHomeClick: () => void;
+}) {
+  const location = useLocation();
+  // طباعة المسار الحالي للتشخيص
+  if (typeof window !== 'undefined') {
+    // eslint-disable-next-line no-console
+    console.log('MobileBottomNavBarWrapper pathname:', location.pathname);
+  }
+  if (location.pathname.startsWith("/admin")) return null;
+  return (
+    <div className="md:hidden">
+      <MobileBottomNavBar {...props} />
+    </div>
   );
 }
