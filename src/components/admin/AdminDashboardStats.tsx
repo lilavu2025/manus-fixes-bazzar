@@ -120,50 +120,59 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
 
       if (error) throw error;
 
+      // طباعة بيانات الطلبات الخام قبل التجميع
+      if (typeof window !== 'undefined') {
+        // eslint-disable-next-line no-console
+        console.log('orders raw', data);
+      }
+
+      const monthNames = [
+        t("january"),
+        t("february"),
+        t("march"),
+        t("april"),
+        t("may"),
+        t("june"),
+        t("july"),
+        t("august"),
+        t("september"),
+        t("october"),
+        t("november"),
+        t("december"),
+      ];
+      // تجهيز إحصائيات الطلبات والإيرادات لكل شهر حتى الشهر الحالي فقط
+      const now = new Date();
+      const currentMonth = now.getMonth(); // 0-based
       const monthlyStats: Record<
         number,
         { month: string; orders: number; revenue: number }
-      > = data.reduce(
-        (
-          acc: Record<
-            number,
-            { month: string; orders: number; revenue: number }
-          >,
-          order: { created_at: string; status: string; total: number },
-        ) => {
-          const date = new Date(order.created_at);
-          const monthKey = date.getMonth();
-          const monthNames = [
-            t("january"),
-            t("february"),
-            t("march"),
-            t("april"),
-            t("may"),
-            t("june"),
-            t("july"),
-            t("august"),
-            t("september"),
-            t("october"),
-            t("november"),
-            t("december"),
-          ];
-          if (!acc[monthKey]) {
-            acc[monthKey] = {
-              month: monthNames[monthKey],
-              orders: 0,
-              revenue: 0,
-            };
-          }
-          acc[monthKey].orders += 1;
+      > = {};
+      // املأ الشهور من 0 حتى الشهر الحالي فقط
+      for (let i = 0; i <= currentMonth; i++) {
+        monthlyStats[i] = { month: monthNames[i], orders: 0, revenue: 0 };
+      }
+      // اجمع الطلبات حسب الشهر
+      data.forEach((order: { created_at: string; status: string; total: number }) => {
+        const date = new Date(order.created_at);
+        const monthKey = date.getMonth();
+        if (monthKey <= currentMonth) {
+          monthlyStats[monthKey].orders += 1;
           if (order.status !== "cancelled") {
-            acc[monthKey].revenue += order.total || 0;
+            monthlyStats[monthKey].revenue += order.total || 0;
           }
-          return acc;
-        },
-        {},
-      );
-
-      return Object.values(monthlyStats);
+        }
+      });
+      // فقط الشهور حتى الشهر الحالي
+      const result = Object.values(monthlyStats);
+      // طباعة بيانات الطلبات الخام قبل التجميع
+      if (typeof window !== 'undefined') {
+        console.log('orders raw', data);
+      }
+      // طباعة بيانات الرسم البياني للتشخيص
+      if (typeof window !== 'undefined') {
+        console.log('monthlyData', result);
+      }
+      return result;
     },
     retry: 3,
     staleTime: 0,
