@@ -280,6 +280,14 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
   const totalUsers = Array.isArray(users) ? users.length : 0;
   const totalProducts = Array.isArray(products) ? products.length : 0;
 
+  // دالة لاختصار الأرقام الكبيرة (مثلاً: 1.2K, 3.4M)
+  function formatNumberShort(num: number) {
+    if (num >= 1_000_000_000) return (num / 1_000_000_000).toFixed(1).replace(/\.0$/, '') + 'B';
+    if (num >= 1_000_000) return (num / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
+    if (num >= 1_000) return (num / 1_000).toFixed(1).replace(/\.0$/, '') + 'K';
+    return num.toLocaleString();
+  }
+
   // Show loading state
   if (ordersLoading) {
     return (
@@ -396,22 +404,26 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
         >
           <div className="absolute -top-6 -right-6 bg-blue-400/20 rounded-full w-24 h-24 z-0 group-hover:scale-110 transition-transform" />
           <CardContent className="relative z-10 flex flex-col items-center justify-center py-8">
-            <div className="flex items-center gap-4 mb-2">
-              <div className="bg-blue-500 text-white rounded-full p-4 shadow-lg flex items-center justify-center">
-                <BarChart3 className="h-8 w-8" />
+            <div className="flex flex-col items-center gap-2 mb-2 w-full">
+              <div className="flex items-center justify-center w-full gap-2">
+                <div className="bg-blue-500 text-white rounded-full p-2 shadow-lg flex items-center justify-center flex-shrink-0">
+                  <BarChart3 className="h-5 w-5" />
+                </div>
               </div>
-              <div>
-                <div className="text-4xl font-extrabold text-blue-900">
+              <div className="w-full flex justify-center">
+                <div
+                  className="text-2xl md:text-3xl lg:text-4xl font-extrabold text-blue-900 text-center whitespace-nowrap overflow-hidden text-ellipsis max-w-full"
+                  style={{wordBreak: 'normal'}}
+                  title={ordersStats && typeof ordersStats.totalRevenue === "number" ? ordersStats.totalRevenue.toLocaleString() : '0'}
+                >
                   {ordersStats && typeof ordersStats.totalRevenue === "number"
-                    ? ordersStats.totalRevenue.toLocaleString()
+                    ? formatNumberShort(ordersStats.totalRevenue)
                     : 0}
-                  <span className="text-lg font-bold text-blue-600 ml-1">
-                    {t("currency")}
-                  </span>
                 </div>
-                <div className="text-base font-semibold text-blue-700 mt-1">
-                  {t("totalRevenue")}
-                </div>
+                <span className="text-lg font-bold text-blue-600 ml-1 self-end">{t("currency")}</span>
+              </div>
+              <div className="text-base font-semibold text-blue-700 mt-1">
+                {t("totalRevenue")}
               </div>
             </div>
             {isRevenueExpanded &&
@@ -459,14 +471,22 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
         >
           <div className="absolute -top-6 -right-6 bg-green-400/20 rounded-full w-24 h-24 z-0 group-hover:scale-110 transition-transform" />
           <CardContent className="relative z-10 flex flex-col items-center justify-center py-8">
-            <div className="flex items-center gap-4 mb-2">
-              <div className="bg-green-500 text-white rounded-full p-4 shadow-lg flex items-center justify-center">
-                <Users className="h-8 w-8" />
+            <div className="flex flex-col items-center gap-2 mb-2 w-full">
+              <div className="flex items-center justify-center w-full gap-2">
+                <div className="bg-green-500 text-white rounded-full p-2 shadow-lg flex items-center justify-center flex-shrink-0">
+                  <Users className="h-5 w-5" />
+                </div>
               </div>
-              <div>
-                <div className="text-4xl font-extrabold text-green-900">{totalUsers}</div>
-                <div className="text-base font-semibold text-green-700 mt-1">{t("users")}</div>
+              <div className="w-full flex justify-center">
+                <div
+                  className="text-2xl md:text-3xl lg:text-4xl font-extrabold text-green-900 text-center whitespace-nowrap overflow-hidden text-ellipsis max-w-full"
+                  style={{wordBreak: 'normal'}}
+                  title={typeof totalUsers === "number" ? totalUsers.toLocaleString() : '0'}
+                >
+                  {typeof totalUsers === "number" ? formatNumberShort(totalUsers) : 0}
+                </div>
               </div>
+              <div className="text-base font-semibold text-green-700 mt-1">{t("users")}</div>
             </div>
             {isUsersExpanded && (
               <div className="w-full mt-4">
@@ -498,14 +518,22 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
         >
           <div className="absolute -top-6 -right-6 bg-purple-400/20 rounded-full w-24 h-24 z-0 group-hover:scale-110 transition-transform" />
           <CardContent className="relative z-10 flex flex-col items-center justify-center py-8">
-            <div className="flex items-center gap-4 mb-2">
-              <div className="bg-purple-500 text-white rounded-full p-4 shadow-lg flex items-center justify-center">
-                <Package className="h-8 w-8" />
+            <div className="flex flex-col items-center gap-2 mb-2 w-full">
+              <div className="flex items-center justify-center w-full gap-2">
+                <div className="bg-purple-500 text-white rounded-full p-2 shadow-lg flex items-center justify-center flex-shrink-0">
+                  <Package className="h-5 w-5" />
+                </div>
               </div>
-              <div>
-                <div className="text-4xl font-extrabold text-purple-900">{totalProducts}</div>
-                <div className="text-base font-semibold text-purple-700 mt-1">{t("products")}</div>
+              <div className="w-full flex justify-center">
+                <div
+                  className="text-2xl md:text-3xl lg:text-4xl font-extrabold text-purple-900 text-center whitespace-nowrap overflow-hidden text-ellipsis max-w-full"
+                  style={{wordBreak: 'normal'}}
+                  title={typeof totalProducts === "number" ? totalProducts.toLocaleString() : '0'}
+                >
+                  {typeof totalProducts === "number" ? formatNumberShort(totalProducts) : 0}
+                </div>
               </div>
+              <div className="text-base font-semibold text-purple-700 mt-1">{t("products")}</div>
             </div>
             {/* تفاصيل المنتجات حسب الفئة */}
             {isProductsExpanded && categoriesStats.length > 0 && (
@@ -551,14 +579,22 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
         >
           <div className="absolute -top-6 -right-6 bg-yellow-400/20 rounded-full w-24 h-24 z-0 group-hover:scale-110 transition-transform" />
           <CardContent className="relative z-10 flex flex-col items-center justify-center py-8">
-            <div className="flex items-center gap-4 mb-2">
-              <div className="bg-yellow-400 text-white rounded-full p-4 shadow-lg flex items-center justify-center">
-                <ShoppingCart className="h-8 w-8" />
+            <div className="flex flex-col items-center gap-2 mb-2 w-full">
+              <div className="flex items-center justify-center w-full gap-2">
+                <div className="bg-yellow-400 text-white rounded-full p-2 shadow-lg flex items-center justify-center flex-shrink-0">
+                  <ShoppingCart className="h-5 w-5" />
+                </div>
               </div>
-              <div>
-                <div className="text-4xl font-extrabold text-yellow-900">{pendingOrders.length}</div>
-                <div className="text-base font-semibold text-yellow-700 mt-1">{t("newOrders")}</div>
+              <div className="w-full flex justify-center">
+                <div
+                  className="text-2xl md:text-3xl lg:text-4xl font-extrabold text-yellow-900 text-center whitespace-nowrap overflow-hidden text-ellipsis max-w-full"
+                  style={{wordBreak: 'normal'}}
+                  title={typeof pendingOrders.length === "number" ? pendingOrders.length.toLocaleString() : '0'}
+                >
+                  {typeof pendingOrders.length === "number" ? formatNumberShort(pendingOrders.length) : 0}
+                </div>
               </div>
+              <div className="text-base font-semibold text-yellow-700 mt-1">{t("newOrders")}</div>
             </div>
             {showPendingOrdersDetails && pendingOrders.length > 0 && (
               <div className="w-full mt-4 max-h-64 overflow-y-auto">
@@ -596,14 +632,22 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
         >
           <div className="absolute -top-6 -right-6 bg-red-400/20 rounded-full w-24 h-24 z-0 group-hover:scale-110 transition-transform" />
           <CardContent className="relative z-10 flex flex-col items-center justify-center py-8">
-            <div className="flex items-center gap-4 mb-2">
-              <div className="bg-red-500 text-white rounded-full p-4 shadow-lg flex items-center justify-center">
-                <Package className="h-8 w-8" />
+            <div className="flex flex-col items-center gap-2 mb-2 w-full">
+              <div className="flex items-center justify-center w-full gap-2">
+                <div className="bg-red-500 text-white rounded-full p-2 shadow-lg flex items-center justify-center flex-shrink-0">
+                  <Package className="h-5 w-5" />
+                </div>
               </div>
-              <div>
-                <div className="text-4xl font-extrabold text-red-900">{lowStockProductsData.length}</div>
-                <div className="text-base font-semibold text-red-700 mt-1">{t("lowStockProducts")}</div>
+              <div className="w-full flex justify-center">
+                <div
+                  className="text-2xl md:text-3xl lg:text-4xl font-extrabold text-red-900 text-center whitespace-nowrap overflow-hidden text-ellipsis max-w-full"
+                  style={{wordBreak: 'normal'}}
+                  title={typeof lowStockProductsData.length === "number" ? lowStockProductsData.length.toLocaleString() : '0'}
+                >
+                  {typeof lowStockProductsData.length === "number" ? formatNumberShort(lowStockProductsData.length) : 0}
+                </div>
               </div>
+              <div className="text-base font-semibold text-red-700 mt-1">{t("lowStockProducts")}</div>
             </div>
             {showLowStockDetails && lowStockProductsData.length > 0 && (
               <div className="w-full mt-4 max-h-64 overflow-y-auto">
@@ -644,16 +688,26 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
         >
           <div className="absolute -top-6 -right-6 bg-orange-400/20 rounded-full w-24 h-24 z-0 group-hover:scale-110 transition-transform" />
           <CardContent className="relative z-10 flex flex-col items-center justify-center py-8">
-            <div className="flex items-center gap-4 mb-2">
-              <div className="bg-orange-500 text-white rounded-full p-4 shadow-lg flex items-center justify-center">
-                <ShoppingCart className="h-8 w-8" />
-              </div>
-              <div>
-                <div className="text-4xl font-extrabold text-orange-900">
-                  {ordersStats?.totalOrders ?? (ordersStats?.statusStats?.reduce((acc, s) => acc + (s.value || 0), 0) ?? 0)}
+            <div className="flex flex-col items-center gap-2 mb-2 w-full">
+              <div className="flex items-center justify-center w-full gap-2">
+                <div className="bg-orange-500 text-white rounded-full p-2 shadow-lg flex items-center justify-center flex-shrink-0">
+                  <ShoppingCart className="h-5 w-5" />
                 </div>
-                <div className="text-base font-semibold text-orange-700 mt-1">{t("totalOrders")}</div>
               </div>
+              <div className="w-full flex justify-center">
+                <div
+                  className="text-2xl md:text-3xl lg:text-4xl font-extrabold text-orange-900 text-center whitespace-nowrap overflow-hidden text-ellipsis max-w-full"
+                  style={{wordBreak: 'normal'}}
+                  title={typeof (ordersStats?.totalOrders) === "number"
+                    ? ordersStats.totalOrders.toLocaleString()
+                    : (ordersStats?.statusStats?.reduce((acc, s) => acc + (s.value || 0), 0) ?? 0).toLocaleString()}
+                >
+                  {typeof (ordersStats?.totalOrders) === "number"
+                    ? formatNumberShort(ordersStats.totalOrders)
+                    : formatNumberShort(ordersStats?.statusStats?.reduce((acc, s) => acc + (s.value || 0), 0) ?? 0)}
+                </div>
+              </div>
+              <div className="text-base font-semibold text-orange-700 mt-1">{t("totalOrders")}</div>
             </div>
             {isTotalOrdersExpanded && (
               <div className="w-full mt-4">
