@@ -54,7 +54,15 @@ const AdminProducts: React.FC = () => {
     productId: string,
     productName: string,
   ) => {
-    deleteProductMutation.mutate(productId);
+    deleteProductMutation.mutate(productId, {
+      onSuccess: () => {
+        setProducts((prev: Product[]) => prev.filter((p) => p.id !== productId));
+        toast({ title: t("productDeleted") });
+      },
+      onError: () => {
+        toast({ title: t("errorDeletingProduct") });
+      },
+    });
   };
 
   const handleViewProduct = (product: Product) => {

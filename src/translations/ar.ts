@@ -92,7 +92,7 @@ export const arTranslations = {
   uploadImages: "رفع الصور",
   productDeleted: "تم حذف المنتج",
   productDeletedSuccessfully: "تم حذف المنتج بنجاح",
-  errorDeletingProduct: "خطأ في حذف المنتج",
+  errorDeletingProduct: "حدث خطأ أثناء حذف المنتج",
   productAdded: "تم إضافة المنتج",
   productUpdated: "تم تحديث المنتج",
   registeredUsers: "المستخدمون المسجلون",
