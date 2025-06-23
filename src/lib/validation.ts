@@ -60,7 +60,7 @@ export const categorySchema = z.object({
 // Order validation schemas
 export const orderSchema = z.object({
   shipping_address: addressSchema,
-  payment_method: z.enum(['cash', 'credit_card']),
+  payment_method: z.enum(['cash', 'credit_card', 'bank_transfer']),
   notes: z.string().optional(),
 });
 

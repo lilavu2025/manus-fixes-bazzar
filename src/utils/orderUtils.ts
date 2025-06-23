@@ -14,6 +14,7 @@ export function mapOrderFromDb(order: OrdersWithDetails): Order {
     shippingAddress = order.shipping_address as unknown as Address;
   }
   // Infer status and paymentMethod types
+  console.log('DEBUG payment_method from DB:', order.payment_method);
   const status = (order.status as Order['status']) || 'pending';
   const paymentMethod = (order.payment_method as Order['paymentMethod']) || 'cash';
   return {

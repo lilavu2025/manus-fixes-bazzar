@@ -47,6 +47,7 @@ export interface OrderRow {
   total: number;
   created_at: string;
   updated_at: string;
+  payment_method?: string;
   profiles?: {
     id: string;
     full_name: string;
@@ -224,7 +225,7 @@ export async function fetchUserOrdersWithDetails(userId: string): Promise<Orders
   try {
     const { data, error } = await supabase
       .from('orders')
-      .select('*, shipping_address, admin_created, admin_creator_name, order_items(*, products(id, name_ar, name_en, name_he, description_ar, description_en, description_he, price, original_price, wholesale_price, image, images, category_id, in_stock, rating, reviews_count, discount, featured, tags, stock_quantity, active, created_at))')
+      .select('*, payment_method, shipping_address, admin_created, admin_creator_name, order_items(*, products(id, name_ar, name_en, name_he, description_ar, description_en, description_he, price, original_price, wholesale_price, image, images, category_id, in_stock, rating, reviews_count, discount, featured, tags, stock_quantity, active, created_at))')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
     if (error) throw error;
@@ -272,6 +273,7 @@ export async function fetchUserOrdersWithDetails(userId: string): Promise<Orders
       notes: order.notes ?? "",
       admin_created: !!order.admin_created,
       admin_creator_name: order.admin_creator_name ?? undefined,
+      payment_method: order.payment_method || '', // إضافة payment_method هنا
     }));
   } catch (error) {
     console.error('Error fetching user orders:', error);

@@ -65,7 +65,7 @@ const Checkout: React.FC = () => {
 
   // حالات المكون
   const [isLoading, setIsLoading] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<"cash" | "card">("cash");
+  const [paymentMethod, setPaymentMethod] = useState<"cash" | "card" | "bank_transfer">("cash");
   const [shippingAddress, setShippingAddress] = useState({
     fullName: "",
     phone: "",
@@ -141,7 +141,7 @@ const Checkout: React.FC = () => {
           user_id: user.id,
           total: totalPrice,
           payment_method: paymentMethod,
-          shipping_address: shippingAddress,
+          shipping_address: JSON.stringify(shippingAddress),
           notes: notes ? compressText(notes) : null,
           status: "pending", // حالة الطلب: في الانتظار
         })
@@ -149,7 +149,7 @@ const Checkout: React.FC = () => {
         .single();
 
       if (orderError) {
-        console.error("خطأ في إنشاء الطلب:", orderError);
+        console.error("خطأ في إنشاء الطلب:", JSON.stringify(orderError, null, 2));
         throw orderError;
       }
 
@@ -446,7 +446,7 @@ const Checkout: React.FC = () => {
                 <RadioGroup
                   name="paymentMethod"
                   value={paymentMethod}
-                  onValueChange={(value: "cash" | "card") =>
+                  onValueChange={(value: "cash" | "card" | "bank_transfer") =>
                     setPaymentMethod(value)
                   }
                 >
@@ -465,6 +465,26 @@ const Checkout: React.FC = () => {
                         </span>
                         <p className="text-sm text-gray-500">
                           {t("payOnDeliveryDescription")}
+                        </p>
+                      </div>
+                    </Label>
+                  </div>
+                  <div
+                    className={`flex items-center p-4 border rounded-lg hover:bg-gray-50 transition-colors ${isRTL ? "flex-row-reverse space-x-reverse space-x-2" : "space-x-2"}`}
+                  >
+                    <RadioGroupItem value="bank_transfer" id="bank_transfer" />
+                    <Label
+                      htmlFor="bank_transfer"
+                      className={`flex items-center gap-2 cursor-pointer flex-1 ${isRTL ? "flex-row-reverse space-x-reverse space-x-2" : "space-x-2"}`}
+                    >
+                      <Banknote className="h-5 w-5 text-blue-600" />
+                      <div>
+                        <span className="font-medium">
+                          {t("bankTransfer") || "تحويل بنكي"}
+                        </span>
+                        <p className="text-sm text-gray-500">
+                          {t("bankTransferDescription") ||
+                            "ادفع عبر التحويل البنكي"}
                         </p>
                       </div>
                     </Label>

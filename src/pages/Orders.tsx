@@ -292,6 +292,19 @@ const Orders: React.FC = () => {
                 (s) => s.key === order.status,
               );
               const safeOrder = mapOrderFromDb(order);
+              function getPaymentMethodText(payment_method: string): React.ReactNode {
+                switch (payment_method) {
+                  case "cash":
+                    return t("cashOnDelivery") || "الدفع عند الاستلام";
+                  case "card":
+                    return t("creditCard") || "بطاقة ائتمان";
+                  case "bank_transfer":
+                    return t("bankTransfer") || "تحويل بنكي";
+                  default:
+                    return payment_method;
+                }
+              }
+
               return (
                 <Card
                   key={order.id}
@@ -359,9 +372,7 @@ const Orders: React.FC = () => {
                       <CreditCard className="h-4 w-4 ml-2" />
                       <span>
                         {t("paymentMethod")}:{" "}
-                        {order.payment_method === "cash"
-                          ? t("cashOnDelivery")
-                          : t("creditCard")}
+                            {getPaymentMethodText(safeOrder.paymentMethod)}
                       </span>
                     </div>
                     {/* شريط الحالة */}

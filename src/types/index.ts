@@ -47,7 +47,7 @@ export interface Order {
   status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
   createdAt: Date;
   shippingAddress: Address;
-  paymentMethod: 'cash' | 'card';
+  paymentMethod: 'cash' | 'card' | 'bank_transfer';
   notes?: string;
   admin_created?: boolean;
   admin_creator_name?: string;
