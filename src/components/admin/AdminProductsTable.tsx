@@ -1,5 +1,5 @@
 import React from "react";
-import { useLanguage } from "../../utils/languageContextUtils";
+import { isRTL, useLanguage } from "../../utils/languageContextUtils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -137,10 +137,10 @@ const AdminProductsTable: React.FC<AdminProductsTableProps> = ({
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
-                          <AlertDialogTitle>
+                          <AlertDialogTitle className={isRTL ? "text-right" : "text-left"}>
                             {t("deleteProduct")}
                           </AlertDialogTitle>
-                          <AlertDialogDescription>
+                          <AlertDialogDescription className={isRTL ? "text-right" : "text-left"}>
                             {t("deleteProductConfirmation")} "{product.name}"?
                           </AlertDialogDescription>
                         </AlertDialogHeader>

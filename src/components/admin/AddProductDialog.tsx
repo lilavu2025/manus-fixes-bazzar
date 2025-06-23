@@ -18,6 +18,7 @@ import { ProductFormData, Category } from "@/types/product";
 import type { Product } from "@/types/product";
 import pako from "pako";
 import { useInsertProduct } from "@/integrations/supabase/reactQueryHooks";
+import { productSchema, validateForm } from "@/lib/validation";
 
 interface AddProductDialogProps {
   open: boolean;
@@ -88,6 +89,16 @@ const AddProductDialog: React.FC<AddProductDialogProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    // تحقق من صحة البيانات قبل الإرسال
+    const validation = validateForm(productSchema, formData);
+    if (!validation.success) {
+      // عرض جميع رسائل الأخطاء بشكل واضح
+      Object.values(validation.errors || {}).forEach((msg) => {
+        toast.error(msg);
+      });
+      setLoading(false);
+      return;
+    }
     try {
       const productData = {
         ...formData,
@@ -162,7 +173,8 @@ const AddProductDialog: React.FC<AddProductDialogProps> = ({
         tags: [],
       });
     } catch (error) {
-      toast.error((error as Error).message);
+      // عرض رسالة الخطأ بشكل واضح
+      toast.error((error as Error).message || "حدث خطأ غير متوقع عند إضافة المنتج");
     } finally {
       setLoading(false);
     }
