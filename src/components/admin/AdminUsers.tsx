@@ -83,7 +83,19 @@ const AdminUsers: React.FC = () => {
       <AdminUsersHeader />
 
       <div className="space-y-6">
-        <UserStatsCards users={allUsers} onFilterByType={setUserTypeFilter} />
+        <UserStatsCards
+          users={allUsers}
+          onFilterByType={(type) => {
+            setSearchQuery("");
+            setUserTypeFilter("all");
+            setStatusFilter("all");
+            setSortBy("created_at");
+            setSortOrder("desc");
+            setTimeout(() => {
+              setUserTypeFilter(type);
+            }, 0);
+          }}
+        />
 
         <UserFilters
           searchQuery={searchQuery}

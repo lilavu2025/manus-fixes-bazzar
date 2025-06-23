@@ -7,9 +7,22 @@ import type { UserProfile } from '@/types/profile';
 interface UserStatsCardsProps {
   users: UserProfile[];
   onFilterByType?: (type: string) => void;
+  setSearchQuery?: (query: string) => void;
+  setUserTypeFilter?: (type: string) => void;
+  setStatusFilter?: (status: string) => void;
+  setSortBy?: (sort: string) => void;
+  setSortOrder?: (order: string) => void;
 }
 
-const UserStatsCards: React.FC<UserStatsCardsProps> = ({ users, onFilterByType }) => {
+const UserStatsCards: React.FC<UserStatsCardsProps> = ({
+  users,
+  onFilterByType,
+  setSearchQuery,
+  setUserTypeFilter,
+  setStatusFilter,
+  setSortBy,
+  setSortOrder,
+}) => {
   const { t } = useLanguage();
 
   const statsCards = [
@@ -59,7 +72,17 @@ const UserStatsCards: React.FC<UserStatsCardsProps> = ({ users, onFilterByType }
           <Card
             key={index}
             className="hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border-0 shadow-lg cursor-pointer"
-            onClick={() => onFilterByType && onFilterByType(stat.type)}
+            onClick={() => {
+              // Reset all filters before applying the new filter
+              setSearchQuery && setSearchQuery("");
+              setUserTypeFilter && setUserTypeFilter("all");
+              setStatusFilter && setStatusFilter("all");
+              setSortBy && setSortBy("created_at");
+              setSortOrder && setSortOrder("desc");
+              setTimeout(() => {
+                onFilterByType && onFilterByType(stat.type);
+              }, 0);
+            }}
           >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 lg:pb-3">
               <CardTitle className="text-xs lg:text-sm font-medium text-gray-600 line-clamp-2">{stat.title}</CardTitle>
