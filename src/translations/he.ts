@@ -724,5 +724,8 @@ export const heTranslations = {
   profileUpdateFailed: "נכשל בעדכון הפרופיל",
   passwordChangedSuccessfully: "הסיסמה שונתה בהצלחה",
   passwordChangeFailed: "נכשל בשינוי הסיסמה",
-  ordersByStatus: "הזמנות לפי סטטוס"
+  ordersByStatus: "הזמנות לפי סטטוס",
+  offersHidden: "ההצעות מוסתרות מממשק המשתמש",
+  offersVisible: "ההצעות גלויות למשתמשים",
+  loadingSetting: "טוען...",
 };

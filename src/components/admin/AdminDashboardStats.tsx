@@ -122,7 +122,6 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
 
       // طباعة بيانات الطلبات الخام قبل التجميع
       if (typeof window !== 'undefined') {
-        // eslint-disable-next-line no-console
         console.log('orders raw', data);
       }
 

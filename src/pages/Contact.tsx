@@ -155,10 +155,10 @@ const Contact: React.FC = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-600">
-                {t("sunday")} - {t("thursday")}: 9:00 - 18:00
-                <br />
-                {t("friday")} - {t("saturday")}: 10:00 - 16:00
+              <p className="text-gray-600 whitespace-pre-line">
+                {contactInfo?.working_hours
+                  ? contactInfo.working_hours
+                  : `${t("sunday")}-${t("thursday")}: 9:00 - 18:00\n${t("friday")}-${t("saturday")}: 10:00 - 16:00`}
               </p>
             </CardContent>
           </Card>

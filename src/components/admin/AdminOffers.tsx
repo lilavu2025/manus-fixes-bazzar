@@ -279,12 +279,12 @@ const AdminOffers: React.FC = () => {
           className={`font-medium text-base ${hideOffersPage ? "text-red-600" : "text-green-700"}`}
         >
           {hideOffersPage
-            ? "العروض مخفية من واجهة المستخدم"
-            : "العروض ظاهرة للمستخدمين"}
+            ? t("offersHidden")
+            : t("offersVisible")}
         </span>
         {loadingSetting && (
           <span className="ml-2 text-xs text-gray-400 animate-pulse">
-            جاري التحميل...
+            {t("loadingSetting")}
           </span>
         )}
       </div>

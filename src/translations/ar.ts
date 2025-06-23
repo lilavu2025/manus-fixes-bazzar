@@ -752,4 +752,7 @@ export const arTranslations = {
   profileUpdateFailed: "فشل في تحديث الملف الشخصي",
   passwordChangedSuccessfully: "تم تغيير كلمة المرور بنجاح",
   passwordChangeFailed: "فشل في تغيير كلمة المرور",
+  offersHidden: "العروض مخفية من واجهة المستخدم",
+  offersVisible: "العروض ظاهرة للمستخدمين",
+  loadingSetting: "جاري التحميل...",
 };

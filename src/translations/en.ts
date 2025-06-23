@@ -740,4 +740,7 @@ export const enTranslations = {
 
   // New Translation Key
   ordersByStatus: "Orders by Status",
+  offersHidden: "Offers are hidden from the user interface",
+  offersVisible: "Offers are visible to users",
+  loadingSetting: "Loading...",
 };
