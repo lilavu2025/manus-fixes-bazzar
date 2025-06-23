@@ -186,8 +186,9 @@ export async function fetchOrdersWithDetails(): Promise<OrdersWithDetails[]> {
     .order('created_at', { ascending: false });
   if (error) throw error;
   if (!data) throw new Error('لم يتم العثور على بيانات الطلبات');
-  return (data).map((order: OrderRow & { payment_method?: string, shipping_address?: Json, admin_created?: boolean | null, admin_creator_name?: string | null, cancelled_by?: string | null, cancelled_by_name?: string | null }) => ({
+  return (data).map((order: OrderRow & { payment_method?: string, shipping_address?: Json, admin_created?: boolean | null, admin_creator_name?: string | null, cancelled_by?: string | null, cancelled_by_name?: string | null, order_number?: number }) => ({
     id: order.id,
+    order_number: order.order_number, // إضافة رقم الطلبية
     status: order.status,
     total: order.total,
     created_at: order.created_at,
@@ -229,8 +230,9 @@ export async function fetchUserOrdersWithDetails(userId: string): Promise<Orders
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
     if (error) throw error;
-    return (data || []).map((order: OrderRow & { admin_created?: boolean; admin_creator_name?: string }) => ({
+    return (data || []).map((order: OrderRow & { admin_created?: boolean; admin_creator_name?: string; order_number?: number }) => ({
       id: order.id,
+      order_number: order.order_number, // إضافة رقم الطلبية
       status: order.status,
       total: order.total,
       created_at: order.created_at,
@@ -284,6 +286,7 @@ export async function fetchUserOrdersWithDetails(userId: string): Promise<Orders
 // تعريف الواجهات المساعدة
 export interface OrdersWithDetails {
   id: string;
+  order_number?: number; // رقم الطلبية الجديد
   status: string;
   total: number;
   created_at: string;

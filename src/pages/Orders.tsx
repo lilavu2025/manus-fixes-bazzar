@@ -159,7 +159,7 @@ const Orders: React.FC = () => {
     if (statusFilter !== "all" && order.status !== statusFilter) return false;
     // بحث بالرقم أو اسم منتج
     if (search) {
-      const orderIdMatch = order.id.toString().includes(search.trim());
+      const orderIdMatch = order.order_number?.toString().includes(search.trim());
       const productMatch = order.order_items?.some(
         (item) =>
           (item.products?.name_ar || "")
@@ -307,7 +307,7 @@ const Orders: React.FC = () => {
 
               return (
                 <Card
-                  key={order.id}
+                  key={order.order_number}
                   className="overflow-hidden border shadow-md"
                 >
                   <CardHeader className="bg-gray-50 border-b flex flex-col gap-2">
@@ -317,7 +317,7 @@ const Orders: React.FC = () => {
                           {t("orderNumber")}
                         </span>
                         <span className="font-bold text-lg tracking-wider">
-                          #{order.id.slice(0, 8)}
+                          #{order.order_number}
                         </span>
                         {/* شارة منشئ الطلب */}
                         {safeOrder.admin_created && (
@@ -647,11 +647,11 @@ const Orders: React.FC = () => {
                       {canCancel(order) && (
                         <button
                           className="flex items-center gap-2 px-4 py-2 bg-red-100 text-red-700 rounded hover:bg-red-200 disabled:opacity-50 font-semibold"
-                          onClick={() => handleCancelOrder(order.id)}
-                          disabled={cancellingId === order.id}
+                          onClick={() => handleCancelOrder(order.order_number?.toString() || "")}
+                          disabled={cancellingId === order.order_number?.toString()}
                         >
                           <XCircle className="h-5 w-5" />
-                          {cancellingId === order.id
+                          {cancellingId === order.order_number?.toString()
                             ? t("loading")
                             : t("cancel")}
                         </button>
