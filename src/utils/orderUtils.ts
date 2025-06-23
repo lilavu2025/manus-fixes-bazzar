@@ -18,7 +18,8 @@ export function mapOrderFromDb(order: OrdersWithDetails): Order {
   const status = (order.status as Order['status']) || 'pending';
   const paymentMethod = (order.payment_method as Order['paymentMethod']) || 'cash';
   return {
-    id: order.id,
+    id: order.order_number?.toString() || '', // تحويل رقم الطلبية إلى نص
+    order_number: order.order_number,
     userId: order.user_id || '',
     items: items as Order['items'],
     total: order.total,

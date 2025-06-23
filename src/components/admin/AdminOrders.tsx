@@ -77,6 +77,7 @@ interface Change {
 
 // واجهة الطلب
 interface Order {
+  order_number: any;
   id: string;
   user_id: string;
   customer_name?: string | null; // دعم اسم العميل اليدوي
@@ -198,6 +199,7 @@ function mapOrderFromDb(order: Record<string, unknown>): Order {
     profiles = { full_name: "", email: "", phone: "" };
   }
   return {
+    order_number: order["order_number"] ?? order["id"], // Ensure order_number is present
     id: order["id"] as string,
     user_id: order["user_id"] as string,
     customer_name: order["customer_name"] as string | null, // جلب اسم العميل اليدوي
@@ -334,19 +336,6 @@ const AdminOrders: React.FC = () => {
         onSuccess: () => {
           toast.success(t("orderStatusUpdatedSuccess"));
           refetchOrders();
-          // استبدل setOrders((prevOrders) => ...) باستدعاء setOrders مع القيمة الجديدة مباشرة أو بتعليق الكود مؤقتًا
-          // setOrders((prevOrders) => prevOrders.map(order => {
-          //   if (order.id === orderId) {
-          //     return {
-          //       ...order,
-          //       status: newStatus as Order['status'],
-          //       updated_at: new Date().toISOString(),
-          //       cancelled_by: newStatus === 'cancelled' ? 'admin' : order.cancelled_by,
-          //       cancelled_by_name: newStatus === 'cancelled' ? (safeUserMeta?.full_name || safeUser?.email || 'أدمن') : order.cancelled_by_name,
-          //     };
-          //   }
-          //   return order;
-          // }));
         },
         onError: (err: unknown) => {
           console.error("خطأ في تحديث حالة الطلب:", err);
@@ -643,9 +632,11 @@ const AdminOrders: React.FC = () => {
     if (searchQuery) {
       result = result.filter(
         (o) =>
+          o.order_number?.toString().includes(searchQuery) ||
           (o.profiles?.full_name || "")
             .toLowerCase()
-            .includes(searchQuery.toLowerCase()) || o.id.includes(searchQuery),
+            .includes(searchQuery.toLowerCase()) ||
+          o.id.includes(searchQuery),
       );
     }
     return result;
@@ -673,9 +664,11 @@ const AdminOrders: React.FC = () => {
     if (searchQuery) {
       result = result.filter(
         (o) =>
+          o.order_number?.toString().includes(searchQuery) ||
           (o.profiles?.full_name || "")
             .toLowerCase()
-            .includes(searchQuery.toLowerCase()) || o.id.includes(searchQuery),
+            .includes(searchQuery.toLowerCase()) ||
+          o.id.includes(searchQuery),
       );
     }
     return result;
@@ -756,7 +749,7 @@ const AdminOrders: React.FC = () => {
   };
   const generateWhatsappMessage = (order: Order) => {
     let msg = `🛒 تفاصيل الطلبية:\n`;
-    msg += `رقم الطلب: ${order.id}\n`;
+    msg += `رقم الطلب: ${order.order_number}\n`;
     if (order.profiles?.full_name)
       msg += `العميل: ${order.profiles.full_name}\n`;
     if (order.profiles?.phone) msg += `رقم الهاتف: ${order.profiles.phone}\n`;
@@ -978,12 +971,22 @@ const AdminOrders: React.FC = () => {
                     type="text"
                     className="border-2 border-gray-200 rounded-lg pl-10 pr-3 py-2 h-10 text-xs sm:text-sm w-full bg-gray-50 focus:border-blue-500 focus:ring-1 focus:ring-blue-300 transition-colors placeholder:text-gray-400"
                     placeholder={t("searchByClientOrOrderNumber") || "بحث بالعميل أو رقم الطلب..."}
+                    value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     maxLength={60}
                   />
-                  <span className="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400 text-base">
-                    🔍
-                  </span>
+                  <span className="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400 text-base">🔍</span>
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      className="absolute top-1/2 right-3 -translate-y-1/2 text-gray-400 hover:text-red-500 text-base focus:outline-none"
+                      onClick={() => setSearchQuery("")}
+                      tabIndex={-1}
+                      aria-label="مسح البحث"
+                    >
+                      ×
+                    </button>
+                  )}
                 </div>
               </div>
               {/* من تاريخ */}
@@ -1566,7 +1569,7 @@ const AdminOrders: React.FC = () => {
               return (
                 <div
                   className="p-2 w-full min-h-[240px] sm:min-h-0"
-                  key={order.id + "-" + (order.updated_at || "")}
+                  key={order.order_number + "-" + (order.updated_at || "")}
                 >
                   <Card className="relative h-full flex flex-col justify-between border shadow-md rounded-xl transition-all duration-200 bg-white">
                     <CardHeader className="bg-gray-50 border-b flex flex-col gap-2 p-4 rounded-t-xl">
@@ -1577,8 +1580,6 @@ const AdminOrders: React.FC = () => {
                             : order.profiles?.full_name || t("notProvided")}
                         </span>
                         <div className="flex items-center gap-1">
-                          {/* <span className="text-xs text-gray-400">{t('orderNumber')}</span>
-                          <span className="text-lg tracking-wider">#{order.id}</span> */}
                           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-2 w-full max-w-full">
                             {order.admin_created && (
                               <div className="relative group w-fit max-w-full">
@@ -1666,7 +1667,7 @@ const AdminOrders: React.FC = () => {
                           onClick={() => {
                             // جلب الطلب الأحدث من orders (بعد أي تعديل)
                             const latestOrder = Array.isArray(orders)
-                              ? orders.find((o) => o.id === order.id) || order
+                              ? orders.find((o) => o.order_number === order.order_number) || order
                               : order;
                             // معالجة items إذا كانت نصية
                             let items: OrderItem[] = [];
@@ -1733,7 +1734,7 @@ const AdminOrders: React.FC = () => {
                           onClick={() => {
                             // جلب الطلب الأحدث من orders
                             const latestOrder =
-                              orders.find((o) => o.id === order.id) || order;
+                              orders.find((o) => o.order_number === order.order_number) || order;
                             // معالجة المنتجات: جلب من order_items إذا توفرت، أو من items
                             let items: OrderItem[] = [];
                             if (
@@ -1779,7 +1780,7 @@ const AdminOrders: React.FC = () => {
                             }
                             // اسم العميل: من customer_name أو من shipping_address.fullName أو من profiles.full_name
                             const customerName = latestOrder.customer_name || shipping_address.fullName || latestOrder.profiles?.full_name || "";
-                            setEditOrderId(latestOrder.id);
+                            setEditOrderId(latestOrder.order_number);
                             setEditOrderForm({
                               user_id: latestOrder.user_id,
                               payment_method: latestOrder.payment_method,
@@ -1929,7 +1930,7 @@ const AdminOrders: React.FC = () => {
             <DialogTitle className="text-xl font-bold flex items-center gap-2">
               <Package className="h-5 w-5 text-primary print:hidden" />{" "}
               {t("orderDetails") || "تفاصيل الطلبية"} #
-              {selectedOrder?.id.slice(0, 8)}
+              {selectedOrder?.order_number}
             </DialogTitle>
           </DialogHeader>
           {selectedOrder && (
@@ -2012,7 +2013,7 @@ const AdminOrders: React.FC = () => {
                   <div className="space-y-1">
                     <div className="text-xs text-gray-700 print:text-black">
                       {t("orderNumber") || "رقم الطلب"}:{" "}
-                      <span className="font-bold">{selectedOrder.id}</span>
+                      <span className="font-bold">{selectedOrder.order_number}</span>
                     </div>
                     <div className="text-xs text-gray-700 print:text-black">
                       {t("orderDate") || "تاريخ الطلب"}:{" "}

@@ -188,7 +188,7 @@ export async function fetchOrdersWithDetails(): Promise<OrdersWithDetails[]> {
   if (!data) throw new Error('لم يتم العثور على بيانات الطلبات');
   return (data).map((order: OrderRow & { payment_method?: string, shipping_address?: Json, admin_created?: boolean | null, admin_creator_name?: string | null, cancelled_by?: string | null, cancelled_by_name?: string | null, order_number?: number }) => ({
     id: order.id,
-    order_number: order.order_number, // إضافة رقم الطلبية
+    order_number: order.order_number,
     status: order.status,
     total: order.total,
     created_at: order.created_at,

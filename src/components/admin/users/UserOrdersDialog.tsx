@@ -28,6 +28,7 @@ interface ShippingAddress {
 
 interface Order {
   id: string;
+  order_number: number; // رقم الطلبية الجديد
   total: number;
   status: string;
   payment_method: string;
@@ -166,7 +167,7 @@ const UserOrdersDialog: React.FC<UserOrdersDialogProps> = ({
   };
 
   const openOrderDetails = (order: Order) => {
-    const idx = orders.findIndex((o) => o.id === order.id);
+    const idx = orders.findIndex((o) => o.order_number === order.order_number);
     setSelectedOrder(order);
     setSelectedOrderIndex(idx !== -1 ? idx : null);
   };
@@ -175,7 +176,7 @@ const UserOrdersDialog: React.FC<UserOrdersDialogProps> = ({
   const filteredOrders = orders.filter((order) => {
     const matchesStatus = statusFilter ? order.status === statusFilter : true;
     const matchesSearch = searchQuery
-      ? order.id.includes(searchQuery) ||
+      ? order.order_number?.toString().includes(searchQuery) ||
         order.order_items.some((item) => {
           const name =
             (language === "ar"
@@ -193,7 +194,7 @@ const UserOrdersDialog: React.FC<UserOrdersDialogProps> = ({
   const handleExport = () => {
     import("xlsx").then((XLSX) => {
       const exportData = filteredOrders.map((order) => ({
-        id: order.id,
+        id: order.order_number,
         status: getStatusText(order.status),
         total: order.total,
         payment: getPaymentMethodText(order.payment_method),
@@ -234,7 +235,7 @@ const UserOrdersDialog: React.FC<UserOrdersDialogProps> = ({
             <div className="flex items-center justify-between gap-2">
               <DialogTitle className="text-xl font-bold">
                 {t("orderDetails") || "تفاصيل الطلبية"} #
-                {selectedOrder.id.slice(0, 8)}
+                {selectedOrder.order_number}
               </DialogTitle>
               <div className="flex gap-2">
                 {prevOrder && (
@@ -288,7 +289,7 @@ const UserOrdersDialog: React.FC<UserOrdersDialogProps> = ({
                     <h3 className="font-semibold flex items-center gap-2">
                       {t("orderInfo") || "معلومات الطلبية"}
                       <span className="text-xs text-gray-400 select-all">
-                        #{selectedOrder.id.slice(0, 8)}
+                        #{selectedOrder.order_number}
                       </span>
                     </h3>
                     <p className="text-sm text-gray-600">
@@ -509,14 +510,14 @@ const UserOrdersDialog: React.FC<UserOrdersDialogProps> = ({
                       <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-2">
                         <h4 className="font-medium truncate flex items-center gap-2">
                           <span>
-                            {t("order") || "طلبية"} #{order.id.slice(0, 8)}
+                            {t("order") || "طلبية"} #{order.order_number}
                           </span>
                           <button
                             type="button"
                             className="text-xs text-blue-500 hover:underline"
                             title={t("copyOrderId") || "نسخ رقم الطلب"}
                             onClick={() =>
-                              navigator.clipboard.writeText(order.id)
+                              navigator.clipboard.writeText(order.order_number?.toString() || "")
                             }
                           >
                             {t("copy") || "نسخ"}
