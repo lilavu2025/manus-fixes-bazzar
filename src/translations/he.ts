@@ -8,7 +8,7 @@ export const heTranslations = {
   product: "מוצר",
   products: "מוצרים",
   categories: "קטגוריות",
-  offers: "הצעות",
+  offers: "מבצעים",
   contact: "צור קשר",
   profile: "פרופיל",
   orders: "הזמנות",
@@ -725,7 +725,7 @@ export const heTranslations = {
   passwordChangedSuccessfully: "הסיסמה שונתה בהצלחה",
   passwordChangeFailed: "נכשל בשינוי הסיסמה",
   ordersByStatus: "הזמנות לפי סטטוס",
-  offersHidden: "ההצעות מוסתרות מממשק המשתמש",
-  offersVisible: "ההצעות גלויות למשתמשים",
+  offersHidden: "המבצעים מוסתרות מממשק המשתמש",
+  offersVisible: "המבצעים גלויות למשתמשים",
   loadingSetting: "טוען...",
 };
