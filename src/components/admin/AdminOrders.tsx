@@ -2051,9 +2051,9 @@ const AdminOrders: React.FC = () => {
                       </span>
                     </div>
                     <div className="text-xs text-gray-700 print:text-black">
-                      {t("paymentMethod") || "طريقة الدفع"}:{" "}
+                      {t("paymentMethod") || "طريقة الدفع"}: {" "}
                       <span className="font-bold">
-                        {t(selectedOrder.payment_method)}
+                        {getPaymentMethodText(selectedOrder.payment_method)}
                       </span>
                     </div>
                   </div>
