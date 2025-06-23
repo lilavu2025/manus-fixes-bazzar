@@ -37,10 +37,13 @@ export const useAdminUsers = () => {
         user.email?.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesType =
         userTypeFilter === "all" || user.user_type === userTypeFilter;
-      const matchesStatus =
-        statusFilter === "all" ||
-        (statusFilter === "active" && user.email_confirmed_at) ||
-        (statusFilter === "inactive" && !user.email_confirmed_at);
+      let matchesStatus = true;
+      if (statusFilter === "confirmed") {
+        matchesStatus = !!user.email_confirmed_at;
+      } else if (statusFilter === "unconfirmed") {
+        matchesStatus = !user.email_confirmed_at;
+      }
+      // "all" or any other value
       return matchesSearch && matchesType && matchesStatus;
     });
     filtered.sort((a, b) => {
