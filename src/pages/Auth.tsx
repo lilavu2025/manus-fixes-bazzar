@@ -16,6 +16,7 @@ import { useLanguage } from "@/utils/languageContextUtils";
 import { useToast } from "@/hooks/use-toast";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import EmailConfirmationPending from "@/components/EmailConfirmationPending";
+import { getCookie } from "@/utils/cookieUtils";
 
 const Auth: React.FC = () => {
   const navigate = useNavigate();
@@ -54,7 +55,17 @@ const Auth: React.FC = () => {
   useEffect(() => {
     if (user && !loading) {
       if (user.user_type === "admin") {
-        navigate("/admin", { replace: true });
+        const lastVisitedPath = getCookie("lastVisitedPath");
+        if (
+          lastVisitedPath &&
+          lastVisitedPath.startsWith("/admin") &&
+          lastVisitedPath !== "/auth" &&
+          window.location.pathname !== lastVisitedPath
+        ) {
+          navigate(lastVisitedPath, { replace: true });
+        } else if (!window.location.pathname.startsWith("/admin")) {
+          navigate("/admin", { replace: true });
+        }
       } else if (state && state.from) {
         navigate(state.from, { replace: true });
       } else {

@@ -64,7 +64,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const handleUserRedirection = useCallback(
     (profile: Profile) => {
       if (profile.user_type === "admin") {
-        navigate("/admin", { replace: true });
+        const lastVisitedPath = getCookie("lastVisitedPath");
+        if (
+          lastVisitedPath &&
+          lastVisitedPath.startsWith("/admin") &&
+          lastVisitedPath !== "/auth"
+        ) {
+          if (location.pathname !== lastVisitedPath) {
+            navigate(lastVisitedPath, { replace: true });
+          }
+        } else if (!location.pathname.startsWith("/admin")) {
+          navigate("/admin", { replace: true });
+        }
         return;
       }
       if (profile.user_type === "wholesale") {
@@ -73,7 +84,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
       navigate("/", { replace: true });
     },
-    [navigate],
+    [navigate, location.pathname],
   );
 
   // جلب بيانات البروفايل بناءً على session
