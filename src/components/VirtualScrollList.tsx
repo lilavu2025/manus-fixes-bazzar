@@ -36,6 +36,12 @@ function VirtualScrollList<T>({
   const scrollElementRef = useRef<HTMLDivElement>(null);
   const loadMoreTriggered = useRef(false);
 
+  // Pagination states
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const pageSizes = [5, 10, 20, 30, 40, 50];
+  const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
+
   // إذا لم يتم تمرير itemHeight، لا تحسب visibleRange ولا totalHeight
   const visibleRange = useMemo(() => {
     if (!itemHeight) return { startIndex: 0, endIndex: items.length - 1, visibleItemCount: items.length };
@@ -48,10 +54,16 @@ function VirtualScrollList<T>({
     return { startIndex, endIndex, visibleItemCount };
   }, [scrollTop, containerHeight, itemHeight, overscan, items.length]);
 
-  // Get visible items
-  const visibleItems = useMemo(() => {
-    return items.slice(visibleRange.startIndex, visibleRange.endIndex + 1);
-  }, [items, visibleRange.startIndex, visibleRange.endIndex]);
+  // Update page if items/pageSize change
+  useEffect(() => {
+    if (page > totalPages) setPage(totalPages);
+  }, [page, totalPages]);
+
+  // Get paginated items
+  const paginatedItems = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return items.slice(start, start + pageSize);
+  }, [items, page, pageSize]);
 
   // Handle scroll
   const handleScroll = useCallback(
@@ -102,23 +114,61 @@ function VirtualScrollList<T>({
   // Calculate offset for visible items
   const offsetY = visibleRange.startIndex * (itemHeight || 0);
 
+  // Debug logs for troubleshooting stuck/blank issues
+  useEffect(() => {
+    console.log('[VirtualScrollList] items.length:', items.length);
+    console.log('[VirtualScrollList] visibleRange:', visibleRange);
+    console.log('[VirtualScrollList] scrollTop:', scrollTop);
+    console.log('[VirtualScrollList] totalHeight:', totalHeight);
+    console.log('[VirtualScrollList] offsetY:', offsetY);
+    console.log('[VirtualScrollList] page:', page, 'pageSize:', pageSize, 'totalPages:', totalPages);
+  }, [items.length, visibleRange, scrollTop, totalHeight, offsetY, page, pageSize, totalPages]);
+
   return (
-    <div
-      ref={scrollElementRef}
-      className={cn(
-        'overflow-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100',
-        className
-      )}
-      style={{ height: containerHeight }}
-      onScroll={handleScroll}
-    >
+    <div>
+      {/* Pagination controls */}
+      <div className="flex items-center justify-between mb-2">
+        <div>
+          <label className="mr-2">عدد العناصر في الصفحة:</label>
+          <select
+            value={pageSize}
+            onChange={e => setPageSize(Number(e.target.value))}
+            className="border rounded px-2 py-1"
+          >
+            {pageSizes.map(size => (
+              <option key={size} value={size}>{size}</option>
+            ))}
+          </select>
+        </div>
+        <div className="flex items-center gap-1">
+          <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="px-2 py-1 border rounded disabled:opacity-50">السابق</button>
+          {Array.from({ length: totalPages }, (_, i) => (
+            <button
+              key={i + 1}
+              onClick={() => setPage(i + 1)}
+              className={`px-2 py-1 border rounded ${page === i + 1 ? 'bg-primary text-white' : ''}`}
+            >
+              {i + 1}
+            </button>
+          ))}
+          <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="px-2 py-1 border rounded disabled:opacity-50">التالي</button>
+        </div>
+      </div>
       {/* Visible items container */}
-      <div>
-        {safeItems.slice(visibleRange.startIndex, visibleRange.endIndex + 1).map((item, index) => {
-          const actualIndex = visibleRange.startIndex + index;
+      <div
+        ref={scrollElementRef}
+        className={cn(
+          'overflow-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 w-full',
+          className
+        )}
+        style={{ height: containerHeight + 400, width: '100%' }} // زيادة ارتفاع منطقة العرض 200 بكسل إضافية
+        onScroll={handleScroll}
+      >
+        {paginatedItems.map((item, index) => {
+          const actualIndex = (page - 1) * pageSize + index;
           const key = getItemKey ? getItemKey(item, actualIndex) : actualIndex;
           return (
-            <div key={key} className="flex-shrink-0">
+            <div key={key} className="flex-shrink-0 w-full min-h-[80px]">
               {renderItem(item, actualIndex)}
             </div>
           );
