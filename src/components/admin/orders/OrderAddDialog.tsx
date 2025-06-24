@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -46,6 +46,27 @@ const OrderAddDialog: React.FC<OrderAddDialogProps> = ({
   handleAddOrder,
   t,
 }) => {
+  useEffect(() => {
+    // تحديث أسعار المنتجات عند تغيير المستخدم
+    let selectedUser = users.find(u => u.id === orderForm.user_id);
+    let userType = (selectedUser && selectedUser.user_type) ? selectedUser.user_type : 'retail';
+    setOrderForm(prev => ({
+      ...prev,
+      items: prev.items.map(item => {
+        const matched = products.find(p => p.id === item.product_id);
+        if (!matched) return item;
+        let price = 0;
+        if (userType === 'admin' || userType === 'wholesale') {
+          price = matched.wholesale_price && matched.wholesale_price > 0 ? matched.wholesale_price : matched.price;
+        } else {
+          price = matched.price;
+        }
+        return { ...item, price };
+      })
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderForm.user_id, allowCustomClient]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl w-full max-h-[90vh] overflow-y-auto p-0 sm:p-0">
@@ -311,6 +332,18 @@ const OrderAddDialog: React.FC<OrderAddDialogProps> = ({
                         );
                         updateOrderItem(item.id, "product_id", matched ? matched.id : item.product_id);
                         updateOrderItem(item.id, "product_name", val);
+                        // تحديد السعر المناسب تلقائياً حسب نوع المستخدم
+                        let selectedUser = users.find(u => u.id === orderForm.user_id);
+                        let userType = selectedUser?.user_type || (allowCustomClient ? 'retail' : undefined);
+                        let price = 0;
+                        if (matched) {
+                          if (userType === 'admin' || userType === 'wholesale') {
+                            price = matched.wholesale_price && matched.wholesale_price > 0 ? matched.wholesale_price : matched.price;
+                          } else {
+                            price = matched.price;
+                          }
+                        }
+                        updateOrderItem(item.id, "price", price);
                       }}
                       options={products.map(p => p.name_ar || p.name_en || p.id)}
                       placeholder={t("searchOrSelectProduct") || "ابحث أو اكتب اسم المنتج"}

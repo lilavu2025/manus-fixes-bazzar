@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -44,6 +44,34 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
       return { ...f, items: f.items.filter(item => item.id !== id) };
     });
   }
+
+  // تحديث أسعار المنتجات عند تغيير المستخدم (أو عند تحميل الطلبية)
+  useEffect(() => {
+    if (!editOrderForm) return;
+    let selectedUser = originalOrderForEdit?.profiles;
+    let userType = (selectedUser && selectedUser.user_type) ? selectedUser.user_type : 'retail';
+    setEditOrderForm(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        items: prev.items.map(item => {
+          const matched = products.find(p => p.id === item.product_id);
+          if (!matched) return item;
+          let price = 0;
+          let wholesale = 0;
+          if (typeof matched.wholesale_price === 'number' && matched.wholesale_price > 0) wholesale = matched.wholesale_price;
+          if (typeof matched.wholesalePrice === 'number' && matched.wholesalePrice > 0) wholesale = Math.max(wholesale, matched.wholesalePrice);
+          if (userType === 'admin' || userType === 'wholesale') {
+            price = wholesale > 0 ? wholesale : matched.price;
+          } else {
+            price = matched.price;
+          }
+          return { ...item, price };
+        })
+      };
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [originalOrderForEdit?.profiles?.user_type, products]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -281,7 +309,7 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
                 </h3>
                 <Button
                   type="button"
-                  onClick={() =>
+                  onClick={() => {
                     setEditOrderForm(f =>
                       f
                         ? {
@@ -298,8 +326,8 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
                             ],
                           }
                         : f,
-                    )
-                  }
+                    );
+                  }}
                   variant="outline"
                   size="sm"
                 >
@@ -326,6 +354,25 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
                           const matched = products.find(
                             p => p.name_ar === val || p.name_en === val
                           );
+                          // تحديد نوع المستخدم من بيانات الطلبية
+                          let selectedUser = originalOrderForEdit?.profiles;
+                          let userType = (selectedUser && selectedUser.user_type) ? selectedUser.user_type : 'retail';
+                          let price = 0;
+                          let wholesale = 0;
+                          if (matched) {
+                            if (typeof matched.wholesale_price === 'number' && matched.wholesale_price > 0) wholesale = matched.wholesale_price;
+                            if (typeof matched.wholesalePrice === 'number' && matched.wholesalePrice > 0) wholesale = Math.max(wholesale, matched.wholesalePrice);
+                            if (userType === 'admin' || userType === 'wholesale') {
+                              price = wholesale > 0 ? wholesale : matched.price;
+                            } else {
+                              price = matched.price;
+                            }
+                          }
+                          // طباعة معلومات الديباغ
+                          console.log('matched:', matched);
+                          console.log('userType:', userType);
+                          console.log('profiles:', originalOrderForEdit?.profiles);
+                          console.log('wholesale_price:', matched?.wholesale_price, 'wholesalePrice:', matched?.wholesalePrice, 'price:', matched?.price, 'finalPrice:', price);
                           setEditOrderForm(f => {
                             if (!f) return f;
                             const updatedItems = f.items.map((itm, idx) =>
@@ -334,6 +381,7 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
                                     ...itm,
                                     product_id: matched ? matched.id : itm.product_id,
                                     product_name: val,
+                                    price: price,
                                   }
                                 : itm
                             );

@@ -183,7 +183,7 @@ export async function fetchAllUsers(): Promise<UserProfile[]> {
 export async function fetchOrdersWithDetails(): Promise<OrdersWithDetails[]> {
   const { data, error } = await supabase
     .from('orders')
-    .select(`*, payment_method, shipping_address, cancelled_by, cancelled_by_name, profiles:profiles(id, full_name, email, phone), order_items(*, products(id, name_ar, name_en, name_he, image))`)
+    .select(`*, payment_method, shipping_address, cancelled_by, cancelled_by_name, profiles:profiles(id, full_name, email, phone, user_type), order_items(*, products(id, name_ar, name_en, name_he, image))`)
     .order('created_at', { ascending: false });
   if (error) throw error;
   if (!data) throw new Error('لم يتم العثور على بيانات الطلبات');
