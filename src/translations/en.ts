@@ -130,6 +130,7 @@ export const enTranslations = {
   searchByNameProductPlaceholder: "Type product name...",
   searchByNameOfferPlaceholder: "Type offer name...",
   searchByNameBannerPlaceholder: "Type banner name...",
+  searchByOrderNumberNameOrPhone: "Search by order number, customer name, or phone ...",
   searchResults: "Search Results",
   noProductsFound: "No products found",
   noResults: "No results found",

@@ -517,6 +517,10 @@ export async function editOrder(
 // حذف طلب
 export async function deleteOrder(orderId: string) {
   try {
+    // حذف العناصر المرتبطة أولاً
+    const { error: itemsError } = await supabase.from("order_items").delete().eq("order_id", orderId);
+    if (itemsError) throw itemsError;
+    // ثم حذف الطلب نفسه
     const { error } = await supabase.from("orders").delete().eq("id", orderId);
     if (error) throw error;
     return true;

@@ -134,6 +134,7 @@ export const arTranslations = {
   searchByNameProductPlaceholder: "اكتب اسم المنتج...",
   searchByNameOfferPlaceholder: "اكتب اسم العرض...",
   searchByNameBannerPlaceholder: "اكتب اسم البنر...",
+  searchByOrderNumberNameOrPhone: "بحث برقم الطلب أو اسم العميل أو رقم الهاتف ...",
   searchResults: "نتائج البحث",
   noProductsFound: "لم يتم العثور على منتجات",
   noResults: "لا توجد نتائج",
