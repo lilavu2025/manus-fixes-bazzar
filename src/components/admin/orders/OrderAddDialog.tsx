@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,8 @@ import type { NewOrderForm, OrderItem } from "@/orders/order.types";
 import { calculateOrderTotal } from "@/orders/order.utils";
 import Autocomplete from "../../ui/autocomplete";
 import AddressSelector from "@/components/addresses/AddressSelector";
+import { getNextOrderNumber } from "@/integrations/supabase/getNextOrderNumber";
+import { isRTL } from "@/utils/languageContextUtils";
 
 interface OrderAddDialogProps {
   open: boolean;
@@ -47,6 +49,14 @@ const OrderAddDialog: React.FC<OrderAddDialogProps> = ({
   handleAddOrder,
   t,
 }) => {
+  const [nextOrderNumber, setNextOrderNumber] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (open) {
+      getNextOrderNumber().then(setNextOrderNumber).catch(() => setNextOrderNumber(null));
+    }
+  }, [open]);
+
   useEffect(() => {
     // تحديث أسعار المنتجات عند تغيير المستخدم
     let selectedUser = users.find(u => u.id === orderForm.user_id);
@@ -73,9 +83,13 @@ const OrderAddDialog: React.FC<OrderAddDialogProps> = ({
       <DialogContent className="max-w-2xl w-full max-h-[90vh] overflow-y-auto p-0 sm:p-0">
         <DialogHeader className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b px-6 py-4 rounded-t-2xl">
           <DialogTitle className="text-xl font-bold text-primary flex items-center gap-2">
-            <Plus className="h-5 w-5 text-primary" /> {t("addNewOrder") || "إضافة طلب جديد"}
+            <Plus className="h-5 w-5 text-primary" />
+            {t("addNewOrder") || "إضافة طلب جديد"}
+            {nextOrderNumber && (
+              <span className="ml-2 text-base text-gray-500">#{nextOrderNumber}</span>
+            )}
           </DialogTitle>
-          <p className="text-gray-500 text-sm mt-1">
+          <p className={`text-gray-500 text-sm mt-1 ${isRTL ? "text-right" : "text-left"}`}>
             {t("fillAllRequiredFields") || "يرجى تعبئة جميع الحقول المطلوبة بعناية. جميع الحقول بعلامة * مطلوبة."}
           </p>
         </DialogHeader>
@@ -91,7 +105,7 @@ const OrderAddDialog: React.FC<OrderAddDialogProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div>
               <Label htmlFor="user_id">
-                {t("customer") || "العميل"} <span className="text-red-500">*</span>
+                {t("customer") || "العميل"} <span className="text-red-500"></span>
               </Label>
               <Select
                 value={allowCustomClient ? "" : orderForm.user_id}
