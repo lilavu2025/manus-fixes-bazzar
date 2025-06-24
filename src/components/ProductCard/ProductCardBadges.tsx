@@ -26,7 +26,7 @@ const ProductCardBadges = ({ product }: ProductCardBadgesProps) => {
           {t('wholesale')}
         </Badge>
       )}
-      {product.discount && (
+      {product.discount > 0 && (
         <Badge variant="destructive" className="animate-bounce-in">
           {t('discount')} {product.discount}%
         </Badge>
