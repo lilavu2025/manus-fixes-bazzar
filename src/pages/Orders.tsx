@@ -229,6 +229,7 @@ const Orders: React.FC = () => {
             placeholder={t("search") + "..."}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            onClear={() => setSearch("")}
           />
         </div>
         <div className="space-y-6">
