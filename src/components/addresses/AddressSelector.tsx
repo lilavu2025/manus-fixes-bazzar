@@ -18,21 +18,30 @@ interface Address {
 interface AddressSelectorProps {
   value: Address | null;
   onChange: (address: Address) => void;
+  userId?: string; // إضافة prop جديد
+  disabled?: boolean; // دعم تعطيل العنصر
 }
 
-const AddressSelector: React.FC<AddressSelectorProps> = ({ value, onChange }) => {
+const AddressSelector: React.FC<AddressSelectorProps> = ({ value, onChange, userId, disabled }) => {
   const { user } = useAuth();
   const { t } = useLanguage();
   const [addresses, setAddresses] = useState<Address[]>([]);
-  const [selectedId, setSelectedId] = useState<string>("");
+  const [selectedId, setSelectedId] = useState<string>(value?.id || "");
 
   useEffect(() => {
-    if (user?.id) {
-      AddressService.getUserAddresses(user.id).then((data) => {
+    const idToFetch = userId || user?.id;
+    if (idToFetch) {
+      AddressService.getUserAddresses(idToFetch).then((data) => {
         setAddresses(data);
       });
+    } else {
+      setAddresses([]);
     }
-  }, [user?.id]);
+  }, [userId, user?.id]);
+
+  useEffect(() => {
+    setSelectedId(value?.id || "");
+  }, [value?.id]);
 
   // دالة تحقق من صحة رقم الهاتف
   function isValidPhone(phone: string) {
@@ -41,7 +50,8 @@ const AddressSelector: React.FC<AddressSelectorProps> = ({ value, onChange }) =>
 
   return (
     <div className="mb-2">
-      {addresses.length > 0 && (
+      {/* إظهار قائمة العناوين فقط إذا كان هناك userId (عميل محدد) */}
+      {userId && addresses.length > 0 && (
         <>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             {t("chooseSavedAddress") || "اختر عنوان محفوظ"}
@@ -68,15 +78,11 @@ const AddressSelector: React.FC<AddressSelectorProps> = ({ value, onChange }) =>
               } else {
                 const addr = addresses.find((a) => a.id === val);
                 if (addr) {
-                  // تحقق من صحة رقم الهاتف قبل تمريره
-                  if (!isValidPhone(addr.phone)) {
-                    alert(t("invalidPhone") || "رقم الهاتف غير صحيح، يجب أن يبدأ بـ 05 ويتكون من 10 أرقام");
-                    return;
-                  }
                   onChange(addr);
                 }
               }
             }}
+            disabled={disabled}
           >
             <option value="">{t("chooseAddressPlaceholder") || "اختر عنوان..."}</option>
             {addresses.map(addr => (
@@ -86,6 +92,12 @@ const AddressSelector: React.FC<AddressSelectorProps> = ({ value, onChange }) =>
             ))}
           </select>
         </>
+      )}
+      {/* إذا كان هناك userId ولا يوجد عناوين */}
+      {userId && addresses.length === 0 && (
+        <div className="text-gray-500 text-sm py-2">
+          {t("noAddressesFound") || "لا يوجد عناوين محفوظة لهذا العميل"}
+        </div>
       )}
     </div>
   );

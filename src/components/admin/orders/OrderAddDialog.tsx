@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import type { NewOrderForm, OrderItem } from "@/orders/order.types";
 import { calculateOrderTotal } from "@/orders/order.utils";
 import Autocomplete from "../../ui/autocomplete";
+import AddressSelector from "@/components/addresses/AddressSelector";
 
 interface OrderAddDialogProps {
   open: boolean;
@@ -153,6 +154,36 @@ const OrderAddDialog: React.FC<OrderAddDialogProps> = ({
             <h3 className="text-lg font-semibold mb-4 text-primary">
               {t("shippingInfo") || "معلومات الشحن"}
             </h3>
+            {/* اختيار عنوان محفوظ */}
+            <AddressSelector
+              value={{
+                id: orderForm.shipping_address.id || "",
+                full_name: orderForm.shipping_address.fullName || "",
+                phone: orderForm.shipping_address.phone || "",
+                city: orderForm.shipping_address.city || "",
+                area: orderForm.shipping_address.area || "",
+                street: orderForm.shipping_address.street || "",
+                building: orderForm.shipping_address.building || "",
+                floor: orderForm.shipping_address.floor || "",
+                apartment: orderForm.shipping_address.apartment || "",
+              }}
+              onChange={addr => setOrderForm(prev => ({
+                ...prev,
+                shipping_address: {
+                  ...prev.shipping_address,
+                  // لا تغير fullName و phone، أبقِهم كما هم
+                  id: addr.id,
+                  city: addr.city,
+                  area: addr.area,
+                  street: addr.street,
+                  building: addr.building,
+                  floor: addr.floor,
+                  apartment: addr.apartment,
+                }
+              }))}
+              userId={allowCustomClient || !orderForm.user_id ? undefined : orderForm.user_id}
+              disabled={allowCustomClient || !orderForm.user_id}
+            />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
                 <Label htmlFor="full_name">

@@ -731,4 +731,5 @@ export const heTranslations = {
   loadingSetting: "טוען...",
   chooseSavedAddress: "בחר כתובת שמורה...",
   chooseAddressPlaceholder: "בחר כתובת...",
+  noAddressesFound: "לא נמצאו כתובות שמורות עבור לקוח זה"
 };

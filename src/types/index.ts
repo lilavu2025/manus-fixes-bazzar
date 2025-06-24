@@ -60,6 +60,7 @@ export interface Order {
 }
 
 export interface Address {
+  id: string;
   fullName: string;
   phone: string;
   city: string;

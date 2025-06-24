@@ -746,4 +746,5 @@ export const enTranslations = {
   loadingSetting: "Loading...",
   chooseSavedAddress: "Choose Saved Address",
   chooseAddressPlaceholder: "Choose address...",
+  noAddressesFound: "No saved addresses found for this customer"
 };

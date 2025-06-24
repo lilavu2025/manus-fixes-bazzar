@@ -758,4 +758,5 @@ export const arTranslations = {
   loadingSetting: "جاري التحميل...",
   chooseSavedAddress: "اختر عنوانًا محفوظًا",
   chooseAddressPlaceholder: "اختر عنوان...",
+  noAddressesFound: "لا يوجد عناوين محفوظة لهذا العميل"
 };
