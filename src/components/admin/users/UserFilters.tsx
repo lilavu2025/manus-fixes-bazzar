@@ -1,6 +1,7 @@
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { ClearableInput } from "@/components/ui/ClearableInput";
 import {
   Select,
   SelectContent,
@@ -39,24 +40,24 @@ const UserFilters: React.FC<UserFiltersProps> = ({
   const { isRTL, t } = useLanguage();
 
   return (
-    <Card className="shadow-lg border-0 mt-2">
-      <CardContent className="p-3 sm:p-4 lg:p-6">
-        <div className="flex flex-col gap-3 lg:gap-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+    <Card className="shadow-lg border-0 mt-1">
+      <CardContent className="p-2 sm:p-3 lg:p-4">
+        <div className="flex flex-col gap-2 lg:gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end">
             {/* بحث المستخدمين */}
             <div className="w-full sm:w-64 flex-shrink-0">
               <div className="relative">
-                <input
+                <ClearableInput
                   type="text"
-                  className="border-2 border-gray-200 rounded-lg pl-10 pr-3 py-2 h-10 text-xs sm:text-sm w-full bg-gray-50 focus:border-blue-500 focus:ring-1 focus:ring-blue-300 transition-colors placeholder:text-gray-400"
+                  className={`border-2 border-gray-200 rounded-lg py-2 h-10 text-xs sm:text-sm w-full bg-gray-50 focus:border-blue-500 focus:ring-1 focus:ring-blue-300 transition-colors placeholder:text-gray-400 ${
+                    isRTL ? "pr-8 pl-3" : "pl-8 pr-3"
+                  }`}
                   placeholder={t("searchUsersPlaceholder")}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  onClear={() => setSearchQuery("")}
                   maxLength={60}
                 />
-                <span className="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400 text-base">
-                  🔍
-                </span>
               </div>
             </div>
             {/* نوع المستخدم */}

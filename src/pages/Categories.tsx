@@ -4,6 +4,7 @@ import { useLanguage } from "@/utils/languageContextUtils";
 import { getLocalizedName } from "@/utils/getLocalizedName";
 import CategoryCard from "@/components/CategoryCard";
 import CartSidebar from "@/components/CartSidebar";
+import { ClearableInput } from "@/components/ui/ClearableInput";
 
 const Categories: React.FC = () => {
   const { t, isRTL, language } = useLanguage();
@@ -74,12 +75,15 @@ const Categories: React.FC = () => {
         {/* Advanced Search Bar & Stats */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
           <div className="flex-1 flex items-center gap-2">
-            <input
+            <ClearableInput
               type="text"
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-base focus:ring-2 focus:ring-primary focus:border-primary transition"
+              className={`w-full rounded-md border border-gray-300 px-3 py-2 text-base focus:ring-2 focus:ring-primary focus:border-primary transition ${
+                isRTL ? "pr-8" : "pl-8"
+              }`}
               placeholder={t("searchCategories")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onClear={() => setSearchQuery("")}
             />
           </div>
           <div className="flex flex-wrap gap-2 justify-start sm:justify-end">

@@ -40,6 +40,7 @@ import { getDisplayPrice } from "@/utils/priceUtils";
 import { mapOrderFromDb } from "../utils/orderUtils";
 import type { OrdersWithDetails } from "@/integrations/supabase/dataFetchers";
 import { decompressText } from "@/utils/textCompression";
+import { ClearableInput } from "@/components/ui/ClearableInput";
 
 // أنواع الطلب وعناصر الطلب من Supabase
 type ProductDB = {
@@ -221,8 +222,10 @@ const Orders: React.FC = () => {
               <SelectItem value="cancelled">{t("cancelled")}</SelectItem>
             </SelectContent>
           </Select>
-          <Input
-            className="w-full md:w-64"
+          <ClearableInput
+            className={`border-2 border-gray-200 rounded-lg py-2 h-10 text-xs sm:text-sm w-full bg-gray-50 focus:border-blue-500 focus:ring-1 focus:ring-blue-300 transition-colors placeholder:text-gray-400 ${
+              isRTL ? "pr-8 pl-3" : "pl-8 pr-3"
+            }`}    
             placeholder={t("search") + "..."}
             value={search}
             onChange={(e) => setSearch(e.target.value)}

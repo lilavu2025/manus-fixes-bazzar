@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useLanguage } from "../../utils/languageContextUtils";
+import { useLanguage } from "@/utils/languageContextUtils";
 import { useProductsRealtime } from "@/hooks/useProductsRealtime";
 import { useCategories } from "@/hooks/useSupabaseData";
 import { useDeleteProduct } from "@/integrations/supabase/reactQueryHooks";
@@ -20,9 +20,10 @@ import { mapCategoryToProductCategory } from "@/types/index";
 import { BarChart3, Filter, CheckCircle, XCircle } from "lucide-react";
 import { mapProductFromDb } from "@/types/mapProductFromDb";
 import { Card, CardContent } from "@/components/ui/card";
+import { ClearableInput } from "@/components/ui/ClearableInput"; // استيراد المكون الجديد
 
 const AdminProducts: React.FC = () => {
-  const { t } = useLanguage();
+  const { isRTL, t } = useLanguage();
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showViewDialog, setShowViewDialog] = useState(false);
@@ -217,22 +218,22 @@ const AdminProducts: React.FC = () => {
         </div>
       </div>
       {/* شريط الفلاتر الموحد (تصميم متجاوب ومحسّن) */}
-      <Card className="shadow-lg border-0 mt-4">
-        <CardContent className="p-3 sm:p-4 lg:p-6">
-          <div className="flex flex-col gap-3 lg:gap-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+      <Card className="shadow-lg border-0 mt-1">
+        <CardContent className="p-2 sm:p-3 lg:p-4">
+          <div className="flex flex-col gap-2 lg:gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end">
               {/* بحث بالاسم */}
               <div className="w-full sm:w-64 flex-shrink-0">
                 <div className="relative">
-                  <input
+                  <ClearableInput
                     type="text"
-                    className="border-2 border-gray-200 rounded-lg pl-10 pr-3 py-2 h-10 text-xs sm:text-sm w-full bg-gray-50 focus:border-blue-500 focus:ring-1 focus:ring-blue-300 transition-colors placeholder:text-gray-400"
+                    className={`border-2 border-gray-200 rounded-lg py-2 h-10 text-xs sm:text-sm w-full bg-gray-50 focus:border-blue-500 focus:ring-1 focus:ring-blue-300 transition-colors placeholder:text-gray-400 ${isRTL ? 'pr-8 pl-3' : 'pl-8 pr-3'}`}
                     placeholder={t("searchByNameProductPlaceholder") || "اكتب اسم المنتج..."}
                     value={searchName}
                     onChange={(e) => setSearchName(e.target.value)}
+                    onClear={() => setSearchName("")}
                     maxLength={60}
                   />
-                  <span className="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400 text-base">🔍</span>
                 </div>
               </div>
               {/* فلتر الفئة */}

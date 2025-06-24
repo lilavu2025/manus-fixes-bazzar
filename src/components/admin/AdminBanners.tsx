@@ -35,6 +35,7 @@ import {
 } from "@/integrations/supabase/reactQueryHooks";
 import { useLanguage } from "../../utils/languageContextUtils";
 import AdminHeader from "./AdminHeader";
+import { ClearableInput } from "@/components/ui/ClearableInput";
 // إزالة تعريف Banner المحلي واستخدام Banner من dataFetchers
 import type { Banner } from "@/integrations/supabase/dataFetchers";
 
@@ -55,7 +56,7 @@ interface BannerFormData {
 
 const AdminBanners: React.FC = () => {
   // استخدام الترجمة من الكونتكست
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
 
   // تعريف الحالات الرئيسية للصفحة
   const [banners, setBanners] = useState<Banner[]>([]);
@@ -285,22 +286,24 @@ const AdminBanners: React.FC = () => {
       />
 
       {/* شريط الفلاتر الموحد (تصميم متجاوب ومحسّن) */}
-      <Card className="shadow-lg border-0 mt-4">
-        <CardContent className="p-3 sm:p-4 lg:p-6">
-          <div className="flex flex-col gap-3 lg:gap-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+      <Card className="shadow-lg border-0 mt-1">
+        <CardContent className="p-2 sm:p-3 lg:p-4">
+          <div className="flex flex-col gap-2 lg:gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end">
               {/* بحث بالاسم */}
               <div className="w-full sm:w-64 flex-shrink-0">
                 <div className="relative">
-                  <input
+                  <ClearableInput
                     type="text"
-                    className="border-2 border-gray-200 rounded-lg pl-10 pr-3 py-2 h-10 text-xs sm:text-sm w-full bg-gray-50 focus:border-blue-500 focus:ring-1 focus:ring-blue-300 transition-colors placeholder:text-gray-400"
+                    className={`border-2 border-gray-200 rounded-lg py-2 h-10 text-xs sm:text-sm w-full bg-gray-50 focus:border-blue-500 focus:ring-1 focus:ring-blue-300 transition-colors placeholder:text-gray-400 ${
+                      isRTL ? "pr-8 pl-3" : "pl-8 pr-3"
+                    }`}
                     placeholder={t("searchByNameBannerPlaceholder") || "اكتب اسم البانر..."}
                     value={searchName}
                     onChange={(e) => setSearchName(e.target.value)}
+                    onClear={() => setSearchName("")}
                     maxLength={60}
                   />
-                  <span className="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400 text-base">🔍</span>
                 </div>
               </div>
               {/* زر تصفير الفلاتر */}

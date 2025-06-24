@@ -18,7 +18,7 @@ const OptimizedSearch: React.FC<OptimizedSearchProps> = ({
   debounceMs = 300,
   className = "",
 }) => {
-  const { t } = useLanguage();
+  const { isRTL, t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState("");
 
   // Memoized debounced search function
@@ -52,8 +52,10 @@ const OptimizedSearch: React.FC<OptimizedSearchProps> = ({
           setSearchQuery("");
           debouncedSearch("");
         }}
-        className="pr-8 sm:pr-10 pl-4 py-2 w-full bg-transparent border-none focus:ring-0 text-sm lg:text-base placeholder:truncate placeholder:whitespace-normal placeholder:max-w-full h-10 lg:h-11"
-        dir="rtl"
+        className={`pr-8 sm:pr-10 pl-4 py-2 w-full bg-transparent border-none focus:ring-0 text-sm lg:text-base placeholder:truncate placeholder:whitespace-normal placeholder:max-w-full h-10 lg:h-11 ${
+          isRTL ? "pr-8" : "pl-8"
+        }`}
+        dir={isRTL ? "rtl" : "ltr"}
         style={{ borderRadius: 0, boxShadow: "none", minWidth: 0 }}
       />
       {/* زر الشراء دائماً داخل الكرت، حجمه ثابت، لا يختفي ولا يضغط على النص */}

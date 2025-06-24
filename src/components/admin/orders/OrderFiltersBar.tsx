@@ -2,6 +2,8 @@ import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { XCircle, BarChart3 } from "lucide-react";
+import { isRTL } from "@/utils/languageContextUtils";
+import { ClearableInput } from "@/components/ui/ClearableInput";
 
 interface OrderFiltersBarProps {
   t: (key: string) => string;
@@ -42,17 +44,15 @@ const OrderFiltersBar: React.FC<OrderFiltersBarProps> = ({
             {/* بحث الطلبات */}
             <div className="w-full sm:w-56 flex-shrink-0">
               <div className="relative">
-                <input
+                <ClearableInput
                   type="text"
-                  className="border border-gray-200 rounded-md pl-8 pr-2 py-1.5 h-9 text-xs sm:text-sm w-full bg-gray-50 focus:border-blue-400 focus:ring-1 focus:ring-blue-200 transition-colors placeholder:text-gray-400"
+                  className={`border-2 border-gray-200 rounded-lg py-2 h-10 text-xs sm:text-sm w-full bg-gray-50 focus:border-blue-500 focus:ring-1 focus:ring-blue-300 transition-colors placeholder:text-gray-400 ${isRTL ? 'pr-8 pl-3' : 'pl-8 pr-3'}`}
                   placeholder={t("searchByOrderNumberNameOrPhone") || "بحث برقم الطلب أو اسم العميل أو رقم الهاتف فقط..."}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  onClear={() => setSearchQuery("")}
                   maxLength={60}
                 />
-                <span className="absolute top-1/2 left-2 -translate-y-1/2 text-gray-400 text-base">
-                  🔍
-                </span>
               </div>
             </div>
             {/* من تاريخ */}
