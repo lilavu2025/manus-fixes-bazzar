@@ -28,6 +28,7 @@ interface ShippingAddress {
 
 interface Order {
   id: string;
+  order_number: number;
   total: number;
   status: string;
   payment_method: string;
@@ -234,7 +235,7 @@ const UserOrdersDialog: React.FC<UserOrdersDialogProps> = ({
             <div className="flex items-center justify-between gap-2">
               <DialogTitle className="text-xl font-bold">
                 {t("orderDetails") || "تفاصيل الطلبية"} #
-                {selectedOrder.id.slice(0, 8)}
+                {selectedOrder.order_number}
               </DialogTitle>
               <div className="flex gap-2">
                 {prevOrder && (
@@ -288,7 +289,7 @@ const UserOrdersDialog: React.FC<UserOrdersDialogProps> = ({
                     <h3 className="font-semibold flex items-center gap-2">
                       {t("orderInfo") || "معلومات الطلبية"}
                       <span className="text-xs text-gray-400 select-all">
-                        #{selectedOrder.id.slice(0, 8)}
+                        #{selectedOrder.order_number}
                       </span>
                     </h3>
                     <p className="text-sm text-gray-600">
@@ -509,7 +510,7 @@ const UserOrdersDialog: React.FC<UserOrdersDialogProps> = ({
                       <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mb-2">
                         <h4 className="font-medium truncate flex items-center gap-2">
                           <span>
-                            {t("order") || "طلبية"} #{order.id.slice(0, 8)}
+                            {t("order") || "طلبية"} #{order.order_number}
                           </span>
                           <button
                             type="button"

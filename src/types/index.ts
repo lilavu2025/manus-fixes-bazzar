@@ -1,5 +1,6 @@
 export interface Product {
   id: string;
+  order_number: number;
   name: string;
   nameEn: string;
   nameHe: string;
@@ -42,6 +43,7 @@ export interface CartItem {
 export interface Order {
   id: string;
   userId: string;
+  order_number?: number; // رقم الطلبية
   items: CartItem[];
   total: number;
   status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
@@ -51,6 +53,11 @@ export interface Order {
   notes?: string;
   admin_created?: boolean;
   admin_creator_name?: string;
+  updated_at?: string;
+  profiles?: { full_name: string; email?: string; phone?: string };
+  customer_name?: string | null;
+  cancelled_by?: string;
+  cancelled_by_name?: string;
 }
 
 export interface Address {

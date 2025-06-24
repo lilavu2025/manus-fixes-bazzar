@@ -19,6 +19,7 @@ export function mapOrderFromDb(order: OrdersWithDetails): Order {
   const paymentMethod = (order.payment_method as Order['paymentMethod']) || 'cash';
   return {
     id: order.id,
+    order_number: order.order_number,
     userId: order.user_id || '',
     items: items as Order['items'],
     total: order.total,

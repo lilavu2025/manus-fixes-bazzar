@@ -160,6 +160,7 @@ const Orders: React.FC = () => {
     // بحث بالرقم أو اسم منتج
     if (search) {
       const orderIdMatch = order.id.toString().includes(search.trim());
+      const orderNumberMatch = order.order_number?.toString().includes(search.trim());
       const productMatch = order.order_items?.some(
         (item) =>
           (item.products?.name_ar || "")
@@ -169,7 +170,7 @@ const Orders: React.FC = () => {
             .toLowerCase()
             .includes(search.toLowerCase()),
       );
-      if (!orderIdMatch && !productMatch) return false;
+      if (!orderIdMatch && !orderNumberMatch && !productMatch) return false;
     }
     return true;
   });
@@ -317,7 +318,7 @@ const Orders: React.FC = () => {
                           {t("orderNumber")}
                         </span>
                         <span className="font-bold text-lg tracking-wider">
-                          #{order.id.slice(0, 8)}
+                          #{order.order_number}
                         </span>
                         {/* شارة منشئ الطلب */}
                         {safeOrder.admin_created && (

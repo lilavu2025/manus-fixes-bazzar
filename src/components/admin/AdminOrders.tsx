@@ -78,6 +78,7 @@ interface Change {
 // واجهة الطلب
 interface Order {
   id: string;
+  order_number?: number;
   user_id: string;
   customer_name?: string | null; // دعم اسم العميل اليدوي
   items: OrderItem[];
@@ -199,6 +200,7 @@ function mapOrderFromDb(order: Record<string, unknown>): Order {
   }
   return {
     id: order["id"] as string,
+    order_number: order["order_number"] as number,
     user_id: order["user_id"] as string,
     customer_name: order["customer_name"] as string | null, // جلب اسم العميل اليدوي
     items,
@@ -334,19 +336,6 @@ const AdminOrders: React.FC = () => {
         onSuccess: () => {
           toast.success(t("orderStatusUpdatedSuccess"));
           refetchOrders();
-          // استبدل setOrders((prevOrders) => ...) باستدعاء setOrders مع القيمة الجديدة مباشرة أو بتعليق الكود مؤقتًا
-          // setOrders((prevOrders) => prevOrders.map(order => {
-          //   if (order.id === orderId) {
-          //     return {
-          //       ...order,
-          //       status: newStatus as Order['status'],
-          //       updated_at: new Date().toISOString(),
-          //       cancelled_by: newStatus === 'cancelled' ? 'admin' : order.cancelled_by,
-          //       cancelled_by_name: newStatus === 'cancelled' ? (safeUserMeta?.full_name || safeUser?.email || 'أدمن') : order.cancelled_by_name,
-          //     };
-          //   }
-          //   return order;
-          // }));
         },
         onError: (err: unknown) => {
           console.error("خطأ في تحديث حالة الطلب:", err);
@@ -756,7 +745,7 @@ const AdminOrders: React.FC = () => {
   };
   const generateWhatsappMessage = (order: Order) => {
     let msg = `🛒 تفاصيل الطلبية:\n`;
-    msg += `رقم الطلب: ${order.id}\n`;
+    msg += `رقم الطلب: ${order.order_number}\n`;
     if (order.profiles?.full_name)
       msg += `العميل: ${order.profiles.full_name}\n`;
     if (order.profiles?.phone) msg += `رقم الهاتف: ${order.profiles.phone}\n`;
@@ -1571,6 +1560,10 @@ const AdminOrders: React.FC = () => {
                   <Card className="relative h-full flex flex-col justify-between border shadow-md rounded-xl transition-all duration-200 bg-white">
                     <CardHeader className="bg-gray-50 border-b flex flex-col gap-2 p-4 rounded-t-xl">
                       <div className="flex flex-col gap-1">
+                        <div className="font-bold text-xs text-gray-700 print:text-black">
+                          {t("orderNumber") || "رقم الطلب"}:{" "}
+                          <span className="font-bold">{order.order_number}</span>
+                        </div>
                         <span className="font-bold text-lg text-Black">
                           {order.customer_name?.trim()
                             ? order.customer_name
@@ -1929,7 +1922,7 @@ const AdminOrders: React.FC = () => {
             <DialogTitle className="text-xl font-bold flex items-center gap-2">
               <Package className="h-5 w-5 text-primary print:hidden" />{" "}
               {t("orderDetails") || "تفاصيل الطلبية"} #
-              {selectedOrder?.id.slice(0, 8)}
+              {selectedOrder?.order_number}
             </DialogTitle>
           </DialogHeader>
           {selectedOrder && (
@@ -2012,7 +2005,7 @@ const AdminOrders: React.FC = () => {
                   <div className="space-y-1">
                     <div className="text-xs text-gray-700 print:text-black">
                       {t("orderNumber") || "رقم الطلب"}:{" "}
-                      <span className="font-bold">{selectedOrder.id}</span>
+                      <span className="font-bold">{selectedOrder.order_number}</span>
                     </div>
                     <div className="text-xs text-gray-700 print:text-black">
                       {t("orderDate") || "تاريخ الطلب"}:{" "}
@@ -2191,9 +2184,11 @@ const AdminOrders: React.FC = () => {
             <DialogTitle className="text-xl font-bold flex items-center gap-2">
               {t("editOrder") || "تعديل الطلبية"}
             </DialogTitle>
-            <p className="text-gray-500 text-sm mt-1">
-              {t("orderNotes") ||
-                "يمكنك تعديل جميع بيانات الطلب عدا اسم العميل."}
+            <p className={`text-gray-500 text-sm mt-1 ${isRTL ? "text-right" : "text-left"}`}>
+              <div className="text-xs font-bold text-gray-700 print:text-black">
+                {t("orderNumber") || "رقم الطلب"}:{" "}
+                <span className="font-bold">{originalOrderForEdit?.order_number}</span>
+              </div>
             </p>
           </DialogHeader>
           {editOrderForm && (

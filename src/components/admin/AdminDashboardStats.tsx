@@ -56,6 +56,7 @@ interface AdminDashboardStatsProps {
   onFilterOrders?: (status: string) => void;
   pendingOrders?: {
     id: string;
+    order_number: number;
     created_at: string;
     profiles?: { full_name: string; email?: string; phone?: string };
   }[];
