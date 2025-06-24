@@ -1,4 +1,6 @@
 import React from "react";
+import { ClearableInput } from "./ClearableInput";
+import { isRTL } from "@/utils/languageContextUtils";
 
 interface AutocompleteProps {
   value: string;
@@ -32,16 +34,17 @@ const Autocomplete: React.FC<AutocompleteProps> = ({
 
   return (
     <div className="relative">
-      <input
+      <ClearableInput
         ref={inputRef}
         type="text"
-        className="w-full border rounded px-2 py-1 focus:outline-none"
+        className={`border-2 border-gray-200 rounded-lg py-2 h-10 text-xs sm:text-sm w-full bg-gray-50 focus:border-blue-500 focus:ring-1 focus:ring-blue-300 transition-colors placeholder:text-gray-400 ${isRTL ? 'pr-8 pl-3' : 'pl-8 pr-3'}`}
         value={inputValue}
         onChange={e => {
           setInputValue(e.target.value);
           onInputChange(e.target.value);
           setShowOptions(true);
         }}
+        onClear={() => setInputValue("")}
         onFocus={() => setShowOptions(true)}
         onBlur={() => setTimeout(() => setShowOptions(false), 150)}
         placeholder={placeholder}
