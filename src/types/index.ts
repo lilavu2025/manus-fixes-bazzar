@@ -41,7 +41,6 @@ export interface CartItem {
 
 export interface Order {
   id: string;
-  order_number: number; // رقم الطلبية الجديد
   userId: string;
   items: CartItem[];
   total: number;
