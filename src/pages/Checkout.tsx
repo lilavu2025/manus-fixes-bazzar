@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/useAuth";
 import { useLanguage } from "@/utils/languageContextUtils";
 import { useCart } from "@/hooks/useCart";
 import { supabase } from "@/integrations/supabase/client";
+import { AddressService } from "@/services/supabaseService";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +18,8 @@ import { ShoppingCart, CreditCard, Banknote, ArrowLeft } from "lucide-react";
 import { Product } from "@/types";
 import { compressText, decompressText } from "@/utils/textCompression";
 import { getDisplayPrice } from "@/utils/priceUtils";
+import AddressSelector, { Address as UserAddress } from "@/components/addresses/AddressSelector";
+import { saveAddressIfNotExists } from "@/components/addresses/saveAddressIfNotExists";
 
 // واجهة بيانات الشراء المباشر
 interface DirectBuyState {
@@ -95,6 +98,25 @@ const Checkout: React.FC = () => {
         ) * directQuantity
       : getTotalPrice();
 
+  // عند اختيار عنوان من AddressSelector
+  const handleAddressSelect = (addr: UserAddress) => {
+    setShippingAddress({
+      fullName: addr.full_name || "",
+      phone: addr.phone || "",
+      city: addr.city || "",
+      area: addr.area || "",
+      street: addr.street || "",
+      building: addr.building || "",
+      floor: addr.floor || "",
+      apartment: addr.apartment || "",
+    });
+  };
+
+  // دالة تحقق من صحة رقم الهاتف
+  function isValidPhone(phone: string) {
+    return /^05\d{8}$/.test(phone);
+  }
+
   // وظيفة إتمام الطلب
   const handlePlaceOrder = async () => {
     // التحقق من تسجيل الدخول
@@ -131,6 +153,15 @@ const Checkout: React.FC = () => {
       return;
     }
 
+    // تحقق من صحة رقم الهاتف
+    if (!isValidPhone(shippingAddress.phone)) {
+      toast({
+        title: t("error"),
+        description: t("invalidPhone") || "رقم الجوال يجب أن يبدأ بـ 05 ويكون مكونًا من 10 أرقام",
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -151,6 +182,16 @@ const Checkout: React.FC = () => {
       if (orderError) {
         console.error("خطأ في إنشاء الطلب:", JSON.stringify(orderError, null, 2));
         throw orderError;
+      }
+
+      // إضافة العنوان تلقائياً إذا لم يكن موجوداً
+      try {
+        await saveAddressIfNotExists({
+          userId: user.id,
+          shippingAddress,
+        });
+      } catch (err) {
+        console.warn("لم يتم حفظ العنوان تلقائياً:", err);
       }
 
       // إنشاء عناصر الطلب
@@ -281,6 +322,8 @@ const Checkout: React.FC = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* AddressSelector الجديد */}
+                <AddressSelector value={null} onChange={handleAddressSelect} />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="fullName">{t("fullName")} *</Label>

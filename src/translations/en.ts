@@ -744,4 +744,6 @@ export const enTranslations = {
   offersHidden: "Offers are hidden from the user interface",
   offersVisible: "Offers are visible to users",
   loadingSetting: "Loading...",
+  chooseSavedAddress: "Choose Saved Address",
+  chooseAddressPlaceholder: "Choose address...",
 };

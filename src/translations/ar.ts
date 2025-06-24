@@ -756,4 +756,6 @@ export const arTranslations = {
   offersHidden: "العروض مخفية من واجهة المستخدم",
   offersVisible: "العروض ظاهرة للمستخدمين",
   loadingSetting: "جاري التحميل...",
+  chooseSavedAddress: "اختر عنوانًا محفوظًا",
+  chooseAddressPlaceholder: "اختر عنوان...",
 };

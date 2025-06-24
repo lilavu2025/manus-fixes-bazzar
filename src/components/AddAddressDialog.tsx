@@ -35,8 +35,17 @@ const AddAddressDialog: React.FC<AddAddressDialogProps> = ({ trigger }) => {
     is_default: false,
   });
 
+  // دالة تحقق من صحة رقم الهاتف
+  function isValidPhone(phone: string) {
+    return /^05\d{8}$/.test(phone);
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isValidPhone(formData.phone)) {
+      alert(t("invalidPhone") || "رقم الجوال يجب أن يبدأ بـ 05 ويكون مكونًا من 10 أرقام");
+      return;
+    }
     // تحويل الحقول الفارغة إلى undefined
     const cleanData = Object.fromEntries(
       Object.entries(formData).map(([k, v]) => [k, v === "" ? undefined : v]),

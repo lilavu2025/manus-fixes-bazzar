@@ -729,4 +729,6 @@ export const heTranslations = {
   offersHidden: "המבצעים מוסתרות מממשק המשתמש",
   offersVisible: "המבצעים גלויות למשתמשים",
   loadingSetting: "טוען...",
+  chooseSavedAddress: "בחר כתובת שמורה...",
+  chooseAddressPlaceholder: "בחר כתובת...",
 };

@@ -38,8 +38,17 @@ const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
     is_default: address.is_default || false,
   });
 
+  // دالة تحقق من صحة رقم الهاتف
+  function isValidPhone(phone: string) {
+    return /^05\d{8}$/.test(phone);
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isValidPhone(formData.phone)) {
+      alert(t("invalidPhone") || "رقم الجوال يجب أن يبدأ بـ 05 ويكون مكونًا من 10 أرقام");
+      return;
+    }
     if (address.id) {
       updateAddress({
         id: address.id,
