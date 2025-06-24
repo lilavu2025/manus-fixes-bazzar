@@ -155,7 +155,7 @@ const Checkout: React.FC = () => {
 
       // إنشاء عناصر الطلب
       const orderItems = itemsToCheckout.map((item) => ({
-        order_id: (order as any).order_number ?? order.id, // دعم order_number أو id حسب ما يرجع supabase
+        order_id: order.id,
         product_id: item.product.id,
         quantity: item.quantity,
         price: item.product.price,

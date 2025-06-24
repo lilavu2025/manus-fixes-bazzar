@@ -471,7 +471,7 @@ export async function addOrder(
     if (orderError) throw orderError;
     const itemsToInsert = orderItems.map((item) => ({
       ...item,
-      order_id: (order as any).order_number ?? order.id, // دعم order_number أو id حسب ما يرجع supabase
+      order_id: order.id,
     }));
     const { error: itemsError } = await supabase
       .from("order_items")

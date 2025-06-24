@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Key } from "react";
+import React, { useState, useEffect } from "react";
 import { useAdminOrdersStats } from "@/integrations/supabase/reactQueryHooks";
 import { useLanguage } from "../../utils/languageContextUtils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -55,7 +55,6 @@ interface AdminDashboardStatsProps {
   onFilterUsers?: (userType: string) => void;
   onFilterOrders?: (status: string) => void;
   pendingOrders?: {
-    order_number: Key;
     id: string;
     created_at: string;
     profiles?: { full_name: string; email?: string; phone?: string };
