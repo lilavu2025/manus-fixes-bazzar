@@ -786,5 +786,6 @@ export const arTranslations = {
   areYouSureYouWantToSaveTheFollowingChanges: "هل أنت متأكد أنك تريد حفظ التغييرات التالية؟",
   item: "العنصر",
   oldValue: "القيمة السابقة",
-  newValue: "القيمة الجديدة"
+  newValue: "القيمة الجديدة",
+  atPrice : "بسعر",
 };

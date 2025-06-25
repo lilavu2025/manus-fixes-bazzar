@@ -4,42 +4,54 @@ import { getStatusText, getPaymentMethodText, safeDecompressNotes } from "./orde
 export function getOrderEditChangesDetailed(
   original: Order | null,
   edited: NewOrderForm | null,
-  t: (key: string) => string
+  t: (key: string) => string,
+  language: string = 'ar',
+  products: any[] = []
 ): { label: string; oldValue: string; newValue: string }[] {
   if (!original || !edited) return [];
   const changes: { label: string; oldValue: string; newValue: string }[] = [];
   if (original.status !== edited.status)
     changes.push({
-      label: "حالة الطلب",
+      label: t("status") || "الحالة",
       oldValue: getStatusText(original.status, t),
       newValue: getStatusText(edited.status, t),
     });
   if (original.payment_method !== edited.payment_method)
     changes.push({
-      label: "طريقة الدفع",
+      label: t("paymentMethod") || "طريقة الدفع",
       oldValue: getPaymentMethodText(original.payment_method, t),
       newValue: getPaymentMethodText(edited.payment_method, t),
     });
   if (safeDecompressNotes(original.notes || "") !== (edited.notes || ""))
     changes.push({
-      label: "الملاحظات",
+      label: t("notes") || "الملاحظات",
       oldValue: safeDecompressNotes(original.notes || ""),
       newValue: edited.notes || "",
     });
-  // مقارنة المنتجات
+  // مقارنة المنتجات مع دعم التعدد اللغوي الحقيقي من مصفوفة المنتجات
+  const getProductName = (item: any) => {
+    const prod = products.find((p) => p.id === item.product_id);
+    if (prod) {
+      if (language === "he") return prod.nameHe || prod.name_he || prod.nameEn || prod.name_en || prod.name || prod.name_ar || prod.product_name || prod.id || "";
+      if (language === "en") return prod.nameEn || prod.name_en || prod.nameHe || prod.name_he || prod.name || prod.name_ar || prod.product_name || prod.id || "";
+      return prod.name || prod.name_ar || prod.nameEn || prod.name_en || prod.nameHe || prod.name_he || prod.product_name || prod.id || "";
+    }
+    // fallback: استخدم الاسم المخزن في العنصر
+    return item[`name_${language}`] || item.product_name || item.name_ar || item.name_en || item.name_he || item.id || "";
+  };
   const origItems = original.items
-    .map((i) => `${i.product_name} (x${i.quantity}) بسعر ${i.price}`)
-    .join("، ");
+    .map((i) => `${getProductName(i)} (x${i.quantity}) ${t("atPrice") || "بسعر"} ${i.price}`)
+    .join(language === "he" ? ", " : "، ");
   const editItems = edited.items
-    .map((i) => `${i.product_name} (x${i.quantity}) بسعر ${i.price}`)
-    .join("، ");
+    .map((i) => `${getProductName(i)} (x${i.quantity}) ${t("atPrice") || "بسعر"} ${i.price}`)
+    .join(language === "he" ? ", " : "، ");
   if (origItems !== editItems)
     changes.push({
-      label: "الأصناف",
+      label: t("items") || "الأصناف",
       oldValue: origItems || "-",
       newValue: editItems || "-",
     });
-  // مقارنة العنوان
+  // مقارنة العنوان مع دعم التعدد اللغوي
   const omitFullName = (
     addr: Record<string, unknown> | Address | undefined | null
   ) => {
@@ -52,7 +64,7 @@ export function getOrderEditChangesDetailed(
     JSON.stringify(omitFullName(edited.shipping_address))
   ) {
     changes.push({
-      label: "عنوان الشحن",
+      label: t("shippingAddress") || "عنوان الشحن",
       oldValue: Object.values(omitFullName(original.shipping_address)).join(", "),
       newValue: Object.values(omitFullName(edited.shipping_address)).join(", "),
     });
@@ -66,22 +78,22 @@ export function getOrderEditChangesDetailed(
   );
   if (origDiscountEnabled !== editDiscountEnabled) {
     changes.push({
-      label: "تفعيل الخصم",
-      oldValue: origDiscountEnabled ? "مفعل" : "غير مفعل",
-      newValue: editDiscountEnabled ? "مفعل" : "غير مفعل",
+      label: t("discountEnabled") || "تفعيل الخصم",
+      oldValue: origDiscountEnabled ? t("enabled") || "مفعل" : t("disabled") || "غير مفعل",
+      newValue: editDiscountEnabled ? t("enabled") || "مفعل" : t("disabled") || "غير مفعل",
     });
   }
   if (editDiscountEnabled) {
     if (original.discount_type !== edited.discountType) {
       changes.push({
-        label: "نوع الخصم",
-        oldValue: original.discount_type === "percent" ? "نسبة مئوية" : "مبلغ ثابت",
-        newValue: edited.discountType === "percent" ? "نسبة مئوية" : "مبلغ ثابت",
+        label: t("discountType") || "نوع الخصم",
+        oldValue: original.discount_type === "percent" ? t("percent") || "نسبة مئوية" : t("amount") || "مبلغ ثابت",
+        newValue: edited.discountType === "percent" ? t("percent") || "نسبة مئوية" : t("amount") || "مبلغ ثابت",
       });
     }
     if (original.discount_value !== edited.discountValue) {
       changes.push({
-        label: "قيمة الخصم",
+        label: t("discountValue") || "قيمة الخصم",
         oldValue: original.discount_value?.toString() || "0",
         newValue: edited.discountValue?.toString() || "0",
       });

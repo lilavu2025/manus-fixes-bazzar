@@ -641,7 +641,7 @@ const AdminOrders: React.FC = () => {
         originalOrderForEdit={originalOrderForEdit}
         setEditOrderChanges={setEditOrderChanges}
         setShowConfirmEditDialog={setShowConfirmEditDialog}
-        getOrderEditChangesDetailed={(original, edited) => getOrderEditChangesDetailedUtil(original, edited, t)}
+        getOrderEditChangesDetailed={(original, edited) => getOrderEditChangesDetailedUtil(original, edited, t, language, products)}
         t={t}
         isRTL={isRTL}
         products={products}

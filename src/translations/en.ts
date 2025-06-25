@@ -775,5 +775,6 @@ export const enTranslations = {
   areYouSureYouWantToSaveTheFollowingChanges: "Are you sure you want to save the following changes?",
   item: "Item",
   oldValue: "Old Value",
-  newValue: "New Value"
+  newValue: "New Value",
+  atPrice : "at price",
 };

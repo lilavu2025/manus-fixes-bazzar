@@ -762,5 +762,6 @@ export const heTranslations = {
   areYouSureYouWantToSaveTheFollowingChanges: "האם אתה בטוח שברצונך לשמור את השינויים הבאים?",
   item: "הפריט",
   oldValue: "הערך הקודם",
-  newValue: "הערך החדש"
+  newValue: "הערך החדש",
+  atPrice : "במחיר",
 };
