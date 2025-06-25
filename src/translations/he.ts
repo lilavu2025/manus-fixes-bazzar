@@ -595,6 +595,7 @@ export const heTranslations = {
   orderCreator: "יוצר ההזמנה",
   orderCreatedFromAdminPanel: "הזמנה זו נוצרה ממערכת הניהול",
   searchOrSelectCustomer: "חפש או בחר לקוח",
+  searchOrSelectProduct: "חפש או בחר מוצר",
   newCustomer: "לקוח חדש",
   cash: "מזומן",
   card: "כרטיס אשראי",
@@ -748,4 +749,9 @@ export const heTranslations = {
   noOrdersFound: "לא נמצאו הזמנות",
   tryChangingFilterToShowOtherOrders: "נסה לשנות את הפילטרים או לחפש הזמנות אחרות",
   orderDetailsNotAvailable: "פרטי ההזמנה אינם זמינים",
+  previous: "הקודם",
+  next: "הבא",
+  itemsPerPage: "פריטים לעמוד",
+  page: "עמוד",
+  loadingMore: "טוען עוד...",
 };

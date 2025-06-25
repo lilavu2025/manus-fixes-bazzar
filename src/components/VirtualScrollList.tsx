@@ -1,7 +1,8 @@
 import * as React from "react";
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback, useContext } from 'react';
 import { cn } from '@/lib/utils';
 import { useVirtualScroll, VirtualGrid } from '@/utils/virtualScrollUtils';
+import { LanguageContext } from '@/contexts/LanguageContext.context';
 
 interface VirtualScrollListProps<T> {
   items: T[];
@@ -35,6 +36,7 @@ function VirtualScrollList<T>({
   const [scrollTop, setScrollTop] = useState(0);
   const scrollElementRef = useRef<HTMLDivElement>(null);
   const loadMoreTriggered = useRef(false);
+  const { t } = useContext(LanguageContext) ?? { t: (k: string) => k };
 
   // Pagination states
   const [page, setPage] = useState(1);
@@ -129,7 +131,7 @@ function VirtualScrollList<T>({
       {/* Pagination controls */}
       <div className="flex items-center justify-between mb-2">
         <div>
-          <label className="mr-2">عدد العناصر في الصفحة:</label>
+          <label className="mr-2">{t('itemsPerPage')}</label>
           <select
             value={pageSize}
             onChange={e => setPageSize(Number(e.target.value))}
@@ -141,7 +143,7 @@ function VirtualScrollList<T>({
           </select>
         </div>
         <div className="flex items-center gap-1">
-          <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="px-2 py-1 border rounded disabled:opacity-50">السابق</button>
+          <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="px-2 py-1 border rounded disabled:opacity-50">{t('previous')}</button>
           {Array.from({ length: totalPages }, (_, i) => (
             <button
               key={i + 1}
@@ -151,7 +153,7 @@ function VirtualScrollList<T>({
               {i + 1}
             </button>
           ))}
-          <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="px-2 py-1 border rounded disabled:opacity-50">التالي</button>
+          <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="px-2 py-1 border rounded disabled:opacity-50">{t('next')}</button>
         </div>
       </div>
       {/* Visible items container */}
@@ -178,7 +180,7 @@ function VirtualScrollList<T>({
           <div className="flex items-center justify-center min-h-[100px]">
             <div className="flex items-center space-x-2 text-muted-foreground">
               <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-              <span className="text-sm">Loading more...</span>
+              <span className="text-sm">{t('loadingMore')}</span>
             </div>
           </div>
         )}

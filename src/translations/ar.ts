@@ -774,5 +774,10 @@ export const arTranslations = {
   noOrdersFound: "لم يتم العثور على طلبات",
   tryChangingFilterToShowOtherOrders: "جرب تغيير الفلاتر أو البحث عن طلبات أخرى",
   orderDetailsNotAvailable: "تفاصيل الطلب غير متاحة",
-  
+  previous: "السابق",
+  next: "التالي",
+  itemsPerPage: "العناصر لكل صفحة",
+  page: "الصفحة",
+  loadingMore: "تحميل المزيد...",
+
 };

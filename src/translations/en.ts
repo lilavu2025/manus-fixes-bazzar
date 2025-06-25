@@ -603,6 +603,7 @@ export const enTranslations = {
   orderCreator: "Order Creator",
   orderCreatedFromAdminPanel: "Order created from admin panel",
   searchOrSelectCustomer: "Search or select customer",
+  searchOrSelectProduct: "Search or select product",
   cash: "Cash",
   card: "Credit Card",
   bankTransfer: "Bank Transfer",
@@ -761,4 +762,9 @@ export const enTranslations = {
   noOrdersFound: "No orders found",
   tryChangingFilterToShowOtherOrders: "Try changing the filters or searching for other orders",
   orderDetailsNotAvailable: "Order details not available",
+  previous: "Previous",
+  next: "Next",
+  itemsPerPage: "Items per Page",
+  page: "Page",
+  loadingMore: "Loading more...",
 };
