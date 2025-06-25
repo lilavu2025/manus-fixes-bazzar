@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useContext } from "react";
 import { Button } from "@/components/ui/button";
 import { Copy, MapPin, Package, UserPlus } from "lucide-react";
 import { getDisplayPrice } from "@/utils/priceUtils";
@@ -7,6 +7,8 @@ import { getPaymentMethodText } from "@/orders/order.utils";
 import type { Order, OrderItem } from "@/orders/order.types";
 import type { Product } from "@/types";
 import OrderTotalDisplay from "@/components/OrderTotalDisplay";
+import { LanguageContext } from '@/contexts/LanguageContext.context';
+import { useProductsRealtime } from '@/hooks/useProductsRealtime';
 
 interface OrderDetailsPrintProps {
   order: Order;
@@ -16,6 +18,9 @@ interface OrderDetailsPrintProps {
 }
 
 const OrderDetailsPrint: React.FC<OrderDetailsPrintProps> = ({ order, t, profile, generateWhatsappMessage }) => {
+  const { language } = useContext(LanguageContext) ?? { language: 'ar' };
+  const { products } = useProductsRealtime();
+
   return (
     <div
       className="space-y-6 px-6 py-6 print:p-0 print:space-y-4 print:bg-white print:text-black print:rounded-none print:shadow-none print:w-full print:max-w-full print:mx-0 print:my-0"
@@ -125,15 +130,20 @@ const OrderDetailsPrint: React.FC<OrderDetailsPrintProps> = ({ order, t, profile
             </thead>
             <tbody>
               {order.items && order.items.length > 0 ? (
-                order.items.map((item: OrderItem, idx: number) => (
-                  <tr key={item.id} className="border-b hover:bg-gray-50 print:hover:bg-transparent">
-                    <td className="p-2 text-center">{idx + 1}</td>
-                    <td className="p-2">{item.product_name}</td>
-                    <td className="p-2 text-center">{item.quantity}</td>
-                    <td className="p-2 text-center">{getDisplayPrice(([] as Product[]).find((p) => p.id === item.product_id) as Product, profile?.user_type) || item.price} ₪</td>
-                    <td className="p-2 text-center font-semibold">{(item.price * item.quantity).toFixed(2)} ₪</td>
-                  </tr>
-                ))
+                order.items.map((item: OrderItem, idx: number) => {
+                  const product = products.find((p) => p.id === item.product_id);
+                  return (
+                    <tr key={item.id} className="border-b hover:bg-gray-50 print:hover:bg-transparent">
+                      <td className="p-2 text-center">{idx + 1}</td>
+                      <td className="p-2">
+                        {product ? product[`name_${language}`] || product.name_ar : item.product_name}
+                      </td>
+                      <td className="p-2 text-center">{item.quantity}</td>
+                      <td className="p-2 text-center">{getDisplayPrice(([] as Product[]).find((p) => p.id === item.product_id) as Product, profile?.user_type) || item.price} ₪</td>
+                      <td className="p-2 text-center font-semibold">{(item.price * item.quantity).toFixed(2)} ₪</td>
+                    </tr>
+                  );
+                })
               ) : (
                 <tr>
                   <td colSpan={5} className="text-center text-gray-400 py-4">{t("noProducts") || "لا توجد منتجات"}</td>

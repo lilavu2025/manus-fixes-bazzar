@@ -115,7 +115,7 @@ const EditCategoryDialog: React.FC<EditCategoryDialogProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg w-full p-0 overflow-hidden rounded-2xl shadow-xl">
         <DialogHeader className="bg-gradient-to-r from-blue-50 to-blue-100 px-6 py-4 border-b">
-          <DialogTitle className="text-xl font-bold text-blue-900 flex items-center gap-2">
+          <DialogTitle className="text-2xl font-bold mb-1 text-primary text-center">
             {t("editCategory")}
           </DialogTitle>
         </DialogHeader>

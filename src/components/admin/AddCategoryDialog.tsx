@@ -83,7 +83,7 @@ const AddCategoryDialog: React.FC<AddCategoryDialogProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-xl w-full max-h-[95vh] overflow-y-auto p-0 sm:p-0">
         <DialogHeader className="px-6 pt-6 pb-2">
-          <DialogTitle className="text-2xl font-bold mb-1">
+          <DialogTitle className="text-2xl font-bold mb-1 text-primary text-center">
             {t("addCategory")}
           </DialogTitle>
           <p className="text-gray-500 text-sm mb-0">

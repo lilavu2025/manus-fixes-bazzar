@@ -120,6 +120,8 @@ export const enTranslations = {
   loadingAdminDashboard: "Loading admin dashboard...",
   save: "Save",
   cancel: "Cancel",
+  confirmAndSave: "Confirm and Save",
+  noChangesDetected: "No changes detected",
   delete: "Delete",
   edit: "Edit",
   add: "Add",
@@ -351,6 +353,7 @@ export const enTranslations = {
 
   // Admin Products
   image: "Image",
+  noImage: "No Image",
   productImage: "Product Image",
   productNameArabic: "Product Name (Arabic)",
   productNameEnglish: "Product Name (English)",
@@ -767,4 +770,10 @@ export const enTranslations = {
   itemsPerPage: "Items per Page",
   page: "Page",
   loadingMore: "Loading more...",
+  customer: "Customer",
+  confirmEditOrder: "Confirm Edit Order",
+  areYouSureYouWantToSaveTheFollowingChanges: "Are you sure you want to save the following changes?",
+  item: "Item",
+  oldValue: "Old Value",
+  newValue: "New Value"
 };

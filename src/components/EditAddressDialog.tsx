@@ -73,7 +73,7 @@ const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
         dir={isRTL ? "rtl" : "ltr"}
       >
         <DialogHeader>
-          <DialogTitle className={isRTL ? "text-right" : "text-left"}>
+          <DialogTitle className="text-2xl font-bold mb-1 text-primary text-center">
             {t("editAddress")}
           </DialogTitle>
         </DialogHeader>

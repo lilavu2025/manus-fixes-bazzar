@@ -234,7 +234,7 @@ const UserOrdersDialog: React.FC<UserOrdersDialogProps> = ({
         >
           <DialogHeader>
             <div className="flex items-center justify-between gap-2">
-              <DialogTitle className="text-xl font-bold">
+              <DialogTitle className="text-2xl font-bold mb-1 text-primary text-center">
                 {t("orderDetails") || "تفاصيل الطلبية"} #
                 {selectedOrder.order_number}
               </DialogTitle>
@@ -452,7 +452,7 @@ const UserOrdersDialog: React.FC<UserOrdersDialogProps> = ({
         dir={isRTL ? "rtl" : "ltr"}
       >
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-center">
+          <DialogTitle className="text-2xl font-bold mb-1 text-primary text-center">
             {t("userOrders") || "طلبيات المستخدم"}: {user.full_name}
           </DialogTitle>
         </DialogHeader>

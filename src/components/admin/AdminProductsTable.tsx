@@ -27,12 +27,19 @@ import { Product } from "@/types/product";
 import { getDisplayPrice } from "@/utils/priceUtils";
 import { useAuth } from "@/contexts/useAuth";
 
+interface AdminCategory {
+  id: string;
+  name: string;
+  nameEn?: string;
+  nameHe?: string;
+}
+
 interface AdminProductsTableProps {
   products: Product[];
   onViewProduct: (product: Product) => void;
   onEditProduct: (product: Product) => void;
   onDeleteProduct: (productId: string, productName: string) => void;
-  categories?: { id: string; name: string }[]; // إضافة قائمة الفئات
+  categories?: AdminCategory[]; // دعم جميع الحقول اللغوية
 }
 
 const AdminProductsTable: React.FC<AdminProductsTableProps> = ({
@@ -53,10 +60,14 @@ const AdminProductsTable: React.FC<AdminProductsTableProps> = ({
     return product.name;
   };
 
-  // دالة لجلب اسم الفئة من id
+  // دالة لجلب اسم الفئة من id مع دعم التعدد اللغوي والفولباك للعربي
   const getCategoryName = (categoryId: string) => {
     const cat = categories.find((c) => c.id === categoryId);
-    return cat ? cat.name : categoryId;
+    if (!cat) return categoryId;
+    if (language === "ar") return cat.name;
+    if (language === "en") return cat.nameEn || cat.name;
+    if (language === "he") return cat.nameHe || cat.name;
+    return cat.name;
   };
 
   return (
@@ -86,7 +97,7 @@ const AdminProductsTable: React.FC<AdminProductsTableProps> = ({
                 <TableCell>
                   <img
                     src={product.image || "/placeholder.svg"}
-                    alt={product.name}
+                    alt={getProductName(product)}
                     className="w-16 h-16 object-cover rounded-lg border shadow-sm bg-white mx-auto"
                     onError={(e) => {
                       e.currentTarget.src = "/placeholder.svg";

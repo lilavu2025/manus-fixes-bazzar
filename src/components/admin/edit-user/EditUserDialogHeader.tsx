@@ -10,7 +10,7 @@ const EditUserDialogHeader: React.FC = () => {
       <div className="w-12 h-12 lg:w-16 lg:h-16 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center mx-auto shadow-lg">
         <Edit className="h-6 w-6 lg:h-8 lg:w-8 text-white" />
       </div>
-      <DialogTitle className="text-xl lg:text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent text-center">
+      <DialogTitle className="text-2xl font-bold mb-1 text-primary text-center">
         {t('editUser') || 'تعديل المستخدم'}
       </DialogTitle>
       <DialogDescription className="text-gray-500 text-sm lg:text-base text-center">

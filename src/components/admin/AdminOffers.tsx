@@ -333,7 +333,7 @@ const AdminOffers: React.FC = () => {
                 <Dialog open={showAdd} onOpenChange={setShowAdd}>
                   <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
-                      <DialogTitle className="text-xl font-bold">
+                      <DialogTitle className="text-2xl font-bold mb-1 text-primary text-center">
                         {t("addOffer")}
                       </DialogTitle>
                       <DialogDescription>
@@ -678,7 +678,7 @@ const AdminOffers: React.FC = () => {
       <Dialog open={showAdd} onOpenChange={setShowAdd}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold">
+            <DialogTitle className="text-2xl font-bold mb-1 text-primary text-center">
               {t("addOffer")}
             </DialogTitle>
             <DialogDescription>
@@ -861,7 +861,7 @@ const AdminOffers: React.FC = () => {
       <Dialog open={showEdit} onOpenChange={setShowEdit}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold">
+            <DialogTitle className="text-2xl font-bold mb-1 text-primary text-center">
               {t("editOffer")}
             </DialogTitle>
             <DialogDescription>
@@ -1043,7 +1043,7 @@ const AdminOffers: React.FC = () => {
       <Dialog open={showDelete} onOpenChange={setShowDelete}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-red-600">
+            <DialogTitle className="text-2xl font-bold mb-1 text-primary text-center">
               {t("deleteOffer")}
             </DialogTitle>
             <DialogDescription>

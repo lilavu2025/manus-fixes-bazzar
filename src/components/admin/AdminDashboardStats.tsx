@@ -436,7 +436,7 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
                   <table className="w-full text-sm border rounded-lg bg-white">
                     <thead>
                       <tr className="bg-blue-100">
-                        <th className="p-2 text-left">{t("status")}</th>
+                        <th className="p-2 text-center">{t("status")}</th>
                         <th className="p-2 text-right">{t("revenue")}</th>
                       </tr>
                     </thead>
@@ -497,7 +497,7 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
                 <table className="w-full text-sm border rounded-lg bg-white">
                   <thead>
                     <tr className="bg-green-100">
-                      <th className="p-2 text-left">{t("userType")}</th>
+                      <th className="p-2 text-center">{t("userType")}</th>
                       <th className="p-2 text-right">{t("count")}</th>
                     </tr>
                   </thead>
@@ -545,7 +545,7 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
                 <table className="w-full text-sm border rounded-lg bg-white">
                   <thead>
                     <tr className="bg-purple-100">
-                      <th className="p-2 text-left">{t("category")}</th>
+                      <th className="p-2 text-center">{t("category")}</th>
                       <th className="p-2 text-right">{t("inStock")}</th>
                       <th className="p-2 text-right">{t("outOfStock")}</th>
                     </tr>
@@ -605,7 +605,7 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
                 <table className="w-full text-sm border rounded-lg bg-white">
                   <thead>
                     <tr className="bg-yellow-100">
-                      <th className="p-2 text-left">{t("customer")}</th>
+                      <th className="p-2 text-center">{t("customer")}</th>
                       <th className="p-2 text-right">{t("orderDate")}</th>
                     </tr>
                   </thead>
@@ -658,7 +658,7 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
                 <table className="w-full text-sm border rounded-lg bg-white">
                   <thead>
                     <tr className="bg-red-100">
-                      <th className="p-2 text-left">{t("productName")}</th>
+                      <th className="p-2 text-center">{t("productName")}</th>
                       <th className="p-2 text-right">{t("stockQuantity")}</th>
                     </tr>
                   </thead>

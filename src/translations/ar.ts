@@ -124,6 +124,8 @@ export const arTranslations = {
   loadingAdminDashboard: "جاري تحميل لوحة الإدارة...",
   save: "حفظ",
   cancel: "إلغاء",
+  confirmAndSave: "تأكيد وحفظ",
+  noChangesDetected: "لم يتم رصد تغييرات واضحة.",
   delete: "حذف",
   edit: "تعديل",
   add: "إضافة",
@@ -340,6 +342,7 @@ export const arTranslations = {
 
   // Admin Products
   image: "الصورة",
+  noImage: "لا توجد صورة",
   productImage: "صورة المنتج",
   productNameArabic: "اسم المنتج (عربي)",
   productNameEnglish: "اسم المنتج (إنجليزي)",
@@ -779,5 +782,9 @@ export const arTranslations = {
   itemsPerPage: "العناصر لكل صفحة",
   page: "الصفحة",
   loadingMore: "تحميل المزيد...",
-
+  confirmEditOrder: "تأكيد تعديل الطلبية",
+  areYouSureYouWantToSaveTheFollowingChanges: "هل أنت متأكد أنك تريد حفظ التغييرات التالية؟",
+  item: "العنصر",
+  oldValue: "القيمة السابقة",
+  newValue: "القيمة الجديدة"
 };

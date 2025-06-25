@@ -25,7 +25,7 @@ interface ImageUploadProps {
 const ImageUpload = ({
   value,
   onChange,
-  label = "Image",
+  label = "image",
   placeholder = "Upload image",
   multiple = false,
   maxImages = 5,
@@ -304,7 +304,7 @@ const ImageUpload = ({
 
   return (
     <div className="space-y-4">
-      <Label>{label}</Label>
+      <Label>{t(label)}</Label>
       <div
         className="rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 p-4 bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all cursor-pointer"
         onDrop={handleDrop}

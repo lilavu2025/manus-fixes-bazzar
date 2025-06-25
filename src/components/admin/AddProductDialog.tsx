@@ -187,7 +187,7 @@ const AddProductDialog: React.FC<AddProductDialogProps> = ({
         dir={isRTL ? "rtl" : "ltr"}
       >
         <DialogHeader className="px-6 pt-6 pb-2 border-b">
-          <DialogTitle className="text-2xl font-bold">
+          <DialogTitle className="text-2xl font-bold mb-1 text-primary text-center">
             {t("addProduct")}
           </DialogTitle>
         </DialogHeader>

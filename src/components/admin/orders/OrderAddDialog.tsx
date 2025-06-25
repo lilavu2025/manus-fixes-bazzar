@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { BadgeDollarSign, Percent, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import OrderDiscountSection from "./OrderDiscountSection";
 import OrderDiscountSummary from "./OrderDiscountSummary";
+import { LanguageContext } from '@/contexts/LanguageContext.context';
 
 interface OrderAddDialogProps {
   open: boolean;
@@ -53,6 +54,7 @@ const OrderAddDialog: React.FC<OrderAddDialogProps> = ({
   handleAddOrder,
   t,
 }) => {
+  const { language } = useContext(LanguageContext) ?? { language: 'ar' };
   const [nextOrderNumber, setNextOrderNumber] = useState<number | null>(null);
 
   // إضافة الخصم إلى orderForm إذا لم يكن موجوداً
@@ -97,7 +99,7 @@ const OrderAddDialog: React.FC<OrderAddDialogProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl w-full max-h-[90vh] overflow-y-auto p-0 sm:p-0">
         <DialogHeader className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b px-6 py-4 rounded-t-2xl">
-          <DialogTitle className="text-xl font-bold text-primary flex items-center gap-2">
+          <DialogTitle className="text-2xl font-bold mb-1 text-primary text-center">
             <Plus className="h-5 w-5 text-primary" />
             {t("addNewOrder") || "إضافة طلب جديد"}
             {nextOrderNumber && (
@@ -391,13 +393,13 @@ const OrderAddDialog: React.FC<OrderAddDialogProps> = ({
                     </Label>
                     <Autocomplete
                       value={
+                        products.find(p => p.id === item.product_id)?.[`name_${language}`] ||
                         products.find(p => p.id === item.product_id)?.name_ar ||
-                        products.find(p => p.id === item.product_id)?.name_en ||
                         ""
                       }
                       onInputChange={val => {
                         const matched = products.find(
-                          p => p.name_ar === val || p.name_en === val
+                          p => p[`name_${language}`] === val || p.name_ar === val || p.name_en === val || p.name_he === val
                         );
                         updateOrderItem(item.id, "product_id", matched ? matched.id : item.product_id);
                         updateOrderItem(item.id, "product_name", val);
@@ -414,7 +416,7 @@ const OrderAddDialog: React.FC<OrderAddDialogProps> = ({
                         }
                         updateOrderItem(item.id, "price", price);
                       }}
-                      options={products.map(p => p.name_ar || p.name_en || p.id)}
+                      options={products.map(p => p[`name_${language}`] || p.name_ar || p.id)}
                       placeholder={t("searchOrSelectProduct") || "ابحث أو اكتب اسم المنتج"}
                       required
                     />

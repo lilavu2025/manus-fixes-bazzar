@@ -49,7 +49,7 @@ const ViewCategoryDialog: React.FC<ViewCategoryDialogProps> = ({
         style={{ direction: rtl ? "rtl" : "ltr" }}
       >
         <DialogHeader className="bg-gradient-to-r from-blue-100 to-blue-200 px-6 py-4 border-b flex items-center justify-between">
-          <DialogTitle className="text-xl font-bold text-blue-900 flex items-center gap-2">
+          <DialogTitle className="text-2xl font-bold mb-1 text-primary text-center">
             <Info className="h-5 w-5 text-blue-400" />
             {t("viewCategory")}
           </DialogTitle>

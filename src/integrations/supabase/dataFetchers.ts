@@ -1,7 +1,7 @@
 // جميع دوال القراءة (select, get, list) من Supabase
 // يمنع أي استدعاء مباشر لـ supabase خارج هذا الملف
 import { supabase } from './client';
-import type { Tables, TablesInsert, TablesUpdate, Json } from './types';
+import type { Tables, TablesInsert, TablesUpdate } from './types';
 import type { Language } from '@/types/language';
 import type { Product as AppProduct } from '@/types/index';
 // تعريف ContactInfo type
@@ -338,7 +338,7 @@ export interface OrdersWithDetails {
   }[];
   // الحقول الإضافية المطلوبة في الطلبات
   items?: unknown[]; // يمكن تحسين النوع لاحقًا
-  shipping_address?: Json; // تم تحسين النوع
+  shipping_address?: any; // تم تحسين النوع
   user_id?: string;
   payment_method?: string;
   notes?: string;

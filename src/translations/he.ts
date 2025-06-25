@@ -119,6 +119,8 @@ export const heTranslations = {
   loadingAdminDashboard: "טוען לוח בקרה מנהל...",
   save: "שמור",
   cancel: "ביטול",
+  confirmAndSave: "אשר ושמור",
+  noChangesDetected: "לא זוהו שינויים",
   delete: "מחק",
   edit: "ערוך",
   add: "הוסף",
@@ -341,6 +343,7 @@ export const heTranslations = {
 
   // Admin Products
   image: "תמונה",
+  noImage: "אין תמונה",
   productImage: "תמונת מוצר",
   productNameArabic: "שם המוצר (ערבית)",
   productNameEnglish: "שם המוצר (אנגלית)",
@@ -754,4 +757,10 @@ export const heTranslations = {
   itemsPerPage: "פריטים לעמוד",
   page: "עמוד",
   loadingMore: "טוען עוד...",
+  customer: "לקוח",
+  confirmEditOrder: "אשר עריכת הזמנה",
+  areYouSureYouWantToSaveTheFollowingChanges: "האם אתה בטוח שברצונך לשמור את השינויים הבאים?",
+  item: "הפריט",
+  oldValue: "הערך הקודם",
+  newValue: "הערך החדש"
 };

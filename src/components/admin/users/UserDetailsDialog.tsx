@@ -54,7 +54,9 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({ user, open, onOpe
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className={`max-w-2xl ${isRTL ? 'text-right' : 'text-left'}`} dir={isRTL ? 'rtl' : 'ltr'}>
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-center">{t('userDetails')}</DialogTitle>
+          <DialogTitle className="text-2xl font-bold mb-1 text-primary text-center">
+            {t('userDetails')}
+          </DialogTitle>
         </DialogHeader>
         
         <div className="space-y-6">

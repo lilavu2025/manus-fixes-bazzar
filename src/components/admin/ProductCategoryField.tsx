@@ -14,7 +14,7 @@ const ProductCategoryField: React.FC<ProductCategoryFieldProps> = ({
   formData,
   setFormData,
 }) => {
-  const { t } = useLanguage();
+  const { isRTL, t, language } = useLanguage();
   const { data, isLoading, error } = useCategories();
   const categories = data ?? [];
 
@@ -61,7 +61,7 @@ const ProductCategoryField: React.FC<ProductCategoryFieldProps> = ({
         <SelectContent>
           {categories.map((category) => (
             <SelectItem key={category.id} value={category.id}>
-              {category.name}
+              {(language === 'en' && category.nameEn) ? category.nameEn : (language === 'he' && category.nameHe) ? category.nameHe : category.name /* fallback للعربي */ || category.nameEn || category.nameHe || ''}
             </SelectItem>
           ))}
         </SelectContent>

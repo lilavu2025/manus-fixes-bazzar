@@ -53,7 +53,7 @@ const ViewProductDialog: React.FC<ViewProductDialogProps> = ({
         style={{ direction: isRTL ? "rtl" : "ltr" }}
       >
         <DialogHeader className="px-4 pt-4 sm:px-6 sm:pt-6">
-          <DialogTitle className="text-2xl font-bold mb-2 text-center">
+          <DialogTitle className="text-2xl font-bold mb-1 text-primary text-center">
             {t("viewProduct")}
           </DialogTitle>
         </DialogHeader>

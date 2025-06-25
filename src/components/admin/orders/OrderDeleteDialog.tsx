@@ -27,7 +27,7 @@ const OrderDeleteDialog: React.FC<OrderDeleteDialogProps> = ({
   <Dialog open={open} onOpenChange={onOpenChange}>
     <DialogContent>
       <DialogHeader>
-        <DialogTitle className={`text-xl font-bold text-red-600 ${isRTL ? "text-right" : "text-left"}`}>
+        <DialogTitle className="text-2xl font-bold mb-1 text-primary text-center">
           {t("confirmDeleteOrder") || "تأكيد حذف الطلب"}
         </DialogTitle>
       </DialogHeader>

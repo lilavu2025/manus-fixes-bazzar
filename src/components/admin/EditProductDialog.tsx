@@ -41,7 +41,7 @@ const EditProductDialog: React.FC<EditProductDialogProps> = ({
   onSuccess,
   setProducts,
 }) => {
-  const { t } = useLanguage();
+  const { isRTL, t, language } = useLanguage();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<ProductFormData>({
     name_ar: "",
@@ -171,7 +171,9 @@ const EditProductDialog: React.FC<EditProductDialogProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-center">{t("editProduct")}</DialogTitle>
+          <DialogTitle className="text-2xl font-bold mb-1 text-primary text-center">
+            {t("editProduct")}
+          </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-6">
           <ProductNameFields formData={formData} setFormData={setFormData} />
@@ -210,7 +212,7 @@ const EditProductDialog: React.FC<EditProductDialogProps> = ({
               <option value="">{t("selectCategory")}</option>
               {categories.map((cat) => (
                 <option key={cat.id} value={cat.id}>
-                  {cat.name}
+                  {(language === 'en' && cat.nameEn) ? cat.nameEn : (language === 'he' && cat.nameHe) ? cat.nameHe : cat.name /* fallback للعربي */ || cat.nameEn || cat.nameHe || ''}
                 </option>
               ))}
             </select>

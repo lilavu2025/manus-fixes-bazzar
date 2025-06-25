@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useContext } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import type { NewOrderForm, OrderItem } from "@/orders/order.types";
 import { calculateOrderTotal } from "@/orders/order.utils";
 import OrderDiscountSection from "./OrderDiscountSection";
 import OrderDiscountSummary from "./OrderDiscountSummary";
+import { LanguageContext } from '@/contexts/LanguageContext.context';
 
 interface OrderEditDialogProps {
   open: boolean;
@@ -39,6 +40,8 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
   isRTL,
   products,
 }) => {
+  const { language } = useContext(LanguageContext) ?? { language: 'ar' };
+
   // حذف صنف من الطلب
   function removeOrderItem(id: string) {
     setEditOrderForm(f => {
@@ -96,7 +99,7 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl w-full max-h-[90vh] overflow-y-auto p-0 sm:p-0">
         <DialogHeader className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b px-6 py-4 rounded-t-2xl">
-          <DialogTitle className="text-xl font-bold flex items-center gap-2">
+          <DialogTitle className="text-2xl font-bold mb-1 text-primary text-center">
             {t("editOrder") || "تعديل الطلبية"}
           </DialogTitle>
           <p className={`text-gray-500 text-sm mt-1 ${isRTL ? "text-right" : "text-left"}`}>
@@ -384,13 +387,13 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
                       </Label>
                       <Autocomplete
                         value={
+                          products.find(p => p.id === item.product_id)?.[`name_${language}`] ||
                           products.find(p => p.id === item.product_id)?.name_ar ||
-                          products.find(p => p.id === item.product_id)?.name_en ||
                           ""
                         }
                         onInputChange={val => {
                           const matched = products.find(
-                            p => p.name_ar === val || p.name_en === val
+                            p => p[`name_${language}`] === val || p.name_ar === val || p.name_en === val || p.name_he === val
                           );
                           // تحديد نوع المستخدم من بيانات الطلبية
                           let selectedUser = originalOrderForEdit?.profiles;
@@ -426,7 +429,7 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
                             return { ...f, items: updatedItems };
                           });
                         }}
-                        options={products.map(p => p.name_ar || p.name_en || p.id)}
+                        options={products.map(p => p[`name_${language}`] || p.name_ar || p.id)}
                         placeholder={t("searchOrSelectProduct") || "ابحث أو اكتب اسم المنتج"}
                         required
                       />

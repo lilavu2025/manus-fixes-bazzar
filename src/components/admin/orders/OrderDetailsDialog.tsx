@@ -17,7 +17,7 @@ const OrderDetailsDialog: React.FC<OrderDetailsDialogProps> = ({ open, onOpenCha
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl w-full max-h-[90vh] overflow-y-auto p-0 sm:p-0">
         <DialogHeader className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b px-6 py-4 rounded-t-2xl">
-          <DialogTitle className="text-xl font-bold flex items-center gap-2">
+          <DialogTitle className="text-2xl font-bold mb-1 text-primary text-center">
             <Package className="h-5 w-5 text-primary print:hidden" />{" "}
             {t("orderDetails") || "تفاصيل الطلبية"} #{order?.order_number}
           </DialogTitle>

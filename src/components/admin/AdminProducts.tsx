@@ -23,7 +23,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ClearableInput } from "@/components/ui/ClearableInput"; // استيراد المكون الجديد
 
 const AdminProducts: React.FC = () => {
-  const { isRTL, t } = useLanguage();
+  const { isRTL, t, language } = useLanguage();
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showViewDialog, setShowViewDialog] = useState(false);
@@ -246,7 +246,7 @@ const AdminProducts: React.FC = () => {
                   <option value="all">{t("allCategories")}</option>
                   {productCategories.map((cat) => (
                     <option key={cat.id} value={cat.id}>
-                      {cat.name}
+                      {(language === 'en' && cat.nameEn) ? cat.nameEn : (language === 'he' && cat.nameHe) ? cat.nameHe : cat.name /* fallback للعربي */ || cat.nameEn || cat.nameHe || ''}
                     </option>
                   ))}
                 </select>
