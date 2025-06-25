@@ -75,22 +75,31 @@ export function getOrderEditChangesDetailed(
       }
     }
   });
-  // مقارنة العنوان مع دعم التعدد اللغوي
+  // مقارنة العنوان مع دعم التعدد اللغوي (تجاهل الحقول الفارغة)
   const omitFullName = (
     addr: Record<string, unknown> | Address | undefined | null
   ) => {
     if (!addr) return {};
     const { fullName, ...rest } = addr as Address;
+    // احذف الحقول الفارغة أو التي قيمتها فقط فراغ أو فاصلة
+    Object.keys(rest).forEach((k) => {
+      if (
+        rest[k] === undefined ||
+        rest[k] === null ||
+        (typeof rest[k] === "string" && rest[k].trim() === "")
+      ) {
+        delete rest[k];
+      }
+    });
     return rest;
   };
-  if (
-    JSON.stringify(omitFullName(original.shipping_address)) !==
-    JSON.stringify(omitFullName(edited.shipping_address))
-  ) {
+  const origAddress = omitFullName(original.shipping_address);
+  const editAddress = omitFullName(edited.shipping_address);
+  if (JSON.stringify(origAddress) !== JSON.stringify(editAddress)) {
     changes.push({
       label: t("shippingAddress") || "عنوان الشحن",
-      oldValue: Object.values(omitFullName(original.shipping_address)).join(", "),
-      newValue: Object.values(omitFullName(edited.shipping_address)).join(", "),
+      oldValue: Object.values(origAddress).join(", "),
+      newValue: Object.values(editAddress).join(", "),
     });
   }
   // مقارنة الخصم
