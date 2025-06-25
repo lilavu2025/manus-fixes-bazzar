@@ -127,6 +127,7 @@ const AdminOrders: React.FC = () => {
         onSuccess: () => {
           toast.success(t("orderStatusUpdatedSuccess"));
           refetchOrders();
+          queryClient.invalidateQueries({ queryKey: ["admin-orders-stats"] }); // إعادة جلب إحصائيات لوحة التحكم
         },
         onError: (err: unknown) => {
           toast.error(t("orderStatusUpdateFailed"));
@@ -178,17 +179,30 @@ const AdminOrders: React.FC = () => {
       }
       const total = calculateOrderTotal(orderForm.items);
       const orderInsertObj = {
-        items: JSON.stringify(orderForm.items),
+        items: orderForm.items as any, // لضمان التوافق مع نوع JSON
         total,
         status: orderForm.status,
         payment_method: orderForm.payment_method,
-        shipping_address: JSON.stringify(orderForm.shipping_address),
+        shipping_address: orderForm.shipping_address as any, // إرسال كائن العنوان مباشرة وليس كنص
         notes: orderForm.notes ? compressText(orderForm.notes) : null,
         admin_created: true,
         admin_creator_name: safeUserMeta?.full_name || safeUser?.email,
         ...(orderForm.user_id
           ? { user_id: orderForm.user_id }
           : { customer_name: orderForm.shipping_address.fullName }),
+        ...(orderForm.discountEnabled && orderForm.discountValue && orderForm.discountType
+          ? {
+              discount_type: orderForm.discountType,
+              discount_value: orderForm.discountValue,
+              total_after_discount:
+                orderForm.discountType === "percent"
+                  ? Math.max(
+                      total - (total * orderForm.discountValue) / 100,
+                      0
+                    )
+                  : Math.max(total - orderForm.discountValue, 0),
+            }
+          : {}),
       };
       const orderItems = orderForm.items.map((item) => ({
         product_id: item.product_id,
@@ -206,6 +220,7 @@ const AdminOrders: React.FC = () => {
             setShowAddOrder(false);
             setOrderForm(initialOrderForm);
             refetchOrders();
+            queryClient.invalidateQueries({ queryKey: ["admin-orders-stats"] }); // إعادة جلب إحصائيات لوحة التحكم
           },
           onError: (error: unknown) => {
             toast.error(t("orderAddFailed"));
@@ -235,11 +250,11 @@ const AdminOrders: React.FC = () => {
         0,
       );
       const updateObj = {
-        items: JSON.stringify(editOrderForm.items),
+        items: editOrderForm.items as any, // إرسال المصفوفة مباشرة وليس كنص
         total,
         status: editOrderForm.status,
         payment_method: editOrderForm.payment_method,
-        shipping_address: JSON.stringify(editOrderForm.shipping_address),
+        shipping_address: editOrderForm.shipping_address as any, // إرسال كائن العنوان مباشرة وليس كنص
         notes: editOrderForm.notes ? compressText(editOrderForm.notes) : null,
         updated_at: new Date().toISOString(),
         ...(editOrderForm.shipping_address.fullName
@@ -255,12 +270,12 @@ const AdminOrders: React.FC = () => {
         { editOrderId, updateObj, orderItems },
         {
           onSuccess: () => {
-            toast.success(t("orderEditedSuccess"));
+            toast.success(t("orderEditSuccess"));
             setShowEditOrder(false);
             setEditOrderForm(null);
             setEditOrderId(null);
-            setShowConfirmEditDialog(false);
             refetchOrders();
+            queryClient.invalidateQueries({ queryKey: ["admin-orders-stats"] }); // إعادة جلب إحصائيات لوحة التحكم
           },
           onError: (error: unknown) => {
             toast.error(t("orderEditFailed"));
@@ -283,9 +298,10 @@ const AdminOrders: React.FC = () => {
 
   // حساب الإحصائيات من جميع الطلبات (بدون فلترة)
   const stats = React.useMemo(() => getOrderStatsUtil((Array.isArray(orders) ? orders.map(o => {
-    let shipping_address: Address = { fullName: "", phone: "", city: "", area: "", street: "", building: "" };
+    let shipping_address: Address = { id: "", fullName: "", phone: "", city: "", area: "", street: "", building: "" };
     if (typeof o.shipping_address === "object" && o.shipping_address !== null && !Array.isArray(o.shipping_address)) {
       shipping_address = {
+        id: o.shipping_address.id ? String(o.shipping_address.id) : "",
         fullName: o.shipping_address.fullName ? String(o.shipping_address.fullName) : "",
         phone: o.shipping_address.phone ? String(o.shipping_address.phone) : "",
         city: o.shipping_address.city ? String(o.shipping_address.city) : "",
@@ -325,6 +341,7 @@ const AdminOrders: React.FC = () => {
         setShowDeleteDialog(false);
         setOrderToDelete(null);
         refetchOrders();
+        queryClient.invalidateQueries({ queryKey: ["admin-orders-stats"] }); // إعادة جلب إحصائيات لوحة التحكم
       },
       onError: () => {
         toast.error(t("orderDeleteFailed"));
@@ -467,7 +484,7 @@ const AdminOrders: React.FC = () => {
               <h3 className="text-lg font-medium text-gray-900 mb-2">
                 {statusFilter === "all"
                   ? t("noOrders")
-                  : t("noOrdersForStatus") + " " + t(statusFilter)}
+                  : t("noOrdersForStatus") + " \" " + t(statusFilter) + " \"" }
               </h3>
               <p className="text-gray-500">
                 {statusFilter === "all"

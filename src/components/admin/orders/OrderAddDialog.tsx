@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Trash2 } from "lucide-react";
+import { BadgeDollarSign, Percent, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,6 +13,10 @@ import Autocomplete from "../../ui/autocomplete";
 import AddressSelector from "@/components/addresses/AddressSelector";
 import { getNextOrderNumber } from "@/integrations/supabase/getNextOrderNumber";
 import { isRTL } from "@/utils/languageContextUtils";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import OrderDiscountSection from "./OrderDiscountSection";
+import OrderDiscountSummary from "./OrderDiscountSummary";
 
 interface OrderAddDialogProps {
   open: boolean;
@@ -50,6 +54,17 @@ const OrderAddDialog: React.FC<OrderAddDialogProps> = ({
   t,
 }) => {
   const [nextOrderNumber, setNextOrderNumber] = useState<number | null>(null);
+
+  // إضافة الخصم إلى orderForm إذا لم يكن موجوداً
+  useEffect(() => {
+    setOrderForm(prev => ({
+      ...prev,
+      discountEnabled: prev.discountEnabled !== undefined ? prev.discountEnabled : false,
+      discountType: prev.discountType || "amount", // "amount" أو "percent"
+      discountValue: prev.discountValue || 0,
+    }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (open) {
@@ -345,6 +360,15 @@ const OrderAddDialog: React.FC<OrderAddDialogProps> = ({
               </div>
             </div>
           </div>
+          <OrderDiscountSection
+            discountEnabled={orderForm.discountEnabled}
+            discountType={orderForm.discountType}
+            discountValue={orderForm.discountValue}
+            onDiscountEnabledChange={val => setOrderForm(prev => ({ ...prev, discountEnabled: val }))}
+            onDiscountTypeChange={val => setOrderForm(prev => ({ ...prev, discountType: val }))}
+            onDiscountValueChange={val => setOrderForm(prev => ({ ...prev, discountValue: val }))}
+            t={t}
+          />
           {/* المنتجات */}
           <div className="bg-gray-50 rounded-xl p-4 border mt-2">
             <div className="flex justify-between items-center mb-4">
@@ -444,6 +468,13 @@ const OrderAddDialog: React.FC<OrderAddDialogProps> = ({
                 <p className="text-lg font-semibold">
                   {t("total") || "المجموع الكلي"}: {calculateOrderTotal(orderForm.items)} ₪
                 </p>
+                <OrderDiscountSummary
+                  discountEnabled={orderForm.discountEnabled}
+                  discountType={orderForm.discountType}
+                  discountValue={orderForm.discountValue}
+                  items={orderForm.items}
+                  t={t}
+                />
               </div>
             )}
           </div>

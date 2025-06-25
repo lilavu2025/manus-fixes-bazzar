@@ -56,8 +56,11 @@ export interface OrderRow {
     phone: string;
   };
   order_items?: OrderItemRow[];
-  shipping_address?: Json; // إضافة الحقل هنا ليتمكن الكود من قراءته
+  shipping_address?: any; // تعديل نوع shipping_address ليكون any لتفادي تعارض JSON/Json
   notes?: string; // <--- أضف هذا السطر
+  discount_type?: string;
+  discount_value?: number;
+  total_after_discount?: number;
 }
 
 // جلب جميع البانرات
@@ -113,21 +116,21 @@ export async function fetchAdminOrdersStats(t: (key: string) => string) {
   try {
     const { data, error } = await supabase
       .from('orders')
-      .select('status, total, created_at');
+      .select('status, total, total_after_discount, created_at'); // أضف total_after_discount هنا
     if (error) throw error;
     const ordersByStatus: Record<string, number> = data.reduce((acc: Record<string, number>, order: { status: string }) => {
       acc[order.status] = (acc[order.status] || 0) + 1;
       return acc;
     }, {});
-    const revenueByStatus: Record<string, number> = data.reduce((acc: Record<string, number>, order: { status: string; total: number }) => {
+    const revenueByStatus: Record<string, number> = data.reduce((acc: Record<string, number>, order: { status: string; total: number; total_after_discount?: number }) => {
       if (!acc[order.status]) acc[order.status] = 0;
-      // احسب الإيراد لكل الحالات، حتى الملغية
-      acc[order.status] += order.total || 0;
+      // استخدم total_after_discount إذا كان موجودًا
+      acc[order.status] += (order.total_after_discount ?? order.total) || 0;
       return acc;
     }, {});
     const totalRevenue = data
       .filter(order => order.status !== 'cancelled')
-      .reduce((sum, order) => sum + (order.total || 0), 0);
+      .reduce((sum, order) => sum + ((order.total_after_discount ?? order.total) || 0), 0);
     // الحالات الفعلية المطلوبة
     const statusList = [
       { status: 'pending', color: '#8b5cf6' },
@@ -187,18 +190,22 @@ export async function fetchOrdersWithDetails(): Promise<OrdersWithDetails[]> {
     .order('created_at', { ascending: false });
   if (error) throw error;
   if (!data) throw new Error('لم يتم العثور على بيانات الطلبات');
-  return (data).map((order: OrderRow & { payment_method?: string, shipping_address?: Json, admin_created?: boolean | null, admin_creator_name?: string | null, cancelled_by?: string | null, cancelled_by_name?: string | null, order_number?: number }) => ({
+  return (data).map((order: any) => ({
     id: order.id,
     order_number: order.order_number, // إضافة رقم الطلبية
     status: order.status,
     total: order.total,
+    // إضافة حقول الخصم
+    discount_type: order.discount_type,
+    discount_value: order.discount_value,
+    total_after_discount: order.total_after_discount,
     created_at: order.created_at,
     updated_at: order.updated_at,
     payment_method: order.payment_method || '',
     profiles: order.profiles,
     shipping_address: typeof order.shipping_address === 'string' ? JSON.parse(order.shipping_address) : order.shipping_address,
     order_items: Array.isArray(order.order_items)
-      ? order.order_items.map((item: OrderItemRow) => ({
+      ? order.order_items.map((item: any) => ({
           id: item.id,
           product_id: item.product_id,
           order_id: item.order_id,

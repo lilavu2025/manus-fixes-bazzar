@@ -6,6 +6,7 @@ import { getPaymentMethodText, getStatusColor, safeDecompressNotes } from "@/ord
 import { mapOrderFromDb } from "@/orders/order.helpers";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import OrderTotalDisplay from "@/components/OrderTotalDisplay";
 
 interface OrderCardProps {
   order: Order;
@@ -89,9 +90,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
             <div className="flex flex-wrap gap-2 items-center text-xs text-gray-500 mt-1">
               <span>{new Date(order.created_at).toLocaleDateString("en-GB")}</span>
               <span>|</span>
-              <span className="block text-center text-lg font-bold text-green-700">
-                {typeof order.total === "number" && !isNaN(order.total) ? order.total + " ₪" : "-"}
-              </span>
+              <OrderTotalDisplay order={order} t={t} />
               <span>|</span>
               <span>{getPaymentMethodText(order.payment_method, t)}</span>
               <span>|</span>

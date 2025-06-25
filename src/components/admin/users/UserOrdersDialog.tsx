@@ -17,6 +17,7 @@ import { useLanguage } from "../../../utils/languageContextUtils";
 import { getDisplayPrice } from "@/utils/priceUtils";
 import { useAuth } from "@/contexts/useAuth";
 import type { UserProfile } from "@/types/profile";
+import OrderTotalDisplay from "@/components/OrderTotalDisplay";
 
 interface ShippingAddress {
   full_name: string;
@@ -302,7 +303,11 @@ const UserOrdersDialog: React.FC<UserOrdersDialogProps> = ({
                       {getStatusText(selectedOrder.status)}
                     </Badge>
                     <p className="text-lg font-bold mt-2 text-primary">
-                      {selectedOrder.total} {t("currency") || "ش.ج"}
+                      <OrderTotalDisplay
+                        order={selectedOrder}
+                        t={t}
+                        currency="₪"
+                      />
                     </p>
                   </div>
                 </div>
@@ -428,6 +433,10 @@ const UserOrdersDialog: React.FC<UserOrdersDialogProps> = ({
                     </div>
                   ))}
                 </div>
+                {/* ملخص الخصم والمجموع النهائي للطلبية */}
+                <div className="flex justify-end mt-4">
+                  <OrderTotalDisplay order={selectedOrder} t={t} currency="₪" />
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -545,7 +554,11 @@ const UserOrdersDialog: React.FC<UserOrdersDialogProps> = ({
                     </div>
                     <div className="text-left md:text-right flex flex-col items-end min-w-[120px]">
                       <p className="text-lg font-bold mb-2 text-primary">
-                        {order.total} {t("currency") || "ش.ج"}
+                        <OrderTotalDisplay
+                          order={order}
+                          t={t}
+                          currency="₪"
+                        />
                       </p>
                       <Button
                         variant="outline"

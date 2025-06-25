@@ -7,6 +7,7 @@ export function mapAddressFromDb(
 ): Address {
   if (!dbAddress) {
     return {
+      id: "", // إضافة id فارغ لتفادي الخطأ
       fullName: "",
       phone: "",
       city: "",
@@ -18,6 +19,7 @@ export function mapAddressFromDb(
     };
   }
   return {
+    id: (dbAddress["id"] as string) || "", // إضافة id من الداتا أو فارغ
     fullName: (dbAddress["full_name"] as string) || "",
     phone: (dbAddress["phone"] as string) || "",
     city: (dbAddress["city"] as string) || "",
@@ -104,5 +106,9 @@ export function mapOrderFromDb(order: Record<string, unknown>): Order {
     admin_creator_name: order["admin_creator_name"] as string | undefined,
     cancelled_by: order["cancelled_by"] as string | undefined,
     cancelled_by_name: order["cancelled_by_name"] as string | undefined,
+    // إضافة حقول الخصم
+    discount_type: order["discount_type"] as "amount" | "percent" | undefined,
+    discount_value: order["discount_value"] as number | undefined,
+    total_after_discount: order["total_after_discount"] as number | undefined,
   };
 }

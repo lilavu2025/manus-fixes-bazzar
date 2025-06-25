@@ -6,6 +6,7 @@ import { safeDecompressNotes } from "@/orders/order.utils";
 import { getPaymentMethodText } from "@/orders/order.utils";
 import type { Order, OrderItem } from "@/orders/order.types";
 import type { Product } from "@/types";
+import OrderTotalDisplay from "@/components/OrderTotalDisplay";
 
 interface OrderDetailsPrintProps {
   order: Order;
@@ -79,7 +80,10 @@ const OrderDetailsPrint: React.FC<OrderDetailsPrintProps> = ({ order, t, profile
           </div>
         </div>
         <div className="flex flex-col gap-1 items-end md:items-center print:hidden">
-          <div className="text-lg font-bold text-green-700">{order.total} ₪</div>
+          <span className="text-xs font-bold text-yellow-700 tracking-wide uppercase mb-0.5 bg-yellow-200 px-2 py-0.5 rounded shadow-sm border border-yellow-300">
+            {t("total") + " :" || ":المجموع الكلي"}
+          </span>
+          <OrderTotalDisplay order={order} t={t} />
           <div className="flex gap-2">
             <Button
               size="sm"

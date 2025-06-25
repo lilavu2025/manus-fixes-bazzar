@@ -1,6 +1,7 @@
 // Utility to map order from DB (OrdersWithDetails) to UI Order type
 import type { OrdersWithDetails } from '@/integrations/supabase/dataFetchers';
 import type { Order, Address } from '@/types/index';
+import { getOrderDisplayTotal } from "@/orders/order.displayTotal";
 
 export function mapOrderFromDb(order: OrdersWithDetails): Order {
   const items = Array.isArray(order.items) ? order.items : [];
@@ -22,7 +23,7 @@ export function mapOrderFromDb(order: OrdersWithDetails): Order {
     order_number: order.order_number,
     userId: order.user_id || '',
     items: items as Order['items'],
-    total: order.total,
+    total: getOrderDisplayTotal(order).totalAfterDiscount,
     status,
     createdAt: new Date(order.created_at),
     shippingAddress: shippingAddress || ({} as Address),

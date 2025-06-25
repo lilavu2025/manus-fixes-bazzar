@@ -25,6 +25,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { UserProfile } from "@/types/profile";
 import type { Product } from "@/types/index";
 import { useCategoriesRealtime } from "@/hooks/useCategoriesRealtime";
+import { getOrderDisplayTotal } from "@/orders/order.displayTotal";
 
 // Helper types
 interface UsersByType {
@@ -110,9 +111,10 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
   const { data: monthlyData = [], isLoading: monthlyLoading } = useQuery({
     queryKey: ["admin-monthly-data"],
     queryFn: async () => {
+      // جلب جميع الحقول اللازمة لحساب الخصم
       const { data, error } = await supabase
         .from("orders")
-        .select("created_at, total, status")
+        .select("created_at, total, status, discount_type, discount_value, total_after_discount")
         .gte(
           "created_at",
           new Date(new Date().getFullYear(), 0, 1).toISOString(),
@@ -152,13 +154,14 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
         monthlyStats[i] = { month: monthNames[i], orders: 0, revenue: 0 };
       }
       // اجمع الطلبات حسب الشهر
-      data.forEach((order: { created_at: string; status: string; total: number }) => {
+      data.forEach((order: any) => {
         const date = new Date(order.created_at);
         const monthKey = date.getMonth();
         if (monthKey <= currentMonth) {
           monthlyStats[monthKey].orders += 1;
           if (order.status !== "cancelled") {
-            monthlyStats[monthKey].revenue += order.total || 0;
+            const displayTotal = getOrderDisplayTotal(order);
+            monthlyStats[monthKey].revenue += displayTotal.totalAfterDiscount || 0;
           }
         }
       });

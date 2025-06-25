@@ -1,6 +1,7 @@
 // whatsappSender.ts
 import { safeDecompressNotes } from "./order.utils";
 import type { Order } from "./order.types";
+import { getOrderDisplayTotal } from "@/orders/order.displayTotal";
 
 export function generateWhatsappMessage(order: Order, t: (key: string) => string): string {
   const format = (label: string, value: any) =>
@@ -45,6 +46,8 @@ export function generateWhatsappMessage(order: Order, t: (key: string) => string
 
   msg += `\n\n==============================\n`;
   msg += `*${t("total") || "المجموع"}:* *${order.total} ₪*\n`;
+  msg += `\n==============================\n\n`;
+  msg += `*${t("totalAfterDiscount") || "المجموع النهائي بعد الخصم"}:* *${getOrderDisplayTotal(order).totalAfterDiscount} ₪*\n`;
   msg += `==============================`;
 
   return msg;

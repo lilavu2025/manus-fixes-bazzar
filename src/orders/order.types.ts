@@ -31,6 +31,10 @@ export interface Order {
   admin_creator_name?: string;
   cancelled_by?: string;
   cancelled_by_name?: string;
+  // الحقول القادمة من الداتا بيس (snake_case)
+  discount_type?: "amount" | "percent";
+  discount_value?: number;
+  total_after_discount?: number;
 }
 
 export interface OrderItem {
@@ -48,4 +52,7 @@ export interface NewOrderForm {
   notes: string;
   items: OrderItem[];
   shipping_address: Address;
+  discountType?: "amount" | "percent";
+  discountValue?: number;
+  discountEnabled?: boolean;
 }

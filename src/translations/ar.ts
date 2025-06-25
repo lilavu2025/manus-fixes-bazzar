@@ -151,7 +151,7 @@ export const arTranslations = {
   cart: "السلة",
   quantity: "الكمية",
   price: "السعر",
-  total: "المجموع",
+  total: "المجموع الكلي",
   emptyCart: "السلة فارغة",
 
   // Product
@@ -758,5 +758,21 @@ export const arTranslations = {
   loadingSetting: "جاري التحميل...",
   chooseSavedAddress: "اختر عنوانًا محفوظًا",
   chooseAddressPlaceholder: "اختر عنوان...",
-  noAddressesFound: "لا يوجد عناوين محفوظة لهذا العميل"
+  noAddressesFound: "لا يوجد عناوين محفوظة لهذا العميل",
+  totalAfterDiscount: "المجموع النهائي بعد الخصم",
+  discountType: "نوع الخصم",
+  fixedAmount: "مبلغ ثابت", 
+  discountValue: "قيمة الخصم",
+  amount: "المبلغ",
+  percent: "النسبة المئوية",
+  unit: "الوحدة",
+  userHasNoOrders: "لا يوجد طلبات لهذا المستخدم",
+  userHasNoFavorites: "لا يوجد مفضلات لهذا المستخدم",
+  searchOrders: "بحث في الطلبات...",
+  noOrdersForStatus : "لا توجد طلبات لهذه الحالة",
+  noOrdersForStatusDesc: "لا توجد طلبات في هذه الحالة حاليًا. جرب تغيير الفلاتر أو التحقق لاحقًا.",
+  noOrdersFound: "لم يتم العثور على طلبات",
+  tryChangingFilterToShowOtherOrders: "جرب تغيير الفلاتر أو البحث عن طلبات أخرى",
+  orderDetailsNotAvailable: "تفاصيل الطلب غير متاحة",
+  
 };
