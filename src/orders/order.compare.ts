@@ -57,5 +57,35 @@ export function getOrderEditChangesDetailed(
       newValue: Object.values(omitFullName(edited.shipping_address)).join(", "),
     });
   }
+  // مقارنة الخصم
+  const origDiscountEnabled = !!(
+    original.discount_type && original.discount_value && original.discount_value > 0
+  );
+  const editDiscountEnabled = !!(
+    edited.discountEnabled && edited.discountValue && edited.discountValue > 0
+  );
+  if (origDiscountEnabled !== editDiscountEnabled) {
+    changes.push({
+      label: "تفعيل الخصم",
+      oldValue: origDiscountEnabled ? "مفعل" : "غير مفعل",
+      newValue: editDiscountEnabled ? "مفعل" : "غير مفعل",
+    });
+  }
+  if (editDiscountEnabled) {
+    if (original.discount_type !== edited.discountType) {
+      changes.push({
+        label: "نوع الخصم",
+        oldValue: original.discount_type === "percent" ? "نسبة مئوية" : "مبلغ ثابت",
+        newValue: edited.discountType === "percent" ? "نسبة مئوية" : "مبلغ ثابت",
+      });
+    }
+    if (original.discount_value !== edited.discountValue) {
+      changes.push({
+        label: "قيمة الخصم",
+        oldValue: original.discount_value?.toString() || "0",
+        newValue: edited.discountValue?.toString() || "0",
+      });
+    }
+  }
   return changes;
 }

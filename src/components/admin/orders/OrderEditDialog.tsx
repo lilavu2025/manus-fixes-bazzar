@@ -9,6 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import Autocomplete from "../../ui/autocomplete";
 import type { NewOrderForm, OrderItem } from "@/orders/order.types";
 import { calculateOrderTotal } from "@/orders/order.utils";
+import OrderDiscountSection from "./OrderDiscountSection";
+import OrderDiscountSummary from "./OrderDiscountSummary";
 
 interface OrderEditDialogProps {
   open: boolean;
@@ -73,6 +75,23 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [originalOrderForEdit?.profiles?.user_type, products]);
 
+  // عند فتح الديالوج، إذا الطلبية الأصلية فيها خصم، فعّل الخصم وعبّي القيم
+  useEffect(() => {
+    if (!open || !originalOrderForEdit) return;
+    setEditOrderForm(f => {
+      if (!f) return f;
+      // إذا الطلبية الأصلية فيها خصم
+      const hasDiscount = !!originalOrderForEdit.discount_type && originalOrderForEdit.discount_value > 0;
+      return {
+        ...f,
+        discountEnabled: hasDiscount,
+        discountType: hasDiscount ? originalOrderForEdit.discount_type : "amount",
+        discountValue: hasDiscount ? originalOrderForEdit.discount_value : 0,
+      };
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, originalOrderForEdit]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl w-full max-h-[90vh] overflow-y-auto p-0 sm:p-0">
@@ -92,6 +111,15 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
             autoComplete="off"
             onSubmit={e => {
               e.preventDefault();
+              // إذا تم إلغاء تفعيل الخصم، احذف الخصم من الداتا بيس
+              if (editOrderForm.discountEnabled === false || editOrderForm.discountValue === 0) {
+                setEditOrderForm(f => f ? {
+                  ...f,
+                  discountType: undefined,
+                  discountValue: 0,
+                  discountEnabled: false,
+                } : f);
+              }
               setEditOrderChanges(getOrderEditChangesDetailed(originalOrderForEdit, editOrderForm));
               setShowConfirmEditDialog(true);
             }}
@@ -301,6 +329,16 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
                 </div>
               </div>
             </div>
+            {/* قسم الخصم */}
+            <OrderDiscountSection
+              discountEnabled={editOrderForm.discountEnabled}
+              discountType={editOrderForm.discountType}
+              discountValue={editOrderForm.discountValue}
+              onDiscountEnabledChange={val => setEditOrderForm(f => f ? { ...f, discountEnabled: val } : f)}
+              onDiscountTypeChange={val => setEditOrderForm(f => f ? { ...f, discountType: val } : f)}
+              onDiscountValueChange={val => setEditOrderForm(f => f ? { ...f, discountValue: val } : f)}
+              t={t}
+            />
             {/* المنتجات */}
             <div className="bg-gray-50 rounded-xl p-4 border mt-2">
               <div className="flex justify-between items-center mb-4">
@@ -455,6 +493,13 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
                   <p className="text-lg font-semibold">
                     {t("total") || "المجموع الكلي"}: {calculateOrderTotal(editOrderForm.items)} ₪
                   </p>
+                  <OrderDiscountSummary
+                    discountEnabled={editOrderForm.discountEnabled}
+                    discountType={editOrderForm.discountType}
+                    discountValue={editOrderForm.discountValue}
+                    items={editOrderForm.items}
+                    t={t}
+                  />
                 </div>
               )}
             </div>

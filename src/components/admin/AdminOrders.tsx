@@ -266,14 +266,34 @@ const AdminOrders: React.FC = () => {
         quantity: item.quantity,
         price: item.price,
       }));
+      // معالجة حذف الخصم إذا تم إلغاء تفعيله أو قيمته صفر
+      const updateObjWithDiscount = {
+        ...updateObj,
+        ...( (!editOrderForm.discountEnabled || !editOrderForm.discountValue)
+          ? {
+              discount_type: null,
+              discount_value: null,
+              total_after_discount: null,
+            }
+          : {
+              discount_type: editOrderForm.discountType,
+              discount_value: editOrderForm.discountValue,
+              total_after_discount:
+                editOrderForm.discountType === "percent"
+                  ? Math.max(0, total - (total * (editOrderForm.discountValue || 0) / 100))
+                  : Math.max(0, total - (editOrderForm.discountValue || 0)),
+            }
+        )
+      };
       editOrderMutation.mutate(
-        { editOrderId, updateObj, orderItems },
+        { editOrderId, updateObj: updateObjWithDiscount, orderItems },
         {
           onSuccess: () => {
-            toast.success(t("orderEditSuccess"));
+            toast.success(t("orderEditedSuccess"));
             setShowEditOrder(false);
             setEditOrderForm(null);
             setEditOrderId(null);
+            setShowConfirmEditDialog(false);
             refetchOrders();
             queryClient.invalidateQueries({ queryKey: ["admin-orders-stats"] }); // إعادة جلب إحصائيات لوحة التحكم
           },
