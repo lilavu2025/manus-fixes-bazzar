@@ -28,7 +28,8 @@ export function getOrderEditChangesDetailed(
       oldValue: safeDecompressNotes(original.notes || ""),
       newValue: edited.notes || "",
     });
-  // مقارنة المنتجات مع دعم التعدد اللغوي الحقيقي من مصفوفة المنتجات
+  // مقارنة المنتجات: عرض فقط المنتجات التي تغيرت (كمية أو سعر أو حذف/إضافة)
+  const getProductKey = (item: any) => item.product_id || item.id;
   const getProductName = (item: any) => {
     const prod = products.find((p) => p.id === item.product_id);
     if (prod) {
@@ -39,18 +40,41 @@ export function getOrderEditChangesDetailed(
     // fallback: استخدم الاسم المخزن في العنصر
     return item[`name_${language}`] || item.product_name || item.name_ar || item.name_en || item.name_he || item.id || "";
   };
-  const origItems = original.items
-    .map((i) => `${getProductName(i)} (x${i.quantity}) ${t("atPrice") || "بسعر"} ${i.price}`)
-    .join(language === "he" ? ", " : "، ");
-  const editItems = edited.items
-    .map((i) => `${getProductName(i)} (x${i.quantity}) ${t("atPrice") || "بسعر"} ${i.price}`)
-    .join(language === "he" ? ", " : "، ");
-  if (origItems !== editItems)
-    changes.push({
-      label: t("items") || "الأصناف",
-      oldValue: origItems || "-",
-      newValue: editItems || "-",
-    });
+  const origItemsMap = new Map(original.items.map(i => [getProductKey(i), i]));
+  const editItemsMap = new Map(edited.items.map(i => [getProductKey(i), i]));
+  // المنتجات التي تغيرت أو أضيفت أو حذفت
+  const allKeys = Array.from(new Set([
+    ...original.items.map(getProductKey),
+    ...edited.items.map(getProductKey)
+  ]));
+  allKeys.forEach(key => {
+    const orig = origItemsMap.get(key);
+    const edit = editItemsMap.get(key);
+    if (!orig && edit) {
+      // منتج جديد أضيف
+      changes.push({
+        label: getProductName(edit),
+        oldValue: '-',
+        newValue: `${t('quantity') || 'الكمية'}: ${edit.quantity}, ${t('price') || 'السعر'}: ${edit.price}`
+      });
+    } else if (orig && !edit) {
+      // منتج تم حذفه
+      changes.push({
+        label: getProductName(orig),
+        oldValue: `${t('quantity') || 'الكمية'}: ${orig.quantity}, ${t('price') || 'السعر'}: ${orig.price}`,
+        newValue: '-'
+      });
+    } else if (orig && edit) {
+      // منتج موجود في الاثنين: تحقق من التغييرات
+      if (orig.quantity !== edit.quantity || orig.price !== edit.price) {
+        changes.push({
+          label: getProductName(orig),
+          oldValue: `${t('quantity') || 'الكمية'}: ${orig.quantity}, ${t('price') || 'السعر'}: ${orig.price}`,
+          newValue: `${t('quantity') || 'الكمية'}: ${edit.quantity}, ${t('price') || 'السعر'}: ${edit.price}`
+        });
+      }
+    }
+  });
   // مقارنة العنوان مع دعم التعدد اللغوي
   const omitFullName = (
     addr: Record<string, unknown> | Address | undefined | null
