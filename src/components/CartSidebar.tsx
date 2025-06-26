@@ -13,7 +13,6 @@ import { getLocalizedName } from "@/utils/getLocalizedName";
 import type { Product as ProductFull } from '@/types/product';
 
 interface CartSidebarProps {
-  product: ProductFull;
   isOpen: boolean;
   onClose: () => void;
 }
@@ -98,24 +97,26 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
                   {cartItems.map((item) => (
                     <div
                       key={item.id}
-                      className="flex gap-3 sm:gap-4 p-3 sm:p-4 bg-gray-50 rounded-lg animate-fade-in"
+                      className={`flex ${isRTL ? "flex-row-reverse" : "flex-row"} gap-4 p-4 bg-gray-50 rounded-lg shadow-md animate-fade-in`}
                     >
                       <img
                         src={item.product.image}
                         alt={item.product.name}
-                        className="w-12 h-12 sm:w-16 sm:h-16 object-cover rounded-lg flex-shrink-0"
+                        className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-lg flex-shrink-0 border border-gray-200"
                       />
 
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-semibold text-xs sm:text-sm mb-1 line-clamp-2">
-                          {getLocalizedName(item.product, language)}
-                        </h4>
-                        <p className="text-primary font-bold text-xs sm:text-sm">
-                          {item.product.price} {t("currency")}
-                        </p>
+                      <div className={`flex-1 flex flex-col justify-between ${isRTL ? "items-end" : "items-start"}`}>
+                        <div>
+                          <h4 className="font-semibold text-sm sm:text-base mb-1 line-clamp-2">
+                            {getLocalizedName(item.product, language)}
+                          </h4>
+                          <p className="text-primary font-bold text-sm sm:text-base">
+                            {item.product.price} {t("currency")}
+                          </p>
+                        </div>
 
-                        <div className="flex items-center justify-between mt-2">
-                          <div className="flex items-center gap-2">
+                        <div className={`flex items-center justify-between mt-2 ${isRTL ? "flex-row-reverse" : "flex-row"}`}>
+                          <div className={`flex items-center gap-2 ${isRTL ? "flex-row-reverse" : "flex-row"}`}>
                             <Button
                               size="icon"
                               variant="outline"
@@ -128,7 +129,7 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
                                 )
                               }
                             >
-                              <Minus className="h-3 w-3" />
+                              <Minus className="h-4 w-4" />
                             </Button>
 
                             <span className="w-8 text-center font-semibold">
@@ -147,7 +148,7 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
                                 )
                               }
                             >
-                              <Plus className="h-3 w-3" />
+                              <Plus className="h-4 w-4" />
                             </Button>
                           </div>
 
@@ -157,7 +158,7 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
                             className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
                             onClick={() => removeItem(item.id, item.product.id)}
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-5 w-5" />
                           </Button>
                         </div>
                       </div>
@@ -167,7 +168,7 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
               </ScrollArea>
 
               {/* Footer */}
-              <div className="border-t p-6 space-y-4">
+              <div className={`border-t p-6 space-y-4 ${isRTL ? "mb-16 sm:mb-0" : "mb-16 sm:mb-0"}`}>
                 <div className="flex justify-between items-center">
                   <span className="text-lg font-semibold">{t("total")}:</span>
                   <span className="text-2xl font-bold text-primary">
