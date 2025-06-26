@@ -18,6 +18,7 @@ import { Filter, X } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { getLocalizedName } from "@/utils/getLocalizedName";
 import { mapProductFromDb } from "@/types/mapProductFromDb";
+import { fetchTopOrderedProducts } from "@/integrations/supabase/dataSenders";
 
 const Products: React.FC = () => {
   const { t, isRTL, language } = useLanguage();
@@ -30,6 +31,8 @@ const Products: React.FC = () => {
     max: "",
   });
   const [showFilters, setShowFilters] = useState(false);
+  const [showTopOrdered, setShowTopOrdered] = useState(false);
+  const [topOrderedProducts, setTopOrderedProducts] = useState([]);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -53,6 +56,18 @@ const Products: React.FC = () => {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const cat = params.get("category");
+    const topOrderedParam = params.get("topOrdered");
+    const featuredParam = params.get("featured");
+    if (topOrderedParam === "1" || topOrderedParam === "true") {
+      setShowTopOrdered(true);
+    } else {
+      setShowTopOrdered(false);
+    }
+    if (featuredParam === "1" || featuredParam === "true") {
+      setSortBy("featured");
+    } else if (sortBy === "featured") {
+      setSortBy("default");
+    }
     if (cat && cat !== selectedCategory) {
       setSelectedCategory(cat);
     } else if (!cat && selectedCategory !== "all") {
@@ -78,9 +93,24 @@ const Products: React.FC = () => {
     }
   };
 
-  // Filter and sort products
+  useEffect(() => {
+    if (showTopOrdered) {
+      fetchTopOrderedProducts().then((data) => {
+        // مرر النتائج عبر mapProductFromDb لضمان وجود inStock وstock_quantity
+        const mapped = Array.isArray(data) ? data.map(mapProductFromDb) : [];
+        setTopOrderedProducts(mapped);
+      });
+    }
+  }, [showTopOrdered]);
+
+  // تعديل الفلترة في صفحة المنتجات لعرض المنتجات المميزة فقط إذا كان featured=1
   const filteredProducts = productsList
     .filter((product) => {
+      if (product.active === false) return false;
+      if (showTopOrdered) return true; // سيتم الفلترة لاحقاً
+      if (sortBy === "featured" || new URLSearchParams(location.search).get("featured") === "1") {
+        return product.featured === true;
+      }
       // فلترة حسب الفئة
       const matchesCategory =
         selectedCategory === "all" || product.category === selectedCategory;
@@ -100,7 +130,6 @@ const Products: React.FC = () => {
           return a.price - b.price;
         case "price-high":
           return b.price - a.price;
-
         case "newest":
           return 0; // Would use created_at if available
         default:
@@ -113,6 +142,8 @@ const Products: React.FC = () => {
     setSortBy("default");
     setPriceRange({ min: "", max: "" });
     setSearchQuery("");
+    setShowTopOrdered(false); // إلغاء تفعيل الأكثر مبيعاً
+    setTopOrderedProducts([]); // تفريغ قائمة الأكثر مبيعاً
   };
 
   const activeFiltersCount = [
@@ -238,7 +269,7 @@ const Products: React.FC = () => {
         {/* Filters */}
         {showFilters && (
           <div className="bg-white rounded-lg p-4 sm:p-6 mb-6 shadow-sm">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
               {/* Category Filter */}
               <div>
                 <label className="block text-sm font-medium mb-2">
@@ -274,12 +305,9 @@ const Products: React.FC = () => {
                   <SelectContent className="bg-white z-50">
                     <SelectItem value="default">{t("default")}</SelectItem>
                     <SelectItem value="newest">{t("newest")}</SelectItem>
-                    <SelectItem value="price-low">
-                      {t("priceLowHigh")}
-                    </SelectItem>
-                    <SelectItem value="price-high">
-                      {t("priceHighLow")}
-                    </SelectItem>
+                    <SelectItem value="price-low">{t("priceLowHigh")}</SelectItem>
+                    <SelectItem value="price-high">{t("priceHighLow")}</SelectItem>
+                    <SelectItem value="featured">{t("featuredProducts")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -313,6 +341,22 @@ const Products: React.FC = () => {
                     }
                   />
                 </div>
+              </div>
+
+              {/* الأكثر مبيعاً */}
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  الأكثر مبيعاً
+                </label>
+                <Button
+                  variant={showTopOrdered ? "default" : "outline"}
+                  className="w-full"
+                  onClick={() => setShowTopOrdered((prev) => !prev)}
+                >
+                  {showTopOrdered
+                    ? "عرض الكل"
+                    : "عرض الأكثر مبيعاً"}
+                </Button>
               </div>
 
               {/* Clear Filters */}
@@ -366,7 +410,21 @@ const Products: React.FC = () => {
         )}
 
         {/* Products Grid */}
-        {filteredProducts.length === 0 ? (
+        {showTopOrdered ? (
+          topOrderedProducts.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-500 text-lg">
+                لا يوجد منتجات أكثر مبيعاً حالياً
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-6">
+              {topOrderedProducts.filter((product) => product.active !== false).map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          )
+        ) : filteredProducts.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-500 text-lg">{t("noProductsFound")}</p>
           </div>

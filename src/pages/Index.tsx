@@ -13,6 +13,8 @@ import { getLocalizedName } from "@/utils/getLocalizedName";
 import { mapProductFromDb } from "@/types/mapProductFromDb";
 import type { Banner as SupabaseBanner } from "@/integrations/supabase/dataFetchers";
 import type { Banner as AppBanner, Product } from "@/types/index";
+import TopOrderedProducts from "@/components/TopOrderedProducts";
+import { fetchTopOrderedProducts } from "@/integrations/supabase/dataSenders";
 
 interface IndexProps {
   searchQuery: string;
@@ -22,6 +24,7 @@ interface IndexProps {
 const Index = ({ searchQuery, setSearchQuery }: IndexProps) => {
   const { t, isRTL, language } = useLanguage();
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [topOrdered, setTopOrdered] = useState<Product[]>([]);
 
   const { data: bannersData } = useBanners();
   const {
@@ -49,9 +52,9 @@ const Index = ({ searchQuery, setSearchQuery }: IndexProps) => {
     ? productsRaw.map(mapProductFromDb)
     : [];
 
-  const featuredProducts = products
-    .filter((product) => product.featured)
-    .slice(0, 8);
+  // المنتجات المميزة للصفحة الرئيسية فقط (حد أقصى 4)
+  const featuredHome = products.filter((product) => product.featured && product.active !== false).slice(0, 4);
+
   const filteredProducts = products.filter((product) => {
     if (searchQuery === "") return true;
     const q = searchQuery.toLowerCase();
@@ -61,10 +64,14 @@ const Index = ({ searchQuery, setSearchQuery }: IndexProps) => {
       (product.nameHe && product.nameHe.toLowerCase().includes(q))
     );
   });
-  const displayProducts = searchQuery ? filteredProducts : featuredProducts;
+  const displayProducts = searchQuery ? filteredProducts : featuredHome;
 
   useEffect(() => {
     console.log("[Index] mounted at", new Date().toISOString());
+    fetchTopOrderedProducts().then((data) => {
+      const mapped = Array.isArray(data) ? data.map(mapProductFromDb) : [];
+      setTopOrdered(mapped.filter((p) => p.active !== false).slice(0, 4));
+    });
     return () => {
       console.log("[Index] unmounted at", new Date().toISOString());
     };
@@ -175,39 +182,107 @@ const Index = ({ searchQuery, setSearchQuery }: IndexProps) => {
           </section>
         )}
 
+        {/* زر عرض جميع المنتجات على الشاشات الصغيرة فقط */}
+        {!searchQuery && (
+          <section className="bg-white/80 rounded-xl p-4 shadow-sm mb-4 block md:hidden">
+            <div className="mb-4 block md:hidden">
+            <Button
+              asChild
+              variant="outline"
+              className="w-full font-bold border-orange-200 text-orange-600 hover:bg-orange-50"
+            >
+              <Link to="/products" aria-label={t("viewAllProducts")}>{t("viewAllProducts")}</Link>
+            </Button>
+          </div>
+          </section>
+        )}
+
+        {/* Top Ordered Products */}
+        {!searchQuery && (
+          <section className="bg-white/80 rounded-xl p-4 shadow-sm">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold">{t("topOrderedProducts")}</h2>
+              <div className="hidden md:block">
+                <Button
+                  asChild
+                  variant="outline"
+                  className="font-bold border-orange-200 text-orange-600 hover:bg-orange-50"
+                >
+                  <Link to="/products?topOrdered=1" aria-label={t("viewAll")}>{t("viewAll")}</Link>
+                </Button>
+              </div>
+            </div>
+            {topOrdered.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-gray-500">{t("noTopSellingProducts")}</p>
+                <Button asChild className="mt-4">
+                  <Link to="/products" aria-label={t("viewAll")}>
+                    {t("viewAll")}
+                  </Link>
+                </Button>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {topOrdered.map((product) => (
+                    <ProductCard key={product.id} product={product} />
+                  ))}
+                </div>
+                {/* زر عرض الكل أسفل الكروت على الشاشات الصغيرة فقط */}
+                <div className="mt-4 block md:hidden">
+                  <Button
+                    asChild
+                    variant="outline"
+                    className="w-full font-bold border-orange-200 text-orange-600 hover:bg-orange-50"
+                  >
+                    <Link to="/products?topOrdered=1" aria-label={t("viewAll")}>{t("viewAll")}</Link>
+                  </Button>
+                </div>
+              </>
+            )}
+          </section>
+        )}
+
         {/* Featured Products */}
         {!searchQuery && (
           <section className="bg-white/80 rounded-xl p-4 shadow-sm">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold">{t("featuredProducts")}</h2>
-              <Button
-                asChild
-                variant="outline"
-                className="font-bold border-orange-200 text-orange-600 hover:bg-orange-50"
-              >
-                <Link to="/products" aria-label={t("viewAll")}>
-                  {t("viewAll")}
-                </Link>
-              </Button>
+              <div className="hidden md:block">
+                <Button
+                  asChild
+                  variant="outline"
+                  className="font-bold border-orange-200 text-orange-600 hover:bg-orange-50"
+                >
+                  <Link to="/products?featured=1" aria-label={t("viewAll")}>{t("viewAll")}</Link>
+                </Button>
+              </div>
             </div>
-            {displayProducts.length === 0 ? (
+            {featuredHome.length === 0 ? (
               <div className="text-center py-12">
                 <p className="text-gray-500">{t("noFeaturedProducts")}</p>
                 <Button asChild className="mt-4">
-                  <Link to="/products" aria-label={t("browseAllProducts")}>
-                    {t("browseAllProducts")}
-                  </Link>
+                  <Link to="/products" aria-label={t("browseAllProducts")}>{t("browseAllProducts")}</Link>
                 </Button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
-                {displayProducts.map((product) => (
-                  <ProductCard
-                    key={product.id}
-                    product={product as import("@/types/product").Product}
-                  />
-                ))}
-              </div>
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {featuredHome.map((product) => (
+                    <ProductCard key={product.id} product={product} />
+                  ))}
+                </div>
+                {/* زر عرض الكل أسفل الكروت على الشاشات الصغيرة فقط */}
+                <div className="mt-4 block md:hidden">
+                  <Button
+                    asChild
+                    variant="outline"
+                    className="w-full font-bold border-orange-200 text-orange-600 hover:bg-orange-50"
+                  >
+                    <Link to="/products?featured=1" aria-label={t("viewAll")}>{t("viewAll")}</Link>
+                  </Button>
+                </div>
+              </>
             )}
           </section>
         )}

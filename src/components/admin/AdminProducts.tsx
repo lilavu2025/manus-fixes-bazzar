@@ -21,6 +21,7 @@ import { BarChart3, Filter, CheckCircle, XCircle } from "lucide-react";
 import { mapProductFromDb } from "@/types/mapProductFromDb";
 import { Card, CardContent } from "@/components/ui/card";
 import { ClearableInput } from "@/components/ui/ClearableInput"; // استيراد المكون الجديد
+import { fetchTopOrderedProducts } from "@/integrations/supabase/dataSenders";
 
 const AdminProducts: React.FC = () => {
   const { isRTL, t, language } = useLanguage();
@@ -80,6 +81,8 @@ const AdminProducts: React.FC = () => {
   const [filterStock, setFilterStock] = useState<string>("all");
   const [filterActive, setFilterActive] = useState<string>("all");
   const [searchName, setSearchName] = useState<string>(""); // إضافة حالة البحث بالاسم
+  const [showTopOrdered, setShowTopOrdered] = useState(false);
+  const [topOrderedProducts, setTopOrderedProducts] = useState<ProductWithOptionalFields[]>([]);
 
   // إحصائيات سريعة
   const totalProducts = products.length;
@@ -134,6 +137,14 @@ const AdminProducts: React.FC = () => {
       }
     }
   }, [productCategories]);
+
+  useEffect(() => {
+    if (showTopOrdered) {
+      fetchTopOrderedProducts().then((data) => {
+        setTopOrderedProducts(Array.isArray(data) ? data.map(mapProductFromDb) : []);
+      });
+    }
+  }, [showTopOrdered]);
 
   if (productsLoading) {
     return (
@@ -342,24 +353,32 @@ const AdminProducts: React.FC = () => {
           </div>
         </CardContent>
       </Card>
-      <AdminHeader
-        title={t("products") || "المنتجات"}
-        count={filteredProducts.length}
-        addLabel={t("addProduct") || "إضافة منتج"}
-        onAdd={() => setShowAddDialog(true)}
-      />
-      {filteredProducts.length === 0 ? (
-        <AdminProductsEmptyState onAddProduct={() => setShowAddDialog(true)} />
+      <AdminProductsHeader productCount={products.length} onAddProduct={() => setShowAddDialog(true)} />
+      <div className="flex flex-wrap gap-2 mb-4">
+        <button
+          className={`px-3 py-1 rounded border ${showTopOrdered ? 'bg-orange-100 border-orange-400 text-orange-700' : 'bg-white border-gray-300 text-gray-700'}`}
+          onClick={() => setShowTopOrdered((prev) => !prev)}
+        >
+          {showTopOrdered ? 'عرض كل المنتجات' : 'عرض الأكثر مبيعاً'}
+        </button>
+      </div>
+      {/* جدول المنتجات */}
+      {showTopOrdered ? (
+        <AdminProductsTable
+          products={topOrderedProducts}
+          onViewProduct={handleViewProduct}
+          onEditProduct={handleEditProduct}
+          onDeleteProduct={handleDeleteProduct}
+          categories={productCategories}
+        />
       ) : (
-        <div className="overflow-x-auto rounded-xl shadow-lg bg-white mt-4">
-          <AdminProductsTable
-            products={filteredProducts}
-            onViewProduct={handleViewProduct}
-            onEditProduct={handleEditProduct}
-            onDeleteProduct={handleDeleteProduct}
-            categories={productCategories}
-          />
-        </div>
+        <AdminProductsTable
+          products={products}
+          onViewProduct={handleViewProduct}
+          onEditProduct={handleEditProduct}
+          onDeleteProduct={handleDeleteProduct}
+          categories={productCategories}
+        />
       )}
 
       <AdminProductsDialogs

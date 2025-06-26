@@ -28,5 +28,6 @@ export function mapProductFromDb(row: ProductRow): Product {
     tags: row.tags ?? [],
     active: typeof row.active === 'boolean' ? row.active : true,
     created_at: row.created_at ?? '',
+    sales_count: row.sales_count ?? 0,
   };
 }

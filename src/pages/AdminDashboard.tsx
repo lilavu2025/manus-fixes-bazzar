@@ -31,6 +31,7 @@ import AdminDashboardStats from "@/components/admin/AdminDashboardStats";
 import AdminOffers from "@/components/admin/AdminOffers";
 import AdminBanners from "@/components/admin/AdminBanners";
 import AdminContactInfo from "@/components/admin/AdminContactInfo";
+import AdminTopOrderedProducts from "@/components/admin/AdminTopOrderedProducts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useUsers } from "@/hooks/useSupabaseData";
 import { useProductsRealtime } from "@/hooks/useProductsRealtime";
@@ -38,6 +39,7 @@ import { useOrdersRealtime } from "@/hooks/useOrdersRealtime";
 import { mapProductFromDb } from "@/types/mapProductFromDb";
 import type { Product } from "@/types/index";
 import type { ProductRow } from "@/integrations/supabase/dataFetchers";
+import AdminReports from "@/pages/AdminReports";
 
 // تعريف أنواع الطلب والمنتج بشكل مبسط
 interface PendingOrder {
@@ -79,6 +81,12 @@ const AdminDashboard: React.FC = () => {
       path: "/admin/contact-info",
       label: t("manageContactInfo") || "معلومات الاتصال",
       icon: Mail,
+    },
+    // رابط التقارير الإدارية
+    {
+      path: "/admin/reports",
+      label: t("reports"),
+      icon: FolderOpen,
     },
   ];
 
@@ -336,7 +344,14 @@ const AdminDashboard: React.FC = () => {
               {location.pathname === "/admin" && (
                 <>
                   <AdminDashboardStats
-                    pendingOrders={pendingOrders}
+                    pendingOrders={pendingOrders
+                      .filter((order) => typeof order.order_number === "number")
+                      .map((order) => ({
+                        id: order.id,
+                        order_number: order.order_number as number,
+                        created_at: order.created_at,
+                        profiles: order.profiles,
+                      }))}
                     lowStockProductsData={lowStockProductsData}
                     users={users}
                     products={productsMapped}
@@ -352,6 +367,7 @@ const AdminDashboard: React.FC = () => {
                 <Route path="/offers" element={<AdminOffers />} />
                 <Route path="/banners" element={<AdminBanners />} />
                 <Route path="/contact-info" element={<AdminContactInfo />} />
+                <Route path="/reports" element={<AdminReports />} />
               </Routes>
             </div>
           </div>

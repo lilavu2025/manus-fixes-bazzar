@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Banner } from "@/types";
 import LazyImage from "@/components/LazyImage";
+import { useLanguage } from "@/utils/languageContextUtils";
 
 interface BannerCarouselProps {
   banners: Banner[];
@@ -11,6 +12,7 @@ interface BannerCarouselProps {
 
 const BannerCarousel: React.FC<BannerCarouselProps> = ({ banners }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const { t } = useLanguage();
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -57,7 +59,7 @@ const BannerCarousel: React.FC<BannerCarouselProps> = ({ banners }) => {
                 size="lg"
                 className="bg-primary hover:bg-primary/90 text-white font-semibold px-8"
               >
-                اكتشف المزيد
+                {t("shopNow")}
               </Button>
             </div>
           </div>

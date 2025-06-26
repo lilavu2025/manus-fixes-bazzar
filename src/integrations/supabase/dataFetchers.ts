@@ -32,6 +32,7 @@ export interface ProductRow {
   stock_quantity?: number;
   active?: boolean;
   created_at?: string;
+  sales_count?: number; // إضافة sales_count هنا
 }
 export interface OrderItemRow {
   id: string;

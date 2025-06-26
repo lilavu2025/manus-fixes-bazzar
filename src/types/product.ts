@@ -21,6 +21,7 @@ export interface Product {
   stock_quantity?: number;
   active?: boolean;
   created_at?: string;
+  sales_count?: number; // تمت الإضافة لدعم إحصائيات المبيعات
 }
 
 export interface ProductFormData {

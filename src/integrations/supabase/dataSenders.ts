@@ -3,7 +3,6 @@
 import { supabase } from "./client";
 import type { Database, TablesInsert, TablesUpdate } from "./types";
 import type { Banner, ContactInfo } from "./dataFetchers";
-import type { Json } from "./types";
 
 export async function createProfile(profile: TablesInsert<"profiles">) {
   try {
@@ -457,6 +456,33 @@ export async function updateOrderStatus(
   }
 }
 
+// تحديث المنتجات الأكثر مبيعًا تلقائيًا بعد كل طلب جديد
+export async function updateTopOrderedProducts() {
+  // 1. احسب عدد مرات بيع كل منتج
+  const { data: orderItems, error: orderItemsError } = await supabase
+    .from('order_items')
+    .select('product_id, quantity');
+  if (orderItemsError) {
+    console.error('Error fetching order_items:', orderItemsError.message);
+    throw orderItemsError;
+  }
+  // حساب عدد مرات بيع كل منتج يدويًا
+  const salesCount = {};
+  for (const item of orderItems || []) {
+    if (!item.product_id) continue;
+    salesCount[item.product_id] = (salesCount[item.product_id] || 0) + (item.quantity || 0);
+  }
+  // ترتيب المنتجات حسب عدد المبيعات (مع تحويل القيم إلى أرقام)
+  const sorted = Object.entries(salesCount)
+    .sort((a, b) => Number(b[1]) - Number(a[1]));
+  // 3. حدث عمود top_ordered لجميع المنتجات
+  await supabase.from('products').update({ top_ordered: false, sales_count: 0 }).neq('top_ordered', false);
+  // 4. حدّث المنتجات الأكثر مبيعاً مع sales_count
+  for (const [productId, count] of sorted.slice(0, 10)) {
+    await supabase.from('products').update({ top_ordered: true, sales_count: count }).eq('id', productId);
+  }
+}
+
 // إضافة طلب جديد
 export async function addOrder(
   orderInsertObj: TablesInsert<"orders">,
@@ -477,6 +503,8 @@ export async function addOrder(
       .from("order_items")
       .insert(itemsToInsert);
     if (itemsError) throw itemsError;
+    // تحديث المنتجات الأكثر مبيعًا بعد كل طلب جديد
+    await updateTopOrderedProducts();
     return true;
   } catch (error) {
     console.error("Error adding order:", error);
@@ -576,7 +604,7 @@ export async function logUserActivity(
         admin_id: adminId,
         user_id: userId,
         action,
-        details: details as Json,
+        details: details as any,
         created_at: new Date().toISOString(),
       },
     ]);
@@ -610,4 +638,18 @@ export async function cancelUserOrder(
     console.error("Error cancelling user order:", error);
     return false;
   }
+}
+
+// جلب المنتجات الأكثر مبيعًا (top_ordered)
+export async function fetchTopOrderedProducts() {
+  const { data, error } = await supabase
+    .from('products')
+    .select('*')
+    .eq('top_ordered', true)
+    .order('sales_count', { ascending: false });
+  if (error) {
+    console.error('Error fetching top ordered products:', error.message);
+    return [];
+  }
+  return data || [];
 }

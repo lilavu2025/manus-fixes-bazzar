@@ -21,6 +21,7 @@ export interface Product {
   stock_quantity?: number;
   active?: boolean;
   created_at?: string;
+  sales_count?: number; // إضافة خاصية sales_count
 }
 
 export interface Category {
