@@ -9,8 +9,11 @@ import { useLanguage } from "@/utils/languageContextUtils";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/useAuth";
 import { useEnhancedToast } from "@/hooks/useEnhancedToast";
+import { getLocalizedName } from "@/utils/getLocalizedName";
+import type { Product as ProductFull } from '@/types/product';
 
 interface CartSidebarProps {
+  product: ProductFull;
   isOpen: boolean;
   onClose: () => void;
 }
@@ -18,7 +21,7 @@ interface CartSidebarProps {
 const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
   const { state, updateQuantity, removeItem, getTotalItems } = useCart();
   const cartItems = state.items;
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, language } = useLanguage();
   const { user } = useAuth();
   const enhancedToast = useEnhancedToast();
 
@@ -105,7 +108,7 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
 
                       <div className="flex-1 min-w-0">
                         <h4 className="font-semibold text-xs sm:text-sm mb-1 line-clamp-2">
-                          {item.product.name}
+                          {getLocalizedName(item.product, language)}
                         </h4>
                         <p className="text-primary font-bold text-xs sm:text-sm">
                           {item.product.price} {t("currency")}
