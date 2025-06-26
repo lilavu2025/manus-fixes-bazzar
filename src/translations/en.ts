@@ -918,7 +918,26 @@ export const enTranslations = {
   testToastMessage: "This is a test toast message!",
   systemTestCompleted: "System test completed successfully!",
   systemTestComplete: "System Test Complete",
-  systemTestSummary: "All core system components have been tested", 
+  systemTestSummary: "All core system components have been tested",
+
+  // Additional translations for hard-coded strings
+  enterArabicTitlePlaceholder: "Enter title in Arabic",
+  enterArabicDescriptionPlaceholder: "Enter description in Arabic",
+  categoriesLoading: "Loading...",
+  categoriesLoadError: "Error loading categories",
+  noOffersDataFound: "No offers data found",
+  orderFileDownloaded: "📎 Order file downloaded — you can now send it as an attachment on WhatsApp ✅",
+  invalidPhoneFormat: "Phone number must start with 05 and contain 10 digits",
+  passwordRequirement: "Password must be at least 6 characters long and contain a number",
+  noUserEmail: "No user email found",
+  enterCurrentPassword: "Please enter current password",
+  newPasswordDifferent: "New password must be different from current",
+  showAllProducts: "Show All",
+  showTopSellingProducts: "Show Top Selling",
+  orderCancelledByAdmin: "Order cancelled by admin",
+  errorAddingToCartLog: "Error adding product to cart:",
+  errorProcessingOrderLog: "Error processing direct purchase:",
+
   // Missing keys completion
   loadingContact: "Loading contact...",
   errorLoadingData: "Error loading data",
@@ -955,4 +974,6 @@ export const enTranslations = {
   orderEditedSuccess: "Order edited successfully",
   orderDeletedSuccess: "Order deleted successfully",
   fixedAmount: "Fixed Amount",
+  pleaseLoginToCheckout: "Please login to checkout",
+  noInternetConnection: "No internet connection",
 };

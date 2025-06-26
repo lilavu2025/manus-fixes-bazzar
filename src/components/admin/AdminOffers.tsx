@@ -365,7 +365,7 @@ const AdminOffers: React.FC = () => {
                               name="title_ar"
                               value={form.title_ar}
                               onChange={handleInput}
-                              placeholder="أدخل العنوان بالعربية"
+                              placeholder={t("enterArabicTitlePlaceholder")}
                               required
                             />
                           </div>
@@ -407,7 +407,7 @@ const AdminOffers: React.FC = () => {
                               name="description_ar"
                               value={form.description_ar}
                               onChange={handleInput}
-                              placeholder="أدخل الوصف بالعربية"
+                              placeholder={t("enterArabicDescriptionPlaceholder")}
                               rows={3}
                             />
                           </div>
@@ -710,7 +710,7 @@ const AdminOffers: React.FC = () => {
                     name="title_ar"
                     value={form.title_ar}
                     onChange={handleInput}
-                    placeholder="أدخل العنوان بالعربية"
+                    placeholder={t("enterArabicTitlePlaceholder")}
                     required
                   />
                 </div>
@@ -752,7 +752,7 @@ const AdminOffers: React.FC = () => {
                     name="description_ar"
                     value={form.description_ar}
                     onChange={handleInput}
-                    placeholder="أدخل الوصف بالعربية"
+                    placeholder={t("enterArabicDescriptionPlaceholder")}
                     rows={3}
                   />
                 </div>
@@ -881,7 +881,7 @@ const AdminOffers: React.FC = () => {
                     name="title_ar"
                     value={form.title_ar}
                     onChange={handleInput}
-                    placeholder="أدخل العنوان بالعربية"
+                    placeholder={t("enterArabicTitlePlaceholder")}
                     required
                   />
                 </div>
@@ -922,7 +922,7 @@ const AdminOffers: React.FC = () => {
                     name="description_ar"
                     value={form.description_ar}
                     onChange={handleInput}
-                    placeholder="أدخل الوصف بالعربية"
+                    placeholder={t("enterArabicDescriptionPlaceholder")}
                     rows={1}
                   />
                 </div>

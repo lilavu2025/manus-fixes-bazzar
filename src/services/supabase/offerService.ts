@@ -9,7 +9,7 @@ export class OfferService {
       .eq('active', true)
       .order('created_at', { ascending: false });
     if (error) throw error;
-    if (!data) throw new Error('لم يتم العثور على بيانات العروض');
+    if (!data) throw new Error('No offers data found');
     return data;
   }
 }

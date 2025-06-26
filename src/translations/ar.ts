@@ -922,4 +922,24 @@ export const arTranslations = {
   systemTestCompleted: "اكتمل فحص النظام بنجاح!",
   systemTestComplete: "اكتمل فحص النظام",
   systemTestSummary: "تم فحص جميع المكونات الأساسية للنظام",
+
+  // Additional translations for hard-coded strings
+  enterArabicTitlePlaceholder: "أدخل العنوان بالعربية",
+  enterArabicDescriptionPlaceholder: "أدخل الوصف بالعربية",
+  categoriesLoading: "جاري التحميل...",
+  categoriesLoadError: "خطأ في تحميل الفئات",
+  noOffersDataFound: "لم يتم العثور على بيانات العروض",
+  orderFileDownloaded: "📎 تم تحميل ملف الطلب — يمكنك الآن إرساله كمرفق على واتساب ✅",
+  invalidPhoneFormat: "رقم الجوال يجب أن يبدأ بـ 05 ويكون مكونًا من 10 أرقام",
+  passwordRequirement: "كلمة السر يجب أن تكون 6 أحرف على الأقل وتحتوي على رقم",
+  noUserEmail: "لا يوجد بريد إلكتروني للمستخدم",
+  enterCurrentPassword: "يرجى إدخال كلمة السر الحالية",
+  newPasswordDifferent: "كلمة السر الجديدة يجب أن تختلف عن الحالية",
+  showAllProducts: "عرض الكل",
+  showTopSellingProducts: "عرض الأكثر مبيعاً",
+  orderCancelledByAdmin: "ألغي الطلب بواسطة الأدمن",
+  errorAddingToCartLog: "خطأ في إضافة المنتج للسلة:",
+  errorProcessingOrderLog: "خطأ في عملية الشراء المباشر:",
+  pleaseLoginToCheckout: "يرجى تسجيل الدخول لإتمام عملية الدفع",
+  noInternetConnection: "لا يوجد اتصال بالإنترنت",
 };

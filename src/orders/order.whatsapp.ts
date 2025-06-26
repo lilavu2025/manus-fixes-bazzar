@@ -69,7 +69,7 @@ export function sendOrderViaWhatsapp(order: Order, t: (key: string) => string) {
 
   if (!isShort) {
     downloadAsTxt(`order-${order.order_number}.txt`, msg);
-    alert("📎 تم تحميل ملف الطلب — يمكنك الآن إرساله كمرفق على واتساب ✅");
+    alert(t("orderFileDownloaded"));
     return; // ❗❗ أوقف تنفيذ باقي الكود نهائيًا
   }
 

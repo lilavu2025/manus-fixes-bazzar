@@ -31,7 +31,7 @@ const ProductCategoryField: React.FC<ProductCategoryFieldProps> = ({
         <Label htmlFor="category">{t('category')}</Label>
         <Select disabled>
           <SelectTrigger>
-            <SelectValue placeholder="جاري التحميل..." />
+            <SelectValue placeholder={t("categoriesLoading")} />
           </SelectTrigger>
         </Select>
       </div>
@@ -44,7 +44,7 @@ const ProductCategoryField: React.FC<ProductCategoryFieldProps> = ({
         <Label htmlFor="category">{t('category')}</Label>
         <Select disabled>
           <SelectTrigger>
-            <SelectValue placeholder="خطأ في تحميل الفئات" />
+            <SelectValue placeholder={t("categoriesLoadError")} />
           </SelectTrigger>
         </Select>
       </div>

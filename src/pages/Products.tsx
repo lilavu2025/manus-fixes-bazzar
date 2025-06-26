@@ -354,8 +354,8 @@ const Products: React.FC = () => {
                   onClick={() => setShowTopOrdered((prev) => !prev)}
                 >
                   {showTopOrdered
-                    ? "عرض الكل"
-                    : "عرض الأكثر مبيعاً"}
+                    ? t("showAllProducts")
+                    : t("showTopSellingProducts")}
                 </Button>
               </div>
 

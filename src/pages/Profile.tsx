@@ -110,7 +110,7 @@ const Profile: React.FC = () => {
     setPasswordLoading(true);
     try {
       const email = user?.email;
-      if (!email) throw new Error("لا يوجد بريد إلكتروني للمستخدم");
+      if (!email) throw new Error(t("noUserEmail"));
       await changePasswordMutation.mutateAsync({
         email,
         currentPassword: passwordData.current,
