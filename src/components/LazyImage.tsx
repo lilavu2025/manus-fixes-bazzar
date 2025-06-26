@@ -1,8 +1,49 @@
 import * as React from "react";
 import { useState, useEffect, useRef, memo } from 'react';
 import { cn } from '@/lib/utils';
-import { getOptimizedImageUrl, supportsWebP, createImageObserver } from '@/utils/imageOptimization';
-import { useImagePreloader } from '@/utils/imagePreloader';
+
+// Enhanced image formats support
+const imageFormats = {
+  webp: 'image/webp',
+  avif: 'image/avif',
+  jpg: 'image/jpeg',
+  png: 'image/png'
+};
+
+// Check browser support for modern image formats
+const checkFormatSupport = async (format: string): Promise<boolean> => {
+  if (typeof window === 'undefined') return false;
+  
+  return new Promise((resolve) => {
+    const testImages = {
+      webp: 'data:image/webp;base64,UklGRiIAAABXRUJQVlA4IBYAAAAwAQCdASoBAAEADsD+JaQAA3AAAAAA',
+      avif: 'data:image/avif;base64,AAAAIGZ0eXBhdmlmAAAAAGF2aWZtaWYxbWlhZk1BMUIAAADybWV0YQAAAAAAAAAoaGRscgAAAAAAAAAAcGljdAAAAAAAAAAAAAAAAGxpYmF2aWYAAAAADnBpdG0AAAAAAAEAAAAeaWxvYwAAAABEAAABAAEAAAABAAABGgAAABcAAAAoaWluZgAAAAAAAQAAABppbmZlAgAAAAABAABhdjAxQ29sb3IAAAAAamlwcnAAAABLaXBjbwAAABRpc3BlAAAAAAAAAAEAAAABAAAAEHBpeGkAAAAAAwgICAAAAAxhdjFDgQAMAAAAABNjb2xybmNseAABAA0ABoAAAAAXaXBtYQAAAAAAAAABAAEEAQKDBAAAAB9tZGF0EgAKCBgABogQEDQgMgkQAAAAB8dSLfI=',
+    };
+    
+    const img = new Image();
+    img.onload = () => resolve(img.width > 0 && img.height > 0);
+    img.onerror = () => resolve(false);
+    img.src = testImages[format as keyof typeof testImages] || '';
+  });
+};
+
+// Get optimized image URL with format selection
+const getOptimizedImageUrl = (src: string, width?: number, height?: number, format = 'webp'): string => {
+  if (!src || src.startsWith('data:') || src.startsWith('blob:')) return src;
+  
+  // For external URLs, return as is
+  if (src.startsWith('http')) return src;
+  
+  // Add query parameters for optimization
+  const params = new URLSearchParams();
+  if (width) params.set('w', width.toString());
+  if (height) params.set('h', height.toString());
+  if (format) params.set('f', format);
+  params.set('q', '85'); // Quality
+  
+  const queryString = params.toString();
+  return queryString ? `${src}?${queryString}` : src;
+};
 
 interface LazyImageProps {
   src: string;
@@ -18,6 +59,7 @@ interface LazyImageProps {
   fallback?: string;
   sizes?: string;
   srcSet?: string;
+  quality?: number;
 }
 
 const LazyImage = memo(function LazyImage({
@@ -34,20 +76,37 @@ const LazyImage = memo(function LazyImage({
   fallback = '/placeholder.svg',
   sizes,
   srcSet,
+  quality = 85,
 }: LazyImageProps) {
   const [imageSrc, setImageSrc] = useState(placeholderSrc);
-  const [imageRef, setImageRef] = useState<HTMLImageElement | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isError, setIsError] = useState(false);
   const [isInView, setIsInView] = useState(priority);
-  const [supportsModernFormats, setSupportsModernFormats] = useState(false);
+  const [optimalFormat, setOptimalFormat] = useState<string>('jpg');
   const imgRef = useRef<HTMLImageElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
+  // Check browser support for modern formats
   useEffect(() => {
-    if (!imageRef || priority || isInView) return;
+    const checkSupport = async () => {
+      const webpSupport = await checkFormatSupport('webp');
+      const avifSupport = await checkFormatSupport('avif');
+      
+      if (avifSupport) {
+        setOptimalFormat('avif');
+      } else if (webpSupport) {
+        setOptimalFormat('webp');
+      } else {
+        setOptimalFormat('jpg');
+      }
+    };
+    
+    checkSupport();
+  }, []);
 
-    // Create intersection observer
+  useEffect(() => {
+    if (!imgRef.current || priority || isInView) return;
+    
     observerRef.current = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -63,12 +122,12 @@ const LazyImage = memo(function LazyImage({
       }
     );
 
-    observerRef.current.observe(imageRef);
+    observerRef.current.observe(imgRef.current);
 
     return () => {
       observerRef.current?.disconnect();
     };
-  }, [imageRef, priority, isInView]);
+  }, [priority, isInView]);
 
   useEffect(() => {
     if (!isInView) return;
@@ -134,7 +193,7 @@ const LazyImage = memo(function LazyImage({
       
       {/* Main image */}
       <img
-        ref={setImageRef}
+        ref={imgRef}
         src={imageSrc}
         alt={alt}
         className={cn(

@@ -9,7 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { getCookie } from "@/utils/cookieUtils";
+import { getCookie } from "@/utils/commonUtils";
 
 interface Props {
   children: ReactNode;

@@ -1,4 +1,33 @@
+/**
+ * Core Application Types
+ * الأنواع الأساسية للتطبيق - محدث ومحسن
+ */
+
+// ====================
+// Base Types
+// ====================
+
+export type Language = 'ar' | 'en' | 'he';
+export type UserRole = 'admin' | 'wholesale' | 'retail';
+export type OrderStatus = 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled';
+export type PaymentMethod = 'cash' | 'card' | 'bank_transfer';
+
+// ====================
+// Localized Content Interface
+// ====================
+
+export interface LocalizedContent {
+  ar: string;
+  en: string;
+  he: string;
+}
+
+// ====================
+// Product Types
+// ====================
+
 export interface Product {
+  // Basic Information
   id: string;
   name: string;
   nameEn: string;
@@ -6,24 +35,43 @@ export interface Product {
   description: string;
   descriptionEn: string;
   descriptionHe: string;
+  
+  // Pricing
   price: number;
   originalPrice?: number;
   wholesalePrice?: number;
+  wholesale_price?: number; // للتوافق مع قاعدة البيانات القديمة
+  
+  // Media
   image: string;
   images?: string[];
+  
+  // Classification
   category: string;
+  tags?: string[];
+  
+  // Inventory
   inStock: boolean;
+  stock_quantity?: number;
+  
+  // Reviews & Ratings
   rating: number;
   reviews: number;
+  
+  // Marketing
   discount?: number;
   featured?: boolean;
-  tags?: string[];
-  stock_quantity?: number;
+  top_ordered?: boolean;
+  sales_count?: number;
+  
+  // System
   active?: boolean;
   created_at?: string;
-  sales_count?: number; // إضافة خاصية sales_count
-  top_ordered?: boolean; // إضافة خاصية top_ordered لدعم البادج
 }
+
+// ====================
+// Category Types  
+// ====================
 
 export interface Category {
   id: string;
@@ -35,11 +83,19 @@ export interface Category {
   active?: boolean;
 }
 
+// ====================
+// Cart Item Types
+// ====================
+
 export interface CartItem {
   id: string;
   product: Product;
   quantity: number;
 }
+
+// ====================
+// Order Types
+// ====================
 
 export interface Order {
   id: string;
@@ -61,6 +117,10 @@ export interface Order {
   cancelled_by_name?: string;
 }
 
+// ====================
+// Address Types
+// ====================
+
 export interface Address {
   id: string;
   fullName: string;
@@ -73,6 +133,10 @@ export interface Address {
   apartment?: string;
 }
 
+// ====================
+// User Types
+// ====================
+
 export interface User {
   id: string;
   email: string;
@@ -83,6 +147,10 @@ export interface User {
   userType?: 'admin' | 'wholesale' | 'retail';
 }
 
+// ====================
+// Banner Types
+// ====================
+
 export interface Banner {
   id: string;
   title: string;
@@ -91,6 +159,10 @@ export interface Banner {
   link?: string;
   active: boolean;
 }
+
+// ====================
+// Database Product Types
+// ====================
 
 export interface DatabaseProduct {
   id: string;
@@ -114,6 +186,10 @@ export interface DatabaseProduct {
   tags?: string[];
   active: boolean;
 }
+
+// ====================
+// Database Category Types
+// ====================
 
 export interface DatabaseCategory {
   id: string;

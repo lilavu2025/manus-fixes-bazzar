@@ -48,7 +48,7 @@ export const useEnhancedToast = () => {
     },
 
     warning: (message: string, options?: ToastOptions) => {
-      sonnerToast.warning(message, {
+      sonnerToast(message, {
         description: options?.description,
         duration: options?.duration || 4000,
         action: options?.action,
@@ -61,7 +61,7 @@ export const useEnhancedToast = () => {
     },
 
     info: (message: string, options?: ToastOptions) => {
-      sonnerToast.info(message, {
+      sonnerToast(message, {
         description: options?.description,
         duration: options?.duration || 4000,
         action: options?.action,
@@ -73,11 +73,12 @@ export const useEnhancedToast = () => {
       });
     },
 
-    // Convenience methods for common operations
-    operationSuccess: (operation: string = '') => {
-      sonnerToast.success(operation || t('operationSuccessful'), {
+    // مساعدة سريعة للاستخدام المباشر مع النصوص المترجمة
+    loginRequired: () => {
+      sonnerToast.error(t('loginRequired'), {
+        description: t('mustBeLoggedIn'),
         className: getToastClasses(),
-        duration: 3000,
+        duration: 5000,
         style: {
           direction: isRTL ? 'rtl' : 'ltr',
           textAlign: isRTL ? 'right' : 'left',
@@ -85,9 +86,9 @@ export const useEnhancedToast = () => {
       });
     },
 
-    operationError: (operation: string = '', error?: string) => {
-      sonnerToast.error(operation || t('operationFailed'), {
-        description: error || t('unexpectedErrorOccurred'),
+    operationFailed: () => {
+      sonnerToast.error(t('operationFailed'), {
+        description: t('tryAgainLater'),
         className: getToastClasses(),
         duration: 5000,
         style: {

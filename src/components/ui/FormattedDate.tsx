@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLanguage } from '@/utils/languageContextUtils';
-import { formatDate, getRelativeTime } from '@/utils/dateUtils';
+import { formatDate, getRelativeTime } from '@/utils/commonUtils';
 
 interface FormattedDateProps {
   date: string | Date;
