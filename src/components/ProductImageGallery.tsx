@@ -1,6 +1,5 @@
 import * as React from "react";
 import { useState, useEffect, useCallback } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/utils/languageContextUtils";
 import { X, ZoomIn, ChevronLeft, ChevronRight } from "lucide-react";
@@ -13,6 +12,13 @@ interface ProductImageGalleryProps {
     images?: string[];
     discount?: number;
     inStock?: boolean;
+    featured?: boolean;
+    top_ordered?: boolean;
+    stock_quantity?: number;
+    rating?: number;
+    originalPrice?: number;
+    price: number;
+    created_at?: string;
   };
 }
 
@@ -80,15 +86,6 @@ const ProductImageGallery = ({ product }: ProductImageGalleryProps) => {
         className="relative overflow-hidden rounded-xl bg-white border group cursor-zoom-in"
         onClick={openModal}
       >
-        {/* بادج حالة المخزون */}
-        {typeof product.inStock !== "undefined" && (
-          <Badge
-            variant={product.inStock ? "secondary" : "destructive"}
-            className={`absolute top-4 ${isRTL ? "left-4" : "right-4"} z-10 ${product.inStock ? "bg-green-100 text-green-800" : ""}`}
-          >
-            {product.inStock ? t("inStock") : t("outOfStock")}
-          </Badge>
-        )}
         {images.length > 0 && (
           <LazyImage
             src={images[selectedImage] || product.image}
@@ -102,13 +99,6 @@ const ProductImageGallery = ({ product }: ProductImageGalleryProps) => {
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300 flex items-center justify-center">
           <ZoomIn className="h-8 w-8 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         </div>
-
-        {/* شارة الخصم */}
-        {product.discount && (
-          <Badge variant="destructive" className="absolute top-4 right-4">
-            {t("discount")} {product.discount}%
-          </Badge>
-        )}
 
         {/* أسهم التنقل للصور المتعددة */}
         {images.length > 1 && (

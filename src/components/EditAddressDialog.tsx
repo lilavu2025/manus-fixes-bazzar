@@ -78,7 +78,7 @@ const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="full_name">{t("fullName")}</Label>
               <Input
@@ -115,7 +115,7 @@ const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="city">{t("city")}</Label>
               <Input
@@ -148,7 +148,7 @@ const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
             </div>
           </div>
 
-          <div className="space-y-2">
+          <div>
             <Label htmlFor="street">{t("street")}</Label>
             <Input
               id="street"
@@ -164,7 +164,7 @@ const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
             />
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="building">{t("building")}</Label>
               <Input

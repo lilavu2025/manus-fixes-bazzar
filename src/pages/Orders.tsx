@@ -23,11 +23,13 @@ import {
   UserPlus,
 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
+import OrderStatusBadge from "@/components/ui/OrderStatusBadge";
+import FormattedDate from "@/components/ui/FormattedDate";
 import {
   useUserOrdersWithDetailsQuery,
   useCancelUserOrderMutation,
 } from "@/integrations/supabase/reactQueryHooks";
-import type { Tables, Json } from "@/integrations/supabase/types";
+import type { Tables } from "@/integrations/supabase/types";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -77,8 +79,8 @@ type OrderItemDB = {
 };
 
 type OrderDB = Omit<Tables<"orders">, "items" | "shipping_address"> & {
-  items: Json | null;
-  shipping_address: Json;
+  items: any | null;
+  shipping_address: any;
   order_items?: OrderItemDB[];
 };
 
@@ -363,17 +365,11 @@ const Orders: React.FC = () => {
                             </Badge>
                           )}
                       </div>
-                      <Badge
-                        className={`text-base px-3 py-1 rounded-full font-semibold ${getStatusColor(order.status)}`}
-                      >
-                        {t(order.status)}
-                      </Badge>
+                      <OrderStatusBadge status={order.status} className="text-base px-3 py-1 rounded-full font-semibold" />
                     </div>
                     <div className="flex flex-wrap gap-2 items-center text-xs text-gray-500 mt-1">
                       <CalendarDays className="h-4 w-4" />
-                      <span>
-                        {new Date(order.created_at).toLocaleDateString("en-GB")}
-                      </span>
+                      <FormattedDate date={order.created_at} format="short" />
                       <CreditCard className="h-4 w-4 ml-2" />
                       <span>
                         {t("paymentMethod")}:{" "}

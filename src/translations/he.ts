@@ -817,4 +817,53 @@ export const heTranslations = {
   learnMore: "למד עוד",
   shopNow: "תסחר עכשיו",
   topOrdered: "מוצר חם",
+
+  // Navigation & Access Control Messages
+  accessDenied: "גישה נדחתה",
+  accessDeniedMessage: "אין לך הרשאה לגשת לעמוד זה",
+  adminAccessRequired: "נדרשת גישת מנהל",
+  redirectingToHomePage: "מפנה לעמוד הבית...",
+  unauthorizedAccess: "גישה לא מורשית",
+  
+  // Toast Messages for Operations
+  operationSuccessful: "הפעולה הושלמה בהצלחה",
+  operationFailed: "הפעולה נכשלה",
+  dataLoadFailed: "טעינת הנתונים נכשלה",
+  connectionError: "שגיאת חיבור לשרת",
+  unexpectedErrorOccurred: "אירעה שגיאה בלתי צפויה",
+  
+  // Loading and Progress Messages
+  loadingPage: "טוען עמוד...",
+  processingRequest: "מעבד בקשה...",
+  savingChanges: "שומר שינויים...",
+  deletingItem: "מוחק פריט...",
+  
+  // Status Icons and Indicators
+  statusPending: "⏳ בהמתנה",
+  statusProcessing: "🔄 בעיבוד",
+  statusCompleted: "✅ הושלם",
+  statusCancelled: "❌ בוטל",
+  statusShipped: "🚚 נשלח",
+  statusDelivered: "📦 נמסר",
+  
+  // Date Formatting
+  todayText: "היום",
+  yesterdayText: "אתמול",
+  daysAgoText: "לפני {count} ימים",
+  weeksAgoText: "לפני {count} שבועות",
+  monthsAgoText: "לפני {count} חודשים",
+  
+  // Enhanced Dialog
+  confirm: "אישור",
+  ok: "אישור",
+  
+  // Search Results
+  searchingFor: "מחפש",
+  of: "מתוך",
+  results: "תוצאות",
+  found: "נמצאו",
+  breadcrumb: "ניווט",
+  limitedStock: "מלאי מוגבל",
+  new: "חדש",
+  priceDrop: "הנחה",
 };

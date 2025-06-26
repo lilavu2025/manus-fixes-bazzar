@@ -115,14 +115,14 @@ const ProductDetails = () => {
     >
       {/* <Header onSearchChange={setSearchQuery} onCartClick={() => setIsCartOpen(true)} onMenuClick={() => {}} /> */}
 
-      <main className="container mx-auto px-2 sm:px-6 py-8">
-        <div className={`mb-4 ${isRTL ? "text-right" : "text-left"}`}>
+      <main className="container mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
+        <div className={`mb-3 sm:mb-4 ${isRTL ? "text-right" : "text-left"}`}>
           <ProductBreadcrumb
             productName={getLocalizedName(product, language)}
           />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 mb-8 sm:mb-12">
           <ProductImageGallery
             product={{
               name: getLocalizedName(product, language),
@@ -133,7 +133,7 @@ const ProductDetails = () => {
             }}
           />
           <div
-            className={`space-y-6 flex flex-col justify-start ${isRTL ? "items-end" : "items-start"}`}
+            className={`space-y-4 sm:space-y-6 flex flex-col justify-start ${isRTL ? "items-end" : "items-start"}`}
           >
             <div className="w-full">
               <ProductInfo product={product} />

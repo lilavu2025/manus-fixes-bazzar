@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Mail, RefreshCw } from "lucide-react";
 import { useLanguage } from "@/utils/languageContextUtils";
 import { useAuth } from "@/contexts/useAuth";
-import { useToast } from "@/hooks/use-toast";
+import { useEnhancedToast } from "@/hooks/useEnhancedToast";
 import { useResendConfirmationEmail } from "@/integrations/supabase/reactQueryHooks";
 
 interface EmailConfirmationPendingProps {
@@ -26,7 +26,7 @@ const EmailConfirmationPending: React.FC<EmailConfirmationPendingProps> = ({
 }) => {
   const { t } = useLanguage();
   const { user } = useAuth();
-  const { toast } = useToast();
+  const enhancedToast = useEnhancedToast();
   const navigate = useNavigate();
   const [isResending, setIsResending] = useState(false);
   const [countdown, setCountdown] = useState(60);
@@ -51,15 +51,12 @@ const EmailConfirmationPending: React.FC<EmailConfirmationPendingProps> = ({
       "email_confirmed_at" in user &&
       user.email_confirmed_at
     ) {
-      toast({
-        title: t("success"),
-        description: t("emailConfirmedSuccess"),
-      });
+      enhancedToast.success("emailConfirmedSuccess");
       setTimeout(() => {
         navigate("/");
       }, 1500);
     }
-  }, [user, t, toast, navigate]);
+  }, [user, t, enhancedToast, navigate]);
 
   const handleResendEmail = async () => {
     setIsResending(true);
@@ -67,16 +64,10 @@ const EmailConfirmationPending: React.FC<EmailConfirmationPendingProps> = ({
       await resendEmailMutation.mutateAsync(email);
       setCountdown(60);
       setCanResend(false);
-      toast({
-        title: t("emailConfirmationSent"),
-        description: t("pleaseCheckYourEmail"),
-      });
+      enhancedToast.success("emailConfirmationSent");
     } catch (error) {
       console.error("Resend error:", error);
-      toast({
-        title: t("error"),
-        description: t("emailResendFailed"),
-      });
+      enhancedToast.error("emailResendFailed");
     } finally {
       setIsResending(false);
     }

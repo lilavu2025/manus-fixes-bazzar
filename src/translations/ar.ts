@@ -838,5 +838,77 @@ export const arTranslations = {
   topOrderedProducts: "المنتجات الأكثر طلبًا",
   learnMore: "اكتشف المزيد",
   shopNow: "تسوق الآن",
-  topOrdered: "الأكثر طلبًا"
+  topOrdered: "الأكثر طلبًا",
+
+  // Navigation & Access Control Messages
+  accessDenied: "تم رفض الوصول",
+  accessDeniedMessage: "ليس لديك صلاحية للوصول إلى هذه الصفحة",
+  adminAccessRequired: "صلاحيات الإدارة مطلوبة",
+  redirectingToHomePage: "جاري إعادة التوجيه إلى الصفحة الرئيسية...",
+  unauthorizedAccess: "وصول غير مصرح به",
+  
+  // Toast Messages for Operations
+  operationSuccessful: "تمت العملية بنجاح",
+  operationFailed: "فشلت العملية",
+  dataLoadFailed: "فشل في تحميل البيانات",
+  connectionError: "خطأ في الاتصال بالخادم",
+  unexpectedErrorOccurred: "حدث خطأ غير متوقع",
+  
+  // Loading and Progress Messages
+  loadingPage: "جاري تحميل الصفحة...",
+  processingRequest: "جاري معالجة الطلب...",
+  savingChanges: "جاري حفظ التغييرات...",
+  deletingItem: "جاري حذف العنصر...",
+  
+  // Status Icons and Indicators
+  statusPending: "⏳ قيد الانتظار",
+  statusProcessing: "🔄 قيد المعالجة", 
+  statusCompleted: "✅ مكتمل",
+  statusCancelled: "❌ ملغي",
+  statusShipped: "🚚 تم الشحن",
+  statusDelivered: "📦 تم التسليم",
+  
+  // Date Formatting
+  todayText: "اليوم",
+  yesterdayText: "أمس",
+  daysAgoText: "منذ {count} أيام",
+  weeksAgoText: "منذ {count} أسابيع",
+  monthsAgoText: "منذ {count} أشهر",
+  
+  // Additional UI Messages
+  noActivityFound: "لا توجد أنشطة مسجلة",
+  seeMore: "عرض المزيد",
+  showAll: "عرض الكل",
+  hideDetails: "إخفاء التفاصيل",
+  showDetails: "عرض التفاصيل",
+  
+  // Common Actions for Activity Log  
+  createAction: "إنشاء",
+  updateAction: "تحديث", 
+  deleteAction: "حذف",
+  viewAction: "عرض",
+  loginAction: "تسجيل دخول",
+  logoutAction: "تسجيل خروج",
+  orderAction: "طلب",
+  userAction: "مستخدم",
+  productAction: "منتج",
+  categoryAction: "فئة",
+  
+  // Responsive Messages
+  mobileViewOptimized: "تم تحسين العرض للهواتف",
+  desktopViewOptimized: "تم تحسين العرض لأجهزة الكمبيوتر",
+  
+  // Enhanced Dialog
+  confirm: "تأكيد",
+  ok: "موافق",
+  
+  // Search Results
+  searchingFor: "البحث عن",
+  of: "من",
+  results: "نتيجة", 
+  found: "تم العثور عليها",
+  breadcrumb: "مسار التصفح",
+  limitedStock: "كمية محدودة",
+  new: "جديد",
+  priceDrop: "خصم",
 };

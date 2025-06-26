@@ -212,11 +212,15 @@ const ViewProductDialog: React.FC<ViewProductDialogProps> = ({
                 </h3>
                 <p className="text-gray-700">
                   {new Date(product.created_at).toLocaleString(
-                    language === "ar"
-                      ? "ar-EG"
-                      : language === "he"
-                        ? "he-IL"
-                        : "en-GB",
+                    "en-US",
+                    { 
+                      calendar: 'gregory',
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    }
                   )}
                 </p>
               </div>

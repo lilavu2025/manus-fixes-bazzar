@@ -9,6 +9,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { getCookie } from "@/utils/cookieUtils";
 
 interface Props {
   children: ReactNode;
@@ -39,6 +40,36 @@ class ErrorBoundary extends Component<Props, State> {
     });
   }
 
+  private getLocalizedText() {
+    const language = getCookie("language") || "ar";
+    
+    const texts = {
+      ar: {
+        title: "عذراً! حدث خطأ ما",
+        description: "نحن آسفون للإزعاج. حدث خطأ غير متوقع.",
+        tryAgain: "المحاولة مرة أخرى",
+        goHome: "العودة للرئيسية",
+        stackTrace: "تفاصيل الخطأ",
+      },
+      en: {
+        title: "Oops! Something went wrong",
+        description: "We're sorry for the inconvenience. An unexpected error has occurred.",
+        tryAgain: "Try Again",
+        goHome: "Go Home",
+        stackTrace: "Stack trace",
+      },
+      he: {
+        title: "אופס! משהו השתבש",
+        description: "אנו מצטערים על אי הנוחות. אירעה שגיאה בלתי צפויה.",
+        tryAgain: "נסה שוב",
+        goHome: "חזור לעמוד הבית",
+        stackTrace: "מעקב שגיאות",
+      },
+    };
+
+    return texts[language as keyof typeof texts] || texts.ar;
+  }
+
   private handleReset = () => {
     this.setState({
       hasError: false,
@@ -54,19 +85,25 @@ class ErrorBoundary extends Component<Props, State> {
 
   public render() {
     if (this.state.hasError) {
+      const texts = this.getLocalizedText();
+      const language = getCookie("language") || "ar";
+      const isRTL = language === "ar" || language === "he";
+      
       return (
-        <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
+        <div 
+          className={`min-h-screen flex items-center justify-center p-4 bg-gray-50 ${isRTL ? "rtl" : "ltr"}`}
+          dir={isRTL ? "rtl" : "ltr"}
+        >
           <Card className="max-w-lg w-full">
             <CardHeader className="text-center">
               <div className="mx-auto w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-4">
                 <AlertCircle className="h-6 w-6 text-red-600" />
               </div>
               <CardTitle className="text-2xl">
-                Oops! Something went wrong
+                {texts.title}
               </CardTitle>
               <CardDescription>
-                We're sorry for the inconvenience. An unexpected error has
-                occurred.
+                {texts.description}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -78,7 +115,7 @@ class ErrorBoundary extends Component<Props, State> {
                   {this.state.errorInfo && (
                     <details className="text-xs text-gray-600">
                       <summary className="cursor-pointer font-semibold mb-2">
-                        Stack trace
+                        {texts.stackTrace}
                       </summary>
                       <pre className="overflow-auto max-h-40 bg-white p-2 rounded">
                         {this.state.errorInfo.componentStack}
@@ -88,14 +125,14 @@ class ErrorBoundary extends Component<Props, State> {
                 </div>
               )}
 
-              <div className="flex gap-3 justify-center">
+              <div className={`flex gap-3 justify-center ${isRTL ? "flex-row-reverse" : "flex-row"}`}>
                 <Button onClick={this.handleReset} variant="default">
-                  <RefreshCw className="h-4 w-4 mr-2" />
-                  Try Again
+                  <RefreshCw className={`h-4 w-4 ${isRTL ? "ml-2" : "mr-2"}`} />
+                  {texts.tryAgain}
                 </Button>
                 <Button onClick={this.handleGoHome} variant="outline">
-                  <Home className="h-4 w-4 mr-2" />
-                  Go Home
+                  <Home className={`h-4 w-4 ${isRTL ? "ml-2" : "mr-2"}`} />
+                  {texts.goHome}
                 </Button>
               </div>
             </CardContent>

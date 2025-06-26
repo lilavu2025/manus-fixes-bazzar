@@ -835,5 +835,77 @@ export const enTranslations = {
   topOrderedProducts: "Top Ordered Products",
   learnMore: "Learn More",
   shopNow: "Shop Now",
-  topOrdered: "Top Ordered"
+  topOrdered: "Top Ordered",
+
+  // Navigation & Access Control Messages  
+  accessDenied: "Access Denied",
+  accessDeniedMessage: "You don't have permission to access this page",
+  adminAccessRequired: "Admin access required",
+  redirectingToHomePage: "Redirecting to home page...",
+  unauthorizedAccess: "Unauthorized access",
+  
+  // Toast Messages for Operations
+  operationSuccessful: "Operation completed successfully",
+  operationFailed: "Operation failed",
+  dataLoadFailed: "Failed to load data",
+  connectionError: "Server connection error",
+  unexpectedErrorOccurred: "An unexpected error occurred",
+  
+  // Loading and Progress Messages
+  loadingPage: "Loading page...",
+  processingRequest: "Processing request...",
+  savingChanges: "Saving changes...",
+  deletingItem: "Deleting item...",
+  
+  // Status Icons and Indicators
+  statusPending: "⏳ Pending",
+  statusProcessing: "🔄 Processing",
+  statusCompleted: "✅ Completed",
+  statusCancelled: "❌ Cancelled",
+  statusShipped: "🚚 Shipped",
+  statusDelivered: "📦 Delivered",
+  
+  // Date Formatting
+  todayText: "Today",
+  yesterdayText: "Yesterday", 
+  daysAgoText: "{count} days ago",
+  weeksAgoText: "{count} weeks ago",
+  monthsAgoText: "{count} months ago",
+
+  // Additional UI Messages
+  noActivityFound: "No activity found",
+  seeMore: "See More",
+  showAll: "Show All", 
+  hideDetails: "Hide Details",
+  showDetails: "Show Details",
+  
+  // Common Actions for Activity Log
+  createAction: "Create",
+  updateAction: "Update",
+  deleteAction: "Delete", 
+  viewAction: "View",
+  loginAction: "Login",
+  logoutAction: "Logout",
+  orderAction: "Order",
+  userAction: "User",
+  productAction: "Product",
+  categoryAction: "Category",
+  
+  // Responsive Messages
+  mobileViewOptimized: "Optimized for mobile view",
+  desktopViewOptimized: "Optimized for desktop view",
+  
+  // Enhanced Dialog
+  confirm: "Confirm",
+  ok: "OK",
+  
+  // Search Results
+  searchingFor: "Searching for",
+  of: "of",
+  results: "results",
+  found: "found",
+  breadcrumb: "Breadcrumb",
+  limitedStock: "Limited Stock",
+  new: "New",
+  priceDrop: "Discount",
 };

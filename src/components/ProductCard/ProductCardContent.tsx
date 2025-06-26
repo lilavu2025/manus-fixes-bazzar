@@ -10,6 +10,7 @@ import { Product } from "@/types";
 import QuantitySelector from "@/components/QuantitySelector";
 import { getLocalizedName } from "@/utils/getLocalizedName";
 import { getDisplayPrice } from "@/utils/priceUtils";
+import ProductCardBadges from "./ProductCardBadges";
 
 interface ProductCardContentProps {
   product: ProductFull;
@@ -39,7 +40,7 @@ const ProductCardContent: React.FC<ProductCardContentProps> = ({
 
   return (
     <CardContent
-      className={`w-full p-4 sm:p-6 ${isRTL ? "text-right" : "text-left"}`}
+      className={`w-full p-3 sm:p-4 md:p-6 ${isRTL ? "text-right" : "text-left"}`}
     >
       <Link
         to={`/product/${product.id}`}
@@ -47,11 +48,16 @@ const ProductCardContent: React.FC<ProductCardContentProps> = ({
         className="block w-full"
       >
         <h3
-          className={`font-semibold text-base sm:text-lg md:text-xl lg:text-2xl mb-2 line-clamp-2 group-hover:text-primary transition-colors ${isRTL ? "text-right" : "text-left"}`}
+          className={`font-semibold text-sm sm:text-base md:text-lg lg:text-xl mb-2 line-clamp-2 group-hover:text-primary transition-colors ${isRTL ? "text-right" : "text-left"}`}
         >
           {getLocalizedName(product, language)}
         </h3>
       </Link>
+      
+      {/* البادجز تحت اسم المنتج */}
+      <div className="mb-3">
+        <ProductCardBadges product={product} variant="belowName" />
+      </div>
       {/* السعر  */}
       <div className={`flex flex-col gap-2 mb-4 w-full`}>
         <div className={`flex flex-col gap-2 w-full`}>
@@ -59,11 +65,11 @@ const ProductCardContent: React.FC<ProductCardContentProps> = ({
             className={`flex items-center gap-4 w-full ${isRTL ? "flex-row-reverse justify-end" : "justify-start"}`}
           >
             {product.originalPrice !== displayPrice && (
-              <span className="text-lg text-gray-500 line-through">
+              <span className="text-sm sm:text-base text-gray-500 line-through">
                 {product.originalPrice} {t("currency")}
               </span>
             )}
-            <span className="text-3xl font-bold text-primary">
+            <span className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-primary">
               {displayPrice} {t("currency")}
             </span>
           </div>
@@ -84,7 +90,7 @@ const ProductCardContent: React.FC<ProductCardContentProps> = ({
       </div>
       {/* أزرار الإجراءات */}
       <div
-        className={`flex flex-col sm:flex-row gap-3 ${isRTL ? "justify-end" : "justify-start"}`}
+        className={`flex flex-col gap-2 sm:gap-3 ${isRTL ? "justify-end" : "justify-start"}`}
       >
         <Button
           onClick={(e) => {
@@ -93,10 +99,10 @@ const ProductCardContent: React.FC<ProductCardContentProps> = ({
             onAddToCart();
           }}
           disabled={!product.inStock || isLoading}
-          className="flex-1 w-full sm:w-auto gap-2 font-semibold"
+          className="w-full gap-1 sm:gap-2 font-semibold text-xs sm:text-sm py-2 sm:py-3"
           variant={cartQuantity > 0 ? "secondary" : "default"}
         >
-          <ShoppingCart className="h-4 w-4" />
+          <ShoppingCart className="h-3 w-3 sm:h-4 sm:w-4" />
           {cartQuantity > 0
             ? `${t("inCart")} (${cartQuantity})`
             : t("addToCart")}
@@ -109,7 +115,7 @@ const ProductCardContent: React.FC<ProductCardContentProps> = ({
           }}
           disabled={!product.inStock || isLoading}
           variant="outline"
-          className="w-full sm:w-auto px-4"
+          className="w-full px-2 sm:px-4 text-xs sm:text-sm py-2 sm:py-3"
         >
           {t("buyNow")}
         </Button>

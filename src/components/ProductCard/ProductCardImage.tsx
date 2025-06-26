@@ -22,7 +22,7 @@ const ProductCardImage: React.FC<ProductCardImageProps> = ({
 }) => {
   return (
     // إضافة class "group" لتمكين تأثير hover
-    <div className="relative group bg-white rounded-xl border border-gray-200 aspect-[4/3] h-32 sm:h-40 md:h-48 mx-auto">
+    <div className="relative group bg-white rounded-xl border border-gray-200 aspect-[4/3] h-40 sm:h-44 md:h-48 lg:h-52 mx-auto">
       {/* الخلفية باستخدام background-image لعرض الصورة كاملة داخل الإطار */}
       <Link
         to={`/product/${product.id}`}
@@ -36,8 +36,8 @@ const ProductCardImage: React.FC<ProductCardImageProps> = ({
         <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity" />
       </Link>
 
-      {/* الشارات فوق الصورة فقط */}
-      <ProductCardBadges product={product} />
+      {/* بادج الخصم فقط فوق الصورة */}
+      <ProductCardBadges product={product} variant="onImage" />
     </div>
   );
 };

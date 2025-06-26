@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/useAuth";
 import { useLanguage } from "@/utils/languageContextUtils";
-import { useToast } from "@/hooks/use-toast";
+import { useEnhancedToast } from "@/hooks/useEnhancedToast";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import EmailConfirmationPending from "@/components/EmailConfirmationPending";
 import { getCookie } from "@/utils/cookieUtils";
@@ -22,7 +22,7 @@ const Auth: React.FC = () => {
   const navigate = useNavigate();
   const { signIn, signUp, user, loading } = useAuth();
   const { t, isRTL } = useLanguage();
-  const { toast } = useToast();
+  const enhancedToast = useEnhancedToast();
 
   const [loginData, setLoginData] = useState({
     email: "",
@@ -88,10 +88,7 @@ const Auth: React.FC = () => {
       }
 
       await signIn(loginData.email, loginData.password);
-      toast({
-        title: t("success"),
-        description: t("loginSuccess"),
-      });
+      enhancedToast.success("loginSuccess");
     } catch (error: unknown) {
       console.error("Login error:", error);
       if (
@@ -101,20 +98,14 @@ const Auth: React.FC = () => {
         typeof (error as { message?: string }).message === "string" &&
         (error as { message: string }).message.includes("Email not confirmed")
       ) {
-        toast({
-          title: t("error"),
-          description: t("emailNotConfirmed"),
-        });
+        enhancedToast.error("emailNotConfirmed");
       } else {
-        toast({
-          title: t("error"),
-          description:
-            typeof error === "object" && error && "message" in error
-              ? ((error as { message?: string }).message === "Invalid login credentials"
-                  ? "invalidLoginCredentials"
-                  : (error as { message?: string }).message) || t("loginError")
-              : t("loginError"),
-        });
+        const errorMessage = typeof error === "object" && error && "message" in error
+          ? ((error as { message?: string }).message === "Invalid login credentials"
+              ? "invalidLoginCredentials"
+              : (error as { message?: string }).message) || "loginError"
+          : "loginError";
+        enhancedToast.error(errorMessage);
       }
     } finally {
       setIsLoading(false);
@@ -149,30 +140,21 @@ const Auth: React.FC = () => {
       );
       setPendingEmail(signupData.email);
       setShowEmailConfirmation(true);
-      toast({
-        title: t("success"),
-        description: t("signupSuccess"),
-      });
+      enhancedToast.success("signupSuccess");
     } catch (error: unknown) {
       console.error("Signup error:", error);
       const errorMsg =
         typeof error === "object" && error && "message" in error
-          ? (error as { message?: string }).message || t("signupError")
-          : t("signupError");
+          ? (error as { message?: string }).message || "signupError"
+          : "signupError";
       if (
         errorMsg.toLowerCase().includes("confirmation") ||
         errorMsg.toLowerCase().includes("تحقق") ||
         errorMsg.toLowerCase().includes("confirm")
       ) {
-        toast({
-          title: t("success"),
-          description: errorMsg,
-        });
+        enhancedToast.success(errorMsg);
       } else {
-        toast({
-          title: t("error"),
-          description: errorMsg,
-        });
+        enhancedToast.error(errorMsg);
       }
     } finally {
       setIsLoading(false);

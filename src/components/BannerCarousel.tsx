@@ -31,7 +31,7 @@ const BannerCarousel: React.FC<BannerCarouselProps> = ({ banners }) => {
   };
 
   return (
-    <div className="relative w-full h-64 md:h-80 lg:h-96 rounded-xl overflow-hidden group">
+    <div className="relative w-full h-48 sm:h-64 md:h-80 lg:h-96 rounded-xl overflow-hidden group">
       {banners.map((banner, index) => (
         <div
           key={banner.id}
@@ -47,17 +47,17 @@ const BannerCarousel: React.FC<BannerCarouselProps> = ({ banners }) => {
           />
           <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent" />
 
-          <div className="absolute inset-0 flex items-center justify-start p-8">
-            <div className="text-white max-w-md animate-fade-in">
-              <h2 className="text-2xl md:text-4xl font-bold mb-4">
+          <div className="absolute inset-0 flex items-center justify-start p-4 sm:p-6 md:p-8">
+            <div className="text-white max-w-xs sm:max-w-md animate-fade-in">
+              <h2 className="text-lg sm:text-xl md:text-2xl lg:text-4xl font-bold mb-2 sm:mb-4">
                 {banner.title}
               </h2>
-              <p className="text-lg md:text-xl opacity-90 mb-6">
+              <p className="text-sm sm:text-base md:text-lg lg:text-xl opacity-90 mb-3 sm:mb-6">
                 {banner.subtitle}
               </p>
               <Button
-                size="lg"
-                className="bg-primary hover:bg-primary/90 text-white font-semibold px-8"
+                size="sm"
+                className="bg-primary hover:bg-primary/90 text-white font-semibold px-4 sm:px-6 md:px-8 text-xs sm:text-sm md:text-base"
               >
                 {t("shopNow")}
               </Button>
@@ -71,18 +71,18 @@ const BannerCarousel: React.FC<BannerCarouselProps> = ({ banners }) => {
         variant="ghost"
         size="icon"
         onClick={prevSlide}
-        className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+        className="absolute left-2 sm:left-4 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 sm:h-10 sm:w-10"
       >
-        <ChevronLeft className="h-6 w-6" />
+        <ChevronLeft className="h-4 w-4 sm:h-6 sm:w-6" />
       </Button>
 
       <Button
         variant="ghost"
         size="icon"
         onClick={nextSlide}
-        className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+        className="absolute right-2 sm:right-4 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 sm:h-10 sm:w-10"
       >
-        <ChevronRight className="h-6 w-6" />
+        <ChevronRight className="h-4 w-4 sm:h-6 sm:w-6" />
       </Button>
 
       {/* Indicators */}

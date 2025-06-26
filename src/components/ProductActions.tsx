@@ -113,12 +113,12 @@ const ProductActions = ({ product, onBuyNow }: ProductActionsProps) => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Quantity & Add to Cart */}
       {product.inStock && (
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           <div
-            className={`flex items-center gap-12 w-full ${isRTL ? "flex-row-reverse justify-end" : "justify-start"}`}
+            className={`flex items-center gap-4 sm:gap-8 lg:gap-12 w-full ${isRTL ? "flex-row-reverse justify-end" : "justify-start"}`}
           >
             <QuantitySelector
               quantity={quantity}
@@ -126,22 +126,22 @@ const ProductActions = ({ product, onBuyNow }: ProductActionsProps) => {
               max={99}
               min={1}
             />
-            <label className="block text-sm font-semibold mb-2">
+            <label className="block text-xs sm:text-sm font-semibold">
               {t("quantity")}
             </label>
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
             <Button
               onClick={handleAddToCart}
-              className="flex-1 gap-2"
+              className="flex-1 gap-2 text-sm sm:text-base py-2 sm:py-3"
               size="lg"
               disabled={!product.inStock}
             >
-              <ShoppingCart className="h-5 w-5" />
+              <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
               {t("addToCart")}
               {cartQuantity > 0 && (
-                <Badge variant="secondary" className="mr-2">
+                <Badge variant="secondary" className="mr-2 text-xs">
                   {cartQuantity}
                 </Badge>
               )}

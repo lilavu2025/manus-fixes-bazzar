@@ -236,7 +236,7 @@ const Offers: React.FC = () => {
                   </div>
                   <div className="text-sm text-gray-500 mb-4">
                     {t("validUntil")}:{" "}
-                    {new Date(offer.end_date).toLocaleDateString()}
+                    {new Date(offer.end_date).toLocaleDateString('en-US', { calendar: 'gregory' })}
                   </div>
                   <button
                     onClick={() => window.open("#", "_blank")}

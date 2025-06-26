@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
-import { useToast } from "@/hooks/use-toast";
+import { useEnhancedToast } from "@/hooks/useEnhancedToast";
 import { ShoppingCart, CreditCard, Banknote, ArrowLeft } from "lucide-react";
 import { Product } from "@/types";
 import { compressText, decompressText } from "@/utils/textCompression";
@@ -46,19 +46,15 @@ const Checkout: React.FC = () => {
       setIsCartLoading(false);
     }
   }, [state.items, cartItems]);
-  const { toast } = useToast();
+  const enhancedToast = useEnhancedToast();
 
   // Redirect to login if user is not authenticated
   useEffect(() => {
     if (!user) {
-      toast({
-        title: t("error"),
-        description:
-          t("pleaseLoginToCheckout") || "Please login to proceed with checkout",
-      });
+      enhancedToast.error("pleaseLoginToCheckout");
       navigate("/auth", { replace: true });
     }
-  }, [user, navigate, toast, t]);
+  }, [user, navigate, enhancedToast, t]);
 
   // الحصول على بيانات الشراء المباشر من التنقل
   const directBuyState = location.state as DirectBuyState;
@@ -121,19 +117,13 @@ const Checkout: React.FC = () => {
   const handlePlaceOrder = async () => {
     // التحقق من تسجيل الدخول
     if (!user) {
-      toast({
-        title: t("error"),
-        description: t("pleaseLogin"),
-      });
+      enhancedToast.error("pleaseLogin");
       return;
     }
 
     // التحقق من وجود عناصر للشراء
     if (itemsToCheckout.length === 0) {
-      toast({
-        title: t("error"),
-        description: t("cartIsEmpty"),
-      });
+      enhancedToast.error("cartIsEmpty");
       return;
     }
 
@@ -146,19 +136,13 @@ const Checkout: React.FC = () => {
       !shippingAddress.street ||
       !shippingAddress.building
     ) {
-      toast({
-        title: t("error"),
-        description: t("fillRequiredFields"),
-      });
+      enhancedToast.error("fillRequiredFields");
       return;
     }
 
     // تحقق من صحة رقم الهاتف
     if (!isValidPhone(shippingAddress.phone)) {
-      toast({
-        title: t("error"),
-        description: t("invalidPhone") || "رقم الجوال يجب أن يبدأ بـ 05 ويكون مكونًا من 10 أرقام",
-      });
+      enhancedToast.error("invalidPhone");
       return;
     }
 
@@ -216,19 +200,13 @@ const Checkout: React.FC = () => {
         clearCart();
       }
 
-      toast({
-        title: t("success"),
-        description: t("orderPlaced"),
-      });
+      enhancedToast.success("orderPlaced");
 
       // التوجه لصفحة الطلبات
       navigate("/orders");
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      toast({
-        title: t("error"),
-        description: err.message || t("errorPlacingOrder"),
-      });
+      enhancedToast.error(err.message || "errorPlacingOrder");
       setIsLoading(false);
     } finally {
       setIsLoading(false);

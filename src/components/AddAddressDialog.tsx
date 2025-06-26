@@ -97,7 +97,7 @@ const AddAddressDialog: React.FC<AddAddressDialogProps> = ({ trigger }) => {
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="full_name">{t("fullName")}</Label>
               <Input
@@ -134,7 +134,7 @@ const AddAddressDialog: React.FC<AddAddressDialogProps> = ({ trigger }) => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="city">{t("city")}</Label>
               <Input
@@ -183,7 +183,7 @@ const AddAddressDialog: React.FC<AddAddressDialogProps> = ({ trigger }) => {
             />
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="building">{t("building")}</Label>
               <Input

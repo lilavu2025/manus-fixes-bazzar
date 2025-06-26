@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import type { Json } from "@/integrations/supabase/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -36,7 +35,7 @@ const UserActivityLogTable: React.FC = () => {
     admin_id: string;
     user_id: string;
     action: string;
-    details: Json | null;
+    details: any | null;
     created_at: string;
   }
 
@@ -363,7 +362,7 @@ const UserActivityLogTable: React.FC = () => {
 
                         {/* عمود التاريخ */}
                         <TableCell className="text-right text-xs">
-                          {new Date(log.created_at).toLocaleString()}
+                          {new Date(log.created_at).toLocaleString('en-US', { calendar: 'gregory' })}
                         </TableCell>
                       </TableRow>
                     );

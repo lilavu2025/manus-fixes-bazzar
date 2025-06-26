@@ -618,7 +618,7 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
                       >
                         <td className="p-2">{order.profiles?.full_name || t("unknownCustomer")}</td>
                         <td className="p-2 text-right font-mono">
-                          {order.created_at ? new Date(order.created_at).toLocaleString() : "-"}
+                          {order.created_at ? new Date(order.created_at).toLocaleString('en-US', { calendar: 'gregory' }) : "-"}
                         </td>
                       </tr>
                     ))}

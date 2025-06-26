@@ -608,14 +608,14 @@ const AdminOffers: React.FC = () => {
                           <div className="flex items-center">
                             <Calendar className="h-3 w-3 mr-1" />
                             {t("startDate")}:{" "}
-                            {new Date(offer.start_date).toLocaleDateString()}
+                            {new Date(offer.start_date).toLocaleDateString('en-US', { calendar: 'gregory' })}
                           </div>
                         )}
                         {offer.end_date && (
                           <div className="flex items-center">
                             <Calendar className="h-3 w-3 mr-1" />
                             {t("endDate")}:{" "}
-                            {new Date(offer.end_date).toLocaleDateString()}
+                            {new Date(offer.end_date).toLocaleDateString('en-US', { calendar: 'gregory' })}
                           </div>
                         )}
                       </div>

@@ -226,7 +226,7 @@ const ProductCard: React.FC<ProductCardProps> = memo(
       <div className="w-full flex justify-center">
         {/* كرت المنتج الرئيسي مع تأثيرات التفاعل */}
         <Card
-          className="product-card group relative overflow-hidden bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl transition-all duration-300 hover:shadow-xl hover:-translate-y-1 focus-within:ring-2 focus-within:ring-orange-500 focus-within:ring-offset-2 cursor-pointer mx-auto w-full max-w-xs md:max-w-sm"
+          className="product-card group relative overflow-hidden bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl transition-all duration-300 hover:shadow-xl hover:-translate-y-1 focus-within:ring-2 focus-within:ring-orange-500 focus-within:ring-offset-2 cursor-pointer mx-auto w-full min-w-[280px] max-w-sm"
           onClick={handleCardClick}
         >
           {/* أزرار التفاعل على أقصى يسار الكرت */}

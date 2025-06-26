@@ -177,7 +177,7 @@ const Profile: React.FC = () => {
             {profile?.created_at && (
               <span className="text-gray-500">
                 {t("createdAt")}:{" "}
-                {new Date(profile.created_at).toLocaleDateString()}
+                {new Date(profile.created_at).toLocaleDateString('en-US', { calendar: 'gregory' })}
               </span>
             )}
           </div>

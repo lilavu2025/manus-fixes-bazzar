@@ -6,14 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
 import { Mail, Phone, MapPin, Clock } from "lucide-react";
 import { useContactInfo } from "@/hooks/useContactInfo";
 import emailjs from "@emailjs/browser";
+import { useEnhancedToast } from "@/hooks/useEnhancedToast";
 
 const Contact: React.FC = () => {
   const { t, isRTL } = useLanguage();
-  const { toast } = useToast();
+  const enhancedToast = useEnhancedToast();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { contactInfo, loading: contactLoading } = useContactInfo();
@@ -46,10 +46,7 @@ const Contact: React.FC = () => {
           "user_xxx", // ضع هنا Public Key الخاص بك في EmailJS
         );
       }
-      toast({
-        title: t("success"),
-        description: t("messageSubmitted"),
-      });
+      enhancedToast.success("messageSubmitted");
       setFormData({
         name: "",
         email: "",
@@ -58,10 +55,7 @@ const Contact: React.FC = () => {
         message: "",
       });
     } catch (err) {
-      toast({
-        title: t("error"),
-        description: t("errorSendingMessage"),
-      });
+      enhancedToast.error("errorSendingMessage");
     } finally {
       setIsLoading(false);
     }

@@ -13,6 +13,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { XCircle, ShoppingCart } from "lucide-react";
 import { toast } from "sonner";
+import useEnhancedToast from "@/hooks/useEnhancedToast";
 import { useAdminUsers } from "@/hooks/useAdminUsers";
 import { Address } from "@/types";
 import { useOrdersRealtime } from "@/hooks/useOrdersRealtime";
@@ -44,6 +45,8 @@ import VirtualScrollList from "../VirtualScrollList";
 const AdminOrders: React.FC = () => {
   // اللغة والاتجاه
   const { t, isRTL, language } = useLanguage();
+  // التوست المحسن
+  const enhancedToast = useEnhancedToast();
   // بيانات المستخدم الحالي
   const { user, profile } = useAuth();
   // كاش الاستعلامات
@@ -125,12 +128,12 @@ const AdminOrders: React.FC = () => {
       },
       {
         onSuccess: () => {
-          toast.success(t("orderStatusUpdatedSuccess"));
+          enhancedToast.operationSuccess(t("orderStatusUpdatedSuccess"));
           refetchOrders();
           queryClient.invalidateQueries({ queryKey: ["admin-orders-stats"] }); // إعادة جلب إحصائيات لوحة التحكم
         },
         onError: (err: unknown) => {
-          toast.error(t("orderStatusUpdateFailed"));
+          enhancedToast.operationError(t("orderStatusUpdateFailed"));
         },
       },
     );
@@ -160,12 +163,12 @@ const AdminOrders: React.FC = () => {
     try {
       setIsAddingOrder(true);
       if (!orderForm.user_id && !allowCustomClient) {
-        toast.error(t("selectCustomerRequired"));
+        enhancedToast.error(t("selectCustomerRequired"));
         setIsAddingOrder(false);
         return;
       }
       if (orderForm.items.length === 0) {
-        toast.error(t("addAtLeastOneProduct"));
+        enhancedToast.error(t("addAtLeastOneProduct"));
         setIsAddingOrder(false);
         return;
       }
@@ -173,7 +176,7 @@ const AdminOrders: React.FC = () => {
         !orderForm.shipping_address.fullName ||
         !orderForm.shipping_address.phone
       ) {
-        toast.error(t("enterShippingInfo"));
+        enhancedToast.error(t("enterShippingInfo"));
         setIsAddingOrder(false);
         return;
       }
@@ -216,7 +219,7 @@ const AdminOrders: React.FC = () => {
         },
         {
           onSuccess: () => {
-            toast.success(t("orderAddedSuccess"));
+            enhancedToast.operationSuccess(t("orderAddedSuccess"));
             setShowAddOrder(false);
             setOrderForm(initialOrderForm);
             refetchOrders();
@@ -289,7 +292,7 @@ const AdminOrders: React.FC = () => {
         { editOrderId, updateObj: updateObjWithDiscount, orderItems },
         {
           onSuccess: () => {
-            toast.success(t("orderEditedSuccess"));
+            enhancedToast.operationSuccess(t("orderEditedSuccess"));
             setShowEditOrder(false);
             setEditOrderForm(null);
             setEditOrderId(null);
@@ -357,7 +360,7 @@ const AdminOrders: React.FC = () => {
     if (!orderToDelete) return;
     deleteOrderMutation.mutate(orderToDelete.id, {
       onSuccess: () => {
-        toast.success(t("orderDeletedSuccess"));
+        enhancedToast.operationSuccess(t("orderDeletedSuccess"));
         setShowDeleteDialog(false);
         setOrderToDelete(null);
         refetchOrders();

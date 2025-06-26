@@ -28,19 +28,19 @@ const SearchBar: React.FC<SearchBarProps> = ({
   if (isMobileOnly) {
     return (
       <div
-        className="w-full flex justify-center items-center"
+        className="w-full flex justify-center items-center px-2"
         aria-label={t("searchBarMobile")}
       >
-        <div className="relative w-full max-w-xs">
+        <div className="relative w-full max-w-sm">
           <Search
-            className={`absolute top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5 ${isRTL ? "right-3" : "left-3"}`}
+            className={`absolute top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 ${isRTL ? "right-3" : "left-3"}`}
           />
           <ClearableInput
             placeholder={t("search")}
             value={searchQuery}
             onChange={handleSearchChange}
             onClear={() => onSearchChange("")}
-            className={`${isRTL ? "pr-10 pl-4" : "pl-10 pr-4"} h-12 rounded-full border-2 border-gray-200 focus:border-primary text-base w-full`}
+            className={`${isRTL ? "pr-9 pl-3" : "pl-9 pr-3"} h-10 rounded-full border-2 border-gray-200 focus:border-primary text-sm w-full`}
             autoFocus
             aria-label={t("searchInput")}
           />
