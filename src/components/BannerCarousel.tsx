@@ -55,12 +55,12 @@ const BannerCarousel: React.FC<BannerCarouselProps> = ({ banners }) => {
               <p className="text-sm sm:text-base md:text-lg lg:text-xl opacity-90 mb-3 sm:mb-6">
                 {banner.subtitle}
               </p>
-              <Button
+              {/* <Button
                 size="sm"
                 className="bg-primary hover:bg-primary/90 text-white font-semibold px-4 sm:px-6 md:px-8 text-xs sm:text-sm md:text-base"
               >
                 {t("shopNow")}
-              </Button>
+              </Button> */}
             </div>
           </div>
         </div>
