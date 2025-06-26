@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Product, CartItem } from '@/types';
-import { setCookie, getCookie } from '@/utils/commonUtils';
+import { setCookie, getCookie } from '../utils/cookieUtils';
 
 const ANONYMOUS_CART_KEY = 'anonymous_cart';
 

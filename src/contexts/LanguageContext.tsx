@@ -3,7 +3,7 @@ import { Language, LanguageContextType } from '@/types/language';
 import { translations } from '@/translations';
 import { isRTL } from '@/utils/languageContextUtils';
 import { LanguageContext } from './LanguageContext.context';
-import { setCookie, getCookie, deleteCookie } from '@/utils/commonUtils';
+import { setCookie, getCookie, deleteCookie } from '../utils/cookieUtils';
 import { AuthContext } from './AuthContext.context';
 import { ProfileService } from '@/services/supabaseService';
 

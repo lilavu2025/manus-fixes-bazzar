@@ -908,15 +908,4 @@ export const enTranslations = {
   limitedStock: "Limited Stock",
   new: "New",
   priceDrop: "Discount",
-  
-  // System Test Page
-  systemTestPage: "System Test Page",
-  systemTestDescription: "Comprehensive testing of all system functions and features",
-  runningTests: "Running tests...",
-  runSystemTests: "Run System Tests",
-  testToast: "Test Notifications",
-  testToastMessage: "This is a test toast message!",
-  systemTestCompleted: "System test completed successfully!",
-  systemTestComplete: "System Test Complete",
-  systemTestSummary: "All core system components have been tested",
 };

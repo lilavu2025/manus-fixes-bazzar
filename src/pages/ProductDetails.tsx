@@ -130,7 +130,6 @@ const ProductDetails = () => {
               images: product.images,
               discount: product.discount,
               inStock: product.inStock,
-              price: product.price,
             }}
           />
           <div

@@ -1,240 +1,73 @@
-# 🛒 Manus Fixes Bazzar - موقع التجارة الإلكترونية
+# Welcome to your Lovable project
 
-## 🌟 نظرة عامة
+## Project info
 
-موقع تجارة إلكترونية متطور ومتعدد اللغات يدعم العربية والإنجليزية والعبرية مع واجهة مستخدم حديثة وتجربة استخدام متميزة.
+**URL**: https://lovable.dev/projects/736f7d74-44f7-400a-aa05-80d5ecb5a3c2
 
-## ✨ الميزات الرئيسية
+## How can I edit this code?
 
-### 🌍 دعم متعدد اللغات
-- **العربية**: دعم كامل للكتابة من اليمين إلى اليسار (RTL)
-- **الإنجليزية**: واجهة إنجليزية حديثة
-- **العبرية**: دعم كامل للكتابة من اليمين إلى اليسار
+There are several ways of editing your application.
 
-### 👥 أنظمة المستخدمين
-- **مستخدم عادي (Retail)**: التصفح والشراء
-- **مستخدم جملة (Wholesale)**: أسعار خاصة وخصومات
-- **مدير (Admin)**: إدارة كاملة للموقع
+**Use Lovable**
 
-### 🛍️ وظائف التجارة الإلكترونية
-- عرض المنتجات مع صور متعددة
-- سلة تسوق ذكية
-- نظام الطلبات والفواتير
-- إدارة العناوين
-- نظام المفضلة
-- البحث المتقدم
+Simply visit the [Lovable Project](https://lovable.dev/projects/736f7d74-44f7-400a-aa05-80d5ecb5a3c2) and start prompting.
 
-### 📱 تجربة محمولة متميزة
-- تصميم متجاوب بالكامل
-- شريط تنقل سفلي للهواتف
-- تحميل محسن للصور
-- أداء عالي على الأجهزة المختلفة
+Changes made via Lovable will be committed automatically to this repo.
 
-## 🚀 التقنيات المستخدمة
+**Use your preferred IDE**
 
-- **Frontend**: React 18 + TypeScript + Vite
-- **Styling**: Tailwind CSS + Shadcn/ui
-- **Backend**: Supabase (Database + Authentication)
-- **State Management**: TanStack Query
-- **Icons**: Lucide React
-- **Routing**: React Router Dom
-- **Forms**: React Hook Form + Zod
-- **Notifications**: Sonner (Toast)
+If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
 
-## 📋 المتطلبات
+The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
 
-- Node.js 18+ 
-- npm أو yarn
-- حساب Supabase
+Follow these steps:
 
-## ⚡ التثبيت والتشغيل
+```sh
+# Step 1: Clone the repository using the project's Git URL.
+git clone <YOUR_GIT_URL>
 
-```bash
-# نسخ المشروع
-git clone https://github.com/your-repo/manus-fixes-bazzar.git
-cd manus-fixes-bazzar
+# Step 2: Navigate to the project directory.
+cd <YOUR_PROJECT_NAME>
 
-# تثبيت التبعيات
-npm install
+# Step 3: Install the necessary dependencies.
+npm i
 
-# إعداد متغيرات البيئة
-cp .env.example .env.local
-# قم بتعديل .env.local بالقيم الصحيحة
-
-# تشغيل السيرفر التطويري
+# Step 4: Start the development server with auto-reloading and an instant preview.
 npm run dev
-
-# بناء للإنتاج
-npm run build
-
-# معاينة الإنتاج
-npm run preview
 ```
 
-## 🗂️ هيكل المشروع
+**Edit a file directly in GitHub**
 
-```
-src/
-├── components/          # المكونات القابلة لإعادة الاستخدام
-│   ├── ui/             # مكونات واجهة المستخدم الأساسية
-│   ├── admin/          # مكونات لوحة الإدارة
-│   └── ...
-├── pages/              # صفحات التطبيق
-├── hooks/              # Custom React Hooks
-├── contexts/           # React Contexts
-├── utils/              # دوال مساعدة
-├── services/           # خدمات API
-├── translations/       # ملفات الترجمة
-├── types/              # TypeScript Types
-└── integrations/       # تكاملات خارجية
-```
+- Navigate to the desired file(s).
+- Click the "Edit" button (pencil icon) at the top right of the file view.
+- Make your changes and commit the changes.
 
-## 🎯 صفحات النظام
+**Use GitHub Codespaces**
 
-### صفحات العامة
-- `/` - الصفحة الرئيسية
-- `/products` - عرض المنتجات
-- `/product/:id` - تفاصيل المنتج
-- `/categories` - التصنيفات
-- `/contact` - اتصل بنا
-- `/auth` - تسجيل الدخول/التسجيل
+- Navigate to the main page of your repository.
+- Click on the "Code" button (green button) near the top right.
+- Select the "Codespaces" tab.
+- Click on "New codespace" to launch a new Codespace environment.
+- Edit files directly within the Codespace and commit and push your changes once you're done.
 
-### صفحات المستخدم
-- `/cart` - سلة التسوق
-- `/checkout` - إتمام الطلب
-- `/orders` - طلباتي
-- `/favorites` - المفضلة
-- `/addresses` - العناوين
+## What technologies are used for this project?
 
-### صفحات الإدارة
-- `/admin` - لوحة التحكم
-- `/admin/products` - إدارة المنتجات
-- `/admin/orders` - إدارة الطلبات
-- `/admin/users` - إدارة المستخدمين
-- `/admin/categories` - إدارة التصنيفات
+This project is built with:
 
-### أدوات المطور
-- `/system-test` - فحص شامل للنظام
+- Vite
+- TypeScript
+- React
+- shadcn-ui
+- Tailwind CSS
 
-## 🔧 الإعدادات
+## How can I deploy this project?
 
-### متغيرات البيئة المطلوبة
-```bash
-VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_ANON_KEY=your_supabase_key
-VITE_EMAILJS_SERVICE_ID=your_emailjs_service
-VITE_EMAILJS_TEMPLATE_ID=your_template_id
-VITE_EMAILJS_PUBLIC_KEY=your_public_key
-```
+Simply open [Lovable](https://lovable.dev/projects/736f7d74-44f7-400a-aa05-80d5ecb5a3c2) and click on Share -> Publish.
 
-## 🎨 التخصيص
+## Can I connect a custom domain to my Lovable project?
 
-### الألوان والثيمات
-يمكن تخصيص الألوان من خلال `tailwind.config.ts`:
+Yes, you can!
 
-```typescript
-module.exports = {
-  theme: {
-    extend: {
-      colors: {
-        primary: {
-          // ألوانك المخصصة
-        }
-      }
-    }
-  }
-}
-```
+To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
-### اللغات
-إضافة لغة جديدة:
-
-1. أنشئ ملف في `src/translations/[lang].ts`
-2. أضف اللغة في `src/utils/languageContextUtils.ts`
-3. أضف الخط المناسب في `index.css`
-
-## 📊 مراقبة الأداء
-
-يتضمن النظام أدوات مراقبة الأداء المتقدمة:
-
-- مراقبة استخدام الذاكرة
-- قياس أوقات التحميل
-- تحسين الصور تلقائياً
-- تحميل كسول للمكونات
-
-## 🔒 الأمان
-
-- مصادقة آمنة عبر Supabase
-- حماية المسارات حسب الأدوار
-- تشفير البيانات الحساسة
-- منع هجمات XSS و CSRF
-
-## 🧪 الاختبار
-
-```bash
-# فحص TypeScript
-npm run type-check
-
-# فحص ESLint
-npm run lint
-
-# إصلاح مشاكل ESLint
-npm run lint:fix
-
-# اختبار شامل للنظام
-# زيارة /system-test في المتصفح
-```
-
-## 📱 دعم PWA
-
-المشروع جاهز لتحويله إلى Progressive Web App:
-
-```typescript
-// في vite.config.ts
-VitePWA({
-  registerType: 'autoUpdate',
-  workbox: {
-    globPatterns: ['**/*.{js,css,html,ico,png,svg,webp}']
-  }
-})
-```
-
-## 🚀 نشر الموقع
-
-### Netlify
-```bash
-npm run build
-# رفع مجلد dist إلى Netlify
-```
-
-### Vercel
-```bash
-npm run build
-vercel --prod
-```
-
-## 🤝 المساهمة
-
-1. Fork المشروع
-2. أنشئ branch جديد (`git checkout -b feature/amazing-feature`)
-3. Commit التغييرات (`git commit -m 'Add amazing feature'`)
-4. Push إلى البranch (`git push origin feature/amazing-feature`)
-5. افتح Pull Request
-
-## 📄 الترخيص
-
-هذا المشروع مرخص تحت [MIT License](LICENSE).
-
-## 📞 التواصل
-
-- **البريد الإلكتروني**: support@manusfixes.com
-- **الموقع**: https://manusfixes.netlify.app
-- **الدعم**: [إنشاء مشكلة](https://github.com/your-repo/issues)
-
-## 🙏 شكر خاص
-
-شكر خاص لجميع المطورين والمساهمين في المشاريع مفتوحة المصدر المستخدمة في هذا المشروع.
-
----
-
-**تم بناؤه بـ ❤️ من أجل مجتمع التجارة الإلكترونية العربية**
+Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)

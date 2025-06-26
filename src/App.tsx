@@ -14,7 +14,7 @@ import { HelmetProvider } from "react-helmet-async";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
-import { lazy, Suspense, memo, useEffect, useRef, useState, useCallback } from "react";
+import { lazy, Suspense, memo, useEffect, useRef, useState } from "react";
 import ScrollToTop from "@/components/ScrollToTop";
 import { getSetting } from "@/services/settingsService";
 import MobileBottomNavBar from "@/components/MobileBottomNavBar";
@@ -60,7 +60,6 @@ const AdminDashboard = lazy(() =>
   })),
 );
 const CartPage = lazy(() => import("./pages/Cart"));
-const SystemTest = lazy(() => import("./pages/SystemTest"));
 
 // Enhanced loading component with better UX
 const PageLoader = memo(() => (
@@ -115,40 +114,23 @@ const RoutePreloader = memo(() => {
   return null;
 });
 
-// Enhanced QueryClient configuration for better performance
-const createQueryClient = () => new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 10 * 60 * 1000, // 10 minutes (was cacheTime)
-      retry: (failureCount, error: any) => {
-        // Don't retry on 4xx errors
-        if (error?.status >= 400 && error?.status < 500) return false;
-        return failureCount < 3;
-      },
-      refetchOnWindowFocus: false,
-      refetchOnReconnect: true,
-    },
-    mutations: {
-      retry: 1,
-    },
-  },
-});
-
 // Component to handle connection monitoring and smart refresh
 const ConnectionManager = memo(() => {
   const queryClientRef = useRef<QueryClient>();
   if (!queryClientRef.current) {
-    queryClientRef.current = createQueryClient();
+    queryClientRef.current = new QueryClient();
   }
   const queryClient = queryClientRef.current;
 
   // مراقبة الاتصال
   const { isOnline } = useConnectionMonitor({
-    onReconnect: useCallback(() => {
+    onReconnect: () => {
       console.log("Connection restored, refreshing data...");
       queryClient.refetchQueries({ type: "all" });
-    }, [queryClient]),
+    },
+    onDisconnect: () => {
+      console.log("Connection lost");
+    },
   });
 
   // عرض رسالة عدم الاتصال
@@ -308,18 +290,6 @@ const App = () => {
                               <ProtectedRoute requireAdmin>
                                 <Suspense fallback={<PageLoader />}>
                                   <AdminDashboard />
-                                </Suspense>
-                              </ProtectedRoute>
-                            }
-                          />
-
-                          {/* System Test Route - Admin Only */}
-                          <Route
-                            path="/system-test"
-                            element={
-                              <ProtectedRoute requireAdmin>
-                                <Suspense fallback={<PageLoader />}>
-                                  <SystemTest />
                                 </Suspense>
                               </ProtectedRoute>
                             }

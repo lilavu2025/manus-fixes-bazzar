@@ -911,15 +911,4 @@ export const arTranslations = {
   limitedStock: "كمية محدودة",
   new: "جديد",
   priceDrop: "خصم",
-  
-  // System Test Page
-  systemTestPage: "صفحة فحص النظام",
-  systemTestDescription: "فحص شامل لجميع وظائف وميزات النظام",
-  runningTests: "جاري تشغيل الاختبارات...",
-  runSystemTests: "تشغيل فحص النظام",
-  testToast: "اختبار الإشعارات",
-  testToastMessage: "هذه رسالة اختبار للتوست!",
-  systemTestCompleted: "اكتمل فحص النظام بنجاح!",
-  systemTestComplete: "اكتمل فحص النظام",
-  systemTestSummary: "تم فحص جميع المكونات الأساسية للنظام",
 };

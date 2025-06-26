@@ -16,7 +16,7 @@ import { useLanguage } from "@/utils/languageContextUtils";
 import { useEnhancedToast } from "@/hooks/useEnhancedToast";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import EmailConfirmationPending from "@/components/EmailConfirmationPending";
-import { getCookie } from "@/utils/commonUtils";
+import { getCookie } from "@/utils/cookieUtils";
 
 const Auth: React.FC = () => {
   const navigate = useNavigate();

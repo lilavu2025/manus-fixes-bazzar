@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { AddressService } from "@/services/supabaseService";
 import { useAuth } from "@/contexts/useAuth";
 import { useLanguage } from "@/utils/languageContextUtils";
-import { isValidPhone } from "@/utils/phoneValidation";
 
 interface Address {
   id: string;
@@ -43,6 +42,11 @@ const AddressSelector: React.FC<AddressSelectorProps> = ({ value, onChange, user
   useEffect(() => {
     setSelectedId(value?.id || "");
   }, [value?.id]);
+
+  // دالة تحقق من صحة رقم الهاتف
+  function isValidPhone(phone: string) {
+    return /^05\d{8}$/.test(phone);
+  }
 
   return (
     <div className="mb-2">

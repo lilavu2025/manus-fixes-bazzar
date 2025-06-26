@@ -11,14 +11,9 @@ interface ToastOptions {
   };
 }
 
-// Enhanced toast utilities with better translations and RTL support
+// Enhanced toast utilities with better translations and styling
 export const useEnhancedToast = () => {
-  const { t, isRTL } = useLanguage();
-
-  // Get proper CSS classes for RTL support
-  const getToastClasses = () => {
-    return isRTL ? 'rtl:text-right rtl:pr-4 rtl:pl-12' : 'ltr:text-left ltr:pl-4 ltr:pr-12';
-  };
+  const { t } = useLanguage();
 
   const toast = {
     success: (message: string, options?: ToastOptions) => {
@@ -26,11 +21,7 @@ export const useEnhancedToast = () => {
         description: options?.description,
         duration: options?.duration || 4000,
         action: options?.action,
-        className: getToastClasses(),
-        style: {
-          direction: isRTL ? 'rtl' : 'ltr',
-          textAlign: isRTL ? 'right' : 'left',
-        },
+        className: 'rtl:text-right',
       });
     },
 
@@ -39,11 +30,7 @@ export const useEnhancedToast = () => {
         description: options?.description,
         duration: options?.duration || 5000,
         action: options?.action,
-        className: getToastClasses(),
-        style: {
-          direction: isRTL ? 'rtl' : 'ltr',
-          textAlign: isRTL ? 'right' : 'left',
-        },
+        className: 'rtl:text-right',
       });
     },
 
@@ -52,11 +39,7 @@ export const useEnhancedToast = () => {
         description: options?.description,
         duration: options?.duration || 4000,
         action: options?.action,
-        className: getToastClasses(),
-        style: {
-          direction: isRTL ? 'rtl' : 'ltr',
-          textAlign: isRTL ? 'right' : 'left',
-        },
+        className: 'rtl:text-right',
       });
     },
 
@@ -65,47 +48,31 @@ export const useEnhancedToast = () => {
         description: options?.description,
         duration: options?.duration || 4000,
         action: options?.action,
-        className: getToastClasses(),
-        style: {
-          direction: isRTL ? 'rtl' : 'ltr',
-          textAlign: isRTL ? 'right' : 'left',
-        },
+        className: 'rtl:text-right',
       });
     },
 
     // Convenience methods for common operations
     operationSuccess: (operation: string = '') => {
       sonnerToast.success(operation || t('operationSuccessful'), {
-        className: getToastClasses(),
+        className: 'rtl:text-right',
         duration: 3000,
-        style: {
-          direction: isRTL ? 'rtl' : 'ltr',
-          textAlign: isRTL ? 'right' : 'left',
-        },
       });
     },
 
     operationError: (operation: string = '', error?: string) => {
       sonnerToast.error(operation || t('operationFailed'), {
         description: error || t('unexpectedErrorOccurred'),
-        className: getToastClasses(),
+        className: 'rtl:text-right',
         duration: 5000,
-        style: {
-          direction: isRTL ? 'rtl' : 'ltr',
-          textAlign: isRTL ? 'right' : 'left',
-        },
       });
     },
 
     connectionError: () => {
       sonnerToast.error(t('connectionError'), {
         description: t('dataLoadFailed'),
-        className: getToastClasses(),
+        className: 'rtl:text-right',
         duration: 5000,
-        style: {
-          direction: isRTL ? 'rtl' : 'ltr',
-          textAlign: isRTL ? 'right' : 'left',
-        },
       });
     },
 
@@ -116,5 +83,4 @@ export const useEnhancedToast = () => {
   return toast;
 };
 
-// تصدير افتراضي أيضاً للتوافق
 export default useEnhancedToast;

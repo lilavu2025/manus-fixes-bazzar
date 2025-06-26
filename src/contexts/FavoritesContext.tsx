@@ -2,7 +2,7 @@ import React, { createContext, useReducer, ReactNode, useEffect } from 'react';
 import { Product } from '@/types';
 import { favoritesReducer, initialFavoritesState } from '../utils/favoritesContextUtils';
 import type { FavoritesContextType, FavoritesState, FavoritesAction } from '../types/favorites';
-import { setCookie, getCookie, deleteCookie } from '@/utils/commonUtils';
+import { setCookie, getCookie, deleteCookie } from '../utils/cookieUtils';
 import { useAuth } from '@/contexts/useAuth';
 import { FavoriteService } from '@/services/supabaseService';
 

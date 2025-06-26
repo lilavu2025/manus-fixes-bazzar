@@ -1,4 +1,4 @@
-import { decompressText } from "@/utils/commonUtils";
+import { decompressText } from "@/utils/textCompression";
 import { OrderItem } from "./order.types";
 
 // دالة مساعدة لفك الضغط الآمن لملاحظات الطلب

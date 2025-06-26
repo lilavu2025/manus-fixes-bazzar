@@ -15,35 +15,15 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 8080,
     historyApiFallback: true,
-    hmr: {
-      overlay: true
-    },
-    // إزالة allowedHosts المحدد للسماح بمرونة أكبر
+    allowedHosts: ["8080-iulzih0nq0la09tlfsfr2-f4845436.manusvm.computer"],
   },
   plugins: [
     react(),
     mode === 'development' && componentTagger(),
-    viteCompression({ 
-      algorithm: 'brotliCompress',
-      ext: '.br'
-    }),
-    viteCompression({ 
-      algorithm: 'gzip',
-      ext: '.gz'
-    }),
-    visualizer({ 
-      open: false, 
-      filename: 'dist/bundle-stats.html',
-      gzipSize: true,
-      brotliSize: true
-    }),
-    // PWA Support - يمكن تفعيلها لاحقاً
-    // VitePWA({
-    //   registerType: 'autoUpdate',
-    //   workbox: {
-    //     globPatterns: ['**/*.{js,css,html,ico,png,svg,webp}']
-    //   }
-    // })
+    viteCompression({ algorithm: 'brotliCompress' }),
+    viteCompression({ algorithm: 'gzip' }),
+    visualizer({ open: false, filename: 'dist/bundle-stats.html' }),
+    // VitePWA({ ... }) معطل مؤقتاً
   ].filter(Boolean),
   resolve: {
     alias: {

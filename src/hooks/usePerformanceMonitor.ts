@@ -1,5 +1,5 @@
 import { useRef, useEffect } from 'react';
-import { EnhancedPerformanceMonitor as PerformanceMonitor } from '@/utils/enhancedPerformanceMonitor';
+import { PerformanceMonitor } from '@/utils/performanceMonitorUtil';
 
 export const usePerformanceMonitor = () => {
   const monitorRef = useRef<PerformanceMonitor | null>(null);
@@ -14,6 +14,6 @@ export const usePerformanceMonitor = () => {
 
   return {
     getMetrics: () => monitorRef.current?.getMetrics?.() || {},
-    logMetrics: () => monitorRef.current?.getMetrics?.(),
+    logMetrics: () => monitorRef.current?.logMetrics?.(),
   };
 };

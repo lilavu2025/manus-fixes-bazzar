@@ -866,15 +866,4 @@ export const heTranslations = {
   limitedStock: "מלאי מוגבל",
   new: "חדש",
   priceDrop: "הנחה",
-  
-  // System Test Page
-  systemTestPage: "עמוד בדיקת מערכת",
-  systemTestDescription: "בדיקה מקיפה של כל פונקציות ותכונות המערכת",
-  runningTests: "מריץ בדיקות...",
-  runSystemTests: "הרץ בדיקות מערכת",
-  testToast: "בדוק התראות",
-  testToastMessage: "זהו הודעת בדיקה!",
-  systemTestCompleted: "בדיקת המערכת הושלמה בהצלחה!",
-  systemTestComplete: "בדיקת המערכת הושלמה",
-  systemTestSummary: "כל רכיבי המערכת הבסיסיים נבדקו",
 };
