@@ -976,4 +976,7 @@ export const enTranslations = {
   fixedAmount: "Fixed Amount",
   pleaseLoginToCheckout: "Please login to checkout",
   noInternetConnection: "No internet connection",
+  emailResendFailed: "Failed to resend email",
+  emailResendSuccess: "Email sent successfully",
+  errorPlacingOrder: "Error placing order"
 };

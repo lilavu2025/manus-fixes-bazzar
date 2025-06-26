@@ -55,7 +55,7 @@ const Contact: React.FC = () => {
         message: "",
       });
     } catch (err) {
-      enhancedToast.error("errorSendingMessage");
+      enhancedToast.error(t("errorSendingMessage"));
     } finally {
       setIsLoading(false);
     }

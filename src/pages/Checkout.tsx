@@ -51,7 +51,7 @@ const Checkout: React.FC = () => {
   // Redirect to login if user is not authenticated
   useEffect(() => {
     if (!user) {
-      enhancedToast.error("pleaseLoginToCheckout");
+      enhancedToast.error(t("pleaseLoginToCheckout"));
       navigate("/auth", { replace: true });
     }
   }, [user, navigate, enhancedToast, t]);
@@ -117,13 +117,13 @@ const Checkout: React.FC = () => {
   const handlePlaceOrder = async () => {
     // التحقق من تسجيل الدخول
     if (!user) {
-      enhancedToast.error("pleaseLogin");
+      enhancedToast.error(t("pleaseLogin"));
       return;
     }
 
     // التحقق من وجود عناصر للشراء
     if (itemsToCheckout.length === 0) {
-      enhancedToast.error("cartIsEmpty");
+      enhancedToast.error(t(""));
       return;
     }
 
@@ -136,13 +136,13 @@ const Checkout: React.FC = () => {
       !shippingAddress.street ||
       !shippingAddress.building
     ) {
-      enhancedToast.error("fillRequiredFields");
+      enhancedToast.error(t("fillRequiredFields"));
       return;
     }
 
     // تحقق من صحة رقم الهاتف
     if (!isValidPhone(shippingAddress.phone)) {
-      enhancedToast.error("invalidPhone");
+      enhancedToast.error(t("invalidPhone"));
       return;
     }
 
@@ -206,7 +206,7 @@ const Checkout: React.FC = () => {
       navigate("/orders");
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      enhancedToast.error(err.message || "errorPlacingOrder");
+      enhancedToast.error(err.message || t("errorPlacingOrder"));
       setIsLoading(false);
     } finally {
       setIsLoading(false);

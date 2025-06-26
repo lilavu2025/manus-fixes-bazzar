@@ -947,4 +947,7 @@ export const heTranslations = {
   errorProcessingOrderLog: "שגיאה בעיבוד רכישה ישירה:",
   pleaseLoginToCheckout: "אנא התחבר כדי לבצע את ההזמנה",
   noInternetConnection: "אין חיבור לאינטרנט",
+  emailResendFailed: "שגיאה בשליחת האימייל",
+  emailResendSuccess: "האימייל נשלח בהצלחה",
+  errorPlacingOrder: "שגיאה בהנחת ההזמנה"
 };

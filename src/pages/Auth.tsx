@@ -98,7 +98,7 @@ const Auth: React.FC = () => {
         typeof (error as { message?: string }).message === "string" &&
         (error as { message: string }).message.includes("Email not confirmed")
       ) {
-        enhancedToast.error("emailNotConfirmed");
+        enhancedToast.error(t("emailNotConfirmed"));
       } else {
         const errorMessage = typeof error === "object" && error && "message" in error
           ? ((error as { message?: string }).message === "Invalid login credentials"

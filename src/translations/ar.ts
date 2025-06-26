@@ -942,4 +942,7 @@ export const arTranslations = {
   errorProcessingOrderLog: "خطأ في عملية الشراء المباشر:",
   pleaseLoginToCheckout: "يرجى تسجيل الدخول لإتمام عملية الدفع",
   noInternetConnection: "لا يوجد اتصال بالإنترنت",
+  emailResendFailed: "فشل في إعادة إرسال البريد الإلكتروني",
+  emailResendSuccess: "تم إعادة إرسال البريد الإلكتروني بنجاح",
+  errorPlacingOrder: "خطأ في إتمام الطلب"
 };

@@ -67,7 +67,7 @@ const EmailConfirmationPending: React.FC<EmailConfirmationPendingProps> = ({
       enhancedToast.success("emailConfirmationSent");
     } catch (error) {
       console.error("Resend error:", error);
-      enhancedToast.error("emailResendFailed");
+      enhancedToast.error(t("emailResendFailed"));
     } finally {
       setIsResending(false);
     }

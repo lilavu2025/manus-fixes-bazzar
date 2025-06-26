@@ -26,7 +26,7 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
   const handleCheckoutClick = (e: React.MouseEvent) => {
     if (!user) {
       e.preventDefault();
-      enhancedToast.error("pleaseLoginToCheckout");
+      enhancedToast.error(t("pleaseLoginToCheckout"));
     } else {
       onClose();
     }
