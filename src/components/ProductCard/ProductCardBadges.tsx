@@ -142,12 +142,7 @@ const ProductCardBadges = ({
               {t('new')}
             </Badge>
           )}
-        </>
-      )}
-      
-      {/* باقي البادجز - تحت الاسم */}
-      {isBelowName && (
-        <>
+          
           {/* بادج انخفاض السعر */}
           {hasPriceDrop() && (
             <Badge variant="destructive" className="bg-orange-500 text-white text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1">
@@ -155,6 +150,12 @@ const ProductCardBadges = ({
             </Badge>
           )}
           
+        </>
+      )}
+      
+      {/* باقي البادجز - تحت الاسم */}
+      {isBelowName && (
+        <>
           {/* بادج الأكثر طلباً */}
           {product.top_ordered === true && (
             <Badge variant="secondary" className="bg-blue-100 text-blue-800 border-blue-300 text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1">
