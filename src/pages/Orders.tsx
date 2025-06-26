@@ -41,7 +41,7 @@ import {
 import { getDisplayPrice } from "@/utils/priceUtils";
 import { mapOrderFromDb } from "../utils/orderUtils";
 import type { OrdersWithDetails } from "@/integrations/supabase/dataFetchers";
-import { decompressText } from "@/utils/textCompression";
+import { decompressText } from "@/utils/commonUtils";
 import { ClearableInput } from "@/components/ui/ClearableInput";
 
 // أنواع الطلب وعناصر الطلب من Supabase

@@ -6,7 +6,7 @@ import type {
   TablesInsert,
   TablesUpdate,
 } from "@/integrations/supabase/types";
-import { setCookie, getCookie, deleteCookie } from "../utils/cookieUtils";
+import { setCookie, getCookie, deleteCookie } from "@/utils/commonUtils";
 import {
   useSignIn,
   useSignUp,

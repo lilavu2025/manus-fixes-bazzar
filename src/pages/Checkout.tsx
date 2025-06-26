@@ -16,7 +16,7 @@ import { Separator } from "@/components/ui/separator";
 import { useEnhancedToast } from "@/hooks/useEnhancedToast";
 import { ShoppingCart, CreditCard, Banknote, ArrowLeft } from "lucide-react";
 import { Product } from "@/types";
-import { compressText, decompressText } from "@/utils/textCompression";
+import { compressText, decompressText } from "@/utils/commonUtils";
 import { getDisplayPrice } from "@/utils/priceUtils";
 import AddressSelector, { Address as UserAddress } from "@/components/addresses/AddressSelector";
 import { saveAddressIfNotExists } from "@/components/addresses/saveAddressIfNotExists";

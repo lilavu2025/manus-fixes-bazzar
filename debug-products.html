@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Products</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .product { border: 1px solid #ccc; margin: 10px; padding: 10px; }
+        .badge { display: inline-block; padding: 5px 10px; margin: 5px; border-radius: 5px; color: white; }
+        .discount { background-color: red; }
+        .new { background-color: green; }
+    </style>
+</head>
+<body>
+    <h1>Debug Products Data</h1>
+    <div id="products-container">
+        <p>جاري تحميل المنتجات...</p>
+    </div>
+
+    <script>
+        // محاكاة بيانات للاختبار
+        const testProducts = [
+            {
+                id: '1',
+                name_ar: 'ايفون 15 برو',
+                discount: 10,
+                created_at: new Date().toISOString(),
+                inStock: true
+            },
+            {
+                id: '2', 
+                name_ar: 'سامسونج جالاكسي',
+                discount: 15,
+                created_at: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days ago
+                inStock: true
+            },
+            {
+                id: '3',
+                name_ar: 'منتج بدون خصم',
+                discount: 0,
+                created_at: new Date().toISOString(),
+                inStock: true
+            },
+            {
+                id: '4',
+                name_ar: 'منتج null خصم',
+                discount: null,
+                created_at: new Date().toISOString(),
+                inStock: true
+            }
+        ];
+
+        function isValidDiscount(discount) {
+            if (discount === 0 || discount === null || discount === undefined) {
+                return false;
+            }
+            return discount && typeof discount === 'number' && !isNaN(discount) && discount > 0;
+        }
+
+        function isNewProduct(created_at) {
+            if (!created_at || created_at === '') return false;
+            try {
+                const createdDate = new Date(created_at);
+                const now = new Date();
+                const daysDiff = (now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24);
+                return daysDiff <= 7 && daysDiff >= 0;
+            } catch {
+                return false;
+            }
+        }
+
+        function renderProducts() {
+            const container = document.getElementById('products-container');
+            container.innerHTML = '';
+
+            testProducts.forEach(product => {
+                const productDiv = document.createElement('div');
+                productDiv.className = 'product';
+                
+                const isDiscount = isValidDiscount(product.discount);
+                const isNew = isNewProduct(product.created_at);
+                
+                console.log('🐛 Product Debug:', {
+                    productId: product.id,
+                    productName: product.name_ar,
+                    discount: product.discount,
+                    isValidDiscount: isDiscount,
+                    isNewProduct: isNew
+                });
+
+                productDiv.innerHTML = `
+                    <h3>${product.name_ar}</h3>
+                    <p>الخصم: ${product.discount} - صحيح؟ ${isDiscount}</p>
+                    <p>جديد؟ ${isNew}</p>
+                    <div>
+                        ${isDiscount ? `<span class="badge discount">-${product.discount}%</span>` : ''}
+                        ${isNew ? `<span class="badge new">جديد</span>` : ''}
+                    </div>
+                `;
+                
+                container.appendChild(productDiv);
+            });
+        }
+
+        renderProducts();
+    </script>
+</body>
+</html>

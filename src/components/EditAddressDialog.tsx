@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useLanguage } from "@/utils/languageContextUtils";
+import { isValidPhone } from "@/utils/phoneValidation";
 import { useAddresses, Address } from "@/hooks/useAddresses";
 import {
   Dialog,
@@ -37,11 +38,6 @@ const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
     apartment: address.apartment || "",
     is_default: address.is_default || false,
   });
-
-  // دالة تحقق من صحة رقم الهاتف
-  function isValidPhone(phone: string) {
-    return /^05\d{8}$/.test(phone);
-  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

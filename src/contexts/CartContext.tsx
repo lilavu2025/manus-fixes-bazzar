@@ -10,7 +10,7 @@ import type {
 } from "./CartContext.types";
 import { getDisplayPrice } from "@/utils/priceUtils";
 import type { Product as ProductFull } from "@/types/product";
-import { setCookie, getCookie, deleteCookie } from "../utils/cookieUtils";
+import { setCookie, getCookie, deleteCookie } from "@/utils/commonUtils";
 import {
   useAddToCart,
   useUpdateCartItem,

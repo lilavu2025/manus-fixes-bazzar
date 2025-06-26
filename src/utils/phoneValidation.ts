@@ -24,20 +24,25 @@ export const formatPhoneNumber = (phone: string): string => {
 
 export const getPhoneErrorMessage = (phone: string, t: (key: string) => string): string => {
   if (!phone) {
-    return t('phoneRequired');
+    return t('phoneRequired') || 'رقم الهاتف مطلوب';
   }
   
   if (phone.length !== 10) {
-    return t('phoneMustBe10Digits');
+    return t('phoneMustBe10Digits') || 'رقم الهاتف يجب أن يكون 10 أرقام';
   }
   
   if (!phone.startsWith('05')) {
-    return t('phoneMustStartWith05');
+    return t('phoneMustStartWith05') || 'رقم الهاتف يجب أن يبدأ بـ 05';
   }
   
   if (!/^[0-9]+$/.test(phone)) {
-    return t('phoneOnlyNumbers');
+    return t('phoneOnlyNumbers') || 'رقم الهاتف يجب أن يحتوي على أرقام فقط';
   }
   
   return '';
+};
+
+// دالة مبسطة للتوافق مع الكود الموجود
+export const isValidPhone = (phone: string): boolean => {
+  return validatePhoneNumber(phone);
 };

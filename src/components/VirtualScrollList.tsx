@@ -1,7 +1,6 @@
 import * as React from "react";
 import { useState, useEffect, useRef, useMemo, useCallback, useContext } from 'react';
 import { cn } from '@/lib/utils';
-import { useVirtualScroll, VirtualGrid } from '@/utils/virtualScrollUtils';
 import { LanguageContext } from '@/contexts/LanguageContext.context';
 
 interface VirtualScrollListProps<T> {
