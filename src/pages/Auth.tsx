@@ -88,7 +88,7 @@ const Auth: React.FC = () => {
       }
 
       await signIn(loginData.email, loginData.password);
-      enhancedToast.success("loginSuccess");
+      enhancedToast.success(t("loginSuccess"));
     } catch (error: unknown) {
       console.error("Login error:", error);
       if (
@@ -96,7 +96,7 @@ const Auth: React.FC = () => {
         error &&
         "message" in error &&
         typeof (error as { message?: string }).message === "string" &&
-        (error as { message: string }).message.includes("Email not confirmed")
+        (error as { message: string }).message.includes(t("emailNotConfirmed"))
       ) {
         enhancedToast.error(t("emailNotConfirmed"));
       } else {
