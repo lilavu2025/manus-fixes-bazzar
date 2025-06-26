@@ -14,6 +14,7 @@ import { HelmetProvider } from "react-helmet-async";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
+import { useLanguage } from "@/utils/languageContextUtils";
 import { lazy, Suspense, memo, useEffect, useRef, useState, useCallback } from "react";
 import ScrollToTop from "@/components/ScrollToTop";
 import { getSetting } from "@/services/settingsService";
@@ -75,7 +76,7 @@ const LoadingSpinner = memo(() => (
     <div className="flex flex-col items-center gap-4">
       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       <p className="text-sm text-muted-foreground animate-pulse">
-        جاري التحميل...
+        {t("loading")}
       </p>
     </div>
   </div>
@@ -155,7 +156,7 @@ const ConnectionManager = memo(() => {
   if (!isOnline) {
     return (
       <div className="fixed top-0 left-0 right-0 bg-red-500 text-white text-center py-2 z-50">
-        لا يوجد اتصال بالإنترنت
+        {t("noInternetConnection")}
       </div>
     );
   }
