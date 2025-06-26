@@ -937,6 +937,7 @@ export const arTranslations = {
   newPasswordDifferent: "كلمة السر الجديدة يجب أن تختلف عن الحالية",
   showAllProducts: "عرض الكل",
   showTopSellingProducts: "عرض الأكثر مبيعاً",
+  topSellingProducts: "الأكثر مبيعاً",
   orderCancelledByAdmin: "ألغي الطلب بواسطة الأدمن",
   errorAddingToCartLog: "خطأ في إضافة المنتج للسلة:",
   errorProcessingOrderLog: "خطأ في عملية الشراء المباشر:",

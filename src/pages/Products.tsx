@@ -346,7 +346,7 @@ const Products: React.FC = () => {
               {/* الأكثر مبيعاً */}
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  الأكثر مبيعاً
+                  {t("topSellingProducts")}
                 </label>
                 <Button
                   variant={showTopOrdered ? "default" : "outline"}

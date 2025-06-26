@@ -934,6 +934,7 @@ export const enTranslations = {
   newPasswordDifferent: "New password must be different from current",
   showAllProducts: "Show All",
   showTopSellingProducts: "Show Top Selling",
+  topSellingProducts: "Top Selling Products",
   orderCancelledByAdmin: "Order cancelled by admin",
   errorAddingToCartLog: "Error adding product to cart:",
   errorProcessingOrderLog: "Error processing direct purchase:",

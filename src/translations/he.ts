@@ -942,6 +942,7 @@ export const heTranslations = {
   newPasswordDifferent: "הסיסמה החדשה חייבת להיות שונה מהנוכחית",
   showAllProducts: "הצג הכל",
   showTopSellingProducts: "הצג הנמכרים ביותר",
+  topSellingProducts: "המוצרים הנמכרים ביותר",
   orderCancelledByAdmin: "ההזמנה בוטלה על ידי המנהל",
   errorAddingToCartLog: "שגיאה בהוספת מוצר לעגלה:",
   errorProcessingOrderLog: "שגיאה בעיבוד רכישה ישירה:",
