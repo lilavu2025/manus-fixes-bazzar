@@ -44,7 +44,7 @@ const MobileBottomNavBar: React.FC<MobileBottomNavBarProps> = ({
     <nav 
       className={`fixed bottom-0 left-0 right-0 z-50 bg-white/98 border-t border-gray-200 
         shadow-xl flex justify-around items-center h-20 md:hidden px-2 backdrop-blur-md
-        ${isRTL ? 'flex-row-reverse' : 'flex-row'}`}
+        ${isRTL ? 'rtl' : 'ltr'}`}
     >
       {/* الرئيسية */}
       <button
