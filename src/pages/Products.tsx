@@ -19,6 +19,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { getLocalizedName } from "@/utils/getLocalizedName";
 import { mapProductFromDb } from "@/types/mapProductFromDb";
 import { fetchTopOrderedProducts } from "@/integrations/supabase/dataSenders";
+import { ClearableInput } from "@/components/ui/ClearableInput";
 
 const Products: React.FC = () => {
   const { t, isRTL, language } = useLanguage();
@@ -151,6 +152,7 @@ const Products: React.FC = () => {
     sortBy !== "default" ? sortBy : null,
     priceRange.min,
     priceRange.max,
+    showTopOrdered ? "topOrdered" : null, // Add topOrdered to active filters
   ].filter(Boolean).length;
 
   if (productsLoading || categoriesLoading) {
@@ -318,7 +320,7 @@ const Products: React.FC = () => {
                   {t("priceRange")}
                 </label>
                 <div className="flex gap-2">
-                  <Input
+                  <ClearableInput
                     type="number"
                     placeholder={t("min")}
                     value={priceRange.min}
@@ -328,8 +330,9 @@ const Products: React.FC = () => {
                         min: e.target.value,
                       }))
                     }
+                    onClear={() => setPriceRange((prev) => ({ ...prev, min: "" }))}
                   />
-                  <Input
+                  <ClearableInput
                     type="number"
                     placeholder={t("max")}
                     value={priceRange.max}
@@ -339,6 +342,7 @@ const Products: React.FC = () => {
                         max: e.target.value,
                       }))
                     }
+                    onClear={() => setPriceRange((prev) => ({ ...prev, max: "" }))}
                   />
                 </div>
               </div>
@@ -353,9 +357,7 @@ const Products: React.FC = () => {
                   className="w-full"
                   onClick={() => setShowTopOrdered((prev) => !prev)}
                 >
-                  {showTopOrdered
-                    ? t("showAllProducts")
-                    : t("showTopSellingProducts")}
+                  {showTopOrdered ? t("showAll") : t("showTopSellingProducts")}
                 </Button>
               </div>
 
@@ -398,11 +400,19 @@ const Products: React.FC = () => {
             )}
             {(priceRange.min || priceRange.max) && (
               <Badge variant="secondary" className="gap-2">
-                {priceRange.min || "0"} - {priceRange.max || "∞"}{" "}
-                {t("currency")}
+                {priceRange.min || "0"} - {priceRange.max || "∞"} {t("currency")}
                 <X
                   className="h-3 w-3 cursor-pointer"
                   onClick={() => setPriceRange({ min: "", max: "" })}
+                />
+              </Badge>
+            )}
+            {showTopOrdered && (
+              <Badge variant="secondary" className="gap-2">
+                {t("topOrdered")}
+                <X
+                  className="h-3 w-3 cursor-pointer"
+                  onClick={() => setShowTopOrdered(false)}
                 />
               </Badge>
             )}
