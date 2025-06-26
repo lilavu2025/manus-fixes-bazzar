@@ -5,6 +5,7 @@ import { useLanguage } from '@/utils/languageContextUtils';
 import { getLocalizedName } from '@/utils/getLocalizedName';
 import { useAuth } from '@/contexts/useAuth';
 import { getDisplayPrice } from '@/utils/priceUtils';
+import ProductCardBadges from '@/components/ProductCard/ProductCardBadges';
 import type { Product as ProductFull } from '@/types/product';
 
 interface ProductInfoProps {
@@ -20,6 +21,10 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
     <div className={`space-y-4 sm:space-y-6 ${isRTL ? 'text-right' : 'text-left'}`}>
       <div>
         <h1 className="text-xl sm:text-2xl md:text-3xl font-bold mb-2 text-center leading-tight">{getLocalizedName(product, language)}</h1>
+        {/* البادجز */}
+        <div className="flex justify-center mb-4">
+          <ProductCardBadges product={product} variant="belowName" />
+        </div>
       </div>
       {/* السعر */}
       <div className={`flex flex-col gap-2 w-full`}>
