@@ -301,7 +301,7 @@ const Checkout: React.FC = () => {
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* AddressSelector الجديد */}
-                <AddressSelector value={null} onChange={handleAddressSelect} />
+                <AddressSelector value={null} onChange={handleAddressSelect} userId={user?.id} />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="fullName">{t("fullName")} *</Label>

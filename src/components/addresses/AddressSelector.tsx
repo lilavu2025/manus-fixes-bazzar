@@ -46,8 +46,8 @@ const AddressSelector: React.FC<AddressSelectorProps> = ({ value, onChange, user
 
   return (
     <div className="mb-2">
-      {/* إظهار قائمة العناوين فقط إذا كان هناك userId (عميل محدد) */}
-      {userId && addresses.length > 0 && (
+      {/* إظهار قائمة العناوين إذا كان هناك عناوين محفوظة */}
+      {addresses.length > 0 && (
         <>
           <label className="block text-sm font-medium text-gray-700 mb-1">
             {t("chooseSavedAddress") || "اختر عنوان محفوظ"}
@@ -89,10 +89,10 @@ const AddressSelector: React.FC<AddressSelectorProps> = ({ value, onChange, user
           </select>
         </>
       )}
-      {/* إذا كان هناك userId ولا يوجد عناوين */}
-      {userId && addresses.length === 0 && (
+      {/* إذا لم يوجد عناوين محفوظة وكان المستخدم مسجل دخول */}
+      {addresses.length === 0 && (userId || user?.id) && (
         <div className="text-gray-500 text-sm py-2">
-          {t("noAddressesFound") || "لا يوجد عناوين محفوظة لهذا العميل"}
+          {t("noAddressesFound") || "لا يوجد عناوين محفوظة"}
         </div>
       )}
     </div>
