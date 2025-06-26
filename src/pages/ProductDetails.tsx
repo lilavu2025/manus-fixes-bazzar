@@ -125,12 +125,23 @@ const ProductDetails = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 mb-8 sm:mb-12">
           <ProductImageGallery
             product={{
+              id: product.id,
               name: getLocalizedName(product, language),
+              nameEn: product.nameEn,
+              nameHe: product.nameHe,
+              description: product.description,
+              descriptionEn: product.descriptionEn,
+              descriptionHe: product.descriptionHe,
               image: product.image,
               images: product.images,
               discount: product.discount,
               inStock: product.inStock,
               price: product.price,
+              originalPrice: product.originalPrice,
+              created_at: product.created_at,
+              category: product.category,
+              rating: product.rating,
+              reviews: product.reviews,
             }}
           />
           <div

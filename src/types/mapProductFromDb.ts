@@ -14,7 +14,7 @@ export function mapProductFromDb(row: ProductRow): Product {
     descriptionEn: row.description_en ?? '',
     descriptionHe: row.description_he ?? '',
     price: row.price ?? 0,
-    originalPrice: row.original_price ?? undefined,
+    originalPrice: row.original_price ?? 0, // Default to 0 if undefined
     wholesalePrice: row.wholesale_price ?? undefined,
     image: row.image ?? '',
     images: row.images ?? [],
@@ -27,7 +27,7 @@ export function mapProductFromDb(row: ProductRow): Product {
     featured: row.featured ?? undefined,
     tags: row.tags ?? [],
     active: typeof row.active === 'boolean' ? row.active : true,
-    created_at: row.created_at ?? '',
+    created_at: row.created_at ?? 'N/A', // Default to 'N/A' if undefined
     sales_count: row.sales_count ?? 0,
     top_ordered: row.top_ordered ?? false,
   };

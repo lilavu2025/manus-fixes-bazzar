@@ -4,22 +4,11 @@ import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/utils/languageContextUtils";
 import { X, ZoomIn, ChevronLeft, ChevronRight } from "lucide-react";
 import LazyImage from "@/components/LazyImage";
+import { Product } from '@/types';
+import ProductCardBadges from "./ProductCard/ProductCardBadges";
 
 interface ProductImageGalleryProps {
-  product: {
-    name: string;
-    image: string;
-    images?: string[];
-    discount?: number;
-    inStock?: boolean;
-    featured?: boolean;
-    top_ordered?: boolean;
-    stock_quantity?: number;
-    rating?: number;
-    originalPrice?: number;
-    price: number;
-    created_at?: string;
-  };
+  product: Product;
 }
 
 const ProductImageGallery = ({ product }: ProductImageGalleryProps) => {
@@ -147,6 +136,11 @@ const ProductImageGallery = ({ product }: ProductImageGalleryProps) => {
             ))}
           </div>
         )}
+
+        {/* إضافة البادجات فوق الصورة */}
+        <div className="absolute top-2 left-2 z-10">
+          <ProductCardBadges product={product} variant="onImage" />
+        </div>
       </div>
 
       {/* Modal لتكبير الصورة مع ميزات متقدمة */}
