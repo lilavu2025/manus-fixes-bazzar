@@ -188,6 +188,7 @@ export const arTranslations = {
   viewDetails: "عرض التفاصيل",
   viewOrders: "عرض الطلبيات",
   viewAllCategories: "عرض جميع الفئات",
+  allProducts: "جميع المنتجات",
   noUsers: "لا يوجد مستخدمين",
   userDetails: "تفاصيل المستخدم",
   userOrders: "طلبات المستخدم",

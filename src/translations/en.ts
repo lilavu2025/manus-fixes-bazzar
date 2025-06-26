@@ -140,6 +140,7 @@ export const enTranslations = {
   viewAll: "View All",
   viewAllProducts: "View All Products",
   viewAllCategories: "View All Categories",
+  allProducts: "All Products",
   clearInput: "Clear input",
   featuredProducts: "Featured Products",
   featuredProduct: "Featured Product",

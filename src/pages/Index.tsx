@@ -142,9 +142,7 @@ const Index = ({ searchQuery, setSearchQuery }: IndexProps) => {
                 variant="outline"
                 className="font-bold border-orange-200 text-orange-600 hover:bg-orange-50"
               >
-                <Link to="/categories" aria-label={t("viewAll")}>
-                  {t("viewAll")}
-                </Link>
+                <Link to="/categories" aria-label={t("viewAllCategories")}>{t("viewAllCategories")}</Link>
               </Button>
             </div>
             {categoriesLoading ? (
@@ -170,14 +168,29 @@ const Index = ({ searchQuery, setSearchQuery }: IndexProps) => {
                 <p className="text-gray-500">{t("noCategoriesAvailable")}</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {categories
-                  .filter((c) => c.active)
-                  .slice(0, 5)
-                  .map((category) => (
-                    <CategoryCard key={category.id} category={category} />
-                  ))}
-              </div>
+              <>
+                {/* الفئات: 3 فقط على الشاشات الصغيرة، 6 على الشاشات الكبيرة */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {categories
+                    .filter((c) => c.active)
+                    .slice(0, 6)
+                    .map((category, idx) => {
+                      // على الشاشات الصغيرة، اعرض فقط أول 3
+                      if (window.innerWidth < 768 && idx >= 3) return null;
+                      return <CategoryCard key={category.id} category={category} />;
+                    })}
+                </div>
+                {/* زر عرض كل الفئات أسفل الكروت على الشاشات الصغيرة فقط */}
+                <div className="mt-4 block md:hidden">
+                  <Button
+                    asChild
+                    variant="outline"
+                    className="w-full font-bold border-orange-200 text-orange-600 hover:bg-orange-50"
+                  >
+                    <Link to="/categories" aria-label={t("viewAllCategories")}>{t("viewAllCategories")}</Link>
+                  </Button>
+                </div>
+              </>
             )}
           </section>
         )}
@@ -185,15 +198,16 @@ const Index = ({ searchQuery, setSearchQuery }: IndexProps) => {
         {/* زر عرض جميع المنتجات على الشاشات الصغيرة فقط */}
         {!searchQuery && (
           <section className="bg-white/80 rounded-xl p-4 shadow-sm mb-4 block md:hidden">
-            <div className="mb-4 block md:hidden">
-            <Button
-              asChild
-              variant="outline"
-              className="w-full font-bold border-orange-200 text-orange-600 hover:bg-orange-50"
-            >
-              <Link to="/products" aria-label={t("viewAllProducts")}>{t("viewAllProducts")}</Link>
-            </Button>
-          </div>
+            <div className="mb-4 block md:hidden mb-6 items-center justify-between">
+              <h2 className="text-2xl font-bold">{t("allProducts")}</h2>
+              <Button
+                asChild
+                variant="outline"
+                className="w-full font-bold border-orange-200 text-orange-600 hover:bg-orange-50"
+              >
+                <Link to="/products" aria-label={t("viewAllProducts")}>{t("viewAllProducts")}</Link>
+              </Button>
+            </div>
           </section>
         )}
 

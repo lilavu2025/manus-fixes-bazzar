@@ -144,6 +144,7 @@ export const heTranslations = {
   featuredProduct: "מוצר מומלץ",
   noFeaturedProducts: "אין מוצרים מומלצים",
   browseAllProducts: "עיין בכל המוצרים",
+  allProducts: "כל המוצרים",
 
   // Cart & Shopping
   addToCart: "הוסף לעגלה",

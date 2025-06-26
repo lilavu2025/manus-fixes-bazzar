@@ -69,17 +69,17 @@ const ProductCardContent: React.FC<ProductCardContentProps> = ({
           </div>
         </div>
         <div
-          className={`flex items-center gap-12 w-full ${isRTL ? "flex-row-reverse justify-end" : "justify-start"}`}
+          className={`flex items-center gap-4 w-full `}
         >
+          <span className="text-sm sm:text-base text-gray-600 whitespace-nowrap">
+            {t("quantity")}:
+          </span>
           <QuantitySelector
             quantity={quantity}
             onQuantityChange={onQuantityChange}
             max={99}
             min={1}
           />
-          <span className="text-sm sm:text-base text-gray-600 whitespace-nowrap">
-            {t("quantity")}:
-          </span>
         </div>
       </div>
       {/* أزرار الإجراءات */}
