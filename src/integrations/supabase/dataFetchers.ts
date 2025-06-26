@@ -33,6 +33,7 @@ export interface ProductRow {
   active?: boolean;
   created_at?: string;
   sales_count?: number; // إضافة sales_count هنا
+  top_ordered?: boolean; // إضافة top_ordered لدعم البادج
 }
 export interface OrderItemRow {
   id: string;

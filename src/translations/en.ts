@@ -835,4 +835,5 @@ export const enTranslations = {
   topOrderedProducts: "Top Ordered Products",
   learnMore: "Learn More",
   shopNow: "Shop Now",
+  topOrdered: "Top Ordered"
 };

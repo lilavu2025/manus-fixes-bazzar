@@ -9,6 +9,7 @@ interface ProductCardBadgesProps {
     featured?: boolean;
     inStock: boolean;
     wholesalePrice?: number;
+    top_ordered?: boolean;
   };
 }
 
@@ -20,10 +21,15 @@ const ProductCardBadges = ({ product }: ProductCardBadgesProps) => {
   const showWholesaleLabel = isWholesale && product.wholesalePrice;
 
   return (
-    <div className={`absolute top-2 ${isRTL ? 'left-2' : 'right-2'} flex flex-col gap-1`}>
+    <div className={`absolute top-2 ${isRTL ? 'left-2' : 'right-2'} flex flex-col gap-1 items-center text-center`}>
       {showWholesaleLabel && (
         <Badge className="bg-blue-500 hover:bg-blue-600">
           {t('wholesale')}
+        </Badge>
+      )}
+      {product.top_ordered && (
+        <Badge variant="destructive" className="animate-bounce-in">
+          {t('topOrdered')}
         </Badge>
       )}
       {product.discount > 0 && (

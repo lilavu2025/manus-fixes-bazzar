@@ -838,4 +838,5 @@ export const arTranslations = {
   topOrderedProducts: "المنتجات الأكثر طلبًا",
   learnMore: "اكتشف المزيد",
   shopNow: "تسوق الآن",
+  topOrdered: "الأكثر طلبًا"
 };

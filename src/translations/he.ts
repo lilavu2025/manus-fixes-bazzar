@@ -816,4 +816,5 @@ export const heTranslations = {
   topOrderedProducts: "הזמנות המובילות ביותר",
   learnMore: "למד עוד",
   shopNow: "תסחר עכשיו",
+  topOrdered: "מוצר חם",
 };

@@ -22,6 +22,7 @@ export interface Product {
   active?: boolean;
   created_at?: string;
   sales_count?: number; // إضافة خاصية sales_count
+  top_ordered?: boolean; // إضافة خاصية top_ordered لدعم البادج
 }
 
 export interface Category {
