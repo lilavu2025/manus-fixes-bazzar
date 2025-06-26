@@ -351,23 +351,30 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
                 <Button
                   type="button"
                   onClick={() => {
-                    setEditOrderForm(f =>
-                      f
-                        ? {
-                            ...f,
-                            items: [
-                              ...f.items,
-                              {
-                                id: Date.now().toString(),
-                                product_id: "",
-                                quantity: 1,
-                                price: 0,
-                                product_name: "",
-                              },
-                            ],
-                          }
-                        : f,
-                    );
+                    setEditOrderForm(f => {
+                      if (!f) return f;
+                      // استخدم نفس منطق OrderAddDialog: إذا المنتج مكرر زد الكمية فقط
+                      const items = f.items;
+                      // ابحث عن أول عنصر فارغ (بدون product_id)
+                      const emptyIndex = items.findIndex(itm => !itm.product_id);
+                      if (emptyIndex !== -1) {
+                        // إذا فيه سطر فارغ، لا تضف سطر جديد
+                        return f;
+                      }
+                      return {
+                        ...f,
+                        items: [
+                          ...items,
+                          {
+                            id: Date.now().toString(),
+                            product_id: "",
+                            quantity: 1,
+                            price: 0,
+                            product_name: "",
+                          },
+                        ],
+                      };
+                    });
                   }}
                   variant="outline"
                   size="sm"
@@ -395,34 +402,40 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
                           const matched = products.find(
                             p => p[`name_${language}`] === val || p.name_ar === val || p.name_en === val || p.name_he === val
                           );
-                          // تحديد نوع المستخدم من بيانات الطلبية
-                          let selectedUser = originalOrderForEdit?.profiles;
-                          let userType = (selectedUser && selectedUser.user_type) ? selectedUser.user_type : 'retail';
-                          let price = 0;
-                          let wholesale = 0;
-                          if (matched) {
-                            if (typeof matched.wholesale_price === 'number' && matched.wholesale_price > 0) wholesale = matched.wholesale_price;
-                            if (typeof matched.wholesalePrice === 'number' && matched.wholesalePrice > 0) wholesale = Math.max(wholesale, matched.wholesalePrice);
-                            if (userType === 'admin' || userType === 'wholesale') {
-                              price = wholesale > 0 ? wholesale : matched.price;
-                            } else {
-                              price = matched.price;
-                            }
-                          }
-                          // طباعة معلومات الديباغ
-                          console.log('matched:', matched);
-                          console.log('userType:', userType);
-                          console.log('profiles:', originalOrderForEdit?.profiles);
-                          console.log('wholesale_price:', matched?.wholesale_price, 'wholesalePrice:', matched?.wholesalePrice, 'price:', matched?.price, 'finalPrice:', price);
+                          // إذا المنتج موجود مسبقًا في القائمة (عدا السطر الحالي)، زد الكمية فقط واحذف السطر الحالي
                           setEditOrderForm(f => {
                             if (!f) return f;
+                            if (matched) {
+                              const existingIndex = f.items.findIndex((itm, idx) => itm.product_id === matched.id && idx !== index);
+                              if (existingIndex !== -1) {
+                                // زد الكمية في السطر الموجود واحذف السطر الحالي
+                                const updatedItems = f.items
+                                  .map((itm, idx) => idx === existingIndex ? { ...itm, quantity: Number(itm.quantity) + 1 } : itm)
+                                  .filter((itm, idx) => idx !== index);
+                                return { ...f, items: updatedItems };
+                              }
+                            }
+                            // تحديث السطر الحالي كالمعتاد
+                            let selectedUser = originalOrderForEdit?.profiles;
+                            let userType = (selectedUser && selectedUser.user_type) ? selectedUser.user_type : 'retail';
+                            let price = 0;
+                            let wholesale = 0;
+                            if (matched) {
+                              if (typeof matched.wholesale_price === 'number' && matched.wholesale_price > 0) wholesale = matched.wholesale_price;
+                              if (typeof matched.wholesalePrice === 'number' && matched.wholesalePrice > 0) wholesale = Math.max(wholesale, matched.wholesalePrice);
+                              if (userType === 'admin' || userType === 'wholesale') {
+                                price = wholesale > 0 ? wholesale : matched.price;
+                              } else {
+                                price = matched.price;
+                              }
+                            }
                             const updatedItems = f.items.map((itm, idx) =>
                               idx === index
                                 ? {
                                     ...itm,
                                     product_id: matched ? matched.id : itm.product_id,
                                     product_name: val,
-                                    price: price,
+                                    price,
                                   }
                                 : itm
                             );

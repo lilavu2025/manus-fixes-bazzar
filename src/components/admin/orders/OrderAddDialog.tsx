@@ -18,6 +18,7 @@ import { Switch } from "@/components/ui/switch";
 import OrderDiscountSection from "./OrderDiscountSection";
 import OrderDiscountSummary from "./OrderDiscountSummary";
 import { LanguageContext } from '@/contexts/LanguageContext.context';
+import { addOrderItemToForm } from "@/orders/order.form.utils"; // استيراد الدالة من المسار الصحيح
 
 interface OrderAddDialogProps {
   open: boolean;
@@ -101,9 +102,11 @@ const OrderAddDialog: React.FC<OrderAddDialogProps> = ({
         <DialogHeader className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b px-6 py-4 rounded-t-2xl">
           <DialogTitle className="text-2xl font-bold mb-1 text-primary text-center">
             <Plus className="h-5 w-5 text-primary" />
-            {t("addNewOrder") || "إضافة طلب جديد"}
+            {t("addNewOrder") + " " || "إضافة طلب جديد"}
             {nextOrderNumber && (
-              <span className="ml-2 text-base text-gray-500">#{nextOrderNumber}</span>
+              <span className="ml-2 text-base text-gray-500">
+                #{nextOrderNumber}
+              </span>
             )}
           </DialogTitle>
           <p className={`text-gray-500 text-sm mt-1 ${isRTL ? "text-right" : "text-left"}`}>
