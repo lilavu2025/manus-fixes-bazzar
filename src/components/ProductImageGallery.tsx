@@ -83,15 +83,13 @@ const ProductImageGallery = ({ product }: ProductImageGalleryProps) => {
     <div className="space-y-4">
       {/* صورة المنتج الرئيسية مع إمكانية التكبير */}
       <div
-        className="relative overflow-hidden rounded-xl bg-white border group cursor-zoom-in"
+        className="relative overflow-hidden rounded-xl bg-white border group cursor-zoom-in aspect-[4/3] h-64 sm:h-72 md:h-80 lg:h-96"
         onClick={openModal}
       >
         {images.length > 0 && (
-          <LazyImage
-            src={images[selectedImage] || product.image}
-            alt={product.name}
-            className="w-full h-96 object-cover transition-transform duration-300 group-hover:scale-105"
-            priority={true}
+          <div
+            className="w-full h-full bg-center bg-contain bg-no-repeat transition-transform duration-300 group-hover:scale-105"
+            style={{ backgroundImage: `url(${images[selectedImage] || product.image})` }}
           />
         )}
 
@@ -206,23 +204,14 @@ const ProductImageGallery = ({ product }: ProductImageGalleryProps) => {
 
             {/* الصورة المكبرة */}
             <div className="relative flex items-center justify-center max-w-full max-h-full">
-              <img
-                src={images[selectedImage] || product.image}
-                alt={product.name}
-                className={`max-w-[90vw] max-h-[80vh] object-contain rounded-lg shadow-2xl transition-transform duration-300 cursor-zoom-in ${
+              <div
+                className={`w-[90vw] h-[80vh] bg-center bg-contain bg-no-repeat rounded-lg shadow-2xl transition-transform duration-300 cursor-zoom-in ${
                   isZoomed ? "scale-125" : "scale-100"
                 }`}
+                style={{ backgroundImage: `url(${images[selectedImage] || product.image})` }}
                 onClick={(e) => {
                   e.stopPropagation();
                   setIsZoomed(!isZoomed);
-                }}
-                onError={(e) => {
-                  console.error(
-                    t("errorLoadingZoomedImageLog") ||
-                      "فشل في تحميل الصورة المكبرة:",
-                    images[selectedImage],
-                  );
-                  e.currentTarget.src = "/placeholder.svg";
                 }}
               />
             </div>
@@ -250,18 +239,9 @@ const ProductImageGallery = ({ product }: ProductImageGalleryProps) => {
                 index === selectedImage ? "border-primary" : "border-gray-200"
               }`}
             >
-              <img
-                src={image}
-                alt={`${product.name} ${index + 1}`}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  console.error(
-                    t("errorLoadingThumbnailLog") ||
-                      "Thumbnail failed to load:",
-                    image,
-                  );
-                  e.currentTarget.src = "/placeholder.svg";
-                }}
+              <div
+                className="w-full h-full bg-center bg-contain bg-no-repeat"
+                style={{ backgroundImage: `url(${image})` }}
               />
             </button>
           ))}
