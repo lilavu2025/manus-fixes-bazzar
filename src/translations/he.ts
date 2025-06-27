@@ -702,7 +702,7 @@ export const heTranslations = {
   items: "פריטים",
   order: "הזמנה",
   validUntil: "בתוקף עד",
-  viewOffer: "הצג הצעה",
+  viewOffer: "הצג מבצע",
   createdBy: "נוצר על ידי",
   createdByAdmin: "נוצר על ידי מנהל",
   cancelledByAdmin: "בוטל על ידי מנהל",

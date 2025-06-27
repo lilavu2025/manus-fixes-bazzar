@@ -691,7 +691,7 @@ export const arTranslations = {
   items: "العناصر",
   back: "رجوع",
   validUntil: "صالح حتى",
-  viewOffer: "عرض العرض",
+  viewOffer: "تفاصيل العرض",
   createdBy: "أنشأها",
   createdByAdmin: "أنشئت من الأدمن",
   cancelledByAdmin: "أُلغي بواسطة الأدمن",

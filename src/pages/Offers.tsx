@@ -2,29 +2,20 @@ import React, { useEffect, useState } from "react";
 import { useOffersRealtime } from "@/hooks/useOffersRealtime";
 import { useLanguage } from "@/utils/languageContextUtils";
 import CartSidebar from "@/components/CartSidebar";
+import OfferCard from "@/components/OfferCard";
 import { Badge } from "@/components/ui/badge";
 import { Percent } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { Link, Navigate } from "react-router-dom";
-import { Heart, Share2 } from "lucide-react";
-import { useCart } from "@/hooks/useCart";
-// import { useFavorites } from '@/hooks/useFavorites';
-import LazyImage from "@/components/LazyImage";
+import { Navigate } from "react-router-dom";
 import type { Database } from "@/integrations/supabase/types";
-import type { Product } from "@/types";
-import { getDisplayPrice } from "@/utils/priceUtils";
-import { useAuth } from "@/contexts/useAuth";
 import { getSetting } from "@/services/settingsService";
 
 const Offers: React.FC = () => {
   const { t, isRTL } = useLanguage();
-  const [isCartOpen, setIsCartOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const { addToCart } = useCart();
   const [hideOffers, setHideOffers] = useState(false);
 
   // استخدم hook الجديد لجلب العروض مع التحديث الفوري
-  const { offers, loading: isLoading, error, refetch } = useOffersRealtime();
+  const { offers, loading: isLoading, error } = useOffersRealtime();
 
   useEffect(() => {
     getSetting("hide_offers_page").then((val) => setHideOffers(val === "true"));
@@ -83,94 +74,6 @@ const Offers: React.FC = () => {
     );
   }
 
-  // تحويل بيانات العرض إلى منتج متوافق مع السلة
-  function offerToProduct(
-    offer: Database["public"]["Tables"]["offers"]["Row"],
-  ): Product {
-    return {
-      id: offer.id,
-      name: offer.title_ar || offer.title_en || "",
-      nameEn: offer.title_en || "",
-      nameHe: offer.title_he || "",
-      description: offer.description_ar || "",
-      descriptionEn: offer.description_en || "",
-      descriptionHe: offer.description_he || "",
-      price: offer.discount_percent || 0, // أو يمكن وضع سعر العرض إذا كان متوفرًا
-      originalPrice: undefined,
-      wholesalePrice: undefined,
-      image: offer.image_url,
-      images: offer.image_url ? [offer.image_url] : [],
-      category: "",
-      inStock: true,
-      rating: 0,
-      reviews: 0,
-      discount: offer.discount_percent,
-      featured: false,
-      tags: [],
-    };
-  }
-
-  function handleBuyNow(
-    product: Database["public"]["Tables"]["offers"]["Row"],
-  ) {
-    addToCart(offerToProduct(product), 1);
-    setIsCartOpen(true);
-  }
-
-  // function FavoriteButton({ productId }: { productId: string }) {
-  //   const { isFavorite, toggleFavorite } = useFavorites();
-  //   const fav = isFavorite(productId);
-  //   return (
-  //     <button
-  //       type="button"
-  //       aria-label="Favorite"
-  //       className={`p-2 rounded-full border transition ${fav ? 'bg-red-100 text-red-600' : 'bg-white text-gray-400 hover:text-red-500'}`}
-  //       onClick={e => {
-  //         e.preventDefault();
-  //         toggleFavorite(productId);
-  //       }}
-  //     >
-  //       <Heart className="w-5 h-5" />
-  //     </button>
-  //   );
-  // }
-
-  function ShareButton({
-    product,
-  }: {
-    product: Database["public"]["Tables"]["offers"]["Row"];
-  }) {
-    const { t } = useLanguage();
-    const handleShare = async (e: React.MouseEvent) => {
-      e.preventDefault();
-      const url = window.location.origin + `/offer/${product.id}`;
-      if (navigator.share) {
-        try {
-          await navigator.share({
-            title: product.title_ar || product.title_en,
-            text: product.description_ar || product.description_en,
-            url,
-          });
-        } catch {
-          // intentionally ignore share errors
-        }
-      } else {
-        await navigator.clipboard.writeText(url);
-        alert(t("linkCopied") || "تم نسخ الرابط");
-      }
-    };
-    return (
-      <button
-        type="button"
-        aria-label="Share"
-        className="p-2 rounded-full border bg-white text-gray-400 hover:text-blue-500 transition"
-        onClick={handleShare}
-      >
-        <Share2 className="h-5 w-5" />
-      </button>
-    );
-  }
-
   return (
     <div
       className={`min-h-screen bg-gray-50 ${isRTL ? "rtl" : "ltr"}`}
@@ -214,44 +117,12 @@ const Offers: React.FC = () => {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredOffers.map(
               (offer: Database["public"]["Tables"]["offers"]["Row"]) => (
-                <div
-                  key={offer.id}
-                  className="bg-white rounded-xl shadow-md p-4 flex flex-col items-center transition hover:shadow-lg group relative"
-                >
-                  <LazyImage
-                    src={offer.image_url}
-                    alt={offer.title_ar || offer.title_en || t("specialOffer")}
-                    className="w-full h-40 object-cover rounded mb-4 group-hover:scale-105 transition-transform duration-200"
-                  />
-                  <h3 className="text-xl font-bold mb-2 text-center w-full truncate">
-                    {offer.title_ar || offer.title_en}
-                  </h3>
-                  <p className="text-gray-600 mb-2 text-center w-full line-clamp-2">
-                    {offer.description_ar || offer.description_en}
-                  </p>
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-lg font-bold text-primary">
-                      {t("discount")}: {offer.discount_percent}%
-                    </span>
-                  </div>
-                  <div className="text-sm text-gray-500 mb-4">
-                    {t("validUntil")}:{" "}
-                    {new Date(offer.end_date).toLocaleDateString('en-US', { calendar: 'gregory' })}
-                  </div>
-                  <button
-                    onClick={() => window.open("#", "_blank")}
-                    className="mt-auto w-full bg-primary text-white rounded-lg py-2 font-bold hover:bg-primary/90 transition text-center block"
-                  >
-                    {t("viewOffer")}
-                  </button>
-                </div>
+                <OfferCard key={offer.id} offer={offer} />
               ),
             )}
           </div>
         )}
       </div>
-
-      <CartSidebar isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
     </div>
   );
 };
