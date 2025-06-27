@@ -950,5 +950,7 @@ export const heTranslations = {
   noInternetConnection: "אין חיבור לאינטרנט",
   emailResendFailed: "שגיאה בשליחת האימייל",
   emailResendSuccess: "האימייל נשלח בהצלחה",
-  errorPlacingOrder: "שגיאה בהנחת ההזמנה"
+  errorPlacingOrder: "שגיאה בהנחת ההזמנה",
+  productLowStock: "המוצר במלאי נמוך",
+  outOfStockProducts: "מוצרים חסרי מלאי",
 };

@@ -62,6 +62,7 @@ interface AdminDashboardStatsProps {
     profiles?: { full_name: string; email?: string; phone?: string };
   }[];
   lowStockProductsData?: LowStockProduct[];
+  outOfStockProductsData?: LowStockProduct[];
   users?: UserProfile[];
   products?: Product[];
 }
@@ -71,6 +72,7 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
   onFilterOrders,
   pendingOrders = [],
   lowStockProductsData = [],
+  outOfStockProductsData = [],
   users = [],
   products = [],
 }) => {
@@ -83,6 +85,7 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
   const [showPendingOrdersDetails, setShowPendingOrdersDetails] =
     useState(false);
   const [showLowStockDetails, setShowLowStockDetails] = useState(false);
+  const [showOutOfStockDetails, setShowOutOfStockDetails] = useState(false);
   const [isTotalOrdersExpanded, setIsTotalOrdersExpanded] = useState(false);
   const [isProductsExpanded, setIsProductsExpanded] = useState(false);
 
@@ -212,7 +215,16 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
       const { data: lowStockProducts } = await supabase
         .from("products")
         .select("name_ar, name_en, name_he, stock_quantity, updated_at")
-        .lte("stock_quantity", 5)
+        .lte("stock_quantity", 10)
+        .gt("stock_quantity", 0)
+        .order("updated_at", { ascending: false })
+        .limit(2);
+
+      // Get products that are out of stock
+      const { data: outOfStockProducts } = await supabase
+        .from("products")
+        .select("name_ar, name_en, name_he, stock_quantity, updated_at")
+        .eq("stock_quantity", 0)
         .order("updated_at", { ascending: false })
         .limit(2);
 
@@ -245,9 +257,19 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
       lowStockProducts?.forEach((product) => {
         activities.push({
           type: "stock",
+          message: t("productLowStock"),
+          time: product.updated_at,
+          color: "orange",
+        });
+      });
+
+      // Add out of stock alerts
+      outOfStockProducts?.forEach((product) => {
+        activities.push({
+          type: "stock",
           message: t("productOutOfStock"),
           time: product.updated_at,
-          color: "yellow",
+          color: "red",
         });
       });
 
@@ -283,6 +305,16 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
   // حساب إجمالي المستخدمين والمنتجات من البيانات القادمة من الصفحة الرئيسية
   const totalUsers = Array.isArray(users) ? users.length : 0;
   const totalProducts = Array.isArray(products) ? products.length : 0;
+
+  // حساب المنتجات المنتهية من المخزون من البيانات الموجودة
+  const calculatedOutOfStockProducts = Array.isArray(products) 
+    ? products.filter(product => product.stock_quantity === 0)
+    : [];
+
+  // حساب المنتجات منخفضة المخزون من البيانات الموجودة
+  const calculatedLowStockProducts = Array.isArray(products) 
+    ? products.filter(product => product.stock_quantity > 0 && product.stock_quantity <= 10)
+    : [];
 
   // دالة لاختصار الأرقام الكبيرة (مثلاً: 1.2K, 3.4M)
   function formatNumberShort(num: number) {
@@ -374,14 +406,14 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
     products.forEach((product) => {
       const catId = product.category;
       if (categoriesMap[catId]) {
-        if (product.inStock) categoriesMap[catId].inStock += 1;
+        if (product.stock_quantity > 0) categoriesMap[catId].inStock += 1;
         else categoriesMap[catId].outOfStock += 1;
       } else {
         // منتجات بدون فئة معروفة
         const unknown = t("unknown");
         if (!categoriesMap[unknown])
           categoriesMap[unknown] = { name: unknown, inStock: 0, outOfStock: 0 };
-        if (product.inStock) categoriesMap[unknown].inStock += 1;
+        if (product.stock_quantity > 0) categoriesMap[unknown].inStock += 1;
         else categoriesMap[unknown].outOfStock += 1;
       }
     });
@@ -646,14 +678,14 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
                 <div
                   className="text-2xl md:text-3xl lg:text-4xl font-extrabold text-red-900 text-center whitespace-nowrap overflow-hidden text-ellipsis max-w-full"
                   style={{wordBreak: 'normal'}}
-                  title={typeof lowStockProductsData.length === "number" ? lowStockProductsData.length.toLocaleString() : '0'}
+                  title={typeof calculatedLowStockProducts.length === "number" ? calculatedLowStockProducts.length.toLocaleString() : '0'}
                 >
-                  {typeof lowStockProductsData.length === "number" ? formatNumberShort(lowStockProductsData.length) : 0}
+                  {typeof calculatedLowStockProducts.length === "number" ? formatNumberShort(calculatedLowStockProducts.length) : 0}
                 </div>
               </div>
               <div className="text-base font-semibold text-red-700 mt-1">{t("lowStockProducts")}</div>
             </div>
-            {showLowStockDetails && lowStockProductsData.length > 0 && (
+            {showLowStockDetails && calculatedLowStockProducts.length > 0 && (
               <div className="w-full mt-4 max-h-64 overflow-y-auto">
                 <table className="w-full text-sm border rounded-lg bg-white">
                   <thead>
@@ -663,18 +695,74 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
                     </tr>
                   </thead>
                   <tbody>
-                    {lowStockProductsData.map(product => {
+                    {calculatedLowStockProducts.map(product => {
                       let productName = product.name;
-                      if (language === "ar" && product.name_ar)
-                        productName = product.name_ar;
-                      else if (language === "en" && product.name_en)
-                        productName = product.name_en;
-                      else if (language === "he" && product.name_he)
-                        productName = product.name_he;
+                      if (language === "ar" && product.name)
+                        productName = product.name;
+                      else if (language === "en" && product.nameEn)
+                        productName = product.nameEn;
+                      else if (language === "he" && product.nameHe)
+                        productName = product.nameHe;
                       return (
                         <tr key={product.id} className="hover:bg-red-50 cursor-pointer" onClick={() => navigate(`/admin/products`, { state: { filterProductId: product.id } })}>
                           <td className="p-2">{productName}</td>
                           <td className="p-2 text-right">{product.stock_quantity}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* المنتجات المنتهية من المخزون */}
+        <Card
+          className="group relative overflow-hidden shadow-lg border-0 bg-gradient-to-br from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-200 transition-all cursor-pointer"
+          onClick={() => setShowOutOfStockDetails((v) => !v)}
+        >
+          <div className="absolute -top-6 -right-6 bg-gray-400/20 rounded-full w-24 h-24 z-0 group-hover:scale-110 transition-transform" />
+          <CardContent className="relative z-10 flex flex-col items-center justify-center py-8">
+            <div className="flex flex-col items-center gap-2 mb-2 w-full">
+              <div className="flex items-center justify-center w-full gap-2">
+                <div className="bg-gray-500 text-white rounded-full p-2 shadow-lg flex items-center justify-center flex-shrink-0">
+                  <Package className="h-5 w-5" />
+                </div>
+              </div>
+              <div className="w-full flex justify-center">
+                <div
+                  className="text-2xl md:text-3xl lg:text-4xl font-extrabold text-gray-900 text-center whitespace-nowrap overflow-hidden text-ellipsis max-w-full"
+                  style={{wordBreak: 'normal'}}
+                  title={typeof calculatedOutOfStockProducts.length === "number" ? calculatedOutOfStockProducts.length.toLocaleString() : '0'}
+                >
+                  {typeof calculatedOutOfStockProducts.length === "number" ? formatNumberShort(calculatedOutOfStockProducts.length) : 0}
+                </div>
+              </div>
+              <div className="text-base font-semibold text-gray-700 mt-1">{t("outOfStockProducts")}</div>
+            </div>
+            {showOutOfStockDetails && calculatedOutOfStockProducts.length > 0 && (
+              <div className="w-full mt-4 max-h-64 overflow-y-auto">
+                <table className="w-full text-sm border rounded-lg bg-white">
+                  <thead>
+                    <tr className="bg-gray-100">
+                      <th className="p-2 text-center">{t("productName")}</th>
+                      <th className="p-2 text-right">{t("stockQuantity")}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {calculatedOutOfStockProducts.map(product => {
+                      let productName = product.name;
+                      if (language === "ar" && product.name)
+                        productName = product.name;
+                      else if (language === "en" && product.nameEn)
+                        productName = product.nameEn;
+                      else if (language === "he" && product.nameHe)
+                        productName = product.nameHe;
+                      return (
+                        <tr key={product.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => navigate(`/admin/products`, { state: { filterProductId: product.id } })}>
+                          <td className="p-2">{productName}</td>
+                          <td className="p-2 text-right text-red-600 font-bold">{product.stock_quantity}</td>
                         </tr>
                       );
                     })}

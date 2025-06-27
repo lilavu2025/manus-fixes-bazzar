@@ -945,5 +945,7 @@ export const arTranslations = {
   noInternetConnection: "لا يوجد اتصال بالإنترنت",
   emailResendFailed: "فشل في إعادة إرسال البريد الإلكتروني",
   emailResendSuccess: "تم إعادة إرسال البريد الإلكتروني بنجاح",
-  errorPlacingOrder: "خطأ في إتمام الطلب"
+  errorPlacingOrder: "خطأ في إتمام الطلب",
+  productLowStock: "المنتج في مخزون منخفض",
+  outOfStockProducts: "المنتجات منتهية المخزون",
 };

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useLanguage } from "../../utils/languageContextUtils";
+import { isRTL, useLanguage } from "../../utils/languageContextUtils";
 import { useCategoriesRealtime } from "@/hooks/useCategoriesRealtime";
 import { useDeleteCategory } from "@/integrations/supabase/reactQueryHooks";
 import { Button } from "@/components/ui/button";
@@ -166,6 +166,38 @@ const AdminCategories: React.FC = () => {
       setCategoriesOrder(categories.map((c) => c.id));
     }
   }, [categories, categoriesOrder]);
+
+  const [sortConfig, setSortConfig] = React.useState<{
+    key: string;
+    direction: "asc" | "desc" | "default";
+  }>({
+    key: "",
+    direction: "default",
+  });
+
+  const handleSort = (key: string) => {
+    setSortConfig((prev) => {
+      let direction: "asc" | "desc" | "default" = "asc";
+      if (prev.key === key && prev.direction === "asc") {
+        direction = "desc";
+      } else if (prev.key === key && prev.direction === "desc") {
+        direction = "default";
+      }
+      return { key, direction };
+    });
+  };
+
+  const sortedCategories = React.useMemo(() => {
+    if (sortConfig.direction === "default") return orderedCategories;
+    const sorted = [...orderedCategories].sort((a, b) => {
+      if (a[sortConfig.key] < b[sortConfig.key])
+        return sortConfig.direction === "asc" ? -1 : 1;
+      if (a[sortConfig.key] > b[sortConfig.key])
+        return sortConfig.direction === "asc" ? 1 : -1;
+      return 0;
+    });
+    return sorted;
+  }, [orderedCategories, sortConfig]);
 
   if (loading) {
     return (
@@ -347,13 +379,22 @@ const AdminCategories: React.FC = () => {
                           <TableHead className="text-center">
                             {t("categoryImage")}
                           </TableHead>
-                          <TableHead className="text-center">
+                          <TableHead
+                            className="text-center cursor-pointer"
+                            onClick={() => handleSort("name")}
+                          >
                             {t("categoryName")}
                           </TableHead>
-                          <TableHead className="text-center">
+                          <TableHead
+                            className="text-center cursor-pointer"
+                            onClick={() => handleSort("count")}
+                          >
                             {t("productCount")}
                           </TableHead>
-                          <TableHead className="text-center">
+                          <TableHead
+                            className="text-center cursor-pointer"
+                            onClick={() => handleSort("active")}
+                          >
                             {t("status")}
                           </TableHead>
                           <TableHead className="text-center">
@@ -362,7 +403,7 @@ const AdminCategories: React.FC = () => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {orderedCategories.map((category, idx) => (
+                        {sortedCategories.map((category, idx) => (
                           <Draggable
                             key={category.id}
                             draggableId={category.id}
@@ -487,16 +528,17 @@ const AdminCategories: React.FC = () => {
                                           variant="ghost"
                                           size="sm"
                                           title={t("delete")}
+                                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
                                         >
                                           <Trash className="h-4 w-4" />
                                         </Button>
                                       </AlertDialogTrigger>
                                       <AlertDialogContent>
                                         <AlertDialogHeader>
-                                          <AlertDialogTitle>
+                                          <AlertDialogTitle className={` ${isRTL ? "text-right" : "text-left"}`}>
                                             {t("deleteCategory")}
                                           </AlertDialogTitle>
-                                          <AlertDialogDescription>
+                                          <AlertDialogDescription className={` ${isRTL ? "text-right" : "text-left"}`}>
                                             {t("deleteCategoryConfirmation")} "
                                             {(() => {
                                               if (
@@ -524,7 +566,7 @@ const AdminCategories: React.FC = () => {
                                             "?
                                           </AlertDialogDescription>
                                         </AlertDialogHeader>
-                                        <AlertDialogFooter>
+                                        <AlertDialogFooter className="gap-2">
                                           <AlertDialogCancel>
                                             {t("cancel")}
                                           </AlertDialogCancel>

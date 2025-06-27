@@ -359,7 +359,7 @@ const AdminProducts: React.FC = () => {
           className={`px-3 py-1 rounded border ${showTopOrdered ? 'bg-orange-100 border-orange-400 text-orange-700' : 'bg-white border-gray-300 text-gray-700'}`}
           onClick={() => setShowTopOrdered((prev) => !prev)}
         >
-          {showTopOrdered ? 'عرض كل المنتجات' : 'عرض الأكثر مبيعاً'}
+          {showTopOrdered ? t('showAll') : t('showTopSellingProducts')}
         </button>
       </div>
       {/* جدول المنتجات */}

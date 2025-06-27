@@ -979,5 +979,7 @@ export const enTranslations = {
   noInternetConnection: "No internet connection",
   emailResendFailed: "Failed to resend email",
   emailResendSuccess: "Email sent successfully",
-  errorPlacingOrder: "Error placing order"
+  errorPlacingOrder: "Error placing order",
+  productLowStock: "Product is low in stock",
+  outOfStockProducts: "Out of stock products",
 };

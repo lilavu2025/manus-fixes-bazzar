@@ -56,6 +56,38 @@ const UsersTable: React.FC<UsersTableProps> = ({
     );
   };
 
+  const [sortConfig, setSortConfig] = React.useState<{
+    key: string;
+    direction: "asc" | "desc" | "default";
+  }>({
+    key: "",
+    direction: "default",
+  });
+
+  const handleSort = (key: string) => {
+    setSortConfig((prev) => {
+      let direction: "asc" | "desc" | "default" = "asc";
+      if (prev.key === key && prev.direction === "asc") {
+        direction = "desc";
+      } else if (prev.key === key && prev.direction === "desc") {
+        direction = "default";
+      }
+      return { key, direction };
+    });
+  };
+
+  const sortedUsers = React.useMemo(() => {
+    if (sortConfig.direction === "default") return users;
+    const sorted = [...users].sort((a, b) => {
+      if (a[sortConfig.key] < b[sortConfig.key])
+        return sortConfig.direction === "asc" ? -1 : 1;
+      if (a[sortConfig.key] > b[sortConfig.key])
+        return sortConfig.direction === "asc" ? 1 : -1;
+      return 0;
+    });
+    return sorted;
+  }, [users, sortConfig]);
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -131,14 +163,23 @@ const UsersTable: React.FC<UsersTableProps> = ({
           <Table>
             <TableHeader className="text-center">
               <TableRow className="bg-gray-50 hover:bg-gray-50">
-                <TableHead className="font-semibold text-gray-700 text-xs lg:text-sm p-2 lg:p-4 text-center">
-                  {t("user")}
+                <TableHead
+                  className="font-semibold text-gray-700 text-xs lg:text-sm p-2 lg:p-4 text-center cursor-pointer"
+                  onClick={() => handleSort("full_name")}
+                >
+                  {t("userName")}
                 </TableHead>
-                <TableHead className="font-semibold text-gray-700 text-xs lg:text-sm p-2 lg:p-4 text-center">
-                  {t("contact")}
+                <TableHead
+                  className="font-semibold text-gray-700 text-xs lg:text-sm p-2 lg:p-4 text-center cursor-pointer"
+                  onClick={() => handleSort("email")}
+                >
+                  {t("email")}
                 </TableHead>
-                <TableHead className="font-semibold text-gray-700 text-xs lg:text-sm p-2 lg:p-4 text-center">
-                  {t("type")}
+                <TableHead
+                  className="font-semibold text-gray-700 text-xs lg:text-sm p-2 lg:p-4 text-center cursor-pointer"
+                  onClick={() => handleSort("disabled")}
+                >
+                  {t("status")}
                 </TableHead>
                 <TableHead className="font-semibold text-gray-700 text-xs lg:text-sm p-2 lg:p-4 text-center">
                   {t("actions")}
@@ -146,7 +187,7 @@ const UsersTable: React.FC<UsersTableProps> = ({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {users.map((user, index) => (
+              {sortedUsers.map((user, index) => (
                 <UserTableRow
                   key={user.id}
                   user={user}

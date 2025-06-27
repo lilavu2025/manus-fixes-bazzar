@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useLanguage } from "../../utils/languageContextUtils";
+import { isRTL, useLanguage } from "../../utils/languageContextUtils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -86,7 +86,7 @@ const AddCategoryDialog: React.FC<AddCategoryDialogProps> = ({
           <DialogTitle className="text-2xl font-bold mb-1 text-primary text-center">
             {t("addCategory")}
           </DialogTitle>
-          <p className="text-gray-500 text-sm mb-0">
+          <p className={`text-gray-500 text-sm mb-0 ${isRTL ? "text-right" : "text-left"}`}>
             {t("fillCategoryDetails") || "يرجى تعبئة بيانات الفئة بشكل صحيح"}
           </p>
         </DialogHeader>

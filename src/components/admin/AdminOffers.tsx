@@ -792,7 +792,6 @@ const AdminOffers: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <Label className="text-sm font-medium">{t("image")}</Label>
                   <ImageUpload
                     value={form.image_url}
                     onChange={(url) =>
