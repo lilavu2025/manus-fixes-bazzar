@@ -47,7 +47,7 @@ const OrderFiltersBar: React.FC<OrderFiltersBarProps> = ({
                 <ClearableInput
                   type="text"
                   className={`border-2 border-gray-200 rounded-lg py-2 h-10 text-xs sm:text-sm w-full bg-gray-50 focus:border-blue-500 focus:ring-1 focus:ring-blue-300 transition-colors placeholder:text-gray-400 ${isRTL ? 'pr-8 pl-3' : 'pl-8 pr-3'}`}
-                  placeholder={t("searchByOrderNumberNameOrPhone") || "بحث برقم الطلب أو اسم العميل أو رقم الهاتف فقط..."}
+                  placeholder={t("searchByOrderNumberNameOrPhone") || "رقم طلبية (دقيق) أو اسم العميل..."}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onClear={() => setSearchQuery("")}

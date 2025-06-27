@@ -29,16 +29,24 @@ export function advancedFilteredOrders(
     result = result.filter((o) => o.payment_method === paymentFilter);
   }
   if (searchQuery) {
-    // البحث فقط في رقم الطلب، اسم العميل، أو رقم الهاتف
+    // البحث الذكي: إذا كان البحث رقمي فقط، ابحث في رقم الطلبية بدقة، وإلا ابحث في النصوص
     result = result.filter((o) => {
       const orderNumber = o.order_number ? String(o.order_number) : "";
       const fullName = o.shipping_address?.fullName || o.customer_name || o.profiles?.full_name || "";
       const phone = o.shipping_address?.phone || o.profiles?.phone || "";
-      return (
-        orderNumber.includes(searchQuery) ||
-        fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        phone.includes(searchQuery)
-      );
+      
+      // تحقق إذا كان البحث رقمي فقط
+      const isNumericSearch = /^\d+$/.test(searchQuery.trim());
+      
+      if (isNumericSearch) {
+        // إذا كان البحث رقمي، ابحث فقط في رقم الطلبية بدقة أو رقم الهاتف
+        const isExactOrderMatch = orderNumber === searchQuery;
+        return isExactOrderMatch;
+      } else {
+        // إذا كان البحث نصي، ابحث في الأسماء فقط
+        const isNameMatch = fullName.toLowerCase().includes(searchQuery.toLowerCase());
+        return isNameMatch;
+      }
     });
   }
   return result;
@@ -65,16 +73,25 @@ export function advancedFilteredOrdersWithoutStatus(
     result = result.filter((o) => o.payment_method === paymentFilter);
   }
   if (searchQuery) {
-    // البحث فقط في رقم الطلب، اسم العميل، أو رقم الهاتف
+    // البحث الذكي: إذا كان البحث رقمي فقط، ابحث في رقم الطلبية بدقة، وإلا ابحث في النصوص
     result = result.filter((o) => {
       const orderNumber = o.order_number ? String(o.order_number) : "";
       const fullName = o.shipping_address?.fullName || o.customer_name || o.profiles?.full_name || "";
       const phone = o.shipping_address?.phone || o.profiles?.phone || "";
-      return (
-        orderNumber.includes(searchQuery) ||
-        fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        phone.includes(searchQuery)
-      );
+      
+      // تحقق إذا كان البحث رقمي فقط
+      const isNumericSearch = /^\d+$/.test(searchQuery.trim());
+      
+      if (isNumericSearch) {
+        // إذا كان البحث رقمي، ابحث فقط في رقم الطلبية بدقة أو رقم الهاتف
+        const isExactOrderMatch = orderNumber === searchQuery;
+        const isPhoneMatch = phone.includes(searchQuery);
+        return isExactOrderMatch || isPhoneMatch;
+      } else {
+        // إذا كان البحث نصي، ابحث في الأسماء فقط
+        const isNameMatch = fullName.toLowerCase().includes(searchQuery.toLowerCase());
+        return isNameMatch;
+      }
     });
   }
   return result;

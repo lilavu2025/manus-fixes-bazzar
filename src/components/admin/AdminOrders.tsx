@@ -88,6 +88,9 @@ const AdminOrders: React.FC = () => {
     if (location.state?.filterOrderId) {
       setSearchQuery(location.state.filterOrderId);
     }
+    if (location.state?.searchQuery) {
+      setSearchQuery(location.state.searchQuery);
+    }
   }, [location.state]);
 
   // جلب الطلبات بشكل لحظي

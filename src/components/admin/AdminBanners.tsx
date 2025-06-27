@@ -59,8 +59,6 @@ const AdminBanners: React.FC = () => {
   const { t, isRTL } = useLanguage();
 
   // تعريف الحالات الرئيسية للصفحة
-  const [banners, setBanners] = useState<Banner[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingBanner, setEditingBanner] = useState<Banner | null>(null);
   const [formData, setFormData] = useState<BannerFormData>({
@@ -77,7 +75,6 @@ const AdminBanners: React.FC = () => {
     active: true,
   });
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [searchName, setSearchName] = useState(""); // بحث بالاسم
 
   // استخدام hooks الجديدة
@@ -226,7 +223,7 @@ const AdminBanners: React.FC = () => {
   };
 
   // تصفية البنرات حسب البحث بالاسم
-  const filteredBanners = banners.filter((banner) => {
+  const filteredBanners = bannersData.filter((banner) => {
     if (!searchName.trim()) return true;
     return (
       banner.title_ar?.toLowerCase().includes(searchName.trim().toLowerCase()) ||
@@ -261,8 +258,6 @@ const AdminBanners: React.FC = () => {
           </div>
           <button
             onClick={() => {
-              setLoading(true);
-              setError(null);
               refetch();
             }}
             className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-red-700 transition-colors"
@@ -280,7 +275,7 @@ const AdminBanners: React.FC = () => {
       {/* رأس الصفحة وزر إضافة بانر */}
       <AdminHeader
         title={t("banners") || "البانرات"}
-        count={banners.length}
+        count={bannersData.length}
         addLabel={t("addBanner") || "إضافة بانر"}
         onAdd={() => setShowForm(true)}
       />
@@ -645,31 +640,31 @@ const AdminBanners: React.FC = () => {
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => handleEdit(banner)}
-                          className="text-primary-600 hover:text-primary-900"
+                          className="text-blue-600 hover:text-blue-900 p-2 rounded-full hover:bg-blue-50 transition-colors"
+                          title={t("edit")}
                         >
                           <Edit className="h-4 w-4" />
                         </button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
+                            <button
+                              className="text-red-600 hover:text-red-900 p-2 rounded-full hover:bg-red-50 transition-colors"
                               title={t("delete")}
                             >
                               <Trash className="h-4 w-4" />
-                            </Button>
+                            </button>
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
-                              <AlertDialogTitle>
+                              <AlertDialogTitle className={isRTL ? "text-right" : "text-left"}>
                                 {t("deleteCategory")}
                               </AlertDialogTitle>
-                              <AlertDialogDescription>
+                              <AlertDialogDescription className={isRTL ? "text-right" : "text-left"}>
                                 {t("deleteCategoryConfirmation")} "
                                 {banner.title_ar}"?
                               </AlertDialogDescription>
                             </AlertDialogHeader>
-                            <AlertDialogFooter>
+                            <AlertDialogFooter className="gap-2">
                               <AlertDialogCancel>
                                 {t("cancel")}
                               </AlertDialogCancel>

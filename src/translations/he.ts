@@ -131,7 +131,7 @@ export const heTranslations = {
   searchByNameProductPlaceholder: "הקלד שם מוצר...",
   searchByNameOfferPlaceholder: "הקלד שם מבצע...",
   searchByNameBannerPlaceholder: "הקלד שם באנר...",
-  searchByOrderNumberNameOrPhone: "חפש לפי מספר הזמנה, שם לקוח או טלפון ...",
+  searchByOrderNumberNameOrPhone: "חפש לפי מספר הזמנה או שם לקוח ...",
   searchResults: "תוצאות חיפוש",
   noProductsFound: "לא נמצאו מוצרים",
   noResults: "לא נמצאו תוצאות",

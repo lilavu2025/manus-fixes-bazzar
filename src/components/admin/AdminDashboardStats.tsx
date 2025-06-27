@@ -637,6 +637,7 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
                 <table className="w-full text-sm border rounded-lg bg-white">
                   <thead>
                     <tr className="bg-yellow-100">
+                      <th className="p-2 text-center">{t("orderNumber")}</th>
                       <th className="p-2 text-center">{t("customer")}</th>
                       <th className="p-2 text-right">{t("orderDate")}</th>
                     </tr>
@@ -646,8 +647,9 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
                       <tr
                         key={order.id}
                         className="hover:bg-yellow-50 cursor-pointer"
-                        onClick={() => navigate(`/admin/orders`, { state: { filterOrderId: order.id } })}
+                        onClick={() => navigate(`/admin/orders`, { state: { searchQuery: order.order_number.toString() } })}
                       >
+                        <td className="p-2 text-center font-bold text-blue-600">#{order.order_number}</td>
                         <td className="p-2">{order.profiles?.full_name || t("unknownCustomer")}</td>
                         <td className="p-2 text-right font-mono">
                           {order.created_at ? new Date(order.created_at).toLocaleString('en-US', { calendar: 'gregory' }) : "-"}
@@ -704,7 +706,7 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
                       else if (language === "he" && product.nameHe)
                         productName = product.nameHe;
                       return (
-                        <tr key={product.id} className="hover:bg-red-50 cursor-pointer" onClick={() => navigate(`/admin/products`, { state: { filterProductId: product.id } })}>
+                        <tr key={product.id} className="hover:bg-red-50 cursor-pointer" onClick={() => navigate(`/admin/products`, { state: { filterLowStock: true } })}>
                           <td className="p-2">{productName}</td>
                           <td className="p-2 text-right">{product.stock_quantity}</td>
                         </tr>
@@ -760,7 +762,7 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
                       else if (language === "he" && product.nameHe)
                         productName = product.nameHe;
                       return (
-                        <tr key={product.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => navigate(`/admin/products`, { state: { filterProductId: product.id } })}>
+                        <tr key={product.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => navigate(`/admin/products`, { state: { filterOutOfStock: true } })}>
                           <td className="p-2">{productName}</td>
                           <td className="p-2 text-right text-red-600 font-bold">{product.stock_quantity}</td>
                         </tr>

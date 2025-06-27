@@ -75,8 +75,8 @@ const AdminOffers: React.FC = () => {
   const [form, setForm] = useState(initialForm);
 
   // جلب العروض من قاعدة البيانات
-  const { offers, loading, error, refetch, setOffers } = useOffersRealtime();
-  const offersData = Array.isArray(offers) ? offers : [];
+  const { offers: offersRawData, loading, error, refetch, setOffers } = useOffersRealtime();
+  const offersData = Array.isArray(offersRawData) ? offersRawData : [];
 
   // ربط hooks العروض
   const addOfferMutation = useAddOffer();
@@ -863,7 +863,7 @@ const AdminOffers: React.FC = () => {
             <DialogTitle className="text-2xl font-bold mb-1 text-primary text-center">
               {t("editOffer")}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className={isRTL ? "text-right" : "text-left"}>
               {t("editOfferDesc") || "تعديل بيانات العرض"}
             </DialogDescription>
           </DialogHeader>

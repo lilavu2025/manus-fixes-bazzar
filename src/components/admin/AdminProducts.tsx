@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import { useLanguage } from "@/utils/languageContextUtils";
 import { useProductsRealtime } from "@/hooks/useProductsRealtime";
 import { useCategories } from "@/hooks/useSupabaseData";
@@ -25,6 +26,7 @@ import { fetchTopOrderedProducts } from "@/integrations/supabase/dataSenders";
 
 const AdminProducts: React.FC = () => {
   const { isRTL, t, language } = useLanguage();
+  const location = useLocation();
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showViewDialog, setShowViewDialog] = useState(false);
@@ -83,12 +85,14 @@ const AdminProducts: React.FC = () => {
   const [searchName, setSearchName] = useState<string>(""); // إضافة حالة البحث بالاسم
   const [showTopOrdered, setShowTopOrdered] = useState(false);
   const [topOrderedProducts, setTopOrderedProducts] = useState<ProductWithOptionalFields[]>([]);
+  const [filterAppliedFromDashboard, setFilterAppliedFromDashboard] = useState<string>("");
+  const [hasAppliedLocationFilters, setHasAppliedLocationFilters] = useState(false);
 
   // إحصائيات سريعة
   const totalProducts = products.length;
   const inactiveProducts = products.filter((p) => p.active === false).length;
   const lowStockProducts = products.filter(
-    (p) => p.stock_quantity && p.stock_quantity <= 5,
+    (p) => p.stock_quantity && p.stock_quantity > 0 && p.stock_quantity <= 10,
   ).length;
 
   // فلترة المنتجات
@@ -96,10 +100,10 @@ const AdminProducts: React.FC = () => {
     let pass = true;
     if (filterCategory !== "all" && product.category !== filterCategory)
       pass = false;
-    if (filterStock === "low" && (product.stock_quantity ?? 0) > 5)
+    if (filterStock === "low" && !((product.stock_quantity ?? 0) > 0 && (product.stock_quantity ?? 0) <= 10))
       pass = false;
-    if (filterStock === "in" && !product.inStock) pass = false;
-    if (filterStock === "out" && product.inStock) pass = false;
+    if (filterStock === "in" && (product.stock_quantity ?? 0) <= 0) pass = false;
+    if (filterStock === "out" && (product.stock_quantity ?? 0) > 0) pass = false;
     if (filterActive === "active" && product.active === false) pass = false;
     if (filterActive === "inactive" && product.active !== false) pass = false;
     if (
@@ -113,30 +117,108 @@ const AdminProducts: React.FC = () => {
     return pass;
   });
 
-  // استقبال الفلتر من state عند الدخول من لوحة الأدمن
+  // استقبال الفلاتر من التنقل من لوحة التحكم
   useEffect(() => {
-    if (
-      typeof window !== 'undefined' &&
-      window.location.pathname === "/admin/products" &&
-      window.history.state &&
-      window.history.state.usr
-    ) {
-      // فلترة حسب الفئة
-      if (window.history.state.usr.filterCategory) {
-        const filterCategoryName = window.history.state.usr.filterCategory;
-        const foundCat = productCategories.find((c) => c.name === filterCategoryName);
-        if (foundCat) {
-          setFilterCategory(foundCat.id);
-        }
-      }
-      // فلترة حسب المنتج منخفض المخزون
-      if (window.history.state.usr.filterProductId) {
-        setFilterCategory("all");
-        setFilterStock("low");
-        // يمكن لاحقاً إضافة منطق لتحديد المنتج مباشرة إذا أردت
+    // تطبيق الفلاتر فقط مرة واحدة عند دخول الصفحة وتوفر location.state
+    if (!location.state || hasAppliedLocationFilters || !productCategories.length) return;
+    
+    // فلترة حسب الفئة
+    if (location.state.filterCategory) {
+      const filterCategoryName = location.state.filterCategory;
+      const foundCat = productCategories.find((c) => c.name === filterCategoryName);
+      if (foundCat) {
+        setFilterCategory(foundCat.id);
+        setFilterAppliedFromDashboard(`تم الفلترة حسب الفئة: ${filterCategoryName}`);
+        setHasAppliedLocationFilters(true);
       }
     }
-  }, [productCategories]);
+    
+    // فلترة المنتجات منخفضة المخزون
+    else if (location.state.filterLowStock) {
+      setFilterCategory("all");
+      setFilterStock("low");
+      setFilterAppliedFromDashboard("تم الفلترة: المنتجات منخفضة المخزون (1-10 قطع)");
+      setHasAppliedLocationFilters(true);
+    }
+    
+    // فلترة المنتجات المنتهية من المخزون
+    else if (location.state.filterOutOfStock) {
+      setFilterCategory("all");
+      setFilterStock("out");
+      setFilterAppliedFromDashboard("تم الفلترة: المنتجات المنتهية من المخزون (0 قطع)");
+      setHasAppliedLocationFilters(true);
+    }
+    
+    // البحث عن منتج محدد بالـ ID
+    else if (location.state.filterProductId && products.length > 0) {
+      const productId = location.state.filterProductId;
+      const foundProduct = products.find(p => p.id === productId);
+      if (foundProduct) {
+        setSearchName(foundProduct.name || "");
+        setFilterAppliedFromDashboard(`تم البحث عن المنتج: ${foundProduct.name}`);
+        setHasAppliedLocationFilters(true);
+      }
+    }
+  }, []); // إزالة جميع dependencies ليتم تشغيله مرة واحدة فقط
+
+  // useEffect منفصل للتحقق من وجود location.state جديد عند تغيير المسار
+  useEffect(() => {
+    // إعادة تعيين الحالة إذا كان هناك location.state جديد
+    if (location.state && !hasAppliedLocationFilters) {
+      // تشغيل العملية بعد تحميل البيانات
+      const timer = setTimeout(() => {
+        if (location.state && !hasAppliedLocationFilters) {
+          // فلترة حسب الفئة
+          if (location.state.filterCategory && productCategories.length > 0) {
+            const filterCategoryName = location.state.filterCategory;
+            const foundCat = productCategories.find((c) => c.name === filterCategoryName);
+            if (foundCat) {
+              setFilterCategory(foundCat.id);
+              setFilterAppliedFromDashboard(`تم الفلترة حسب الفئة: ${filterCategoryName}`);
+              setHasAppliedLocationFilters(true);
+            }
+          }
+          
+          // فلترة المنتجات منخفضة المخزون
+          else if (location.state.filterLowStock) {
+            setFilterCategory("all");
+            setFilterStock("low");
+            setFilterAppliedFromDashboard("تم الفلترة: المنتجات منخفضة المخزون (1-10 قطع)");
+            setHasAppliedLocationFilters(true);
+          }
+          
+          // فلترة المنتجات المنتهية من المخزون
+          else if (location.state.filterOutOfStock) {
+            setFilterCategory("all");
+            setFilterStock("out");
+            setFilterAppliedFromDashboard("تم الفلترة: المنتجات المنتهية من المخزون (0 قطع)");
+            setHasAppliedLocationFilters(true);
+          }
+          
+          // البحث عن منتج محدد بالـ ID
+          else if (location.state.filterProductId && products.length > 0) {
+            const productId = location.state.filterProductId;
+            const foundProduct = products.find(p => p.id === productId);
+            if (foundProduct) {
+              setSearchName(foundProduct.name || "");
+              setFilterAppliedFromDashboard(`تم البحث عن المنتج: ${foundProduct.name}`);
+              setHasAppliedLocationFilters(true);
+            }
+          }
+        }
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [location.pathname]); // فقط عند تغيير المسار
+
+  // مسح الرسالة بعد 8 ثوان
+  useEffect(() => {
+    if (filterAppliedFromDashboard) {
+      const timer = setTimeout(() => setFilterAppliedFromDashboard(""), 8000);
+      return () => clearTimeout(timer);
+    }
+  }, [filterAppliedFromDashboard]);
 
   useEffect(() => {
     if (showTopOrdered) {
@@ -188,6 +270,9 @@ const AdminProducts: React.FC = () => {
             setFilterCategory("all");
             setFilterStock("all");
             setFilterActive("all");
+            setSearchName("");
+            setFilterAppliedFromDashboard("");
+            setHasAppliedLocationFilters(false);
           }}
           title={t("showAllProducts") || "عرض كل المنتجات"}
         >
@@ -203,6 +288,9 @@ const AdminProducts: React.FC = () => {
             setFilterCategory("all");
             setFilterStock("all");
             setFilterActive("inactive");
+            setSearchName("");
+            setFilterAppliedFromDashboard("");
+            setHasAppliedLocationFilters(false);
           }}
           title="عرض المنتجات غير الفعالة"
         >
@@ -218,13 +306,16 @@ const AdminProducts: React.FC = () => {
             setFilterCategory("all");
             setFilterStock("low");
             setFilterActive("all");
+            setSearchName("");
+            setFilterAppliedFromDashboard("");
+            setHasAppliedLocationFilters(false);
           }}
           title="عرض المنتجات منخفضة المخزون"
         >
           <Filter className="h-8 w-8 text-red-500" />
           <div>
             <div className="text-lg font-bold">{lowStockProducts}</div>
-            <div className="text-xs text-gray-600">{t("lowStock")} (&le;5)</div>
+            <div className="text-xs text-gray-600">{t("lowStock")} (&le;10)</div>
           </div>
         </div>
       </div>
@@ -297,6 +388,8 @@ const AdminProducts: React.FC = () => {
                     setFilterStock("all");
                     setFilterActive("all");
                     setSearchName("");
+                    setFilterAppliedFromDashboard("");
+                    setHasAppliedLocationFilters(false); // إعادة تعيين حالة التطبيق
                   }}
                 >
                   <XCircle className="h-4 w-4" />
@@ -353,7 +446,36 @@ const AdminProducts: React.FC = () => {
           </div>
         </CardContent>
       </Card>
-      <AdminProductsHeader productCount={products.length} onAddProduct={() => setShowAddDialog(true)} />
+      <AdminProductsHeader productCount={filteredProducts.length} onAddProduct={() => setShowAddDialog(true)} />
+      
+      {/* رسالة الفلتر المطبق من لوحة التحكم */}
+      {filterAppliedFromDashboard && (
+        <div className="mb-4 p-3 bg-blue-100 border border-blue-300 rounded-lg text-blue-800 text-sm flex items-center gap-2">
+          <CheckCircle className="h-4 w-4" />
+          <span>{filterAppliedFromDashboard}</span>
+          <button 
+            onClick={() => {
+              // مسح جميع الفلاتر
+              setFilterCategory("all");
+              setFilterStock("all");
+              setFilterActive("all");
+              setSearchName("");
+              setFilterAppliedFromDashboard("");
+              setHasAppliedLocationFilters(false); // إعادة تعيين حالة التطبيق
+            }}
+            className="ml-auto bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700"
+          >
+            مسح الفلاتر
+          </button>
+          <button 
+            onClick={() => setFilterAppliedFromDashboard("")}
+            className="text-blue-600 hover:text-blue-800"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+      
       <div className="flex flex-wrap gap-2 mb-4">
         <button
           className={`px-3 py-1 rounded border ${showTopOrdered ? 'bg-orange-100 border-orange-400 text-orange-700' : 'bg-white border-gray-300 text-gray-700'}`}
@@ -373,7 +495,7 @@ const AdminProducts: React.FC = () => {
         />
       ) : (
         <AdminProductsTable
-          products={products}
+          products={filteredProducts}
           onViewProduct={handleViewProduct}
           onEditProduct={handleEditProduct}
           onDeleteProduct={handleDeleteProduct}
