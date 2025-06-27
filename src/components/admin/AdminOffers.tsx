@@ -596,7 +596,7 @@ const AdminOffers: React.FC = () => {
                       <div className="flex items-center space-x-2">
                         <Percent className="h-4 w-4 text-primary" />
                         <span className="text-lg font-bold text-primary">
-                          {offer.discount_percent}% {t("discount")}
+                          {offer.discount_percent} {t("discount")}
                         </span>
                       </div>
                     </div>
@@ -1042,10 +1042,10 @@ const AdminOffers: React.FC = () => {
       <Dialog open={showDelete} onOpenChange={setShowDelete}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold mb-1 text-primary text-center">
+            <DialogTitle className={`text-2xl font-bold mb-1 text-primary text-center ${isRTL ? "text-right" : "text-left"}`}>
               {t("deleteOffer")}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className={isRTL ? "text-right" : "text-left"}>
               {t("deleteOfferConfirmation")}
               {selectedOffer && (
                 <span className="font-semibold">
