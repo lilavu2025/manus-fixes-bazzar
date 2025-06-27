@@ -8,7 +8,7 @@ import { useLanguage } from "@/utils/languageContextUtils";
 const AdminTopOrderedProducts = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   useEffect(() => {
     fetchTopOrderedProducts().then((data) => {
@@ -39,7 +39,11 @@ const AdminTopOrderedProducts = () => {
                     {idx + 1}
                   </span>
                   <span className="font-medium text-gray-800 truncate max-w-[160px] md:max-w-xs">
-                    {product.name}
+                    {language === "ar" 
+                      ? product.name 
+                      : language === "he" 
+                      ? product.nameHe 
+                      : product.nameEn}
                   </span>
                 </div>
                 <span className="text-sm text-gray-600 bg-orange-100 rounded px-2 py-1 font-semibold">

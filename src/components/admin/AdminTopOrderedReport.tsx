@@ -9,7 +9,7 @@ import { toast } from "sonner";
 const AdminTopOrderedReport = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   useEffect(() => {
     fetchTopOrderedProducts().then((data) => {
@@ -99,7 +99,11 @@ const AdminTopOrderedReport = () => {
                           )}
                         </td>
                         <td className="font-medium text-gray-800">
-                          {product.name}
+                          {language === "ar" 
+                            ? product.name 
+                            : language === "he" 
+                            ? product.nameHe 
+                            : product.nameEn}
                         </td>
                         <td>{product.stock_quantity}</td>
                         <td>{product.inStock ? t("inStock") : t("outOfStock")}</td>
