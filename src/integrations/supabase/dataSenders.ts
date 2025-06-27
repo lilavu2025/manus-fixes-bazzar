@@ -111,6 +111,8 @@ export async function addToCart(
   quantity: number,
 ) {
   try {
+    console.log(`Adding to cart: userId=${userId}, productId=${productId}, quantity=${quantity}`);
+    
     // تحقق إذا كان المنتج موجود مسبقاً
     const { data: existing, error: fetchError } = await supabase
       .from("cart")
@@ -118,14 +120,18 @@ export async function addToCart(
       .eq("user_id", userId)
       .eq("product_id", productId)
       .maybeSingle();
+    
     if (fetchError && fetchError.code !== "PGRST116") throw fetchError;
+    
     if (existing) {
+      console.log(`Product exists in cart, updating quantity: ${existing.quantity} + ${quantity} = ${existing.quantity + quantity}`);
       await supabase
         .from("cart")
         .update({ quantity: existing.quantity + quantity })
         .eq("user_id", userId)
         .eq("product_id", productId);
     } else {
+      console.log(`Product not in cart, inserting new item with quantity: ${quantity}`);
       await supabase
         .from("cart")
         .insert({ user_id: userId, product_id: productId, quantity });
@@ -652,4 +658,49 @@ export async function fetchTopOrderedProducts() {
     return [];
   }
   return data || [];
+}
+
+// تعيين كمية محددة في السلة بدلاً من الإضافة
+export async function setCartQuantity(
+  userId: string,
+  productId: string,
+  quantity: number,
+) {
+  try {
+    console.log(`Setting cart quantity: userId=${userId}, productId=${productId}, quantity=${quantity}`);
+    
+    if (quantity <= 0) {
+      // إذا كانت الكمية 0 أو أقل، احذف المنتج
+      await removeFromCart(userId, productId);
+      return true;
+    }
+    
+    // تحقق إذا كان المنتج موجود مسبقاً
+    const { data: existing, error: fetchError } = await supabase
+      .from("cart")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("product_id", productId)
+      .maybeSingle();
+    
+    if (fetchError && fetchError.code !== "PGRST116") throw fetchError;
+    
+    if (existing) {
+      console.log(`Product exists, setting quantity to: ${quantity}`);
+      await supabase
+        .from("cart")
+        .update({ quantity })
+        .eq("user_id", userId)
+        .eq("product_id", productId);
+    } else {
+      console.log(`Product not in cart, inserting with quantity: ${quantity}`);
+      await supabase
+        .from("cart")
+        .insert({ user_id: userId, product_id: productId, quantity });
+    }
+    return true;
+  } catch (error: unknown) {
+    console.error("Error setting cart quantity:", error);
+    throw error;
+  }
 }

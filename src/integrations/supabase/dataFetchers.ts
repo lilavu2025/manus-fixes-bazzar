@@ -447,6 +447,23 @@ export async function fetchUserProfile(userId: string) {
   }
 }
 
+// جلب عناصر السلة للمستخدم
+export async function fetchUserCart(userId: string): Promise<Tables<"cart">[]> {
+  try {
+    const { data, error } = await supabase
+      .from("cart")
+      .select("*, product:products(*)")
+      .eq("user_id", userId)
+      .order("added_at", { ascending: false });
+    
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error("Error fetching user cart:", error);
+    return [];
+  }
+}
+
 // --- BEGIN: Commented out fetchers/types for non-existent tables/types ---
 // All fetchers and types below reference tables/types that do not exist in the Supabase schema or are not defined in the project types.
 // They are commented out to resolve TypeScript errors. If you add these tables/types in the future, uncomment and fix as needed.

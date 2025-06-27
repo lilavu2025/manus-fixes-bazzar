@@ -6,39 +6,73 @@ import type { Language } from '@/types/language';
 import type { Tables, TablesInsert, TablesUpdate } from './types';
 import type { Product as AppProduct } from '@/types/index';
 
+// --- Helper imports f// جلب سلة المستخدم
 // --- Helper imports for hooks that need direct function references ---
 // These are only imported if they exist in the respective files
-const { fetchCategoriesWithProductCount, fetchOrdersWithDetails, fetchUserOrdersWithDetails } = fetchers;
+const { fetchCategoriesWithProductCount, fetchOrdersWithDetails, fetchUserOrdersWithDetails, fetchUserCart } = fetchers;
 const { disableUserById, logUserActivity, cancelUserOrder } = senders;
 
 // إضافة منتج للسلة
 export function useAddToCart() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ userId, productId, quantity }: { userId: string; productId: string; quantity: number }) =>
       senders.addToCart(userId, productId, quantity),
+    onSuccess: (_, { userId }) => {
+      // تحديث cache السلة بعد الإضافة الناجحة
+      queryClient.invalidateQueries({ queryKey: ['userCart', userId] });
+    },
   });
 }
 
 // تحديث كمية منتج في السلة
 export function useUpdateCartItem() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ userId, productId, quantity }: { userId: string; productId: string; quantity: number }) =>
       senders.updateCartItem(userId, productId, quantity),
+    onSuccess: (_, { userId }) => {
+      // تحديث cache السلة بعد التحديث الناجح
+      queryClient.invalidateQueries({ queryKey: ['userCart', userId] });
+    },
+  });
+}
+
+// تعيين كمية محددة في السلة (بدلاً من الإضافة)
+export function useSetCartQuantity() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ userId, productId, quantity }: { userId: string; productId: string; quantity: number }) =>
+      senders.setCartQuantity(userId, productId, quantity),
+    onSuccess: (_, { userId }) => {
+      // تحديث cache السلة بعد التعيين الناجح
+      queryClient.invalidateQueries({ queryKey: ['userCart', userId] });
+    },
   });
 }
 
 // حذف منتج من السلة
 export function useRemoveFromCart() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ userId, productId }: { userId: string; productId: string }) =>
       senders.removeFromCart(userId, productId),
+    onSuccess: (_, { userId }) => {
+      // تحديث cache السلة بعد الحذف الناجح
+      queryClient.invalidateQueries({ queryKey: ['userCart', userId] });
+    },
   });
 }
 
 // حذف كل السلة
 export function useClearUserCart() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (userId: string) => senders.clearUserCart(userId),
+    onSuccess: (_, userId) => {
+      // تحديث cache السلة بعد المسح الناجح
+      queryClient.invalidateQueries({ queryKey: ['userCart', userId] });
+    },
   });
 }
 
@@ -396,6 +430,18 @@ export function useCancelUserOrderMutation() {
 export function useDeleteCategory() {
   return useMutation({
     mutationFn: (categoryId: string) => senders.deleteCategory(categoryId),
+  });
+}
+
+// جلب سلة المستخدم
+export function useGetUserCart(userId: string) {
+  return useQuery({
+    queryKey: ['userCart', userId],
+    queryFn: () => fetchUserCart(userId),
+    enabled: !!userId,
+    staleTime: 0, // عدم الاحتفاظ بالبيانات كـ fresh لأي فترة - دائماً إعادة جلب
+    gcTime: 1000 * 30, // الاحتفاظ بالبيانات في cache لمدة 30 ثانية فقط
+    refetchOnWindowFocus: true, // إعادة جلب عند التركيز على النافذة
   });
 }
 
