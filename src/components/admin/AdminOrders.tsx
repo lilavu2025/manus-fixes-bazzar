@@ -108,7 +108,7 @@ const AdminOrders: React.FC = () => {
   const addOrderMutation = useAddOrder();
   const editOrderMutation = useEditOrder();
 
-  // تعريف المستخدم بشكل آمن
+  // تعريف المستخدم بشكل آمن - استخدم profile بدلاً من user_metadata
   const safeUser =
     typeof user === "object" && user && "user_metadata" in user
       ? (user as {
@@ -117,6 +117,9 @@ const AdminOrders: React.FC = () => {
         })
       : undefined;
   const safeUserMeta = safeUser?.user_metadata;
+  
+  // الحصول على اسم المدير من profile أو user
+  const adminCreatorName = profile?.full_name || safeUserMeta?.full_name || safeUser?.email || "مدير غير محدد";
 
   // تحديث حالة الطلب
   const updateOrderStatus = (orderId: string, newStatus: string) => {
@@ -192,7 +195,7 @@ const AdminOrders: React.FC = () => {
         shipping_address: orderForm.shipping_address as any, // إرسال كائن العنوان مباشرة وليس كنص
         notes: orderForm.notes ? compressText(orderForm.notes) : null,
         admin_created: true,
-        admin_creator_name: safeUserMeta?.full_name || safeUser?.email,
+        admin_creator_name: adminCreatorName, // استخدم المتغير المحدث
         ...(orderForm.user_id
           ? { user_id: orderForm.user_id }
           : { customer_name: orderForm.shipping_address.fullName }),
