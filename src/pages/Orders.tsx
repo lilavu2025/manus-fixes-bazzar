@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useLanguage } from "@/utils/languageContextUtils";
 import { useAuth } from "@/contexts/useAuth";
 import {
@@ -10,6 +10,7 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   CalendarDays,
   Package,
@@ -21,10 +22,12 @@ import {
   Loader2,
   PackageOpen,
   UserPlus,
+  Eye,
 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import OrderStatusBadge from "@/components/ui/OrderStatusBadge";
 import FormattedDate from "@/components/ui/FormattedDate";
+import OrderDetailsDialog from "@/components/OrderDetailsDialogSimple";
 import {
   useUserOrdersWithDetailsQuery,
   useCancelUserOrderMutation,
@@ -90,6 +93,12 @@ const Orders: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [selectedOrderForDetails, setSelectedOrderForDetails] = useState<OrdersWithDetails | null>(null);
+
+  // تتبع تغيير selectedOrderForDetails
+  useEffect(() => {
+    console.log("selectedOrderForDetails changed:", selectedOrderForDetails);
+  }, [selectedOrderForDetails]);
 
   // جلب الطلبات مع تفاصيل المنتجات
   const {
@@ -170,6 +179,9 @@ const Orders: React.FC = () => {
             .toLowerCase()
             .includes(search.toLowerCase()) ||
           (item.products?.name_en || "")
+            .toLowerCase()
+            .includes(search.toLowerCase()) ||
+          (item.products?.name_he || "")
             .toLowerCase()
             .includes(search.toLowerCase()),
       );
@@ -365,7 +377,9 @@ const Orders: React.FC = () => {
                             </Badge>
                           )}
                       </div>
-                      <OrderStatusBadge status={order.status} className="text-base px-3 py-1 rounded-full font-semibold" />
+                      <div className="flex items-center gap-2">
+                        <OrderStatusBadge status={order.status} className="text-base px-3 py-1 rounded-full font-semibold" />
+                      </div>
                     </div>
                     <div className="flex flex-wrap gap-2 items-center text-xs text-gray-500 mt-1">
                       <CalendarDays className="h-4 w-4" />
@@ -527,6 +541,7 @@ const Orders: React.FC = () => {
                                     alt={
                                       item.products?.name_ar ||
                                       item.products?.name_en ||
+                                      item.products?.name_he ||
                                       ""
                                     }
                                     className="w-10 h-10 object-cover rounded"
@@ -534,6 +549,8 @@ const Orders: React.FC = () => {
                                   <span className="truncate">
                                     {language === "ar"
                                       ? item.products?.name_ar
+                                      : language === "he"
+                                      ? item.products?.name_he
                                       : item.products?.name_en}
                                   </span>
                                 </td>
@@ -637,13 +654,96 @@ const Orders: React.FC = () => {
                         </tbody>
                       </table>
                     </div>
+                    
+                    {/* زر عرض تفاصيل الطلبية - تحت جدول المنتجات */}
+                    <div className="mt-4 flex justify-center">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedOrderForDetails(order);
+                        }}
+                        className="flex items-center gap-2 px-4 py-2 border-2 border-primary text-primary hover:bg-primary hover:text-white transition-all duration-200 rounded-lg font-medium shadow-sm hover:shadow-md"
+                      >
+                        <Eye className="h-4 w-4" />
+                        {t("viewOrderDetails") || "عرض تفاصيل الطلبية"}
+                      </Button>
+                    </div>
+                    
                     {/* ملخص الطلب */}
                     <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-2 mt-6 border-t pt-4">
-                      <div className="flex items-center gap-2 text-lg font-bold">
-                        <span>{t("orderTotal")}:</span>
-                        <span className="text-primary">
-                          {order.total?.toFixed(2) || "-"} {t("currency")}
-                        </span>
+                      <div className="space-y-2">
+                        {/* عرض معلومات الخصم إذا كان موجوداً */}
+                        {order.discount_value && order.discount_value > 0 ? (
+                          <>
+                            {/* السعر الأصلي مع خط عليه */}
+                            <div className="flex items-center gap-2 text-lg text-gray-500">
+                              <span>{t("orderTotal")}:</span>
+                              <span className="line-through">
+                                {order.total?.toFixed(2) || "-"} {t("currency")}
+                              </span>
+                            </div>
+                            
+                            {/* معلومات الخصم */}
+                            <div className="bg-green-50 border border-green-200 rounded-lg p-3 space-y-2">
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="font-medium text-green-700">{t("discountType")}:</span>
+                                <span className="text-green-600">
+                                  {/* استخدام discount_type المباشر من قاعدة البيانات */}
+                                  {order.discount_type === "percent" ? t("percent") : t("fixedAmount")}
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="font-medium text-green-700">{t("discountValue")}:</span>
+                                <span className="text-green-600">
+                                  {/* عرض النسبة المئوية أو المبلغ الثابت بناءً على النوع */}
+                                  {order.discount_type === "percent"
+                                    ? `${order.discount_value?.toFixed(0)}%` 
+                                    : `${order.discount_value?.toFixed(2)} ${t("currency")}`}
+                                </span>
+                              </div>
+                              
+                              {/* المبلغ الموفر - يظهر فقط للنسبة المئوية */}
+                              {order.discount_type === "percent" && (
+                                <div className="flex items-center justify-between text-sm">
+                                  <span className="font-medium text-green-700">{t("savings") || "المبلغ الموفر"}:</span>
+                                  <span className="text-green-600 font-semibold">
+                                    {(() => {
+                                      const total = order.total || 0;
+                                      const totalAfterDiscount = order.total_after_discount || 
+                                        (order.discount_value 
+                                          ? total * (1 - order.discount_value / 100)
+                                          : total);
+                                      const savings = total - totalAfterDiscount;
+                                      return `${savings.toFixed(2)} ${t("currency")}`;
+                                    })()}
+                                  </span>
+                                </div>
+                              )}
+                              
+                              {/* السعر النهائي بعد الخصم */}
+                              <div className="flex items-center justify-between text-base font-bold border-t border-green-200 pt-2">
+                                <span className="text-green-700">{t("totalAfterDiscount")}: </span>
+                                <span className="text-green-600">
+                                  {order.total_after_discount?.toFixed(2) || 
+                                   (order.total && order.discount_value 
+                                    ? order.discount_type === "percent"
+                                      ? (order.total * (1 - order.discount_value / 100)).toFixed(2)
+                                      : (order.total - order.discount_value).toFixed(2)
+                                    : "-")}{" "}{t("currency")}
+                                </span>
+                              </div>
+                            </div>
+                          </>
+                        ) : (
+                          /* السعر العادي بدون خصم */
+                          <div className="flex items-center gap-2 text-lg font-bold">
+                            <span>{t("orderTotal")}:</span>
+                            <span className="text-primary">
+                              {order.total?.toFixed(2) || "-"} {t("currency")}
+                            </span>
+                          </div>
+                        )}
                       </div>
                       {canCancel(order) && (
                         <button
@@ -687,6 +787,15 @@ const Orders: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* استدعاء مكون تفاصيل الطلبية */}
+      <OrderDetailsDialog
+        order={selectedOrderForDetails}
+        isOpen={!!selectedOrderForDetails}
+        onClose={() => {
+          setSelectedOrderForDetails(null);
+        }}
+      />
     </div>
   );
 };

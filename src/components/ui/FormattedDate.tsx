@@ -13,7 +13,7 @@ export const FormattedDate: React.FC<FormattedDateProps> = ({
   format = 'relative', 
   className = '' 
 }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   const formatDateWithTranslation = (dateInput: string | Date, formatType: string) => {
     const dateObj = new Date(dateInput);
@@ -45,8 +45,9 @@ export const FormattedDate: React.FC<FormattedDateProps> = ({
       }
     }
 
-    // Use the utility function for consistent Gregorian formatting
-    return formatDate(dateInput, formatType as any);
+    // Use proper locale instead of formatType
+    const locale = language === 'ar' ? 'ar-SA' : language === 'he' ? 'he-IL' : 'en-US';
+    return formatDate(dateInput, locale);
   };
 
   return (

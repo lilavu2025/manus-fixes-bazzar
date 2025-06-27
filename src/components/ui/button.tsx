@@ -46,10 +46,12 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, ...props }, ref) => {
     const { language } = useLanguage();
     const Comp = asChild ? Slot : "button";
+    const isRtl = isRTL(language);
+    
     return (
       <Comp
-        className={cn(buttonVariants({ variant, size, className }), isRTL(language) ? "rtl" : "ltr")}
-        style={{ direction: isRTL(language) ? "rtl" : "ltr" }}
+        className={cn(buttonVariants({ variant, size, className }), isRtl ? "rtl" : "ltr")}
+        style={{ direction: isRtl ? "rtl" : "ltr" }}
         ref={ref}
         aria-label={typeof props.children === 'string' ? props.children : undefined}
         {...props}

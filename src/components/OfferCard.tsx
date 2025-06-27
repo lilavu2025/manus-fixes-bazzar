@@ -123,7 +123,7 @@ const OfferCard: React.FC<OfferCardProps> = ({ offer }) => {
               <div className="flex items-center justify-center gap-2">
                 <Percent className="h-6 w-6 text-primary" />
                 <span className="text-2xl font-bold text-primary">
-                  {offer.discount_percent}% {t("discount")}
+                  {offer.discount_percent} {t("discount")}
                 </span>
               </div>
 

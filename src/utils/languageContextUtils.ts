@@ -9,7 +9,14 @@ export const isRTL = (language: Language) => language === 'ar' || language === '
 export const useLanguage = (): LanguageContextType => {
   const context = useContext(LanguageContext);
   if (!context) {
-    throw new Error('useLanguage must be used within a LanguageProvider');
+    // Return a safe fallback instead of throwing error
+    console.warn('useLanguage used outside LanguageProvider, using fallback');
+    return {
+      language: 'ar' as Language,
+      setLanguage: () => {},
+      t: (key: string) => key,
+      isRTL: true
+    };
   }
   return context;
 };

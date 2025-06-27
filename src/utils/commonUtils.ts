@@ -7,6 +7,7 @@
 export const formatDate = (date: Date | string, locale: string = 'ar-SA'): string => {
   const dateObj = typeof date === 'string' ? new Date(date) : date;
   return new Intl.DateTimeFormat(locale, {
+    calendar: 'gregory', // إجبار استخدام التقويم الميلادي
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -16,6 +17,7 @@ export const formatDate = (date: Date | string, locale: string = 'ar-SA'): strin
 export const formatDateTime = (date: Date | string, locale: string = 'ar-SA'): string => {
   const dateObj = typeof date === 'string' ? new Date(date) : date;
   return new Intl.DateTimeFormat(locale, {
+    calendar: 'gregory', // إجبار استخدام التقويم الميلادي
     year: 'numeric',
     month: 'short',
     day: 'numeric',
