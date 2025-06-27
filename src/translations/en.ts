@@ -328,6 +328,7 @@ export const enTranslations = {
   addedToFavorites: "Added to favorites",
   removedFromFavorites: "Removed from favorites",
   openMenu: "Open menu",
+  menu: "Menu",
   errorAddingToCart: "Error adding to cart",
   errorTogglingFavorite: "Error updating favorites",
   sharedSuccessfully: "Shared successfully",

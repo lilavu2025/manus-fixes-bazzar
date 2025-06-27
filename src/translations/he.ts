@@ -319,6 +319,7 @@ export const heTranslations = {
   addedToFavorites: "נוסף למועדפים",
   removedFromFavorites: "הוסר מהמועדפים",
   openMenu: "פתח תפריט",
+  menu: "תפריט",
   errorAddingToCart: "שגיאה בהוספה לעגלה",
   errorTogglingFavorite: "שגיאה בעדכון המועדפים",
   sharedSuccessfully: "שותף בהצלחה",

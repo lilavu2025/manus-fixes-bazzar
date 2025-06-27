@@ -318,6 +318,7 @@ export const arTranslations = {
   addedToFavorites: "تم إضافة المنتج للمفضلة",
   removedFromFavorites: "تم إزالة المنتج من المفضلة",
   openMenu: "فتح القائمة",
+  menu: "القائمة",
   errorAddingToCart: "خطأ في الإضافة للسلة",
   errorTogglingFavorite: "خطأ في تحديث المفضلة",
   sharedSuccessfully: "تمت المشاركة بنجاح",
