@@ -1013,4 +1013,16 @@ export const arTranslations = {
   productAddFailed: "لم يتم إضافة المنتج",
   invalidCredentials: "بيانات الدخول غير صحيحة",
   serverError: "خطأ في الخادم، يرجى المحاولة لاحقاً",
+  // Activity Log Enhanced
+  changesDetails: "تفاصيل التغييرات",
+  fieldChanged: "تم تغيير الحقل",
+  fromValue: "من",
+  toValue: "إلى",
+  multipleChanges: "تحديث متعدد",
+  changes: "تغييرات",
+  changesSummary: "ملخص التغييرات",
+  targetField: "الحقل المعدل",
+  changeHistory: "تاريخ التغييرات",
+  noChangesRecorded: "لم يتم تسجيل تغييرات",
+  activityLogEnhanced: "سجل النشاط المحسن",
 };

@@ -625,6 +625,72 @@ export async function logUserActivity(
   }
 }
 
+// تسجيل تحديث محدد مع القيم القديمة والجديدة
+export async function logUserUpdateActivity(
+  adminId: string,
+  userId: string,
+  fieldName: string,
+  oldValue: string | null,
+  newValue: string | null,
+  details: Record<string, unknown> = {},
+): Promise<boolean> {
+  try {
+    const { error } = await supabase.from("user_activity_log").insert([
+      {
+        admin_id: adminId,
+        user_id: userId,
+        action: 'update',
+        target_field: fieldName,
+        old_value: oldValue?.toString() || null,
+        new_value: newValue?.toString() || null,
+        details: details as any,
+        created_at: new Date().toISOString(),
+      },
+    ]);
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error("Error logging user update activity:", error);
+    return false;
+  }
+}
+
+// تسجيل عدة تحديثات في عملية واحدة
+export async function logMultipleUserUpdates(
+  adminId: string,
+  userId: string,
+  changes: Array<{
+    field: string;
+    oldValue: string | null;
+    newValue: string | null;
+  }>,
+  details: Record<string, unknown> = {},
+): Promise<boolean> {
+  try {
+    const logs = changes.map(change => ({
+      admin_id: adminId,
+      user_id: userId,
+      action: 'update',
+      target_field: change.field,
+      old_value: change.oldValue?.toString() || null,
+      new_value: change.newValue?.toString() || null,
+      details: {
+        ...details,
+        batch_update: true,
+        total_changes: changes.length,
+      } as any,
+      created_at: new Date().toISOString(),
+    }));
+
+    const { error } = await supabase.from("user_activity_log").insert(logs);
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error("Error logging multiple user updates:", error);
+    return false;
+  }
+}
+
 // إلغاء طلب من قبل المستخدم
 export async function cancelUserOrder(
   orderId: string,

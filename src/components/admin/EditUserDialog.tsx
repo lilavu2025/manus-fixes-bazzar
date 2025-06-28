@@ -33,6 +33,14 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({ user }) => {
     setLoading(true);
 
     try {
+      // احفظ القيم الحالية قبل التحديث للمقارنة
+      const oldData = {
+        full_name: user.full_name,
+        phone: user.phone || "",
+        user_type: user.user_type,
+      };
+
+      // تحديث البيانات في قاعدة البيانات
       const { error } = await supabase
         .from("profiles")
         .update({
@@ -45,8 +53,57 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({ user }) => {
 
       if (error) throw error;
 
+      // تحديد التغييرات وتسجيلها
+      const changes: Array<{
+        field: string;
+        oldValue: string | null;
+        newValue: string | null;
+      }> = [];
+
+      if (oldData.full_name !== formData.full_name) {
+        changes.push({
+          field: 'full_name',
+          oldValue: oldData.full_name,
+          newValue: formData.full_name,
+        });
+      }
+
+      if (oldData.phone !== formData.phone) {
+        changes.push({
+          field: 'phone',
+          oldValue: oldData.phone || null,
+          newValue: formData.phone || null,
+        });
+      }
+
+      if (oldData.user_type !== formData.user_type) {
+        changes.push({
+          field: 'user_type',
+          oldValue: oldData.user_type,
+          newValue: formData.user_type,
+        });
+      }
+
+      // تسجيل التغييرات في سجل النشاط
+      if (changes.length > 0 && profile?.id) {
+        const { logMultipleUserUpdates } = await import('@/integrations/supabase/dataSenders');
+        await logMultipleUserUpdates(
+          profile.id,
+          user.id,
+          changes,
+          {
+            admin_name: profile.full_name,
+            admin_email: profile.email || '',
+            user_name: user.full_name,
+            user_email: user.email || '',
+            timestamp: new Date().toISOString(),
+          }
+        );
+      }
+
       toast.success(t("userUpdatedSuccessfully"));
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+      queryClient.invalidateQueries({ queryKey: ['user-activity-log'] });
       setOpen(false);
     } catch (error) {
       console.error("Error updating user:", error);

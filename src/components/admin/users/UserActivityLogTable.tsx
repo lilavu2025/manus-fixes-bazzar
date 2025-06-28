@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/table";
 import { useLanguage } from "@/utils/languageContextUtils";
 import UserDetailsDialog from "./UserDetailsDialog";
+import ActivityChangeDisplay from "./ActivityChangeDisplay";
 import type { UserProfile } from "@/types/profile";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
@@ -25,6 +26,19 @@ const UserActivityLogTable: React.FC = () => {
     update: t("updateUser"),
   };
 
+  const FIELD_LABELS: Record<string, string> = {
+    full_name: t("fullName") || "الاسم الكامل",
+    phone: t("phone") || "الهاتف",
+    user_type: t("userType") || "نوع المستخدم",
+    email: t("email") || "البريد الإلكتروني",
+  };
+
+  const USER_TYPE_LABELS: Record<string, string> = {
+    admin: t("admin") || "مدير",
+    wholesale: t("wholesale") || "جملة",
+    retail: t("retail") || "تجزئة",
+  };
+
   type ProfileMap = Record<
     string,
     { full_name: string; email: string; phone: string | null } | undefined
@@ -35,6 +49,9 @@ const UserActivityLogTable: React.FC = () => {
     admin_id: string;
     user_id: string;
     action: string;
+    target_field?: string;
+    old_value?: string;
+    new_value?: string;
     details: any | null;
     created_at: string;
   }
@@ -198,6 +215,9 @@ const UserActivityLogTable: React.FC = () => {
           "User Email": userEmail || "",
           "User Phone": userPhone || "",
           Action: l.action,
+          Field: l.target_field || "",
+          "Old Value": l.old_value || "",
+          "New Value": l.new_value || "",
           Details: JSON.stringify(l.details),
           Date: l.created_at,
         };
@@ -248,6 +268,9 @@ const UserActivityLogTable: React.FC = () => {
                     <TableHead className="text-center">{t("user")}</TableHead>
                     <TableHead className="text-center">
                       {t("actions")}
+                    </TableHead>
+                    <TableHead className="text-center">
+                      {t("changesDetails")}
                     </TableHead>
                     <TableHead className="text-center">{t("date")}</TableHead>
                   </TableRow>
@@ -358,6 +381,21 @@ const UserActivityLogTable: React.FC = () => {
                           >
                             {ACTION_LABELS[log.action] || log.action}
                           </span>
+                        </TableCell>
+
+                        {/* عمود التفاصيل */}
+                        <TableCell className="text-xs max-w-xs">
+                          <div className="max-w-xs overflow-hidden">
+                            <ActivityChangeDisplay 
+                              change={{
+                                action: log.action,
+                                target_field: log.target_field,
+                                old_value: log.old_value,
+                                new_value: log.new_value,
+                                details: log.details
+                              }}
+                            />
+                          </div>
                         </TableCell>
 
                         {/* عمود التاريخ */}
