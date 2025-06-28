@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, ReactNode } from "react";
+import React, { createContext, useContext, useReducer, ReactNode, useRef } from "react";
 import { Product } from "@/types";
 import { useAuth } from "@/contexts/useAuth";
 import { useState, useEffect } from "react";
@@ -164,15 +164,23 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
   // تحميل السلة من الكوكيز عند عدم وجود مستخدم
   useEffect(() => {
     if (!user) {
-      const savedCart = getCookie("cart");
-      if (savedCart) {
-        try {
-          const cartItems = JSON.parse(savedCart);
-          dispatch({ type: "LOAD_CART", payload: cartItems });
-        } catch (error) {
-          console.error("Error loading cart from cookies:", error);
+      // تأخير قصير للتأكد من مسح السلة أولاً
+      const timeoutId = setTimeout(() => {
+        const savedCart = getCookie("cart");
+        if (savedCart) {
+          try {
+            const cartItems = JSON.parse(savedCart);
+            if (Array.isArray(cartItems) && cartItems.length > 0) {
+              dispatch({ type: "LOAD_CART", payload: cartItems });
+              console.log("Cart loaded from cookies:", cartItems.length, "items");
+            }
+          } catch (error) {
+            console.error("Error loading cart from cookies:", error);
+          }
         }
-      }
+      }, 100); // تأخير 100ms
+
+      return () => clearTimeout(timeoutId);
     }
   }, [user]);
 
@@ -213,9 +221,6 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
       dispatch({ type: "LOAD_CART", payload: cartItems });
       setHasLoadedFromDB(true);
       console.log("Cart loaded from database:", cartItems.length, "items");
-    } else if (!user) {
-      // إعادة تعيين الحالة عند تسجيل الخروج
-      setHasLoadedFromDB(false);
     }
   }, [user, dbCartData, hasLoadedFromDB]);
 
@@ -263,46 +268,127 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
   }, [state.items, user]);
 
   // نقل العناصر من الكوكيز إلى قاعدة البيانات عند تسجيل الدخول (مرة واحدة فقط)
-  const [hasMigrated, setHasMigrated] = useState(false);
+  const [hasMigrated, setHasMigrated] = useState(() => {
+    // تحقق من localStorage لمعرفة إذا تم النقل مسبقاً لهذا المستخدم
+    if (typeof window !== 'undefined' && userId) {
+      return localStorage.getItem(`cart_migrated_${userId}`) === 'true';
+    }
+    return false;
+  });
+
+  // ref لمنع تكرار migration أثناء المعالجة
+  const migrationInProgress = useRef(false);
+
   useEffect(() => {
     const migrateCartFromCookies = async () => {
-      if (user && userId && !hasMigrated) {
+      if (user && userId && !hasMigrated && !migrationInProgress.current) {
+        // تحقق مرة أخرى من localStorage
+        const migrationKey = `cart_migrated_${userId}`;
+        if (localStorage.getItem(migrationKey) === 'true') {
+          setHasMigrated(true);
+          return;
+        }
+
+        // تعيين flag معالجة لمنع التكرار
+        migrationInProgress.current = true;
+
         const savedCart = getCookie("cart");
+        console.log("Checking cart migration:", { userId, savedCart: !!savedCart, hasMigrated });
+        
         if (savedCart) {
           try {
             const cookieCartItems = JSON.parse(savedCart);
+            console.log("Cookie cart items:", cookieCartItems);
+            
             if (Array.isArray(cookieCartItems) && cookieCartItems.length > 0) {
               console.log("Migrating cart from cookies to database...");
+              
               // نقل كل عنصر من الكوكيز إلى قاعدة البيانات باستخدام setQuantity بدلاً من add
+              let successCount = 0;
+              let failureCount = 0;
+              
               for (const item of cookieCartItems) {
                 try {
+                  // التحقق من صحة بيانات المنتج
+                  if (!item.product || !item.product.id || !item.quantity) {
+                    console.warn("Invalid cart item:", item);
+                    failureCount++;
+                    continue;
+                  }
+                  
+                  console.log("Migrating item:", item.product.id, "quantity:", item.quantity);
                   await setCartQuantityMutation.mutateAsync({
                     userId,
                     productId: item.product.id,
                     quantity: item.quantity, // تعيين الكمية بدقة بدلاً من الإضافة
                   });
+                  successCount++;
                 } catch (error) {
                   console.error("Error migrating cart item:", error);
+                  failureCount++;
                 }
               }
+              
+              console.log(`Cart migration completed: ${successCount} success, ${failureCount} failures`);
+              // تعيين flag بعد النجاح فقط
+              setHasMigrated(true);
+              localStorage.setItem(migrationKey, 'true');
+              
               // مسح الكوكيز بعد النقل
               deleteCookie("cart");
-              console.log("Cart migration completed");
-              setHasMigrated(true);
+              
               // إعادة جلب السلة من قاعدة البيانات
               refetchCart();
+            } else {
+              console.log("No items in cookie cart to migrate");
+              localStorage.setItem(migrationKey, 'true');
+              setHasMigrated(true);
             }
           } catch (error) {
             console.error("Error migrating cart from cookies:", error);
+            // في حالة الخطأ، لا نضع flag حتى يتم إعادة المحاولة
+            setHasMigrated(false);
+            localStorage.removeItem(migrationKey);
+          } finally {
+            // إعادة تعيين flag المعالجة
+            migrationInProgress.current = false;
           }
         } else {
+          console.log("No cart in cookies to migrate");
+          localStorage.setItem(migrationKey, 'true');
           setHasMigrated(true); // لا توجد كوكيز للنقل
+          migrationInProgress.current = false;
         }
       }
     };
 
     migrateCartFromCookies();
-  }, [user, userId, hasMigrated, setCartQuantityMutation, refetchCart]);
+  }, [user, userId]); // إزالة hasMigrated و setCartQuantityMutation و refetchCart من dependencies
+
+  // تنظيف localStorage عند تسجيل الخروج
+  useEffect(() => {
+    if (!user && hasMigrated) {
+      // عند تسجيل الخروج، إعادة تعيين flag migration
+      setHasMigrated(false);
+      // حذف جميع migration flags من localStorage
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('cart_migrated_')) {
+          localStorage.removeItem(key);
+        }
+      });
+    }
+  }, [user, hasMigrated]);
+
+  // مسح السلة بالكامل عند تسجيل الخروج
+  useEffect(() => {
+    if (!user) {
+      // مسح السلة المحلية
+      dispatch({ type: "CLEAR_CART" });
+      // إعادة تعيين flags
+      setHasLoadedFromDB(false);
+      console.log("Cart fully cleared on logout");
+    }
+  }, [user]);
 
   // إضافة منتج للسلة - Optimistic Updates
   const addItem = async (product: Product, quantity = 1) => {
@@ -406,6 +492,37 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
   // Aliases for compatibility with old code
   const addToCart = addItem;
   const cartItems = state.items;
+
+  // دالة مساعدة للمطور لإعادة تعيين migration (فقط في development)
+  const resetMigration = () => {
+    if (process.env.NODE_ENV === 'development') {
+      setHasMigrated(false);
+      if (userId) {
+        localStorage.removeItem(`cart_migrated_${userId}`);
+      }
+      console.log("Migration reset for development testing");
+    }
+  };
+
+  // إضافة الدالة للـ window للاختبار (development فقط)
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      (window as any).resetCartMigration = resetMigration;
+      (window as any).checkCartCookies = () => {
+        const cart = getCookie("cart");
+        console.log("Cart cookies:", cart ? JSON.parse(cart) : null);
+      };
+      (window as any).checkCartState = () => {
+        console.log("Cart state:", {
+          items: state.items,
+          user: !!user,
+          userId,
+          hasMigrated,
+          hasLoadedFromDB
+        });
+      };
+    }
+  }, [resetMigration, state.items, user, userId, hasMigrated, hasLoadedFromDB]);
 
   // buyNow: إضافة منتج وبدء الشراء المباشر
   const buyNow = async (product: Product, quantity = 1) => {

@@ -4,6 +4,9 @@ import { supabase } from "./client";
 import type { Database, TablesInsert, TablesUpdate } from "./types";
 import type { Banner, ContactInfo } from "./dataFetchers";
 
+// مخزن مؤقت للطلبات المعلقة لمنع التكرار
+const pendingCartRequests = new Map<string, Promise<boolean>>();
+
 export async function createProfile(profile: TablesInsert<"profiles">) {
   try {
     const { data, error } = await supabase
@@ -666,41 +669,58 @@ export async function setCartQuantity(
   productId: string,
   quantity: number,
 ) {
-  try {
-    console.log(`Setting cart quantity: userId=${userId}, productId=${productId}, quantity=${quantity}`);
-    
-    if (quantity <= 0) {
-      // إذا كانت الكمية 0 أو أقل، احذف المنتج
-      await removeFromCart(userId, productId);
-      return true;
-    }
-    
-    // تحقق إذا كان المنتج موجود مسبقاً
-    const { data: existing, error: fetchError } = await supabase
-      .from("cart")
-      .select("*")
-      .eq("user_id", userId)
-      .eq("product_id", productId)
-      .maybeSingle();
-    
-    if (fetchError && fetchError.code !== "PGRST116") throw fetchError;
-    
-    if (existing) {
-      console.log(`Product exists, setting quantity to: ${quantity}`);
-      await supabase
-        .from("cart")
-        .update({ quantity })
-        .eq("user_id", userId)
-        .eq("product_id", productId);
-    } else {
-      console.log(`Product not in cart, inserting with quantity: ${quantity}`);
-      await supabase
-        .from("cart")
-        .insert({ user_id: userId, product_id: productId, quantity });
-    }
-    return true;
-  } catch (error: unknown) {
-    console.error("Error setting cart quantity:", error);
-    throw error;
+  const requestKey = `${userId}-${productId}`;
+  
+  // إذا كان هناك طلب معلق لنفس المستخدم والمنتج، انتظره
+  if (pendingCartRequests.has(requestKey)) {
+    return await pendingCartRequests.get(requestKey)!;
   }
+
+  const requestPromise = async (): Promise<boolean> => {
+    try {
+      console.log(`Setting cart quantity: userId=${userId}, productId=${productId}, quantity=${quantity}`);
+      
+      if (quantity <= 0) {
+        // إذا كانت الكمية 0 أو أقل، احذف المنتج
+        await removeFromCart(userId, productId);
+        return true;
+      }
+      
+      // تحقق إذا كان المنتج موجود مسبقاً
+      const { data: existing, error: fetchError } = await supabase
+        .from("cart")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("product_id", productId)
+        .maybeSingle();
+      
+      if (fetchError && fetchError.code !== "PGRST116") throw fetchError;
+      
+      if (existing) {
+        console.log(`Product exists, setting quantity to: ${quantity}`);
+        await supabase
+          .from("cart")
+          .update({ quantity })
+          .eq("user_id", userId)
+          .eq("product_id", productId);
+      } else {
+        console.log(`Product not in cart, inserting with quantity: ${quantity}`);
+        await supabase
+          .from("cart")
+          .insert({ user_id: userId, product_id: productId, quantity });
+      }
+      return true;
+    } catch (error: unknown) {
+      console.error("Error setting cart quantity:", error);
+      throw error;
+    } finally {
+      // إزالة الطلب من المخزن المؤقت
+      pendingCartRequests.delete(requestKey);
+    }
+  };
+
+  const promise = requestPromise();
+  pendingCartRequests.set(requestKey, promise);
+  
+  return await promise;
 }
