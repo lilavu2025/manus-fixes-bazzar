@@ -8,6 +8,7 @@ import {
 } from "react-router-dom";
 import { useAuth } from "@/contexts/useAuth";
 import { useLanguage } from "@/utils/languageContextUtils";
+import { useMemoryCleanup } from "@/hooks/useMemoryCleanup";
 import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard,
@@ -64,6 +65,9 @@ const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  // استخدام hook تنظيف الذاكرة
+  const memoryCleanup = useMemoryCleanup();
 
   const sidebarItems = [
     { path: "/admin", label: t("dashboard"), icon: LayoutDashboard },

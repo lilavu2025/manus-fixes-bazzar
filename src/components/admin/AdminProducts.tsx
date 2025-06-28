@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useLocation } from "react-router-dom";
 import { useLanguage } from "@/utils/languageContextUtils";
 import { useProductsRealtime } from "@/hooks/useProductsRealtime";
@@ -8,7 +8,7 @@ import { toast } from "@/hooks/use-toast";
 import { useEnhancedToast } from "@/hooks/useEnhancedToast";
 import AdminProductsHeader from "./AdminProductsHeader";
 import AdminProductsEmptyState from "./AdminProductsEmptyState";
-import AdminProductsTable from "./AdminProductsTable";
+import PaginatedProductsTable from "./VirtualizedProductsTable"; // استخدام الجدول المحسن
 import AdminProductsDialogs from "./AdminProductsDialogs";
 import AdminHeader from "./AdminHeader";
 import {
@@ -161,58 +161,7 @@ const AdminProducts: React.FC = () => {
         setHasAppliedLocationFilters(true);
       }
     }
-  }, []); // إزالة جميع dependencies ليتم تشغيله مرة واحدة فقط
-
-  // useEffect منفصل للتحقق من وجود location.state جديد عند تغيير المسار
-  useEffect(() => {
-    // إعادة تعيين الحالة إذا كان هناك location.state جديد
-    if (location.state && !hasAppliedLocationFilters) {
-      // تشغيل العملية بعد تحميل البيانات
-      const timer = setTimeout(() => {
-        if (location.state && !hasAppliedLocationFilters) {
-          // فلترة حسب الفئة
-          if (location.state.filterCategory && productCategories.length > 0) {
-            const filterCategoryName = location.state.filterCategory;
-            const foundCat = productCategories.find((c) => c.name === filterCategoryName);
-            if (foundCat) {
-              setFilterCategory(foundCat.id);
-              setFilterAppliedFromDashboard(`تم الفلترة حسب الفئة: ${filterCategoryName}`);
-              setHasAppliedLocationFilters(true);
-            }
-          }
-          
-          // فلترة المنتجات منخفضة المخزون
-          else if (location.state.filterLowStock) {
-            setFilterCategory("all");
-            setFilterStock("low");
-            setFilterAppliedFromDashboard("تم الفلترة: المنتجات منخفضة المخزون (1-10 قطع)");
-            setHasAppliedLocationFilters(true);
-          }
-          
-          // فلترة المنتجات المنتهية من المخزون
-          else if (location.state.filterOutOfStock) {
-            setFilterCategory("all");
-            setFilterStock("out");
-            setFilterAppliedFromDashboard("تم الفلترة: المنتجات المنتهية من المخزون (0 قطع)");
-            setHasAppliedLocationFilters(true);
-          }
-          
-          // البحث عن منتج محدد بالـ ID
-          else if (location.state.filterProductId && products.length > 0) {
-            const productId = location.state.filterProductId;
-            const foundProduct = products.find(p => p.id === productId);
-            if (foundProduct) {
-              setSearchName(foundProduct.name || "");
-              setFilterAppliedFromDashboard(`تم البحث عن المنتج: ${foundProduct.name}`);
-              setHasAppliedLocationFilters(true);
-            }
-          }
-        }
-      }, 100);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [location.pathname]); // فقط عند تغيير المسار
+  }, [location.state, productCategories, products, hasAppliedLocationFilters]); // إضافة dependencies محددة
 
   // مسح الرسالة بعد 8 ثوان
   useEffect(() => {
@@ -488,7 +437,7 @@ const AdminProducts: React.FC = () => {
       </div>
       {/* جدول المنتجات */}
       {showTopOrdered ? (
-        <AdminProductsTable
+        <PaginatedProductsTable
           products={topOrderedProducts}
           onViewProduct={handleViewProduct}
           onEditProduct={handleEditProduct}
@@ -496,7 +445,7 @@ const AdminProducts: React.FC = () => {
           categories={productCategories}
         />
       ) : (
-        <AdminProductsTable
+        <PaginatedProductsTable
           products={filteredProducts}
           onViewProduct={handleViewProduct}
           onEditProduct={handleEditProduct}

@@ -180,14 +180,13 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
       }
       return result;
     },
-    retry: 3,
-    staleTime: 0,
-    refetchOnWindowFocus: true,
-    refetchInterval: false, // تم تعطيل polling (refetchInterval) لأن المتصفح يوقفه بالخلفية،
-    // والاعتماد على WebSocket أو إعادة الجلب عند العودة للواجهة أفضل
+    retry: 2, // تقليل عدد المحاولات
+    staleTime: 10 * 60 * 1000, // البيانات طازجة لمدة 10 دقائق
+    refetchOnWindowFocus: false, // عدم إعادة الجلب عند التركيز على النافذة
+    refetchInterval: false, // إيقاف التحديث التلقائي تماماً
   });
 
-  // Fetch recent activity data
+  // Fetch recent activity data مع تحسين الأداء
   const {
     data: recentActivity = [],
     isLoading: activityLoading,
@@ -197,28 +196,29 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
     queryFn: async () => {
       const activities = [];
 
-      // Get recent users
+      // تقليل عدد البيانات المجلبة للأداء
+      // Get recent users (تقليل إلى 1 بدلاً من 2)
       const { data: recentUsers } = await supabase
         .from("profiles")
         .select("created_at, full_name")
         .order("created_at", { ascending: false })
-        .limit(2);
+        .limit(1);
 
-      // Get recent orders
+      // Get recent orders (تقليل إلى 1 بدلاً من 2)
       const { data: recentOrders } = await supabase
         .from("orders")
         .select("created_at, status")
         .order("created_at", { ascending: false })
-        .limit(2);
+        .limit(1); // تقليل إلى 1
 
-      // Get products with low stock
+      // Get products with low stock (تقليل العدد)
       const { data: lowStockProducts } = await supabase
         .from("products")
         .select("name_ar, name_en, name_he, stock_quantity, updated_at")
         .lte("stock_quantity", 10)
         .gt("stock_quantity", 0)
         .order("updated_at", { ascending: false })
-        .limit(2);
+        .limit(1); // تقليل إلى 1
 
       // Get products that are out of stock
       const { data: outOfStockProducts } = await supabase
@@ -226,7 +226,7 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
         .select("name_ar, name_en, name_he, stock_quantity, updated_at")
         .eq("stock_quantity", 0)
         .order("updated_at", { ascending: false })
-        .limit(2);
+        .limit(1); // تقليل إلى 1
 
       // Add user registrations
       recentUsers?.forEach((user) => {

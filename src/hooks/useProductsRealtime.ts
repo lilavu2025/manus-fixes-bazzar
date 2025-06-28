@@ -23,6 +23,27 @@ export function useProductsRealtime() {
 
   useEffect(() => {
     fetchProducts();
+    
+    // تحديث البيانات كل 5 دقائق فقط عند عدم إخفاء النافذة
+    const interval = setInterval(() => {
+      if (!document.hidden) {
+        fetchProducts();
+      }
+    }, 5 * 60 * 1000); // 5 دقائق
+
+    // تنظيف عند إخفاء النافذة
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        clearInterval(interval);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [fetchProducts]);
 
   return { products, loading, error, refetch: fetchProducts, setProducts };

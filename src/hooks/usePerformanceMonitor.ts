@@ -19,14 +19,20 @@ export const usePerformanceMonitor = () => {
         console.warn('Slow loading detected:', (metrics as any).loadTime);
       }
       
-      // تحقق من استخدام الذاكرة
+      // تحقق من استخدام الذاكرة - رفع الحد إلى 200MB
       const performanceMemory = (performance as any).memory;
-      if (performanceMemory && performanceMemory.usedJSHeapSize > 50000000) {
-        enhancedToast.warning('memoryUsageHigh');
+      if (performanceMemory && performanceMemory.usedJSHeapSize > 200000000) { // 200MB بدلاً من 50MB
+        console.warn('High memory usage detected:', {
+          used: `${Math.round(performanceMemory.usedJSHeapSize / 1024 / 1024)}MB`,
+          total: `${Math.round(performanceMemory.totalJSHeapSize / 1024 / 1024)}MB`,
+          limit: `${Math.round(performanceMemory.jsHeapSizeLimit / 1024 / 1024)}MB`
+        });
+        // إزالة التحذير المنبثق - فقط console.warn
+        // enhancedToast.warning('memoryUsageHigh');
       }
     };
 
-    const interval = setInterval(checkPerformance, 30000); // كل 30 ثانية
+    const interval = setInterval(checkPerformance, 120000); // كل دقيقتين بدلاً من 30 ثانية
 
     return () => {
       clearInterval(interval);
