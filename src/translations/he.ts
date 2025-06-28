@@ -1031,4 +1031,6 @@ export const heTranslations = {
   // Admin operations
   categoryAddFailed: "הוספת הקטגוריה נכשלה",
   productAddFailed: "הוספת המוצר נכשלה",
+  serverError: "שגיאה בשרת, אנא נסה שוב מאוחר יותר",
+  invalidCredentials: "פרטי ההתחברות אינם נכונים",
 };

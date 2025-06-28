@@ -47,7 +47,7 @@ const AdminTopOrderedProducts = () => {
                   </span>
                 </div>
                 <span className="text-sm text-gray-600 bg-orange-100 rounded px-2 py-1 font-semibold">
-                  {product.sales_count ?? product.salesCount ?? 0} عملية بيع
+                  {product.sales_count ?? product.salesCount ?? 0} {t('salesCount')}
                 </span>
               </div>
             ))}

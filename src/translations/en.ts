@@ -1048,4 +1048,6 @@ export const enTranslations = {
   // Admin operations
   categoryAddFailed: "Failed to add category",
   productAddFailed: "Failed to add product",
+  invalidCredentials: "Invalid credentials provided",
+  serverError: "Server error, please try again later",
 };

@@ -1011,4 +1011,6 @@ export const arTranslations = {
   // Admin operations
   categoryAddFailed: "لم يتم إضافة الفئة",
   productAddFailed: "لم يتم إضافة المنتج",
+  invalidCredentials: "بيانات الدخول غير صحيحة",
+  serverError: "خطأ في الخادم، يرجى المحاولة لاحقاً",
 };
