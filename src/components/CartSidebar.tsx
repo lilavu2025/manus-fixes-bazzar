@@ -6,7 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { useCart } from "@/hooks/useCart";
 import { useLanguage } from "@/utils/languageContextUtils";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/useAuth";
 import { useEnhancedToast } from "@/hooks/useEnhancedToast";
 import { getLocalizedName } from "@/utils/getLocalizedName";
@@ -23,12 +23,27 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
   const { t, isRTL, language } = useLanguage();
   const { user } = useAuth();
   const enhancedToast = useEnhancedToast();
+  const navigate = useNavigate();
 
   // دالة مخصصة للتعامل مع الدفع
   const handleCheckoutClick = (e: React.MouseEvent) => {
     if (!user) {
       e.preventDefault();
-      enhancedToast.error(t("pleaseLoginToCheckout"));
+      
+      // حفظ نية الدفع قبل التوجيه لتسجيل الدخول
+      const checkoutIntent = {
+        action: 'checkout',
+        timestamp: Date.now(),
+        fromCart: true // إشارة أنه قادم من السلة وليس buyNow
+      };
+      
+      localStorage.setItem('checkout_intent', JSON.stringify(checkoutIntent));
+      
+      // إغلاق السلة أولاً
+      onClose();
+      
+      // التوجه لتسجيل الدخول مع redirect parameter فوراً
+      navigate('/auth?redirect=checkout');
     } else {
       onClose();
     }

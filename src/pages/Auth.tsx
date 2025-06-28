@@ -54,6 +54,10 @@ const Auth: React.FC = () => {
 
   useEffect(() => {
     if (user && !loading) {
+      // الحصول على redirect parameter من URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const redirectParam = urlParams.get('redirect');
+      
       if (user.user_type === "admin") {
         const lastVisitedPath = getCookie("lastVisitedPath");
         if (
@@ -66,6 +70,12 @@ const Auth: React.FC = () => {
         } else if (!window.location.pathname.startsWith("/admin")) {
           navigate("/admin", { replace: true });
         }
+      } else if (redirectParam) {
+        // التوجه للصفحة المحددة في redirect parameter فوراً
+        console.log("Immediate redirect after login to:", redirectParam);
+        // استخدام navigate للتوجيه السلس
+        navigate(`/${redirectParam}`, { replace: true });
+        return; // منع التنفيذ الإضافي
       } else if (state && state.from) {
         navigate(state.from, { replace: true });
       } else {

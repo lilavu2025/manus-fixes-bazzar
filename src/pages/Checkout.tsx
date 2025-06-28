@@ -51,8 +51,18 @@ const Checkout: React.FC = () => {
   // Redirect to login if user is not authenticated
   useEffect(() => {
     if (!user) {
+      // حفظ نية الدفع قبل التوجيه لتسجيل الدخول
+      const checkoutIntent = {
+        action: 'checkout',
+        timestamp: Date.now(),
+        fromCart: true // إشارة أنه قادم من السلة وليس buyNow
+      };
+      
+      localStorage.setItem('checkout_intent', JSON.stringify(checkoutIntent));
+      
       enhancedToast.error(t("pleaseLoginToCheckout"));
-      navigate("/auth", { replace: true });
+      // التوجه لتسجيل الدخول مع redirect parameter
+      navigate("/auth?redirect=checkout", { replace: true });
     }
   }, [user, navigate, enhancedToast, t]);
 
@@ -545,7 +555,7 @@ const Checkout: React.FC = () => {
             <CardContent className="space-y-4">
               {/* عرض المنتجات */}
               <div className="space-y-3 max-h-64 overflow-y-auto">
-                {itemsToCheckout.map((item) => {
+                {itemsToCheckout.map((item, index) => {
                   // Ensure all required Product fields are present for getDisplayPrice
                   const productForPrice = {
                     id: item.product.id || "",
@@ -576,7 +586,7 @@ const Checkout: React.FC = () => {
                   };
                   return (
                     <div
-                      key={item.id}
+                      key={item.product.id || `item-${index}`}
                       className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50"
                     >
                       <img

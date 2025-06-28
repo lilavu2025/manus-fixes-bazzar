@@ -2,6 +2,7 @@ import React, { createContext, useContext, useReducer, ReactNode, useRef } from 
 import { Product } from "@/types";
 import { useAuth } from "@/contexts/useAuth";
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import type {
   CartContextType,
   CartItem,
@@ -140,18 +141,19 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
   const [state, dispatch] = useReducer(cartReducer, initialState);
-  const { user, profile } = useAuth();
+  const { user, profile, session, loading } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [cookieCartLoaded, setCookieCartLoaded] = useState(false);
 
   // hooks
-  const userId =
-    user &&
-    typeof user === "object" &&
-    "id" in user &&
-    typeof user.id === "string"
-      ? user.id
-      : "";
+  // استخدام session بدلاً من user لتحديد إذا كان المستخدم مسجلاً
+  const sessionUser = session as { user?: { id?: string } } | null;
+  const isLoggedIn = Boolean(sessionUser?.user?.id);
+  const userId = sessionUser?.user?.id || "";
+  
+  const navigate = useNavigate();
   const addToCartMutation = useAddToCart();
   const updateCartItemMutation = useUpdateCartItem();
   const removeFromCartMutation = useRemoveFromCart();
@@ -163,26 +165,39 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
 
   // تحميل السلة من الكوكيز عند عدم وجود مستخدم
   useEffect(() => {
-    if (!user) {
-      // تأخير قصير للتأكد من مسح السلة أولاً
+    if (!isLoggedIn && !cookieCartLoaded && !loading) {
+      // تأخير قصير للتأكد من استقرار الحالة
       const timeoutId = setTimeout(() => {
         const savedCart = getCookie("cart");
+        console.log("Checking for saved cart in cookies...", savedCart ? "Found" : "Not found");
         if (savedCart) {
           try {
             const cartItems = JSON.parse(savedCart);
+            console.log("Parsed cart items from cookies:", cartItems);
+            // تحقق من أن البيانات صالحة وليست فارغة
             if (Array.isArray(cartItems) && cartItems.length > 0) {
-              dispatch({ type: "LOAD_CART", payload: cartItems });
-              console.log("Cart loaded from cookies:", cartItems.length, "items");
+              // تحميل السلة فقط إذا كانت السلة الحالية فارغة
+              if (state.items.length === 0) {
+                dispatch({ type: "LOAD_CART", payload: cartItems });
+                console.log("Cart loaded from cookies:", cartItems.length, "items");
+              }
+            } else {
+              console.log("Cookie cart is empty or invalid, skipping load");
+              // مسح الكوكيز الفارغة
+              deleteCookie("cart");
             }
           } catch (error) {
             console.error("Error loading cart from cookies:", error);
+            // مسح الكوكيز المعطوبة
+            deleteCookie("cart");
           }
         }
-      }, 100); // تأخير 100ms
+        setCookieCartLoaded(true);
+      }, 100); // تقليل التأخير إلى 100ms
 
       return () => clearTimeout(timeoutId);
     }
-  }, [user]);
+  }, [user, cookieCartLoaded, state.items.length]);
 
   // تحميل السلة من قاعدة البيانات عندما يسجل المستخدم دخوله
   const [hasLoadedFromDB, setHasLoadedFromDB] = useState(false);
@@ -262,10 +277,16 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
 
   // حفظ السلة في الكوكيز عند التغيير (للمستخدمين غير المسجلين فقط)
   useEffect(() => {
-    if (!user) {
+    // فقط للمستخدمين غير المسجلين وبعد التحميل الأولي
+    if (!user && cookieCartLoaded && state.items.length > 0) {
+      console.log("Saving cart to cookies:", state.items.length, "items");
       setCookie("cart", JSON.stringify(state.items), 60 * 60 * 24 * 7);
+    } else if (!user && cookieCartLoaded && state.items.length === 0) {
+      // إذا كانت السلة فارغة، امسح الكوكيز
+      deleteCookie("cart");
+      console.log("Cart is empty, cookies cleared");
     }
-  }, [state.items, user]);
+  }, [state.items, user, cookieCartLoaded]);
 
   // نقل العناصر من الكوكيز إلى قاعدة البيانات عند تسجيل الدخول (مرة واحدة فقط)
   const [hasMigrated, setHasMigrated] = useState(() => {
@@ -303,36 +324,38 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
             if (Array.isArray(cookieCartItems) && cookieCartItems.length > 0) {
               console.log("Migrating cart from cookies to database...");
               
-              // نقل كل عنصر من الكوكيز إلى قاعدة البيانات باستخدام setQuantity بدلاً من add
-              let successCount = 0;
-              let failureCount = 0;
+              // تعيين flag أولاً للسرعة
+              setHasMigrated(true);
+              localStorage.setItem(migrationKey, 'true');
               
-              for (const item of cookieCartItems) {
+              // نقل كل عنصر من الكوكيز إلى قاعدة البيانات بشكل متوازي للسرعة
+              const migrationPromises = cookieCartItems.map(async (item) => {
                 try {
                   // التحقق من صحة بيانات المنتج
                   if (!item.product || !item.product.id || !item.quantity) {
                     console.warn("Invalid cart item:", item);
-                    failureCount++;
-                    continue;
+                    return { success: false, error: 'Invalid item' };
                   }
                   
                   console.log("Migrating item:", item.product.id, "quantity:", item.quantity);
                   await setCartQuantityMutation.mutateAsync({
                     userId,
                     productId: item.product.id,
-                    quantity: item.quantity, // تعيين الكمية بدقة بدلاً من الإضافة
+                    quantity: item.quantity,
                   });
-                  successCount++;
+                  return { success: true };
                 } catch (error) {
                   console.error("Error migrating cart item:", error);
-                  failureCount++;
+                  return { success: false, error };
                 }
-              }
+              });
+              
+              // انتظار جميع العمليات
+              const results = await Promise.allSettled(migrationPromises);
+              const successCount = results.filter(r => r.status === 'fulfilled' && r.value.success).length;
+              const failureCount = results.length - successCount;
               
               console.log(`Cart migration completed: ${successCount} success, ${failureCount} failures`);
-              // تعيين flag بعد النجاح فقط
-              setHasMigrated(true);
-              localStorage.setItem(migrationKey, 'true');
               
               // مسح الكوكيز بعد النقل
               deleteCookie("cart");
@@ -379,16 +402,113 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
     }
   }, [user, hasMigrated]);
 
-  // مسح السلة بالكامل عند تسجيل الخروج
+  // مسح السلة بالكامل عند تسجيل الخروج الفعلي (وليس عند إعادة التحميل)
   useEffect(() => {
+    // تمييز التحميل الأولي عن تسجيل الخروج الفعلي
+    if (isInitialLoad) {
+      setIsInitialLoad(false);
+      return;
+    }
+    
+    // فقط عند تسجيل الخروج الفعلي (بعد أن كان user موجود)
     if (!user) {
-      // مسح السلة المحلية
+      // مسح السلة المحلية فقط، بدون حفظ في الكوكيز
       dispatch({ type: "CLEAR_CART" });
+      // مسح كوكيز السلة أيضاً لمنع تحميل سلة فارغة
+      deleteCookie("cart");
+      console.log("Cart and cookies fully cleared on logout");
       // إعادة تعيين flags
       setHasLoadedFromDB(false);
-      console.log("Cart fully cleared on logout");
     }
-  }, [user]);
+  }, [user, isInitialLoad]);
+
+  // التعامل مع purchase intent بعد تسجيل الدخول
+  useEffect(() => {
+    if (user && userId) {
+      const purchaseIntent = localStorage.getItem('purchase_intent');
+      const checkoutIntent = localStorage.getItem('checkout_intent');
+      
+      // إذا وُجد purchase_intent، له الأولوية ونلغي checkout_intent
+      if (purchaseIntent) {
+        try {
+          const intent = JSON.parse(purchaseIntent);
+          const isRecentIntent = Date.now() - intent.timestamp < 10 * 60 * 1000; // 10 دقائق
+          
+          if (isRecentIntent && intent.action === 'buyNow') {
+            console.log("Processing purchase intent after login:", intent);
+            
+            // مسح كلا الـ intents لتجنب التضارب
+            localStorage.removeItem('purchase_intent');
+            localStorage.removeItem('checkout_intent');
+            
+            // تنفيذ الشراء وانتظار الإنتهاء قبل التوجيه
+            const processPurchaseAndNavigate = async () => {
+              try {
+                console.log("Clearing cart and adding product for buyNow...");
+                await clearCart();
+                await addItem(intent.product, intent.quantity);
+                console.log("Purchase intent processed successfully, navigating to checkout");
+                
+                // التوجه لصفحة الدفع بعد إتمام العملية
+                navigate('/checkout', { 
+                  state: { 
+                    directBuy: true, 
+                    product: intent.product, 
+                    quantity: intent.quantity 
+                  } 
+                });
+              } catch (error) {
+                console.error("Error in purchase processing:", error);
+                // في حالة الخطأ، التوجه مع البيانات على الأقل
+                navigate('/checkout', { 
+                  state: { 
+                    directBuy: true, 
+                    product: intent.product, 
+                    quantity: intent.quantity 
+                  } 
+                });
+              }
+            };
+            
+            // تنفيذ العملية
+            processPurchaseAndNavigate();
+          } else {
+            // إزالة intent منتهي الصلاحية
+            localStorage.removeItem('purchase_intent');
+          }
+        } catch (error) {
+          console.error("Error processing purchase intent:", error);
+          localStorage.removeItem('purchase_intent');
+        }
+      }
+      // إذا لم يوجد purchase_intent، تحقق من checkout_intent
+      else if (checkoutIntent) {
+        try {
+          const intent = JSON.parse(checkoutIntent);
+          const isRecentIntent = Date.now() - intent.timestamp < 10 * 60 * 1000; // 10 دقائق
+          
+          if (isRecentIntent && intent.action === 'checkout' && intent.fromCart) {
+            console.log("Processing checkout intent after login:", intent);
+            
+            // مسح checkout intent أولاً
+            localStorage.removeItem('checkout_intent');
+            
+            // تأخير قصير للسماح بتحميل السلة من الكوكيز أولاً
+            setTimeout(() => {
+              console.log("Navigating to checkout after cart migration");
+              navigate('/checkout');
+            }, 500); // تأخير 500ms للتأكد من تحميل السلة
+          } else {
+            // إزالة intent منتهي الصلاحية
+            localStorage.removeItem('checkout_intent');
+          }
+        } catch (error) {
+          console.error("Error processing checkout intent:", error);
+          localStorage.removeItem('checkout_intent');
+        }
+      }
+    }
+  }, [user, userId]);
 
   // إضافة منتج للسلة - Optimistic Updates
   const addItem = async (product: Product, quantity = 1) => {
@@ -521,13 +641,94 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
           hasLoadedFromDB
         });
       };
+      (window as any).checkPurchaseIntent = () => {
+        const intent = localStorage.getItem('purchase_intent');
+        console.log("Purchase intent:", intent ? JSON.parse(intent) : null);
+      };
+      (window as any).clearPurchaseIntent = () => {
+        localStorage.removeItem('purchase_intent');
+        console.log("Purchase intent cleared");
+      };
+      (window as any).checkCheckoutIntent = () => {
+        const intent = localStorage.getItem('checkout_intent');
+        console.log("Checkout intent:", intent ? JSON.parse(intent) : null);
+      };
+      (window as any).clearCheckoutIntent = () => {
+        localStorage.removeItem('checkout_intent');
+        console.log("Checkout intent cleared");
+      };
+      (window as any).forceCheckoutRedirect = () => {
+        window.location.href = '/checkout';
+        console.log("Forced redirect to checkout");
+      };
     }
   }, [resetMigration, state.items, user, userId, hasMigrated, hasLoadedFromDB]);
 
   // buyNow: إضافة منتج وبدء الشراء المباشر
   const buyNow = async (product: Product, quantity = 1) => {
-    await clearCart();
-    await addItem(product, quantity);
+    if (userId) {
+      // للمستخدمين المسجلين: إضافة المنتج للسلة أولاً ثم التوجه للدفع
+      try {
+        // مسح السلة الحالية وإضافة المنتج الجديد
+        await clearCart();
+        await addItem(product, quantity);
+        
+        // استخدام navigate بدلاً من window.location للحفاظ على الحالة
+        navigate('/checkout', { 
+          state: { 
+            directBuy: true, 
+            product: product, 
+            quantity: quantity 
+          } 
+        });
+        
+        console.log("buyNow completed successfully for user");
+      } catch (error) {
+        console.error("Error in buyNow:", error);
+        // في حالة الخطأ، التوجه مباشرة مع البيانات
+        navigate('/checkout', { 
+          state: { 
+            directBuy: true, 
+            product: product, 
+            quantity: quantity 
+          } 
+        });
+      }
+    } else {
+      // للمستخدمين غير المسجلين: حفظ نية الشراء قبل التوجيه لتسجيل الدخول
+      const purchaseIntent = {
+        product,
+        quantity,
+        timestamp: Date.now(),
+        action: 'buyNow'
+      };
+      
+      // حفظ في localStorage
+      localStorage.setItem('purchase_intent', JSON.stringify(purchaseIntent));
+      
+      // إضافة المنتج للسلة المحلية أولاً وحفظه في كوكيز
+      await clearCart();
+      dispatch({ type: "ADD_ITEM", payload: { product, quantity } });
+      
+      // حفظ السلة في الكوكيز للزوار
+      const cartItems = [{ id: product.id, product, quantity }];
+      setCookie("cart", JSON.stringify(cartItems), 30);
+      
+      // التوجه لصفحة تسجيل الدخول
+      navigate('/auth?redirect=checkout');
+    }
+  };
+
+  // دالة لحفظ السلة في الكوكيز للزوار (مُستخدمة في buyNow فقط)
+  const saveCartToCookies = (cartItems: CartItem[]) => {
+    if (!user) { // استخدام !user بدلاً من !userId
+      try {
+        setCookie("cart", JSON.stringify(cartItems), 30); // حفظ لمدة 30 يوم
+        console.log("Cart saved to cookies (manual):", cartItems.length, "items");
+      } catch (error) {
+        console.error("Error saving cart to cookies:", error);
+      }
+    }
   };
 
   const value: CartContextType & {
