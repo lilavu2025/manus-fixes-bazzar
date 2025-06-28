@@ -1010,4 +1010,7 @@ export const heTranslations = {
   subtotal: "סכום",
   shipping: "עלות משלוח",
   bankTransferDescription: "העברת בנק",
+  completeDirectPurchase: "השלם רכישה ישירה",
+  directPurchase: "רכישה ישירה",
+  free: "חינם",
 };

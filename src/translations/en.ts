@@ -1028,5 +1028,7 @@ export const enTranslations = {
   noLink: "No Link",
   subtotal: "Subtotal",
   shipping: "Shipping",
-  bankTransferDescription: "Bank Transfer"
+  bankTransferDescription: "Bank Transfer",
+  directPurchase: "Direct Purchase",
+  free: "Free"
 };

@@ -466,19 +466,19 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
             // تنفيذ الشراء وانتظار الإنتهاء قبل التوجيه
             const processPurchaseAndNavigate = async () => {
               try {
-                console.log("Clearing cart and adding product for buyNow...");
-                await clearCart();
-                await addItem(intent.product, intent.quantity);
-                console.log("Purchase intent processed successfully, navigating to checkout");
+                console.log("Processing purchase intent with skipCart:", intent.skipCart);
                 
-                // التوجه لصفحة الدفع بعد إتمام العملية
+                // التوجه لصفحة الدفع مع المنتج المحدد
                 navigate('/checkout', { 
                   state: { 
                     directBuy: true, 
                     product: intent.product, 
-                    quantity: intent.quantity 
+                    quantity: intent.quantity,
+                    skipCart: intent.skipCart || false
                   } 
                 });
+                
+                console.log("Purchase intent processed successfully, navigating to checkout");
               } catch (error) {
                 console.error("Error in purchase processing:", error);
                 // في حالة الخطأ، التوجه مع البيانات على الأقل
@@ -486,7 +486,8 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
                   state: { 
                     directBuy: true, 
                     product: intent.product, 
-                    quantity: intent.quantity 
+                    quantity: intent.quantity,
+                    skipCart: intent.skipCart || false
                   } 
                 });
               }
@@ -686,21 +687,20 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
     }
   }, [resetMigration, state.items, user, userId, hasMigrated, hasLoadedFromDB]);
 
-  // buyNow: إضافة منتج وبدء الشراء المباشر
+  // buyNow: الذهاب للشراء المباشر بدون تعديل السلة
   const buyNow = async (product: Product, quantity = 1) => {
     if (userId) {
-      // للمستخدمين المسجلين: إضافة المنتج للسلة أولاً ثم التوجه للدفع
+      // للمستخدمين المسجلين: التوجه مباشرة للدفع مع المنتج المحدد
       try {
-        // مسح السلة الحالية وإضافة المنتج الجديد
-        await clearCart();
-        await addItem(product, quantity);
+        console.log("buyNow: Going to checkout with single product");
         
-        // استخدام navigate بدلاً من window.location للحفاظ على الحالة
+        // التوجه لصفحة الدفع مع المنتج المحدد فقط
         navigate('/checkout', { 
           state: { 
             directBuy: true, 
             product: product, 
-            quantity: quantity 
+            quantity: quantity,
+            skipCart: true // إشارة لتجاهل السلة واستخدام المنتج المحدد فقط
           } 
         });
         
@@ -712,7 +712,8 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
           state: { 
             directBuy: true, 
             product: product, 
-            quantity: quantity 
+            quantity: quantity,
+            skipCart: true
           } 
         });
       }
@@ -722,22 +723,15 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
         product,
         quantity,
         timestamp: Date.now(),
-        action: 'buyNow'
+        action: 'buyNow',
+        skipCart: true // إشارة لتجاهل السلة
       };
       
       // حفظ في localStorage
       localStorage.setItem('purchase_intent', JSON.stringify(purchaseIntent));
       
-      // إضافة المنتج للسلة المحلية أولاً وحفظه في كوكيز
-      await clearCart();
-      dispatch({ type: "ADD_ITEM", payload: { product, quantity } });
-      
-      // حفظ السلة في الكوكيز للزوار
-      const cartItems = [{ id: product.id, product, quantity }];
-      setCookie("cart", JSON.stringify(cartItems), 30);
-      
-      // التوجه لصفحة تسجيل الدخول
-      navigate('/auth?redirect=checkout');
+      // التوجه لصفحة تسجيل الدخول بدون تعديل السلة
+      navigate('/auth?redirect=checkout&skipCart=true');
     }
   };
 

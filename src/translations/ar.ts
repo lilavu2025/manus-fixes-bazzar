@@ -717,6 +717,8 @@ export const arTranslations = {
   drag_indicator: "سحب لتغيير الترتيب",
   searchByClientOrOrderNumber: "البحث بواسطة العميل أو رقم الطلب",
   payOnDeliveryDescription: "الدفع نقدا عند الاستلام",
+  completeDirectPurchase: "إتمام الشراء المباشر",
+  directPurchase: "شراء مباشر",
   editProfile: "تعديل الملف الشخصي",
   updateProfileSuccess: "تم تحديث الملف الشخصي بنجاح",
   changePassword: "تغيير كلمة المرور",
@@ -994,4 +996,5 @@ export const arTranslations = {
   subtotal: "المجموع",
   shipping: "الشحن",
   bankTransferDescription: "الدفع عن طريق التحويل البنكي",
+  free: "مجاني"
 };

@@ -26,6 +26,7 @@ interface DirectBuyState {
   directBuy?: boolean;
   product?: Product;
   quantity?: number;
+  skipCart?: boolean; // إضافة خاصية skipCart
 }
 
 const Checkout: React.FC = () => {
@@ -71,6 +72,7 @@ const Checkout: React.FC = () => {
   const isDirectBuy = directBuyState?.directBuy || false;
   const directProduct = directBuyState?.product;
   const directQuantity = directBuyState?.quantity || 1;
+  const skipCart = directBuyState?.skipCart || false;
 
   // حالات المكون
   const [isLoading, setIsLoading] = useState(false);
@@ -89,7 +91,7 @@ const Checkout: React.FC = () => {
 
   // تحديد العناصر المراد شراؤها (من السلة أو الشراء المباشر)
   const itemsToCheckout =
-    isDirectBuy && directProduct
+    (isDirectBuy && directProduct) || skipCart
       ? [{ product: directProduct, quantity: directQuantity }]
       : cartItems && cartItems.length > 0
         ? cartItems
@@ -97,7 +99,7 @@ const Checkout: React.FC = () => {
 
   // حساب السعر الإجمالي
   const totalPrice =
-    isDirectBuy && directProduct
+    (isDirectBuy && directProduct) || skipCart
       ? getDisplayPrice(
           normalizeProductForDisplay(directProduct),
           profile?.user_type,
@@ -246,8 +248,8 @@ const Checkout: React.FC = () => {
     );
   }
 
-  // عرض رسالة السلة الفارغة (فقط إذا لم يكن شراء مباشر)
-  if (!isDirectBuy && cartItems.length === 0) {
+  // عرض رسالة السلة الفارغة (فقط إذا لم يكن شراء مباشر أو skipCart)
+  if (!isDirectBuy && !skipCart && cartItems.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50">
         <div className="container mx-auto px-4 py-6">
