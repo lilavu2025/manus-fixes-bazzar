@@ -65,40 +65,7 @@ export default defineConfig(({ mode }) => ({
     },
     rollupOptions: {
       output: {
-        manualChunks: (id) => {
-          // Vendor chunks
-          if (id.includes('node_modules')) {
-            // React ecosystem
-            if (id.includes('react') || id.includes('react-dom')) {
-              return 'react-vendor';
-            }
-            // UI libraries
-            if (id.includes('lucide-react') || id.includes('radix-ui')) {
-              return 'ui-vendor';
-            }
-            // Charts and data viz
-            if (id.includes('recharts') || id.includes('d3')) {
-              return 'charts-vendor';
-            }
-            // Supabase and backend
-            if (id.includes('supabase') || id.includes('@tanstack')) {
-              return 'backend-vendor';
-            }
-            // Other vendors
-            return 'vendor';
-          }
-          
-          // App chunks
-          if (id.includes('/admin/')) {
-            return 'admin';
-          }
-          if (id.includes('/pages/')) {
-            return 'pages';
-          }
-          if (id.includes('/components/ui/')) {
-            return 'ui';
-          }
-        },
+        // manualChunks: (id) => { ... } // تم التعطيل مؤقتًا لحل مشكلة React
       },
     },
     chunkSizeWarningLimit: 500,
