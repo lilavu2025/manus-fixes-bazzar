@@ -1026,4 +1026,7 @@ export const enTranslations = {
   untitledBanner: "Untitled Banner",
   hasLink: "Has Link",
   noLink: "No Link",
+  subtotal: "Subtotal",
+  shipping: "Shipping",
+  bankTransferDescription: "Bank Transfer"
 };

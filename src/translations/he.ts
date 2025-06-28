@@ -1007,4 +1007,7 @@ export const heTranslations = {
   errorPlacingOrder: "שגיאה בהנחת ההזמנה",
   productLowStock: "המוצר במלאי נמוך",
   outOfStockProducts: "מוצרים חסרי מלאי",
+  subtotal: "סכום",
+  shipping: "עלות משלוח",
+  bankTransferDescription: "העברת בנק",
 };

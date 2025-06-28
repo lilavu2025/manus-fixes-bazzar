@@ -716,7 +716,7 @@ export const arTranslations = {
   working_hours: "ساعات العمل",
   drag_indicator: "سحب لتغيير الترتيب",
   searchByClientOrOrderNumber: "البحث بواسطة العميل أو رقم الطلب",
-  payOnDeliveryDescription: "الدفع عند الاستلام.",
+  payOnDeliveryDescription: "الدفع نقدا عند الاستلام",
   editProfile: "تعديل الملف الشخصي",
   updateProfileSuccess: "تم تحديث الملف الشخصي بنجاح",
   changePassword: "تغيير كلمة المرور",
@@ -991,4 +991,7 @@ export const arTranslations = {
   untitledBanner: "بانر بدون عنوان",
   hasLink: "له رابط",
   noLink: "بدون رابط",
+  subtotal: "المجموع",
+  shipping: "الشحن",
+  bankTransferDescription: "الدفع عن طريق التحويل البنكي",
 };
