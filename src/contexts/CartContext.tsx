@@ -146,6 +146,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
   const [error, setError] = useState<Error | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [cookieCartLoaded, setCookieCartLoaded] = useState(false);
+  const [wasLoggedIn, setWasLoggedIn] = useState(false);
 
   // hooks
   // استخدام session بدلاً من user لتحديد إذا كان المستخدم مسجلاً
@@ -165,7 +166,9 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
 
   // تحميل السلة من الكوكيز عند عدم وجود مستخدم
   useEffect(() => {
-    if (!isLoggedIn && !cookieCartLoaded && !loading) {
+    console.log("Cookie cart check:", { loading, isLoggedIn, cookieCartLoaded });
+    // انتظار انتهاء loading قبل تحديد إذا كان المستخدم مسجلاً أم لا
+    if (!loading && !isLoggedIn && !cookieCartLoaded) {
       // تأخير قصير للتأكد من استقرار الحالة
       const timeoutId = setTimeout(() => {
         const savedCart = getCookie("cart");
@@ -180,6 +183,8 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
               if (state.items.length === 0) {
                 dispatch({ type: "LOAD_CART", payload: cartItems });
                 console.log("Cart loaded from cookies:", cartItems.length, "items");
+              } else {
+                console.log("Cart already has items, skipping cookie load");
               }
             } else {
               console.log("Cookie cart is empty or invalid, skipping load");
@@ -197,12 +202,12 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
 
       return () => clearTimeout(timeoutId);
     }
-  }, [user, cookieCartLoaded, state.items.length]);
+  }, [isLoggedIn, cookieCartLoaded, state.items.length, loading]);
 
   // تحميل السلة من قاعدة البيانات عندما يسجل المستخدم دخوله
   const [hasLoadedFromDB, setHasLoadedFromDB] = useState(false);
   useEffect(() => {
-    if (user && dbCartData && !hasLoadedFromDB) {
+    if (isLoggedIn && dbCartData && !hasLoadedFromDB) {
       console.log("Loading cart from database...");
       // تحويل البيانات من قاعدة البيانات إلى تنسيق CartItem
       const cartItems: CartItem[] = dbCartData.map((dbItem: any) => ({
@@ -237,11 +242,11 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
       setHasLoadedFromDB(true);
       console.log("Cart loaded from database:", cartItems.length, "items");
     }
-  }, [user, dbCartData, hasLoadedFromDB]);
+  }, [isLoggedIn, dbCartData, hasLoadedFromDB]);
 
   // إعادة تحميل السلة من قاعدة البيانات عند تغيير البيانات
   useEffect(() => {
-    if (user && dbCartData && hasLoadedFromDB) {
+    if (isLoggedIn && dbCartData && hasLoadedFromDB) {
       console.log("Reloading cart from database due to data change...");
       const cartItems: CartItem[] = dbCartData.map((dbItem: any) => ({
         id: dbItem.product_id,
@@ -278,15 +283,15 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
   // حفظ السلة في الكوكيز عند التغيير (للمستخدمين غير المسجلين فقط)
   useEffect(() => {
     // فقط للمستخدمين غير المسجلين وبعد التحميل الأولي
-    if (!user && cookieCartLoaded && state.items.length > 0) {
+    if (!isLoggedIn && cookieCartLoaded && state.items.length > 0) {
       console.log("Saving cart to cookies:", state.items.length, "items");
       setCookie("cart", JSON.stringify(state.items), 60 * 60 * 24 * 7);
-    } else if (!user && cookieCartLoaded && state.items.length === 0) {
+    } else if (!isLoggedIn && cookieCartLoaded && state.items.length === 0) {
       // إذا كانت السلة فارغة، امسح الكوكيز
       deleteCookie("cart");
       console.log("Cart is empty, cookies cleared");
     }
-  }, [state.items, user, cookieCartLoaded]);
+  }, [state.items, isLoggedIn, cookieCartLoaded]);
 
   // نقل العناصر من الكوكيز إلى قاعدة البيانات عند تسجيل الدخول (مرة واحدة فقط)
   const [hasMigrated, setHasMigrated] = useState(() => {
@@ -302,7 +307,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
 
   useEffect(() => {
     const migrateCartFromCookies = async () => {
-      if (user && userId && !hasMigrated && !migrationInProgress.current) {
+      if (isLoggedIn && userId && !hasMigrated && !migrationInProgress.current) {
         // تحقق مرة أخرى من localStorage
         const migrationKey = `cart_migrated_${userId}`;
         if (localStorage.getItem(migrationKey) === 'true') {
@@ -386,11 +391,11 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
     };
 
     migrateCartFromCookies();
-  }, [user, userId]); // إزالة hasMigrated و setCartQuantityMutation و refetchCart من dependencies
+  }, [isLoggedIn, userId]); // إزالة hasMigrated و setCartQuantityMutation و refetchCart من dependencies
 
   // تنظيف localStorage عند تسجيل الخروج
   useEffect(() => {
-    if (!user && hasMigrated) {
+    if (!isLoggedIn && hasMigrated) {
       // عند تسجيل الخروج، إعادة تعيين flag migration
       setHasMigrated(false);
       // حذف جميع migration flags من localStorage
@@ -400,18 +405,33 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
         }
       });
     }
-  }, [user, hasMigrated]);
+  }, [isLoggedIn, hasMigrated]);
 
   // مسح السلة بالكامل عند تسجيل الخروج الفعلي (وليس عند إعادة التحميل)
   useEffect(() => {
+    console.log("Logout check:", { isInitialLoad, loading, isLoggedIn, wasLoggedIn });
+    
     // تمييز التحميل الأولي عن تسجيل الخروج الفعلي
     if (isInitialLoad) {
-      setIsInitialLoad(false);
+      // إنتظار انتهاء loading قبل تعيين isInitialLoad
+      if (!loading) {
+        console.log("Initial load completed, setting isInitialLoad to false");
+        setIsInitialLoad(false);
+        // تحديد الحالة الأولية للمستخدم
+        setWasLoggedIn(isLoggedIn);
+      }
       return;
     }
     
-    // فقط عند تسجيل الخروج الفعلي (بعد أن كان user موجود)
-    if (!user) {
+    // تحديث حالة wasLoggedIn عندما يسجل المستخدم دخوله
+    if (isLoggedIn && !wasLoggedIn) {
+      setWasLoggedIn(true);
+      return;
+    }
+    
+    // فقط عند تسجيل الخروج الفعلي (كان مسجلاً وأصبح غير مسجل)
+    if (!isLoggedIn && wasLoggedIn && !loading) {
+      console.log("User logged out - clearing cart");
       // مسح السلة المحلية فقط، بدون حفظ في الكوكيز
       dispatch({ type: "CLEAR_CART" });
       // مسح كوكيز السلة أيضاً لمنع تحميل سلة فارغة
@@ -419,12 +439,14 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
       console.log("Cart and cookies fully cleared on logout");
       // إعادة تعيين flags
       setHasLoadedFromDB(false);
+      setCookieCartLoaded(false);
+      setWasLoggedIn(false);
     }
-  }, [user, isInitialLoad]);
+  }, [isLoggedIn, isInitialLoad, loading, wasLoggedIn]);
 
   // التعامل مع purchase intent بعد تسجيل الدخول
   useEffect(() => {
-    if (user && userId) {
+    if (isLoggedIn && userId) {
       const purchaseIntent = localStorage.getItem('purchase_intent');
       const checkoutIntent = localStorage.getItem('checkout_intent');
       
@@ -508,7 +530,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
         }
       }
     }
-  }, [user, userId]);
+  }, [isLoggedIn, userId]);
 
   // إضافة منتج للسلة - Optimistic Updates
   const addItem = async (product: Product, quantity = 1) => {
@@ -635,7 +657,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
       (window as any).checkCartState = () => {
         console.log("Cart state:", {
           items: state.items,
-          user: !!user,
+          user: !!isLoggedIn,
           userId,
           hasMigrated,
           hasLoadedFromDB
@@ -721,7 +743,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
 
   // دالة لحفظ السلة في الكوكيز للزوار (مُستخدمة في buyNow فقط)
   const saveCartToCookies = (cartItems: CartItem[]) => {
-    if (!user) { // استخدام !user بدلاً من !userId
+    if (!isLoggedIn) { // استخدام !isLoggedIn بدلاً من !user
       try {
         setCookie("cart", JSON.stringify(cartItems), 30); // حفظ لمدة 30 يوم
         console.log("Cart saved to cookies (manual):", cartItems.length, "items");
