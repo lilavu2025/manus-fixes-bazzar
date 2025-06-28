@@ -52,9 +52,9 @@ const PaginatedProductsTable: React.FC<PaginatedProductsTableProps> = ({
   };
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('ar-SA', {
+    return new Intl.NumberFormat('en-IL', {
       style: 'currency',
-      currency: 'SAR',
+      currency: 'ILS',
       minimumFractionDigits: 0,
     }).format(price);
   };

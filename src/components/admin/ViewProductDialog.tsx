@@ -12,8 +12,6 @@ import {
 import { AdminProductForm } from "@/types/product";
 import { useCategoriesRealtime } from "@/hooks/useCategoriesRealtime";
 import ProductImageGallery from "@/components/ProductImageGallery";
-import { getDisplayPrice } from "@/utils/priceUtils";
-import { useAuth } from "@/contexts/useAuth";
 
 interface ViewProductDialogProps {
   open: boolean;
@@ -27,7 +25,6 @@ const ViewProductDialog: React.FC<ViewProductDialogProps> = ({
   product,
 }) => {
   const { t, language, isRTL } = useLanguage();
-  const { profile } = useAuth();
   const { categories } = useCategoriesRealtime();
 
   if (!product) return null;
@@ -151,32 +148,7 @@ const ViewProductDialog: React.FC<ViewProductDialogProps> = ({
                 <div>
                   <strong>{t("price")}:</strong>
                   <p>
-                    {getDisplayPrice(
-                      {
-                        ...product,
-                        price: product.price,
-                        name: product.name_ar || product.name_en || "",
-                        nameEn: product.name_en || "",
-                        nameHe: product.name_he || "",
-                        description: product.description_ar || "",
-                        descriptionEn: product.description_en || "",
-                        descriptionHe: product.description_he || "",
-                        image: product.image,
-                        images: product.images,
-                        category: product.category_id || product.category,
-                        inStock: product.in_stock,
-                        rating: 0,
-                        reviews: 0,
-                        discount: product.discount,
-                        featured: product.featured,
-                        tags: product.tags,
-                        stock_quantity: product.stock_quantity,
-                        active: product.active,
-                        created_at: product.created_at,
-                      },
-                      profile?.user_type,
-                    )}{" "}
-                    {t("currency")}
+                    {product.price || 0} {t("currency")}
                   </p>
                 </div>
                 {product.original_price && (
