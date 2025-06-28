@@ -1030,5 +1030,22 @@ export const enTranslations = {
   shipping: "Shipping",
   bankTransferDescription: "Bank Transfer",
   directPurchase: "Direct Purchase",
-  free: "Free"
+  free: "Free",
+
+  // Additional Missing Translations
+  mustBeLoggedIn: "You must be logged in to perform this action",
+  tryAgainLater: "Please try again later",
+  emailConfirmationSent: "Confirmation link sent to your email. Please check your email and confirm your account",
+  signupFailedCreateAccount: "Failed to create account. Please try again",
+  userNotLoggedIn: "User not logged in",
+  
+  // Data error messages
+  noUsersDataFound: "No users data found",
+  noOrdersDataFound: "No orders data found", 
+  noCategoriesDataFound: "No categories data found",
+  noProductsDataFound: "No products data found",
+  
+  // Admin operations
+  categoryAddFailed: "Failed to add category",
+  productAddFailed: "Failed to add product",
 };

@@ -14,6 +14,7 @@ export const heTranslations = {
   orders: "הזמנות",
   dashboard: "לוח בקרה",
   checkout: "תשלום",
+  notifications: "התראות",
 
   // Authentication
   login: "התחברות",
@@ -1013,4 +1014,21 @@ export const heTranslations = {
   completeDirectPurchase: "השלם רכישה ישירה",
   directPurchase: "רכישה ישירה",
   free: "חינם",
+
+  // Additional Missing Translations
+  mustBeLoggedIn: "עליך להיות מחובר כדי לבצע פעולה זו",
+  tryAgainLater: "אנא נסה שוב מאוחר יותר",
+  emailConfirmationSent: "קישור אימות נשלח לאימייל שלך. אנא בדוק את האימייל שלך ואמת את החשבון שלך",
+  signupFailedCreateAccount: "יצירת החשבון נכשלה. אנא נסה שוב",
+  userNotLoggedIn: "המשתמש לא מחובר",
+  
+  // Data error messages
+  noUsersDataFound: "לא נמצאו נתוני משתמשים",
+  noOrdersDataFound: "לא נמצאו נתוני הזמנות",
+  noCategoriesDataFound: "לא נמצאו נתוני קטגוריות",
+  noProductsDataFound: "לא נמצאו נתוני מוצרים",
+  
+  // Admin operations
+  categoryAddFailed: "הוספת הקטגוריה נכשלה",
+  productAddFailed: "הוספת המוצר נכשלה",
 };

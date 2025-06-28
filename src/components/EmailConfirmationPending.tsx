@@ -51,7 +51,7 @@ const EmailConfirmationPending: React.FC<EmailConfirmationPendingProps> = ({
       "email_confirmed_at" in user &&
       user.email_confirmed_at
     ) {
-      enhancedToast.success("emailConfirmedSuccess");
+      enhancedToast.authSuccess('emailConfirmed');
       setTimeout(() => {
         navigate("/");
       }, 1500);
@@ -64,10 +64,10 @@ const EmailConfirmationPending: React.FC<EmailConfirmationPendingProps> = ({
       await resendEmailMutation.mutateAsync(email);
       setCountdown(60);
       setCanResend(false);
-      enhancedToast.success("emailConfirmationSent");
+      enhancedToast.success('emailConfirmationSent');
     } catch (error) {
       console.error("Resend error:", error);
-      enhancedToast.error(t("emailResendFailed"));
+      enhancedToast.error('emailResendFailed');
     } finally {
       setIsResending(false);
     }

@@ -14,6 +14,7 @@ export const arTranslations = {
   orders: "الطلبات",
   dashboard: "لوحة التحكم",
   checkout: "الدفع",
+  notifications: "إشعارات",
 
   // Authentication
   login: "تسجيل الدخول",
@@ -996,5 +997,18 @@ export const arTranslations = {
   subtotal: "المجموع",
   shipping: "الشحن",
   bankTransferDescription: "الدفع عن طريق التحويل البنكي",
-  free: "مجاني"
+  free: "مجاني",
+  emailConfirmationSent: "تم إرسال رابط التأكيد إلى بريدك الإلكتروني. يرجى التحقق من بريدك الإلكتروني وتأكيد حسابك",
+  signupFailedCreateAccount: "فشل في إنشاء الحساب. يرجى المحاولة مرة أخرى",
+  userNotLoggedIn: "المستخدم غير مسجل الدخول",
+  
+  // Data error messages
+  noUsersDataFound: "لم يتم العثور على بيانات المستخدمين",
+  noOrdersDataFound: "لم يتم العثور على بيانات الطلبات",
+  noCategoriesDataFound: "لم يتم العثور على بيانات الفئات",
+  noProductsDataFound: "لم يتم العثور على بيانات المنتجات",
+  
+  // Admin operations
+  categoryAddFailed: "لم يتم إضافة الفئة",
+  productAddFailed: "لم يتم إضافة المنتج",
 };

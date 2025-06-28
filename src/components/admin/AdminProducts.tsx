@@ -5,6 +5,7 @@ import { useProductsRealtime } from "@/hooks/useProductsRealtime";
 import { useCategories } from "@/hooks/useSupabaseData";
 import { useDeleteProduct } from "@/integrations/supabase/reactQueryHooks";
 import { toast } from "@/hooks/use-toast";
+import { useEnhancedToast } from "@/hooks/useEnhancedToast";
 import AdminProductsHeader from "./AdminProductsHeader";
 import AdminProductsEmptyState from "./AdminProductsEmptyState";
 import AdminProductsTable from "./AdminProductsTable";
@@ -26,6 +27,7 @@ import { fetchTopOrderedProducts } from "@/integrations/supabase/dataSenders";
 
 const AdminProducts: React.FC = () => {
   const { isRTL, t, language } = useLanguage();
+  const enhancedToast = useEnhancedToast();
   const location = useLocation();
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -61,10 +63,10 @@ const AdminProducts: React.FC = () => {
     deleteProductMutation.mutate(productId, {
       onSuccess: () => {
         setProducts((prev: Product[]) => prev.filter((p) => p.id !== productId));
-        toast({ title: t("productDeleted") });
+        enhancedToast.adminSuccess('productDeleted');
       },
       onError: () => {
-        toast({ title: t("errorDeletingProduct") });
+        enhancedToast.error('errorDeletingProduct');
       },
     });
   };

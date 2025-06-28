@@ -2,7 +2,7 @@ import * as React from "react";
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/useAuth';
 import { useLanguage } from '@/utils/languageContextUtils';
-import { toast } from 'sonner';
+import { useEnhancedToast } from '@/hooks/useEnhancedToast';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -17,6 +17,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 }) => {
   const { user, profile, loading } = useAuth();
   const { t } = useLanguage();
+  const enhancedToast = useEnhancedToast();
   const location = useLocation();
 
   // Show loading spinner while authentication/profile is being checked
@@ -45,16 +46,14 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     if (!profile || profile.user_type !== 'admin') {
       // Show access denied message with toast and redirect after delay
       React.useEffect(() => {
-        toast.error(t('accessDenied'), {
-          description: t('adminAccessRequired')
-        });
+        enhancedToast.accessDenied('admin');
         
         const timer = setTimeout(() => {
           window.location.href = '/';
         }, 3000);
         
         return () => clearTimeout(timer);
-      }, [t]);
+      }, [enhancedToast]);
       
       return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">

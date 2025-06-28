@@ -69,7 +69,7 @@ export function sendOrderViaWhatsapp(order: Order, t: (key: string) => string) {
 
   if (!isShort) {
     downloadAsTxt(`order-${order.order_number}.txt`, msg);
-    alert(t("orderFileDownloaded"));
+    // Use toast instead of alert - should be called from the component that uses this function
     return; // ❗❗ أوقف تنفيذ باقي الكود نهائيًا
   }
 

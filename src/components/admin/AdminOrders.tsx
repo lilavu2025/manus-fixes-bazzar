@@ -134,12 +134,12 @@ const AdminOrders: React.FC = () => {
       },
       {
         onSuccess: () => {
-          enhancedToast.operationSuccess(t("orderStatusUpdatedSuccess"));
+          enhancedToast.operationSuccess('orderStatusUpdatedSuccess');
           refetchOrders();
           queryClient.invalidateQueries({ queryKey: ["admin-orders-stats"] }); // إعادة جلب إحصائيات لوحة التحكم
         },
         onError: (err: unknown) => {
-          enhancedToast.operationError(t("orderStatusUpdateFailed"));
+          enhancedToast.operationError('orderStatusUpdateFailed');
         },
       },
     );
@@ -169,12 +169,12 @@ const AdminOrders: React.FC = () => {
     try {
       setIsAddingOrder(true);
       if (!orderForm.user_id && !allowCustomClient) {
-        enhancedToast.error(t("selectCustomerRequired"));
+        enhancedToast.error('selectCustomerRequired');
         setIsAddingOrder(false);
         return;
       }
       if (orderForm.items.length === 0) {
-        enhancedToast.error(t("addAtLeastOneProduct"));
+        enhancedToast.error('addAtLeastOneProduct');
         setIsAddingOrder(false);
         return;
       }
@@ -182,7 +182,7 @@ const AdminOrders: React.FC = () => {
         !orderForm.shipping_address.fullName ||
         !orderForm.shipping_address.phone
       ) {
-        enhancedToast.error(t("enterShippingInfo"));
+        enhancedToast.error('enterShippingInfo');
         setIsAddingOrder(false);
         return;
       }
@@ -225,7 +225,7 @@ const AdminOrders: React.FC = () => {
         },
         {
           onSuccess: () => {
-            enhancedToast.operationSuccess(t("orderAddedSuccess"));
+            enhancedToast.adminSuccess('orderAdded');
             setShowAddOrder(false);
             setOrderForm(initialOrderForm);
             refetchOrders();
@@ -298,7 +298,7 @@ const AdminOrders: React.FC = () => {
         { editOrderId, updateObj: updateObjWithDiscount, orderItems },
         {
           onSuccess: () => {
-            enhancedToast.operationSuccess(t("orderEditedSuccess"));
+            enhancedToast.adminSuccess('orderEdited');
             setShowEditOrder(false);
             setEditOrderForm(null);
             setEditOrderId(null);
@@ -366,7 +366,7 @@ const AdminOrders: React.FC = () => {
     if (!orderToDelete) return;
     deleteOrderMutation.mutate(orderToDelete.id, {
       onSuccess: () => {
-        enhancedToast.operationSuccess(t("orderDeletedSuccess"));
+        enhancedToast.adminSuccess('orderDeleted');
         setShowDeleteDialog(false);
         setOrderToDelete(null);
         refetchOrders();

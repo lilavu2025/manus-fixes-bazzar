@@ -46,7 +46,7 @@ const Contact: React.FC = () => {
           "user_xxx", // ضع هنا Public Key الخاص بك في EmailJS
         );
       }
-      enhancedToast.success("messageSubmitted");
+      enhancedToast.success('messageSubmitted');
       setFormData({
         name: "",
         email: "",
@@ -55,7 +55,7 @@ const Contact: React.FC = () => {
         message: "",
       });
     } catch (err) {
-      enhancedToast.error(t("errorSendingMessage"));
+      enhancedToast.error('errorSendingMessage');
     } finally {
       setIsLoading(false);
     }

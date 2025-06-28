@@ -98,7 +98,7 @@ const Auth: React.FC = () => {
       }
 
       await signIn(loginData.email, loginData.password);
-      enhancedToast.success(t("loginSuccess"));
+      enhancedToast.authSuccess('login');
     } catch (error: unknown) {
       console.error("Login error:", error);
       if (
@@ -108,14 +108,17 @@ const Auth: React.FC = () => {
         typeof (error as { message?: string }).message === "string" &&
         (error as { message: string }).message.includes(t("emailNotConfirmed"))
       ) {
-        enhancedToast.error(t("emailNotConfirmed"));
+        enhancedToast.authError('emailNotConfirmed');
       } else {
         const errorMessage = typeof error === "object" && error && "message" in error
-          ? ((error as { message?: string }).message === "Invalid login credentials"
-              ? "invalidLoginCredentials"
-              : (error as { message?: string }).message) || "loginError"
-          : "loginError";
-        enhancedToast.error(errorMessage);
+          ? (error as { message?: string }).message
+          : undefined;
+        
+        if (errorMessage === "Invalid login credentials") {
+          enhancedToast.authError('invalidCredentials');
+        } else {
+          enhancedToast.authError('login', errorMessage);
+        }
       }
     } finally {
       setIsLoading(false);
@@ -150,7 +153,7 @@ const Auth: React.FC = () => {
       );
       setPendingEmail(signupData.email);
       setShowEmailConfirmation(true);
-      enhancedToast.success("signupSuccess");
+      enhancedToast.authSuccess('signup');
     } catch (error: unknown) {
       console.error("Signup error:", error);
       const errorMsg =
@@ -162,9 +165,9 @@ const Auth: React.FC = () => {
         errorMsg.toLowerCase().includes("تحقق") ||
         errorMsg.toLowerCase().includes("confirm")
       ) {
-        enhancedToast.success(errorMsg);
+        enhancedToast.success('emailConfirmationSent');
       } else {
-        enhancedToast.error(errorMsg);
+        enhancedToast.authError('signup', errorMsg);
       }
     } finally {
       setIsLoading(false);

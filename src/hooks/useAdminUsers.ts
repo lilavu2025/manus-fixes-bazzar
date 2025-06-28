@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useAuth } from "@/contexts/useAuth";
 import type { UserProfile } from "@/types/profile";
 import { toast } from "sonner";
+import { useEnhancedToast } from "@/hooks/useEnhancedToast";
 import {
   useAdminUsersQuery,
   useDisableUserMutation,
@@ -13,6 +14,7 @@ import { useLanguage } from "@/utils/languageContextUtils";
 export const useAdminUsers = () => {
   const { profile } = useAuth();
   const { t } = useLanguage();
+  const enhancedToast = useEnhancedToast();
   // فلترة وفرز
   const [searchQuery, setSearchQuery] = useState("");
   const [userTypeFilter, setUserTypeFilter] = useState<string>("all");
@@ -83,9 +85,9 @@ export const useAdminUsers = () => {
         action: disabled ? "disable" : "enable",
         details: { disabled },
       });
-      toast(disabled ? "تم تعطيل المستخدم بنجاح" : "تم تفعيل المستخدم بنجاح");
+      enhancedToast.success(disabled ? 'userDisabledSuccess' : 'userEnabledSuccess');
     } else {
-      toast("فشل تعطيل/تفعيل المستخدم");
+      enhancedToast.error('userStatusUpdateFailed');
     }
   };
 
@@ -113,10 +115,10 @@ export const useAdminUsers = () => {
       error = err;
     }
     if (error) {
-      toast.error(t("userDeleteFailed") || t("unexpectedError"));
+      enhancedToast.adminError('userDeleteFailed');
       throw error;
     } else {
-      toast.success(t("userDeletedSuccessfully"));
+      enhancedToast.adminSuccess('userDeleted');
     }
   };
 

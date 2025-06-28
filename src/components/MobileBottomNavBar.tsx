@@ -103,7 +103,7 @@ const MobileBottomNavBar: React.FC<MobileBottomNavBarProps> = ({
         aria-label="Notifications"
       >
         <Bell className="h-7 w-7 mb-0.5" />
-        <span className="text-[11px] leading-none">إشعارات</span>
+        <span className="text-[11px] leading-none">{t('notifications')}</span>
       </button>
       */}
     </nav>

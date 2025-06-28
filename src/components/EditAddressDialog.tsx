@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useLanguage } from "@/utils/languageContextUtils";
 import { isValidPhone } from "@/utils/phoneValidation";
 import { useAddresses, Address } from "@/hooks/useAddresses";
+import { useEnhancedToast } from "@/hooks/useEnhancedToast";
 import {
   Dialog,
   DialogContent,
@@ -26,6 +27,7 @@ const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
 }) => {
   const { t, isRTL } = useLanguage();
   const { updateAddress, isUpdating } = useAddresses();
+  const toast = useEnhancedToast();
   const [open, setOpen] = useState(false);
   const [formData, setFormData] = useState({
     full_name: address.full_name,
@@ -42,7 +44,7 @@ const EditAddressDialog: React.FC<EditAddressDialogProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!isValidPhone(formData.phone)) {
-      alert(t("invalidPhone") || "رقم الجوال يجب أن يبدأ بـ 05 ويكون مكونًا من 10 أرقام");
+      toast.error('invalidPhone');
       return;
     }
     if (address.id) {
