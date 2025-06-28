@@ -231,10 +231,27 @@ const ViewProductDialog: React.FC<ViewProductDialogProps> = ({
           <div className="w-full md:w-1/2 flex flex-col items-center md:items-start">
             <ProductImageGallery
               product={{
+                id: product.id || '',
                 name: product.name_ar || product.name_en || "",
-                image: product.image,
-                images: product.images,
+                nameEn: product.name_en || "",
+                nameHe: product.name_he || "",
+                description: product.description_ar || "",
+                descriptionEn: product.description_en || "",
+                descriptionHe: product.description_he || "",
+                price: product.price || 0,
+                originalPrice: product.original_price,
+                wholesalePrice: product.wholesale_price,
+                image: product.image || '',
+                images: product.images || [],
+                category: product.category_id || product.category || '',
+                inStock: product.in_stock || false,
+                rating: 0,
+                reviews: 0,
                 discount: product.discount,
+                featured: product.featured || false,
+                tags: product.tags,
+                active: product.active,
+                created_at: product.created_at,
               }}
             />
           </div>

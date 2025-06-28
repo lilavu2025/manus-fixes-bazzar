@@ -9,7 +9,7 @@ import type { Product as AppProduct } from '@/types/index';
 // --- Helper imports f// جلب سلة المستخدم
 // --- Helper imports for hooks that need direct function references ---
 // These are only imported if they exist in the respective files
-const { fetchCategoriesWithProductCount, fetchOrdersWithDetails, fetchUserOrdersWithDetails, fetchUserCart } = fetchers;
+const { fetchCategoriesWithProductCount, fetchCategoriesWithAllProductsCount, fetchOrdersWithDetails, fetchUserOrdersWithDetails, fetchUserCart } = fetchers;
 const { disableUserById, logUserActivity, cancelUserOrder } = senders;
 
 // إضافة منتج للسلة
@@ -382,6 +382,17 @@ export function useCategoriesWithProductCountQuery(options?: { enabled?: boolean
   return useQuery({
     queryKey: ['admin-categories-with-count'],
     queryFn: fetchers.fetchCategoriesWithProductCount,
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 10,
+    ...options,
+  });
+}
+
+// جلب الفئات مع عدد جميع المنتجات (للأدمن فقط - يشمل المنتجات غير النشطة)
+export function useCategoriesWithAllProductsCountQuery(options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: ['admin-categories-with-all-products-count'],
+    queryFn: fetchers.fetchCategoriesWithAllProductsCount,
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 10,
     ...options,

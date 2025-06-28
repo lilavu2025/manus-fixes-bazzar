@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { isRTL, useLanguage } from "../../utils/languageContextUtils";
 import { useCategoriesRealtime } from "@/hooks/useCategoriesRealtime";
-import { useDeleteCategory } from "@/integrations/supabase/reactQueryHooks";
+import { useDeleteCategory, useCategoriesWithAllProductsCountQuery } from "@/integrations/supabase/reactQueryHooks";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -46,7 +46,7 @@ import {
   DropResult,
 } from "react-beautiful-dnd";
 import OptimizedSearch from "@/components/OptimizedSearch";
-import { useCategoriesWithProductCountQuery } from "@/integrations/supabase/reactQueryHooks"; // تأكد من استيراد الاستعلام الصحيح
+
 import AdminHeader from "./AdminHeader";
 import { ClearableInput } from "@/components/ui/ClearableInput";
 
@@ -58,9 +58,12 @@ const AdminCategories: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(
     null,
   );
-  // استخدم الهوك بدون أي باراميتر
-  const { categories, loading, error, refetch, setCategories } =
-    useCategoriesRealtime();
+  // استخدم الهوك للأدمن للحصول على جميع المنتجات (النشطة وغير النشطة)
+  const { data: categories = [], isLoading: loading, error, refetch } =
+    useCategoriesWithAllProductsCountQuery();
+  
+  // دالة وهمية للتوافق مع الـ dialogs (سيتم الاعتماد على refetch بدلاً منها)
+  const setCategories = () => {};
   const [search, setSearch] = useState("");
   const [filterActive, setFilterActive] = useState<
     "all" | "active" | "inactive"

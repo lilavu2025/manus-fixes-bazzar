@@ -359,23 +359,84 @@ export interface OrdersWithDetails {
 // جلب الفئات مع عدد المنتجات لكل فئة (للاستخدام الإداري)
 import type { Category } from '@/types/product';
 
+// دالة للمستخدمين العاديين - تعرض فقط المنتجات النشطة
 export async function fetchCategoriesWithProductCount(): Promise<Category[]> {
-  const { data, error } = await supabase
+  // جلب الفئات أولاً
+  const { data: categories, error: categoriesError } = await supabase
     .from('categories')
-    .select('id, name_ar, name_en, name_he, image, icon, active, created_at, products(count)')
+    .select('id, name_ar, name_en, name_he, image, icon, active, created_at')
     .order('created_at', { ascending: false });
-  if (error) throw error;
-  if (!data) throw new Error('لم يتم العثور على بيانات الفئات');
-  return data.map((cat: Record<string, unknown>) => ({
-    id: String(cat.id),
-    name: String(cat.name_ar),
-    nameEn: String(cat.name_en),
-    nameHe: String(cat.name_he),
-    image: String(cat.image),
-    icon: typeof cat.icon === 'string' ? cat.icon : '',
-    count: Array.isArray(cat.products) && typeof (cat.products[0]?.count) === 'number' ? cat.products[0].count : 0,
-    active: typeof cat.active === 'boolean' ? cat.active : true,
-  }));
+  
+  if (categoriesError) throw categoriesError;
+  if (!categories) throw new Error('لم يتم العثور على بيانات الفئات');
+
+  // حساب عدد المنتجات النشطة لكل فئة
+  const categoriesWithCount = await Promise.all(
+    categories.map(async (cat) => {
+      const { count, error: countError } = await supabase
+        .from('products')
+        .select('*', { count: 'exact', head: true })
+        .eq('category_id', cat.id)
+        .eq('active', true);
+      
+      if (countError) {
+        console.error('Error counting products for category:', cat.id, countError);
+      }
+
+      return {
+        id: String(cat.id),
+        name: String(cat.name_ar),
+        nameEn: String(cat.name_en),
+        nameHe: String(cat.name_he),
+        image: String(cat.image),
+        icon: typeof cat.icon === 'string' ? cat.icon : '',
+        count: count || 0,
+        active: typeof cat.active === 'boolean' ? cat.active : true,
+      };
+    })
+  );
+
+  return categoriesWithCount;
+}
+
+// دالة للمدراء - تعرض جميع المنتجات (النشطة وغير النشطة)
+export async function fetchCategoriesWithAllProductsCount(): Promise<Category[]> {
+  // جلب الفئات أولاً
+  const { data: categories, error: categoriesError } = await supabase
+    .from('categories')
+    .select('id, name_ar, name_en, name_he, image, icon, active, created_at')
+    .order('created_at', { ascending: false });
+  
+  if (categoriesError) throw categoriesError;
+  if (!categories) throw new Error('لم يتم العثور على بيانات الفئات');
+
+  // حساب عدد جميع المنتجات (النشطة وغير النشطة) لكل فئة
+  const categoriesWithCount = await Promise.all(
+    categories.map(async (cat) => {
+      const { count, error: countError } = await supabase
+        .from('products')
+        .select('*', { count: 'exact', head: true })
+        .eq('category_id', cat.id);
+        // لا نفلتر حسب active هنا للحصول على جميع المنتجات
+      
+      if (countError) {
+        console.error('Error counting all products for category:', cat.id, countError);
+      }
+
+      return {
+        id: String(cat.id),
+        name: String(cat.name_ar),
+        nameEn: String(cat.name_en),
+        nameHe: String(cat.name_he),
+        image: String(cat.image),
+        icon: typeof cat.icon === 'string' ? cat.icon : '',
+        count: count || 0,
+        active: typeof cat.active === 'boolean' ? cat.active : true,
+      };
+    })
+  );
+
+  return categoriesWithCount;
 }
 
 // جلب تفاصيل منتج معين
