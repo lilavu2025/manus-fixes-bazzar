@@ -143,11 +143,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // إعادة جلب البيانات لتحديث الحالة
         await fetchAndSetProfile(session.user.id);
         
-        // التوجيه بعد إكمال البيانات
-        const updatedProfile = await fetchUserProfile(session.user.id);
-        if (updatedProfile) {
+        // التوجيه بعد إكمال البيانات - انتظار قصير للتأكد من تحديث الحالة
+        setTimeout(() => {
+          const updatedProfile = { 
+            ...profile!, 
+            full_name: fullName?.trim() || null,
+            phone: phone?.trim() || null 
+          };
           handleUserRedirection(updatedProfile);
-        }
+        }, 500);
         
         // إذا وصلنا هنا، العملية نجحت
         return;
@@ -370,6 +374,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       document.removeEventListener("visibilitychange", visibilityHandler);
     };
   }, [checkSessionValidity]);
+
+  // فحص عام لاكتمال بيانات المستخدم - إجباري للوصول لأي صفحة
+  useEffect(() => {
+    // تجاهل الفحص في صفحات معينة أو أثناء التحميل
+    if (loading || 
+        location.pathname === "/auth" || 
+        location.pathname === "/email-confirmation" ||
+        !session?.user?.id ||
+        !profile) {
+      return;
+    }
+
+    // التحقق من اكتمال البيانات
+    if (!checkProfileCompleteness(profile)) {
+      // توجيه إجباري لصفحة Auth لإكمال البيانات
+      if (location.pathname !== "/auth") {
+        navigate("/auth", { replace: true });
+      }
+    }
+  }, [profile, session, loading, location.pathname, navigate, checkProfileCompleteness]);
 
   const value = {
     user: profile,
