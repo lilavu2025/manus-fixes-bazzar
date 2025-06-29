@@ -105,6 +105,7 @@ export const enTranslations = {
   profileCompletedSuccess: "Profile completed successfully!",
   profileCompletionError: "Error completing profile",
   pleaseCompleteYourProfile: "Please complete your profile to continue using the app",
+  orYouCanLogout: "Or you can logout",
 
   // Alternative Login Methods
   orLoginWith: "Or login with",

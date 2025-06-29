@@ -108,6 +108,7 @@ export const heTranslations = {
   profileCompletedSuccess: "הפרופיל הושלם בהצלחה!",
   profileCompletionError: "שגיאה בהשלמת הפרופיל",
   pleaseCompleteYourProfile: "אנא השלם את הפרופיל שלך כדי להמשיך להשתמש באפליקציה",
+  orYouCanLogout: "או שאתה יכול להתנתק",
 
   // Admin Panel
   adminDashboard: "לוח בקרה מנהל",

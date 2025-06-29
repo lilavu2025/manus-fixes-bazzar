@@ -74,6 +74,7 @@ export const arTranslations = {
   profileCompletedSuccess: "تم إكمال ملفك الشخصي بنجاح!",
   profileCompletionError: "خطأ في إكمال الملف الشخصي",
   pleaseCompleteYourProfile: "يرجى إكمال بياناتك لمتابعة استخدام التطبيق",
+  orYouCanLogout: "أو يمكنك تسجيل الخروج",
   
   // Alternative Login Methods
   orLoginWith: "أو سجل الدخول بواسطة",

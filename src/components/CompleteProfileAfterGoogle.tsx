@@ -19,9 +19,10 @@ export const CompleteProfileAfterGoogle: React.FC<CompleteProfileAfterGoogleProp
   onCompleted
 }) => {
   const { t, language } = useLanguage();
-  const { completeGoogleProfile } = useAuth();
+  const { completeGoogleProfile, signOut } = useAuth();
   const enhancedToast = useEnhancedToast();
   const [loading, setLoading] = useState(false);
+  const [logoutLoading, setLogoutLoading] = useState(false);
   const [formData, setFormData] = useState({
     fullName: '',
     phone: ''
@@ -96,6 +97,19 @@ export const CompleteProfileAfterGoogle: React.FC<CompleteProfileAfterGoogleProp
     }
   };
 
+  // دالة تسجيل الخروج
+  const handleLogout = async () => {
+    setLogoutLoading(true);
+    try {
+      await signOut();
+      onCompleted(); // إغلاق النافذة
+    } catch (error: any) {
+      enhancedToast.error(error.message || t('logoutError'));
+    } finally {
+      setLogoutLoading(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={handleDialogChange}>
       <DialogContent 
@@ -149,19 +163,31 @@ export const CompleteProfileAfterGoogle: React.FC<CompleteProfileAfterGoogleProp
             )}
           </div>
 
-          <div className="pt-4">
+          <div className="pt-4 space-y-3">
             <Button
               type="submit"
               className="w-full"
-              disabled={loading}
+              disabled={loading || logoutLoading}
             >
               {loading ? t('loading') : t('completeProfile')}
+            </Button>
+            
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              disabled={loading || logoutLoading}
+              onClick={handleLogout}
+            >
+              {logoutLoading ? t('loading') : t('logout')}
             </Button>
           </div>
         </form>
 
         <div className="text-xs text-muted-foreground text-center mt-4">
           {t('profileCompletionRequired')}
+          <br />
+          <span className="text-xs opacity-75">{t('orYouCanLogout')}</span>
         </div>
       </DialogContent>
     </Dialog>
