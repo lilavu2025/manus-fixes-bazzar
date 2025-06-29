@@ -73,6 +73,7 @@ export const arTranslations = {
   profileCompletionRequired: "هذه المعلومات مطلوبة لإكمال حسابك",
   profileCompletedSuccess: "تم إكمال ملفك الشخصي بنجاح!",
   profileCompletionError: "خطأ في إكمال الملف الشخصي",
+  pleaseCompleteYourProfile: "يرجى إكمال بياناتك لمتابعة استخدام التطبيق",
   
   // Alternative Login Methods
   orLoginWith: "أو سجل الدخول بواسطة",

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { AuthContext } from "./AuthContext.context";
 import { useEnhancedToast } from "@/hooks/useEnhancedToast";
+import { useLanguage } from "@/utils/languageContextUtils";
 import type {
   Tables,
   TablesInsert,
@@ -38,6 +39,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [session, setSession] = useState<Session | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useLanguage();
   const sessionRef = useRef<Session | null>(null);
   const lastSessionCheck = useRef<number>(Date.now());
   const hasShownToastRef = useRef<boolean>(false); // منع تكرار Toast
@@ -319,7 +321,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 handleUserRedirection(currentProfile);
               } else {
                 // مستخدم جديد أو ناقص البيانات - يحتاج إكمال البيانات
-                enhancedToast.authSuccess('signup');
+                enhancedToast.info(t('pleaseCompleteYourProfile'));
                 // ستظهر نافذة إكمال البيانات تلقائياً في صفحة Auth
               }
               hasShownToastRef.current = true;

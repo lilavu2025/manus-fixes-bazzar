@@ -107,6 +107,7 @@ export const heTranslations = {
   profileCompletionRequired: "מידע זה נדרש להשלמת החשבון שלך",
   profileCompletedSuccess: "הפרופיל הושלם בהצלחה!",
   profileCompletionError: "שגיאה בהשלמת הפרופיל",
+  pleaseCompleteYourProfile: "אנא השלם את הפרופיל שלך כדי להמשיך להשתמש באפליקציה",
 
   // Admin Panel
   adminDashboard: "לוח בקרה מנהל",
