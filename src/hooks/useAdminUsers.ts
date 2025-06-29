@@ -119,6 +119,7 @@ export const useAdminUsers = () => {
       throw error;
     } else {
       enhancedToast.adminSuccess('userDeleted');
+      refetch(); // تحديث القائمة بعد الحذف مباشرة
     }
   };
 
