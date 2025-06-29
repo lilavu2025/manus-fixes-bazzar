@@ -118,6 +118,13 @@ export const useAdminUsers = () => {
       enhancedToast.adminError('userDeleteFailed');
       throw error;
     } else {
+      // تسجيل نشاط الأدمن بعد نجاح الحذف
+      await logUserActivityMutation.mutateAsync({
+        adminId: profile?.id,
+        userId,
+        action: "delete",
+        details: { deletedUser: true },
+      });
       enhancedToast.adminSuccess('userDeleted');
     }
   };

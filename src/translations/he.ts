@@ -743,6 +743,10 @@ export const heTranslations = {
   deleteUserConfirmation:
     "האם אתה בטוח שברצונך למחוק משתמש זה? פעולה זו לא ניתנת לביטול.",
   userDeletedSuccessfully: "המשתמש נמחק בהצלחה",
+  userDeleted: "המשתמש נמחק בהצלחה",
+  userDisabledSuccess: "המשתמש הושבת בהצלחה",
+  userEnabledSuccess: "המשתמש הופעל בהצלחה",
+  userStatusUpdateFailed: "כשל בעדכון סטטוס המשתמש",
   editUserDescription: "ערוך את פרטי המשתמש ושמור את השינויים.",
   adminSystem: "מערכת ניהול",
   wholesaleCustomer: "לקוח סיטונאי",

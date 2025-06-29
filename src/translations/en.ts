@@ -721,6 +721,10 @@ export const enTranslations = {
   deleteUserConfirmation:
     "Are you sure you want to delete this user? This action cannot be undone.",
   userDeletedSuccessfully: "User deleted successfully",
+  userDeleted: "User deleted successfully",
+  userDisabledSuccess: "User disabled successfully",
+  userEnabledSuccess: "User enabled successfully",
+  userStatusUpdateFailed: "Failed to update user status",
   userDeleteFailed: "Failed to delete user",
   editUserDescription: "Edit the user details and save the changes.",
   wholesaleCustomer: "Wholesale Customer",

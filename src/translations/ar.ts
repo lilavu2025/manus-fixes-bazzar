@@ -736,6 +736,10 @@ export const arTranslations = {
   deleteUserConfirmation:
     "هل أنت متأكد أنك تريد حذف هذا المستخدم؟ لا يمكن التراجع عن هذه العملية.",
   userDeletedSuccessfully: "تم حذف المستخدم بنجاح",
+  userDeleted: "تم حذف المستخدم بنجاح",
+  userDisabledSuccess: "تم تعطيل المستخدم بنجاح",
+  userEnabledSuccess: "تم تفعيل المستخدم بنجاح",
+  userStatusUpdateFailed: "فشل في تحديث حالة المستخدم",
   editUserDescription: "قم بتعديل معلومات المستخدم وحفظ التغييرات.",
   adminSystem: "نظام الإدارة",
   wholesaleCustomer: "عميل جملة",
