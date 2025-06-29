@@ -1,8 +1,9 @@
-import React from 'react';
-import { Menu, Search, ShoppingCart, Home, Bell } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { useCart } from '@/hooks/useCart';
-import { useLocation, useNavigate } from 'react-router-dom';
+import React from "react";
+import { Menu, Search, ShoppingCart, Home, Bell } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useCart } from "@/hooks/useCart";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useLanguage } from "@/utils/languageContextUtils";
 
 interface MobileBottomNavBarProps {
   onMenuClick: () => void;
@@ -11,70 +12,88 @@ interface MobileBottomNavBarProps {
   onHomeClick: () => void;
 }
 
-const navItems = [
-  { key: 'home', label: 'الرئيسية', icon: Home, path: '/' },
-  // { key: 'search', label: 'بحث', icon: Search, path: '/search' },
-  // { key: 'cart', label: 'السلة', icon: ShoppingCart, path: '/cart' },
-  { key: 'menu', label: 'القائمة', icon: Menu, path: '/menu' },
-  // { key: 'notifications', label: 'إشعارات', icon: Bell, path: '/notifications' }, // مستقبلًا
-];
-
-const MobileBottomNavBar: React.FC<MobileBottomNavBarProps> = ({ onMenuClick, onSearchClick, onCartClick, onHomeClick }) => {
+const MobileBottomNavBar: React.FC<MobileBottomNavBarProps> = ({
+  onMenuClick,
+  onSearchClick,
+  onCartClick,
+  onHomeClick,
+}) => {
   const { getTotalItems } = useCart();
   const location = useLocation();
   const navigate = useNavigate();
+  const { t, isRTL } = useLanguage();
 
   // تحديد الزر النشط بناءً على المسار
   const getActiveKey = () => {
-    if (location.pathname === '/' || location.pathname === '/index') return 'home';
-    // لا يوجد تمييز خاص للبحث أو السلة لأنهم لا يغيرون المسار
-    return '';
+    if (location.pathname === "/" || location.pathname === "/index")
+      return "home";
+    return "";
   };
   const activeKey = getActiveKey();
 
+  const buttonClass = (isActive: boolean) => `
+    flex flex-col items-center justify-center flex-1 py-2 px-1 transition-all duration-200
+    ${isActive 
+      ? "text-primary font-bold bg-gradient-to-t from-orange-50 to-transparent shadow-inner rounded-xl transform scale-105" 
+      : "text-gray-500 hover:text-primary hover:bg-gray-50 rounded-lg active:scale-95"
+    }
+    touch-manipulation select-none
+  `;
+
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 border-t shadow-2xl flex justify-around items-center h-16 md:hidden px-1 backdrop-blur-lg">
+    <nav 
+      className={`fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-700 
+        shadow-xl flex justify-around items-center h-20 md:hidden px-2 backdrop-blur-md
+        ${isRTL ? 'rtl' : 'ltr'}`}
+    >
       {/* الرئيسية */}
       <button
-        className={`flex flex-col items-center justify-center flex-1 py-1 transition-all ${activeKey === 'home' ? 'text-primary font-bold bg-orange-50 shadow-inner rounded-xl' : 'text-gray-500 hover:text-primary'} mx-1`}
-        onClick={() => navigate('/')}
-        aria-label="Home"
+        className={buttonClass(activeKey === "home")}
+        onClick={() => navigate("/")}
+        aria-label={t('home')}
       >
-        <Home className="h-7 w-7 mb-0.5" />
-        <span className="text-[11px] leading-none">الرئيسية</span>
+        <Home className="h-6 w-6 mb-1" />
+        <span className="text-[10px] leading-tight font-medium">{t('home')}</span>
       </button>
+      
       {/* البحث */}
       <button
-        className={`flex flex-col items-center justify-center flex-1 py-1 transition-all text-gray-500 hover:text-primary mx-1`}
+        className={buttonClass(false)}
         onClick={onSearchClick}
-        aria-label="Search"
+        aria-label={t('search')}
       >
-        <Search className="h-7 w-7 mb-0.5" />
-        <span className="text-[11px] leading-none">بحث</span>
+        <Search className="h-6 w-6 mb-1" />
+        <span className="text-[10px] leading-tight font-medium">{t('search')}</span>
       </button>
+      
       {/* السلة */}
       <button
-        className={`flex flex-col items-center justify-center flex-1 py-1 transition-all text-gray-500 hover:text-primary mx-1 relative`}
+        className={`${buttonClass(false)} relative`}
         onClick={onCartClick}
-        aria-label="Cart"
+        aria-label={t('cart')}
       >
-        <ShoppingCart className="h-7 w-7 mb-0.5" />
-        {getTotalItems() > 0 && (
-          <span className="absolute top-0 right-3 bg-red-500 text-white rounded-full text-[10px] w-5 h-5 flex items-center justify-center border-2 border-white">{getTotalItems()}</span>
-        )}
-        <span className="text-[11px] leading-none">السلة</span>
+        <div className="relative">
+          <ShoppingCart className="h-6 w-6 mb-1" />
+          {getTotalItems() > 0 && (
+            <span className={`absolute -top-2 ${isRTL ? '-left-2' : '-right-2'} bg-red-500 text-white 
+              rounded-full text-[9px] min-w-[18px] h-[18px] flex items-center justify-center 
+              border-2 border-white font-bold shadow-md animate-pulse`}>
+              {getTotalItems() > 99 ? '99+' : getTotalItems()}
+            </span>
+          )}
+        </div>
+        <span className="text-[10px] leading-tight font-medium">{t('cart')}</span>
       </button>
+      
       {/* القائمة */}
       <button
-        className={
-          `flex flex-col items-center justify-center flex-1 py-1 transition-all text-gray-500 hover:text-primary mx-1 md:hidden` // إخفاء الزر على الشاشات المتوسطة وما فوق
-        }
+        className={buttonClass(false)}
         onClick={onMenuClick}
-        aria-label="Menu"
+        aria-label={t('menu')}
         type="button"
       >
-        <Menu className="h-7 w-7 mb-0.5" />
-        <span className="text-[11px] leading-none">القائمة</span>
+        <Menu className="h-6 w-6 mb-1" />
+        <span className="text-[10px] leading-tight font-medium">{t('menu')}</span>
       </button>
       {/* زر إشعارات مستقبلي */}
       {/*
@@ -84,7 +103,7 @@ const MobileBottomNavBar: React.FC<MobileBottomNavBarProps> = ({ onMenuClick, on
         aria-label="Notifications"
       >
         <Bell className="h-7 w-7 mb-0.5" />
-        <span className="text-[11px] leading-none">إشعارات</span>
+        <span className="text-[11px] leading-none">{t('notifications')}</span>
       </button>
       */}
     </nav>

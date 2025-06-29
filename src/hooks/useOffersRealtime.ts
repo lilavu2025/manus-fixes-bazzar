@@ -1,48 +1,64 @@
-import { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import type { Database } from '@/integrations/supabase/types';
+import { useEffect, useState, useCallback } from "react";
+import { OfferService } from "@/services/supabase/offerService";
+import type { Database } from "@/integrations/supabase/types";
+import { supabase } from "@/integrations/supabase/client";
 
-// Add options param to control realtime
-export function useOffersRealtime(options?: { disableRealtime?: boolean }) {
-  const [offers, setOffers] = useState<Database['public']['Tables']['offers']['Row'][]>([]);
+type Offer = Database["public"]["Tables"]["offers"]["Row"];
+
+export function useOffersRealtime() {
+  const [offers, setOffers] = useState<Offer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  // جلب أولي
-  const fetchOffers = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('offers')
-      .select('*')
-      .eq('active', true)
-      .gte('end_date', new Date().toISOString())
-      .order('created_at', { ascending: false });
-    if (error) setError(error as Error);
-    setOffers(data || []);
-    setLoading(false);
-  };
+  const fetchOffers = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await OfferService.getAll();
+      setOffers(data || []);
+    } catch (err) {
+      console.error("خطأ في جلب العروض:", err);
+      setError(err as Error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const refetch = useCallback(() => {
+    fetchOffers();
+  }, [fetchOffers]);
 
   useEffect(() => {
     fetchOffers();
-    if (options?.disableRealtime) return;
-    // اشتراك Realtime
-    const channel = supabase
-      .channel('offers_realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'offers' }, () => {
-        fetchOffers();
-      })
-      .subscribe();
-    // Refetch on tab visibility
-    const handleVisibility = () => {
-      if (document.visibilityState === 'visible') fetchOffers();
-    };
-    document.addEventListener('visibilitychange', handleVisibility);
-    return () => {
-      channel.unsubscribe();
-      document.removeEventListener('visibilitychange', handleVisibility);
-    };
-  }, [options?.disableRealtime]);
+  }, [fetchOffers]);
 
-  // expose setOffers for local UI updates
-  return { offers, loading, error, refetch: fetchOffers, setOffers };
+  // الاستماع للتغييرات الفورية
+  useEffect(() => {
+    const channel = supabase
+      .channel("offers-changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "offers",
+        },
+        () => {
+          fetchOffers();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchOffers]);
+
+  return {
+    offers,
+    loading,
+    error,
+    refetch,
+    setOffers,
+  };
 }

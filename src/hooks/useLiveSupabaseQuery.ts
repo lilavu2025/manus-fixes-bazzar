@@ -1,11 +1,11 @@
 // useLiveSupabaseQuery.ts
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from "react";
 
 interface UseLiveSupabaseQueryOptions<T> {
   queryFn: (signal?: AbortSignal) => Promise<T>;
-  interval?: number;      // polling interval in ms
+  interval?: number; // polling interval in ms
   retryInterval?: number; // retry interval on error, default 5000
-  timeoutMs?: number;     // per‐request timeout in ms, default 10000
+  timeoutMs?: number; // per‐request timeout in ms, default 10000
 }
 
 export function useLiveSupabaseQuery<T = unknown>({
@@ -14,13 +14,13 @@ export function useLiveSupabaseQuery<T = unknown>({
   retryInterval = 5000,
   timeoutMs = 10000,
 }: UseLiveSupabaseQueryOptions<T>) {
-  const [data, setData]       = useState<T | null>(null);
-  const [error, setError]     = useState<Error | null>(null);
+  const [data, setData] = useState<T | null>(null);
+  const [error, setError] = useState<Error | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const abortRef    = useRef<AbortController | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
   const intervalRef = useRef<number>();
-  const retryRef    = useRef<number>();
+  const retryRef = useRef<number>();
 
   // clear any pending interval or retry timers
   const clearTimers = () => {
@@ -53,7 +53,7 @@ export function useLiveSupabaseQuery<T = unknown>({
       setData(result);
       setError(null);
     } catch (err) {
-      if (err instanceof Error && err.name !== 'AbortError') {
+      if (err instanceof Error && err.name !== "AbortError") {
         setError(err);
         // schedule retry
         retryRef.current = window.setTimeout(fetchData, retryInterval);
@@ -65,28 +65,15 @@ export function useLiveSupabaseQuery<T = unknown>({
   };
 
   useEffect(() => {
-    // start initial fetch + polling
+    // تم حذف أي منطق متعلق بمراقبة الأحداث أو الجلسة. استخدم AuthContext فقط لأي refetch أو مراقبة للجلسة.
     fetchData();
     if (interval > 0) {
       intervalRef.current = window.setInterval(fetchData, interval);
     }
-
-    // handle tab visibility changes
-    const onVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        // فقط عند العودة: جلب جديد بدون إيقاف أي شيء
-        fetchData();
-      }
-      // عند الخروج: لا تفعل شيئاً (لا توقف الفيتش ولا التايمر)
-    };
-    document.addEventListener('visibilitychange', onVisibilityChange);
-
     return () => {
-      document.removeEventListener('visibilitychange', onVisibilityChange);
       abortRef.current?.abort();
       clearTimers();
     };
-    // run once on mount; caller should wrap queryFn in useCallback
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

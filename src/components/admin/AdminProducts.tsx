@@ -1,86 +1,75 @@
-import React, { useState } from 'react';
-import { useLanguage } from '../../utils/languageContextUtils';
-import { useProductsRealtime } from '@/hooks/useProductsRealtime';
-import { useCategories } from '@/hooks/useSupabaseData';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/hooks/use-toast';
-import AdminProductsHeader from './AdminProductsHeader';
-import AdminProductsEmptyState from './AdminProductsEmptyState';
-import AdminProductsTable from './AdminProductsTable';
-import AdminProductsDialogs from './AdminProductsDialogs';
-import { Product, ProductFormData, AdminProductForm } from '@/types/product';
-import { mapCategoryToProductCategory } from '@/types/index';
-import { BarChart3, Filter, CheckCircle, XCircle } from 'lucide-react';
-
-// Helper type for flexible product mapping
-export type ProductWithOptionalFields = Product & {
-  name_he?: string;
-  nameHe?: string;
-  description_he?: string;
-  descriptionHe?: string;
-  category_id?: string;
-  discount?: number;
-};
-
-export const mapProductToFormData = (product: ProductWithOptionalFields): AdminProductForm => ({
-  id: product.id,
-  name_ar: product.name || '',
-  name_en: product.nameEn || '',
-  name_he: product.nameHe || product.name_he || '',
-  description_ar: product.description || '',
-  description_en: product.descriptionEn || '',
-  description_he: product.descriptionHe || product.description_he || '',
-  price: product.price,
-  original_price: product.originalPrice || 0,
-  wholesale_price: product.wholesalePrice || 0,
-  category_id: product.category_id || '',
-  category: product.category || '',
-  image: product.image,
-  images: product.images || [],
-  in_stock: product.inStock,
-  stock_quantity: product.stock_quantity || 0,
-  featured: product.featured || false,
-  active: product.active ?? true,
-  discount: typeof product.discount === 'number' ? product.discount : 0,
-  tags: product.tags || [],
-  created_at: product.created_at || '',
-});
+import React, { useState, useEffect, useMemo } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useLanguage } from "@/utils/languageContextUtils";
+import { useProductsRealtime } from "@/hooks/useProductsRealtime";
+import { useCategories } from "@/hooks/useSupabaseData";
+import { useDeleteProduct } from "@/integrations/supabase/reactQueryHooks";
+import { toast } from "@/hooks/use-toast";
+import { useEnhancedToast } from "@/hooks/useEnhancedToast";
+import AdminProductsHeader from "./AdminProductsHeader";
+import AdminProductsEmptyState from "./AdminProductsEmptyState";
+import PaginatedProductsTable from "./VirtualizedProductsTable"; // استخدام الجدول المحسن
+import AdminProductsDialogs from "./AdminProductsDialogs";
+import AdminHeader from "./AdminHeader";
+import {
+  ProductWithOptionalFields,
+  Product,
+  AdminProductForm,
+  Category,
+  mapProductToFormData,
+} from "../../types/productUtils";
+import { mapCategoryToProductCategory } from "@/types/index";
+import { BarChart3, Filter, CheckCircle, XCircle } from "lucide-react";
+import { mapProductFromDb } from "@/types/mapProductFromDb";
+import { Card, CardContent } from "@/components/ui/card";
+import { ClearableInput } from "@/components/ui/ClearableInput"; // استيراد المكون الجديد
+import { fetchTopOrderedProducts } from "@/integrations/supabase/dataSenders";
 
 const AdminProducts: React.FC = () => {
-  const { t } = useLanguage();
+  const { isRTL, t, language } = useLanguage();
+  const enhancedToast = useEnhancedToast();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showViewDialog, setShowViewDialog] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<AdminProductForm | null>(null);
-  const { products, loading: productsLoading, error: productsError, refetch: refetchProducts, setProducts } = useProductsRealtime({ disableRealtime: true });
+  const [selectedProduct, setSelectedProduct] =
+    useState<AdminProductForm | null>(null);
+  const {
+    products: productsRaw,
+    loading: productsLoading,
+    error: productsError,
+    setProducts,
+    refetch,
+  } = useProductsRealtime();
+  const products: ProductWithOptionalFields[] = Array.isArray(productsRaw)
+    ? productsRaw.map(mapProductFromDb)
+    : [];
   const { data: categoriesData } = useCategories();
-  const categories = categoriesData && Array.isArray(categoriesData.data) ? categoriesData.data : [];
-  // تحويل قائمة الفئات إلى النوع الصحيح قبل تمريرها للمكونات الفرعية
+  // Accept both Category[] types for now, but cast to any to avoid type error
+  const categories: Category[] =
+    Array.isArray(categoriesData) &&
+    categoriesData.length &&
+    typeof categoriesData[0] === "object" &&
+    "id" in categoriesData[0]
+      ? (categoriesData as Category[])
+      : [];
   const productCategories = categories.map(mapCategoryToProductCategory);
 
-  const handleDeleteProduct = async (productId: string, productName: string) => {
-    try {
-      const { error } = await supabase
-        .from('products')
-        .delete()
-        .eq('id', productId);
-
-      if (error) throw error;
-
-      toast({
-        title: t('productDeleted'),
-        description: `${t('productDeletedSuccessfully')} ${productName}`,
-      });
-
-      // تحديث الواجهة مباشرة بدون refetch
-      setProducts(prev => prev.filter(product => product.id !== productId));
-    } catch (error) {
-      console.error('Error deleting product:', error);
-      toast({
-        title: t('error'),
-        description: t('errorDeletingProduct'),
-      });
-    }
+  const deleteProductMutation = useDeleteProduct();
+  const handleDeleteProduct = async (
+    productId: string,
+    productName: string,
+  ) => {
+    deleteProductMutation.mutate(productId, {
+      onSuccess: () => {
+        setProducts((prev: Product[]) => prev.filter((p) => p.id !== productId));
+        enhancedToast.adminSuccess('productDeleted');
+      },
+      onError: () => {
+        enhancedToast.error('errorDeletingProduct');
+      },
+    });
   };
 
   const handleViewProduct = (product: Product) => {
@@ -93,42 +82,147 @@ const AdminProducts: React.FC = () => {
     setShowEditDialog(true);
   };
 
-  const [filterCategory, setFilterCategory] = useState<string>('all');
-  const [filterStock, setFilterStock] = useState<string>('all');
-  const [filterActive, setFilterActive] = useState<string>('all');
+  const [filterCategory, setFilterCategory] = useState<string>("all");
+  const [filterStock, setFilterStock] = useState<string>("all");
+  const [filterActive, setFilterActive] = useState<string>("all");
+  const [searchName, setSearchName] = useState<string>(""); // إضافة حالة البحث بالاسم
+  const [showTopOrdered, setShowTopOrdered] = useState(false);
+  const [topOrderedProducts, setTopOrderedProducts] = useState<ProductWithOptionalFields[]>([]);
+  const [filterAppliedFromDashboard, setFilterAppliedFromDashboard] = useState<string>("");
+  const [hasAppliedLocationFilters, setHasAppliedLocationFilters] = useState(false);
 
   // إحصائيات سريعة
   const totalProducts = products.length;
-  const inactiveProducts = products.filter(p => p.active === false).length;
-  const lowStockProducts = products.filter(p => p.stock_quantity <= 5).length;
+  const inactiveProducts = products.filter((p) => p.active === false).length;
+  const lowStockProducts = products.filter(
+    (p) => p.stock_quantity && p.stock_quantity > 0 && p.stock_quantity <= 10,
+  ).length;
 
   // فلترة المنتجات
-  const filteredProducts = products.filter(product => {
+  const filteredProducts = products.filter((product) => {
     let pass = true;
-    if (filterCategory !== 'all' && product.category !== filterCategory) pass = false;
-    if (filterStock === 'low' && product.stock_quantity > 5) pass = false;
-    if (filterStock === 'in' && !product.inStock) pass = false;
-    if (filterStock === 'out' && product.inStock) pass = false;
-    if (filterActive === 'active' && product.active === false) pass = false;
-    if (filterActive === 'inactive' && product.active !== false) pass = false;
+    if (filterCategory !== "all" && product.category !== filterCategory)
+      pass = false;
+    if (filterStock === "low" && !((product.stock_quantity ?? 0) > 0 && (product.stock_quantity ?? 0) <= 10))
+      pass = false;
+    if (filterStock === "in" && (product.stock_quantity ?? 0) <= 0) pass = false;
+    if (filterStock === "out" && (product.stock_quantity ?? 0) > 0) pass = false;
+    if (filterActive === "active" && product.active === false) pass = false;
+    if (filterActive === "inactive" && product.active !== false) pass = false;
+    if (
+      searchName.trim() &&
+      !(
+        product.name?.toLowerCase().includes(searchName.trim().toLowerCase()) ||
+        product.nameEn?.toLowerCase().includes(searchName.trim().toLowerCase())
+      )
+    )
+      pass = false;
     return pass;
   });
+
+  // استقبال الفلاتر من التنقل من لوحة التحكم
+  useEffect(() => {
+    // تطبيق الفلاتر فقط مرة واحدة عند دخول الصفحة وتوفر location.state
+    if (!location.state || hasAppliedLocationFilters || !productCategories.length) return;
+    
+    // فلترة حسب الفئة
+    if (location.state.filterCategory) {
+      const filterCategoryName = location.state.filterCategory;
+      const foundCat = productCategories.find((c) => c.name === filterCategoryName);
+      if (foundCat) {
+        setFilterCategory(foundCat.id);
+        setFilterAppliedFromDashboard(`تم الفلترة حسب الفئة: ${filterCategoryName}`);
+        setHasAppliedLocationFilters(true);
+        navigate(location.pathname, { replace: true }); // مسح state بعد تطبيق الفلتر
+      }
+    }
+    
+    // فلترة المنتجات منخفضة المخزون
+    else if (location.state.filterLowStock) {
+      setFilterCategory("all");
+      setFilterStock("low");
+      setFilterAppliedFromDashboard("تم الفلترة: المنتجات منخفضة المخزون (1-10 قطع)");
+      setHasAppliedLocationFilters(true);
+      navigate(location.pathname, { replace: true });
+    }
+    
+    // فلترة المنتجات المنتهية من المخزون
+    else if (location.state.filterOutOfStock) {
+      setFilterCategory("all");
+      setFilterStock("out");
+      setFilterAppliedFromDashboard("تم الفلترة: المنتجات المنتهية من المخزون (0 قطع)");
+      setHasAppliedLocationFilters(true);
+      navigate(location.pathname, { replace: true });
+    }
+    else if (location.state.filterActive) {
+      setFilterActive(location.state.filterActive === "نشط" ? "active" : location.state.filterActive === "غير نشط" ? "inactive" : location.state.filterActive);
+      setFilterAppliedFromDashboard(
+        location.state.filterActive === "inactive" || location.state.filterActive === "غير نشط"
+          ? "تم الفلترة: المنتجات غير النشطة"
+          : "تم الفلترة: المنتجات النشطة"
+      );
+      setHasAppliedLocationFilters(true);
+      navigate(location.pathname, { replace: true });
+    }
+    else if (location.state.filterProductId && products.length > 0) {
+      const productId = location.state.filterProductId;
+      const foundProduct = products.find(p => p.id === productId);
+      if (foundProduct) {
+        setSearchName(foundProduct.name || "");
+        setFilterAppliedFromDashboard(`تم البحث عن المنتج: ${foundProduct.name}`);
+        setHasAppliedLocationFilters(true);
+        navigate(location.pathname, { replace: true });
+      }
+    }
+  }, [location.state, productCategories, products, hasAppliedLocationFilters]); // إضافة dependencies محددة
+
+  // مسح الرسالة بعد 8 ثوان
+  useEffect(() => {
+    if (filterAppliedFromDashboard) {
+      const timer = setTimeout(() => setFilterAppliedFromDashboard(""), 8000);
+      return () => clearTimeout(timer);
+    }
+  }, [filterAppliedFromDashboard]);
+
+  useEffect(() => {
+    if (showTopOrdered) {
+      fetchTopOrderedProducts().then((data) => {
+        setTopOrderedProducts(Array.isArray(data) ? data.map(mapProductFromDb) : []);
+      });
+    }
+  }, [showTopOrdered]);
 
   if (productsLoading) {
     return (
       <div className="space-y-6">
-        <h1 className="text-3xl font-bold">{t('manageProducts')}</h1>
+        <h1 className="text-3xl font-bold">{t("manageProducts")}</h1>
         <div className="text-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto animate-spin rounded-full border-primary"></div>
-          <p className="mt-4 text-gray-600">{t('loadingProducts')}</p>
+          <p className="mt-4 text-gray-600">{t("loadingProducts")}</p>
         </div>
       </div>
     );
   }
 
+  if (productsError) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold">{t("manageProducts")}</h1>
+        <div className="text-center py-12">
+          <XCircle className="h-12 w-12 text-red-500 mx-auto" />
+          <p className="mt-4 text-red-600 font-bold">
+            {t("errorLoadingProducts") || "حدث خطأ أثناء جلب المنتجات"}
+          </p>
+          <p className="text-gray-500">{productsError.message}</p>
+        </div>
+      </div>
+    );
+  }
 
-  // استبدل productsData?.data بـ products مباشرة
-  const productsList = products;
+  // استدعاء refetch بعد نجاح التعديل
+  const onSuccess = () => {
+    refetch();
+  };
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto px-2 sm:px-4 md:px-8 py-6">
@@ -137,164 +231,240 @@ const AdminProducts: React.FC = () => {
         <div
           className="bg-gradient-to-r from-blue-100 to-blue-50 rounded-xl p-4 flex items-center gap-3 shadow-sm cursor-pointer hover:shadow-md transition"
           onClick={() => {
-            setFilterCategory('all');
-            setFilterStock('all');
-            setFilterActive('all');
+            setFilterCategory("all");
+            setFilterStock("all");
+            setFilterActive("all");
+            setSearchName("");
+            setFilterAppliedFromDashboard("");
+            setHasAppliedLocationFilters(false);
           }}
-          title={t('showAllProducts') || 'عرض كل المنتجات'}
+          title={t("showAllProducts") || "عرض كل المنتجات"}
         >
           <BarChart3 className="h-8 w-8 text-blue-500" />
           <div>
             <div className="text-lg font-bold">{totalProducts}</div>
-            <div className="text-xs text-gray-600">{t('products')}</div>
+            <div className="text-xs text-gray-600">{t("products")}</div>
           </div>
         </div>
         <div
           className="bg-gradient-to-r from-yellow-100 to-yellow-50 rounded-xl p-4 flex items-center gap-3 shadow-sm cursor-pointer hover:shadow-md transition"
           onClick={() => {
-            setFilterCategory('all');
-            setFilterStock('all');
-            setFilterActive('inactive');
+            setFilterCategory("all");
+            setFilterStock("all");
+            setFilterActive("inactive");
+            setSearchName("");
+            setFilterAppliedFromDashboard("");
+            setHasAppliedLocationFilters(false);
           }}
           title="عرض المنتجات غير الفعالة"
         >
           <XCircle className="h-8 w-8 text-yellow-500" />
           <div>
             <div className="text-lg font-bold">{inactiveProducts}</div>
-            <div className="text-xs text-gray-600">{t('inactive')}</div>
+            <div className="text-xs text-gray-600">{t("inactive")}</div>
           </div>
         </div>
         <div
           className="bg-gradient-to-r from-red-100 to-red-50 rounded-xl p-4 flex items-center gap-3 shadow-sm cursor-pointer hover:shadow-md transition"
           onClick={() => {
-            setFilterCategory('all');
-            setFilterStock('low');
-            setFilterActive('all');
+            setFilterCategory("all");
+            setFilterStock("low");
+            setFilterActive("all");
+            setSearchName("");
+            setFilterAppliedFromDashboard("");
+            setHasAppliedLocationFilters(false);
           }}
           title="عرض المنتجات منخفضة المخزون"
         >
           <Filter className="h-8 w-8 text-red-500" />
           <div>
             <div className="text-lg font-bold">{lowStockProducts}</div>
-            <div className="text-xs text-gray-600">{t('lowStock')}  (&le;5)</div>
+            <div className="text-xs text-gray-600">{t("lowStock")} (&le;10)</div>
           </div>
         </div>
       </div>
-      {/* شريط الفلاتر */}
-      <div className="flex flex-wrap gap-3 items-center bg-white rounded-xl p-4 shadow-md border mt-4 relative">
-        {/* فلتر الفئة */}
-        <div className="flex flex-col min-w-[160px]">
-          <label className="text-xs text-gray-500 font-medium mb-1 flex items-center gap-1">
-            <Filter className="h-4 w-4 text-blue-400" />
-            {t('category')}
-          </label>
-          <select className="border rounded-lg px-3 py-2 bg-blue-50 focus:ring-2 focus:ring-blue-300" value={filterCategory} onChange={e => setFilterCategory(e.target.value)}>
-            <option value="all">{t('allCategories')}</option>
-            {productCategories.map(cat => (
-              <option key={cat.id} value={cat.id}>{cat.name}</option>
-            ))}
-          </select>
+      {/* شريط الفلاتر الموحد (تصميم متجاوب ومحسّن) */}
+      <Card className="shadow-lg border-0 mt-1">
+        <CardContent className="p-2 sm:p-3 lg:p-4">
+          <div className="flex flex-col gap-2 lg:gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end">
+              {/* بحث بالاسم */}
+              <div className="w-full sm:w-64 flex-shrink-0">
+                <div className="relative">
+                  <ClearableInput
+                    type="text"
+                    className={`border-2 border-gray-200 rounded-lg py-2 h-10 text-xs sm:text-sm w-full bg-gray-50 focus:border-blue-500 focus:ring-1 focus:ring-blue-300 transition-colors placeholder:text-gray-400 ${isRTL ? 'pr-8 pl-3' : 'pl-8 pr-3'}`}
+                    placeholder={t("searchByNameProductPlaceholder") || "اكتب اسم المنتج..."}
+                    value={searchName}
+                    onChange={(e) => setSearchName(e.target.value)}
+                    onClear={() => setSearchName("")}
+                    maxLength={60}
+                  />
+                </div>
+              </div>
+              {/* فلتر الفئة */}
+              <div className="w-full sm:w-48 flex-shrink-0">
+                <select
+                  className="border-2 border-gray-200 rounded-lg px-3 py-2 h-10 text-xs sm:text-sm w-full bg-blue-50 focus:border-blue-500"
+                  value={filterCategory}
+                  onChange={(e) => setFilterCategory(e.target.value)}
+                >
+                  <option value="all">{t("allCategories")}</option>
+                  {productCategories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {(language === 'en' && cat.nameEn) ? cat.nameEn : (language === 'he' && cat.nameHe) ? cat.nameHe : cat.name /* fallback للعربي */ || cat.nameEn || cat.nameHe || ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {/* فلتر المخزون */}
+              <div className="w-full sm:w-40 flex-shrink-0">
+                <select
+                  className="border-2 border-gray-200 rounded-lg px-3 py-2 h-10 text-xs sm:text-sm w-full bg-green-50 focus:border-green-500"
+                  value={filterStock}
+                  onChange={(e) => setFilterStock(e.target.value)}
+                >
+                  <option value="all">{t("allStock")}</option>
+                  <option value="low">{t("lowStock")}</option>
+                  <option value="in">{t("inStock")}</option>
+                  <option value="out">{t("outOfStock")}</option>
+                </select>
+              </div>
+              {/* فلتر الحالة */}
+              <div className="w-full sm:w-36 flex-shrink-0">
+                <select
+                  className="border-2 border-gray-200 rounded-lg px-3 py-2 h-10 text-xs sm:text-sm w-full bg-yellow-50 focus:border-yellow-500"
+                  value={filterActive}
+                  onChange={(e) => setFilterActive(e.target.value)}
+                >
+                  <option value="all">{t("allStatus")}</option>
+                  <option value="active">{t("active")}</option>
+                  <option value="inactive">{t("inactive")}</option>
+                </select>
+              </div>
+              {/* زر تصفير الفلاتر */}
+              <div className="w-full sm:w-auto flex flex-row gap-2 mt-2 sm:mt-0">
+                <button
+                  type="button"
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-red-50 text-red-700 font-bold shadow border border-red-200 hover:bg-red-100 transition-all duration-200 h-10 text-xs sm:text-sm"
+                  onClick={() => {
+                    setFilterCategory("all");
+                    setFilterStock("all");
+                    setFilterActive("all");
+                    setSearchName("");
+                    setFilterAppliedFromDashboard("");
+                    setHasAppliedLocationFilters(false); // إعادة تعيين حالة التطبيق
+                  }}
+                >
+                  <XCircle className="h-4 w-4" />
+                  <span>{t("resetFilters") || "مسح الفلاتر"}</span>
+                </button>
+                <button
+                  type="button"
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-blue-600 text-white font-bold shadow border border-blue-700 hover:bg-blue-700 transition-all duration-200 h-10 text-xs sm:text-sm"
+                  onClick={() => {
+                    // تصدير المنتجات إلى CSV
+                    const csv = [
+                      [
+                        "ID",
+                        "Name",
+                        "NameEn",
+                        "Category",
+                        "Price",
+                        "InStock",
+                        "Quantity",
+                        "Active",
+                        "CreatedAt",
+                      ],
+                      ...filteredProducts.map((p) => [
+                        p.id,
+                        p.name,
+                        p.nameEn,
+                        productCategories.find((c) => c.id === p.category)?.name || "",
+                        p.price,
+                        p.inStock ? "Yes" : "No",
+                        p.stock_quantity ?? "",
+                        p.active === false ? "Inactive" : "Active",
+                        p.created_at ? new Date(p.created_at).toISOString() : "",
+                      ]),
+                    ]
+                      .map((row) => row.join(","))
+                      .join("\n");
+                    const BOM = "\uFEFF";
+                    const blob = new Blob([BOM + csv], {
+                      type: "text/csv;charset=utf-8;",
+                    });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = url;
+                    a.download = "products.csv";
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  }}
+                >
+                  <BarChart3 className="h-4 w-4" />
+                  <span>{t("exportExcel") || "تصدير Excel"}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+      <AdminProductsHeader productCount={filteredProducts.length} onAddProduct={() => setShowAddDialog(true)} />
+      
+      {/* رسالة الفلتر المطبق من لوحة التحكم */}
+      {filterAppliedFromDashboard && (
+        <div className="mb-4 p-3 bg-blue-100 border border-blue-300 rounded-lg text-blue-800 text-sm flex items-center gap-2">
+          <CheckCircle className="h-4 w-4" />
+          <span>{filterAppliedFromDashboard}</span>
+          <button 
+            onClick={() => {
+              // مسح جميع الفلاتر
+              setFilterCategory("all");
+              setFilterStock("all");
+              setFilterActive("all");
+              setSearchName("");
+              setFilterAppliedFromDashboard("");
+              setHasAppliedLocationFilters(false); // إعادة تعيين حالة التطبيق
+            }}
+            className="ml-auto bg-blue-600 text-white px-3 py-1 rounded text-xs hover:bg-blue-700"
+          >
+            مسح الفلاتر
+          </button>
+          <button 
+            onClick={() => setFilterAppliedFromDashboard("")}
+            className="text-blue-600 hover:text-blue-800"
+          >
+            ✕
+          </button>
         </div>
-        {/* فلتر المخزون */}
-        <div className="flex flex-col min-w-[140px]">
-          <label className="text-xs text-gray-500 font-medium mb-1 flex items-center gap-1">
-            <CheckCircle className="h-4 w-4 text-green-400" />
-            {t('stock')}
-          </label>
-          <select className="border rounded-lg px-3 py-2 bg-green-50 focus:ring-2 focus:ring-green-300" value={filterStock} onChange={e => setFilterStock(e.target.value)}>
-            <option value="all">{t('allStock')}</option>
-            <option value="low">{t('lowStock')}</option>
-            <option value="in">{t('inStock')}</option>
-            <option value="out">{t('outOfStock')}</option>
-          </select>
-        </div>
-        {/* فلتر الحالة */}
-        <div className="flex flex-col min-w-[120px]">
-          <label className="text-xs text-gray-500 font-medium mb-1 flex items-center gap-1">
-            <XCircle className="h-4 w-4 text-yellow-400" />
-            {t('status')}
-          </label>
-          <select className="border rounded-lg px-3 py-2 bg-yellow-50 focus:ring-2 focus:ring-yellow-300" value={filterActive} onChange={e => setFilterActive(e.target.value)}>
-            <option value="all">{t('allStatus')}</option>
-            <option value="active">{t('active')}</option>
-            <option value="inactive">{t('inactive')}</option>
-          </select>
-        </div>
-        {/* زر تصفير الفلاتر */}
+      )}
+      
+      <div className="flex flex-wrap gap-2 mb-4">
         <button
-          type="button"
-          className="ml-auto flex items-center gap-2 px-4 py-2 rounded-lg bg-red-50 text-red-700 font-bold shadow border border-red-200 hover:bg-red-100 transition-all duration-200"
-          onClick={() => {
-            setFilterCategory('all');
-            setFilterStock('all');
-            setFilterActive('all');
-          }}
+          className={`px-3 py-1 rounded border ${showTopOrdered ? 'bg-orange-100 border-orange-400 text-orange-700' : 'bg-white border-gray-300 text-gray-700'}`}
+          onClick={() => setShowTopOrdered((prev) => !prev)}
         >
-          <XCircle className="h-4 w-4" />
-          <span className="inline-block align-middle">{t('resetFilters') || 'مسح الفلاتر'}</span>
-        </button>
-        {/* زر التصدير */}
-        <button
-          type="button"
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white font-bold shadow border border-blue-700 hover:bg-blue-700 transition-all duration-200"
-          onClick={() => {
-            // تصدير المنتجات إلى CSV
-            const csv = [
-              [
-                'ID',
-                'Name',
-                'NameEn',
-                'Category',
-                'Price',
-                'InStock',
-                'Quantity',
-                'Active',
-                'CreatedAt'
-              ],
-              ...filteredProducts.map(p => [
-                p.id,
-                p.name,
-                p.nameEn,
-                productCategories.find(c => c.id === p.category)?.name || '',
-                p.price,
-                p.inStock ? 'Yes' : 'No',
-                p.stock_quantity ?? '',
-                p.active === false ? 'Inactive' : 'Active',
-                p.created_at ? new Date(p.created_at).toISOString() : ''
-              ])
-            ].map(row => row.join(',')).join('\n');
-            const BOM = '\uFEFF';
-            const blob = new Blob([BOM + csv], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'products.csv';
-            a.click();
-            URL.revokeObjectURL(url);
-          }}
-        >
-          <BarChart3 className="h-4 w-4" />
-          {t('exportExcel') || 'تصدير Excel'}
+          {showTopOrdered ? t('showAll') : t('showTopSellingProducts')}
         </button>
       </div>
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mt-6">
-        <AdminProductsHeader
-          productCount={filteredProducts.length}
-          onAddProduct={() => setShowAddDialog(true)}
+      {/* جدول المنتجات */}
+      {showTopOrdered ? (
+        <PaginatedProductsTable
+          products={topOrderedProducts}
+          onViewProduct={handleViewProduct}
+          onEditProduct={handleEditProduct}
+          onDeleteProduct={handleDeleteProduct}
+          categories={productCategories}
         />
-      </div>
-      {filteredProducts.length === 0 ? (
-        <AdminProductsEmptyState onAddProduct={() => setShowAddDialog(true)} />
       ) : (
-        <div className="overflow-x-auto rounded-xl shadow-lg bg-white mt-4">
-          <AdminProductsTable
-            products={filteredProducts}
-            onViewProduct={handleViewProduct}
-            onEditProduct={handleEditProduct}
-            onDeleteProduct={handleDeleteProduct}
-            categories={productCategories}
-          />
-        </div>
+        <PaginatedProductsTable
+          products={filteredProducts}
+          onViewProduct={handleViewProduct}
+          onEditProduct={handleEditProduct}
+          onDeleteProduct={handleDeleteProduct}
+          categories={productCategories}
+        />
       )}
 
       <AdminProductsDialogs
@@ -306,7 +476,7 @@ const AdminProducts: React.FC = () => {
         setShowViewDialog={setShowViewDialog}
         selectedProduct={selectedProduct}
         categories={productCategories}
-        onSuccess={() => {}} // لا تعيد التحميل، التحديث يتم عبر setProducts
+        onSuccess={onSuccess} // تحديث المنتجات من السيرفر بعد التعديل
         setProducts={setProducts}
       />
     </div>

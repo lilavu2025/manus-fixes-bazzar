@@ -1,20 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import { useLanguage } from '../../utils/languageContextUtils';
-import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import React, { useState, useEffect } from "react";
+import { useLanguage } from "../../utils/languageContextUtils";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from '@/components/ui/dialog';
-import { toast } from '@/hooks/use-toast';
-import ImageUpload from '@/components/ImageUpload';
-import type { Category } from '@/types';
-import { mapDbCategoryToCategory } from './categoryMappingUtils';
+} from "@/components/ui/dialog";
+import { toast } from "@/hooks/use-toast";
+import ImageUpload from "@/components/ImageUpload";
+import type { Category } from "@/types";
+import { mapDbCategoryToCategory } from "./categoryMappingUtils";
+import { useCategoriesRealtime } from "@/hooks/useCategoriesRealtime";
 
 interface EditCategoryDialogProps {
   open: boolean;
@@ -34,21 +35,23 @@ const EditCategoryDialog: React.FC<EditCategoryDialogProps> = ({
   const { t } = useLanguage();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
-    name_ar: '',
-    name_en: '',
-    name_he: '',
-    image: '',
+    name_ar: "",
+    name_en: "",
+    name_he: "",
+    image: "",
     active: true,
   });
+
+  const { refetch } = useCategoriesRealtime();
 
   useEffect(() => {
     if (category) {
       setFormData({
-        name_ar: category.name || '',
-        name_en: category.nameEn || '',
-        name_he: category.nameHe || '',
-        image: category.image || '',
-        active: typeof category.active === 'boolean' ? category.active : true,
+        name_ar: category.name || "",
+        name_en: category.nameEn || "",
+        name_he: category.nameHe || "",
+        image: category.image || "",
+        active: typeof category.active === "boolean" ? category.active : true,
       });
     }
   }, [category]);
@@ -59,7 +62,7 @@ const EditCategoryDialog: React.FC<EditCategoryDialogProps> = ({
 
     try {
       const { data, error } = await supabase
-        .from('categories')
+        .from("categories")
         .update({
           name_ar: formData.name_ar,
           name_en: formData.name_en,
@@ -67,14 +70,14 @@ const EditCategoryDialog: React.FC<EditCategoryDialogProps> = ({
           image: formData.image,
           active: formData.active,
         })
-        .eq('id', category.id)
+        .eq("id", category.id)
         .select();
 
       if (error) throw error;
 
       toast({
-        title: t('categoryUpdated'),
-        description: t('categoryUpdatedSuccessfully'),
+        title: t("categoryUpdated"),
+        description: t("categoryUpdatedSuccessfully"),
       });
 
       onOpenChange(false);
@@ -82,15 +85,21 @@ const EditCategoryDialog: React.FC<EditCategoryDialogProps> = ({
       if (data && data[0]) {
         const mappedCategory = mapDbCategoryToCategory(data[0]);
         setCategories((prev) =>
-          prev.map((cat) => (cat.id === category.id ? { ...mappedCategory, count: cat.count } : cat))
+          prev.map((cat) =>
+            cat.id === category.id
+              ? { ...mappedCategory, count: cat.count }
+              : cat,
+          ),
         );
+        // تحديث الفئات من السيرفر مباشرة
+        refetch();
       }
       onSuccess();
     } catch (error) {
-      console.error('Error updating category:', error);
+      console.error("Error updating category:", error);
       toast({
-        title: t('error'),
-        description: t('errorUpdatingCategory'),
+        title: t("error"),
+        description: t("errorUpdatingCategory"),
       });
     } finally {
       setIsSubmitting(false);
@@ -98,7 +107,7 @@ const EditCategoryDialog: React.FC<EditCategoryDialogProps> = ({
   };
 
   const handleImageChange = (url: string | string[]) => {
-    const imageUrl = Array.isArray(url) ? url[0] || '' : url;
+    const imageUrl = Array.isArray(url) ? url[0] || "" : url;
     setFormData({ ...formData, image: imageUrl });
   };
 
@@ -106,8 +115,8 @@ const EditCategoryDialog: React.FC<EditCategoryDialogProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg w-full p-0 overflow-hidden rounded-2xl shadow-xl">
         <DialogHeader className="bg-gradient-to-r from-blue-50 to-blue-100 px-6 py-4 border-b">
-          <DialogTitle className="text-xl font-bold text-blue-900 flex items-center gap-2">
-            {t('editCategory')}
+          <DialogTitle className="text-2xl font-bold mb-1 text-primary text-center">
+            {t("editCategory")}
           </DialogTitle>
         </DialogHeader>
         <form
@@ -116,7 +125,7 @@ const EditCategoryDialog: React.FC<EditCategoryDialogProps> = ({
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="name_ar">{t('categoryNameArabic')}</Label>
+              <Label htmlFor="name_ar">{t("categoryNameArabic")}</Label>
               <Input
                 id="name_ar"
                 value={formData.name_ar}
@@ -128,7 +137,7 @@ const EditCategoryDialog: React.FC<EditCategoryDialogProps> = ({
               />
             </div>
             <div>
-              <Label htmlFor="name_en">{t('categoryNameEnglish')}</Label>
+              <Label htmlFor="name_en">{t("categoryNameEnglish")}</Label>
               <Input
                 id="name_en"
                 value={formData.name_en}
@@ -140,7 +149,7 @@ const EditCategoryDialog: React.FC<EditCategoryDialogProps> = ({
               />
             </div>
             <div>
-              <Label htmlFor="name_he">{t('categoryNameHebrew')}</Label>
+              <Label htmlFor="name_he">{t("categoryNameHebrew")}</Label>
               <Input
                 id="name_he"
                 value={formData.name_he}
@@ -152,7 +161,7 @@ const EditCategoryDialog: React.FC<EditCategoryDialogProps> = ({
               />
             </div>
             <div className="flex flex-col items-center gap-2">
-              <Label>{t('categoryImage')}</Label>
+              <Label>{t("categoryImage")}</Label>
               <div className="w-24 h-24 rounded-lg overflow-hidden border bg-gray-50 flex items-center justify-center">
                 {formData.image ? (
                   <img
@@ -161,14 +170,14 @@ const EditCategoryDialog: React.FC<EditCategoryDialogProps> = ({
                     className="object-cover w-full h-full"
                   />
                 ) : (
-                  <span className="text-gray-400 text-xs">{t('noImage')}</span>
+                  <span className="text-gray-400 text-xs">{t("noImage")}</span>
                 )}
               </div>
               <ImageUpload
                 value={formData.image}
                 onChange={handleImageChange}
                 bucket="category-images"
-                label={t('uploadImage')}
+                label={t("uploadImage")}
               />
             </div>
           </div>
@@ -186,7 +195,7 @@ const EditCategoryDialog: React.FC<EditCategoryDialogProps> = ({
               htmlFor="active"
               className="text-sm font-medium cursor-pointer"
             >
-              {t('active')}
+              {t("active")}
             </Label>
           </div>
           <DialogFooter className="flex flex-row gap-2 justify-end pt-4 border-t mt-4">
@@ -195,14 +204,14 @@ const EditCategoryDialog: React.FC<EditCategoryDialogProps> = ({
               variant="outline"
               onClick={() => onOpenChange(false)}
             >
-              {t('cancel')}
+              {t("cancel")}
             </Button>
             <Button
               type="submit"
               disabled={isSubmitting}
               className="bg-primary text-white font-bold"
             >
-              {isSubmitting ? t('updating') : t('updateCategory')}
+              {isSubmitting ? t("updating") : t("updateCategory")}
             </Button>
           </DialogFooter>
         </form>

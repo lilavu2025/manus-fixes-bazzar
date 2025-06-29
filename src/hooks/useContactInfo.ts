@@ -1,34 +1,30 @@
-import { useEffect, useState } from 'react';
-import { ContactInfoService, ContactInfo } from '@/services/supabase/contactInfoService';
+import { useEffect, useState, useCallback } from "react";
+import {
+  ContactInfoService,
+  ContactInfo,
+} from "@/services/supabase/contactInfoService";
 
 export function useContactInfo() {
   const [contactInfo, setContactInfo] = useState<ContactInfo | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<unknown>(null);
+  const [error, setError] = useState<null | string>(null);
 
-  const fetchContactInfo = async () => {
+  const fetchContactInfo = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const data = await ContactInfoService.getContactInfo();
       setContactInfo(data);
-      setError(null);
     } catch (err) {
-      setError(err);
+      setError("Error fetching contact info");
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchContactInfo();
-    const handleVisibility = () => {
-      if (document.visibilityState === 'visible') fetchContactInfo();
-    };
-    document.addEventListener('visibilitychange', handleVisibility);
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibility);
-    };
-  }, []);
+  }, [fetchContactInfo]);
 
   return { contactInfo, loading, error, refetch: fetchContactInfo };
 }

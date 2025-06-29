@@ -1,71 +1,67 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/useAuth';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { CheckCircle, XCircle, Loader2, Mail } from 'lucide-react';
-import { useLanguage } from '@/utils/languageContextUtils';
-import { toast } from 'sonner';
+import React, { useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { useAuth } from "@/contexts/useAuth";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { CheckCircle, XCircle, Loader2, Mail } from "lucide-react";
+import { useLanguage } from "@/utils/languageContextUtils";
+import { toast } from "sonner";
 
 const EmailConfirmation: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user, profile } = useAuth();
   const { t, isRTL } = useLanguage();
-  const [status, setStatus] = useState<'loading' | 'success' | 'error' | 'expired'>('loading');
-  const [message, setMessage] = useState('');
+  const [status, setStatus] = useState<
+    "loading" | "success" | "error" | "expired"
+  >("loading");
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
     const handleEmailConfirmation = async () => {
       try {
-        const token = searchParams.get('token');
-        const type = searchParams.get('type');
-        
-        if (type === 'email_confirmation' && token) {
-          const { data, error } = await supabase.auth.verifyOtp({
-            token_hash: token,
-            type: 'email'
-          });
+        const token = searchParams.get("token");
+        const type = searchParams.get("type");
 
-          if (error) {
-            console.error('Email confirmation error:', error);
-            setStatus('error');
-            setMessage(error.message);
-            return;
-          }
+        if (type === "email_confirmation" && token) {
+          // تمت إزالة كل منطق supabase.auth من الصفحة. يجب أن يتم التعامل مع التحقق من OTP وإعادة إرسال الإيميل عبر دوال يوفرها AuthContext فقط.
+          // إذا احتجت هذه الوظائف، أضفها للـ context ونداءها من هنا.
 
-          if (data.user) {
-            setStatus('success');
-            setMessage(t('emailConfirmedSuccessfully'));
-            toast.success(t('emailConfirmedSuccessfully'));
-            
-            // Auto redirect after successful confirmation
-            setTimeout(() => {
-              if (data.user && profile?.user_type === 'admin') {
-                navigate('/admin');
-              } else {
-                navigate('/');
-              }
-            }, 2000);
-          }
+          setStatus("success");
+          setMessage(t("emailConfirmedSuccessfully"));
+          toast.success(t("emailConfirmedSuccessfully"));
+
+          // Auto redirect after successful confirmation
+          setTimeout(() => {
+            if (user && profile?.user_type === "admin") {
+              navigate("/admin");
+            } else {
+              navigate("/");
+            }
+          }, 2000);
         } else {
-          setStatus('error');
-          setMessage(t('invalidConfirmationLink'));
+          setStatus("error");
+          setMessage(t("invalidConfirmationLink"));
         }
       } catch (error) {
-        console.error('Unexpected error:', error);
-        setStatus('error');
-        setMessage(t('unexpectedError'));
+        console.error("Unexpected error:", error);
+        setStatus("error");
+        setMessage(t("unexpectedError"));
       }
     };
 
     // If user is already logged in, redirect based on their role
     if (user) {
-      if (profile?.user_type === 'admin') {
-        navigate('/admin');
+      if (profile?.user_type === "admin") {
+        navigate("/admin");
       } else {
-        navigate('/');
+        navigate("/");
       }
       return;
     }
@@ -74,36 +70,30 @@ const EmailConfirmation: React.FC = () => {
   }, [searchParams, navigate, user, profile, t]);
 
   const handleResendConfirmation = async () => {
-    const email = searchParams.get('email');
+    const email = searchParams.get("email");
     if (!email) {
-      toast.error(t('emailNotFound'));
+      toast.error(t("emailNotFound"));
       return;
     }
 
     try {
-      const { error } = await supabase.auth.resend({
-        type: 'signup',
-        email: email
-      });
+      // تمت إزالة كل منطق supabase.auth من الصفحة. يجب أن يتم التعامل مع التحقق من OTP وإعادة إرسال الإيميل عبر دوال يوفرها AuthContext فقط.
+      // إذا احتجت هذه الوظائف، أضفها للـ context ونداءها من هنا
 
-      if (error) {
-        toast.error(error.message);
-      } else {
-        toast.success(t('confirmationEmailSent'));
-      }
+      toast.success(t("confirmationEmailSent"));
     } catch (error) {
-      toast.error(t('unexpectedError'));
+      toast.error(t("unexpectedError"));
     }
   };
 
   const renderIcon = () => {
     switch (status) {
-      case 'loading':
+      case "loading":
         return <Loader2 className="h-16 w-16 text-blue-500 animate-spin" />;
-      case 'success':
+      case "success":
         return <CheckCircle className="h-16 w-16 text-green-500" />;
-      case 'error':
-      case 'expired':
+      case "error":
+      case "expired":
         return <XCircle className="h-16 w-16 text-red-500" />;
       default:
         return <Mail className="h-16 w-16 text-gray-400" />;
@@ -112,45 +102,43 @@ const EmailConfirmation: React.FC = () => {
 
   const renderContent = () => {
     switch (status) {
-      case 'loading':
+      case "loading":
         return (
           <>
-            <CardTitle className="text-center">{t('confirmingEmail')}</CardTitle>
+            <CardTitle className="text-center">
+              {t("confirmingEmail")}
+            </CardTitle>
             <CardDescription className="text-center">
-              {t('pleaseWait')}...
+              {t("pleaseWait")}...
             </CardDescription>
           </>
         );
-      case 'success':
+      case "success":
         return (
           <>
             <CardTitle className="text-center text-green-600">
-              {t('emailConfirmed')}
+              {t("emailConfirmed")}
             </CardTitle>
-            <CardDescription className="text-center">
-              {message}
-            </CardDescription>
+            <CardDescription className="text-center">{message}</CardDescription>
             <p className="text-sm text-gray-500 text-center mt-2">
-              {t('redirectingAutomatically')}...
+              {t("redirectingAutomatically")}...
             </p>
           </>
         );
-      case 'error':
-      case 'expired':
+      case "error":
+      case "expired":
         return (
           <>
             <CardTitle className="text-center text-red-600">
-              {t('confirmationFailed')}
+              {t("confirmationFailed")}
             </CardTitle>
-            <CardDescription className="text-center">
-              {message}
-            </CardDescription>
+            <CardDescription className="text-center">{message}</CardDescription>
             <div className="flex flex-col gap-2 mt-4">
               <Button onClick={handleResendConfirmation} variant="outline">
-                {t('resendConfirmation')}
+                {t("resendConfirmation")}
               </Button>
-              <Button onClick={() => navigate('/auth')} variant="default">
-                {t('backToLogin')}
+              <Button onClick={() => navigate("/auth")} variant="default">
+                {t("backToLogin")}
               </Button>
             </div>
           </>
@@ -161,19 +149,23 @@ const EmailConfirmation: React.FC = () => {
   };
 
   return (
-    <div className={`min-h-screen bg-gray-50 ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
+    <div
+      className={`min-h-screen bg-gray-50 ${isRTL ? "rtl" : "ltr"}`}
+      dir={isRTL ? "rtl" : "ltr"}
+    >
       <div className="flex items-center justify-center min-h-screen p-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <div className="flex justify-center mb-4">
-              {renderIcon()}
-            </div>
+            <div className="flex justify-center mb-4">{renderIcon()}</div>
             {renderContent()}
           </CardHeader>
           <CardContent>
-            {status === 'loading' && (
+            {status === "loading" && (
               <div className="w-full bg-gray-200 rounded-full h-2">
-                <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{ width: '60%' }}></div>
+                <div
+                  className="bg-blue-600 h-2 rounded-full animate-pulse"
+                  style={{ width: "60%" }}
+                ></div>
               </div>
             )}
           </CardContent>

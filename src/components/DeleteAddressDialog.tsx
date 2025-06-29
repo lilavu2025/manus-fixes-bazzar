@@ -1,7 +1,7 @@
 import * as React from "react";
-import { useState } from 'react';
-import { useLanguage } from '@/utils/languageContextUtils';
-import { useAddresses } from '@/hooks/useAddresses';
+import { useState } from "react";
+import { useLanguage } from "@/utils/languageContextUtils";
+import { useAddresses } from "@/hooks/useAddresses";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -12,9 +12,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
-import { Button } from '@/components/ui/button';
-import { Trash2 } from 'lucide-react';
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { Trash2 } from "lucide-react";
 
 interface DeleteAddressDialogProps {
   addressId: string;
@@ -25,7 +25,7 @@ interface DeleteAddressDialogProps {
 const DeleteAddressDialog: React.FC<DeleteAddressDialogProps> = ({
   addressId,
   addressName,
-  trigger
+  trigger,
 }) => {
   const { t, isRTL } = useLanguage();
   const { deleteAddress, isDeleting } = useAddresses();
@@ -46,25 +46,32 @@ const DeleteAddressDialog: React.FC<DeleteAddressDialogProps> = ({
         )}
       </AlertDialogTrigger>
       <AlertDialogContent
-        className={`w-full max-w-xs sm:max-w-md ${isRTL ? 'text-right' : 'text-left'} break-words`}
-        dir={isRTL ? 'rtl' : 'ltr'}
+        className={`w-full max-w-xs sm:max-w-md ${isRTL ? "text-right" : "text-left"} break-words`}
+        dir={isRTL ? "rtl" : "ltr"}
       >
         <AlertDialogHeader>
-          <AlertDialogTitle className={isRTL ? 'text-right' : 'text-left'}>
-            {t('deleteAddress')}
+          <AlertDialogTitle className={isRTL ? "text-right" : "text-left"}>
+            {t("deleteAddress")}
           </AlertDialogTitle>
-          <AlertDialogDescription className={isRTL ? 'text-right' : 'text-left'}>
-            {t('confirmDeleteAddress')} "{addressName}"? {t('actionCannotBeUndone')}
+          <AlertDialogDescription
+            className={isRTL ? "text-right" : "text-left"}
+          >
+            {t("confirmDeleteAddress")} "{addressName}"?{" "}
+            {t("actionCannotBeUndone")}
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <AlertDialogFooter className={`flex flex-col sm:flex-row gap-2 ${isRTL ? 'flex-row-reverse' : ''}`}>
-          <AlertDialogCancel className="w-full sm:w-auto">{t('cancel')}</AlertDialogCancel>
+        <AlertDialogFooter
+          className={`flex flex-col sm:flex-row gap-2 ${isRTL ? "flex-row-reverse" : ""}`}
+        >
+          <AlertDialogCancel className="w-full sm:w-auto">
+            {t("cancel")}
+          </AlertDialogCancel>
           <AlertDialogAction
             onClick={handleDelete}
             disabled={isDeleting}
             className="bg-red-600 hover:bg-red-700 w-full sm:w-auto"
           >
-            {isDeleting ? t('deleting') : t('delete')}
+            {isDeleting ? t("deleting") : t("delete")}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

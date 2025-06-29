@@ -1,16 +1,41 @@
-import React, { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { useLanguage } from '../../utils/languageContextUtils';
-import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { BarChart, Bar, XAxis, YAxis, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
-import { Package, ShoppingCart, Users, BarChart3 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from "react";
+import { useAdminOrdersStats } from "@/integrations/supabase/reactQueryHooks";
+import { useLanguage } from "../../utils/languageContextUtils";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  PieChart,
+  Pie,
+  Cell,
+  LineChart,
+  Line,
+} from "recharts";
+import { Package, ShoppingCart, Users, BarChart3 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import type { UserProfile } from "@/types/profile";
+import type { Product } from "@/types/index";
+import { useCategoriesRealtime } from "@/hooks/useCategoriesRealtime";
+import { getOrderDisplayTotal } from "@/orders/order.displayTotal";
 
 // Helper types
-interface UsersByType { [key: string]: number; }
-interface ProductsByCategoryStats { total: number; inStock: number; outOfStock: number; }
+interface UsersByType {
+  [key: string]: number;
+}
+interface ProductsByCategoryStats {
+  total: number;
+  inStock: number;
+  outOfStock: number;
+}
 interface Category {
   id: string;
   name_ar?: string;
@@ -30,293 +55,224 @@ interface LowStockProduct {
 interface AdminDashboardStatsProps {
   onFilterUsers?: (userType: string) => void;
   onFilterOrders?: (status: string) => void;
-  pendingOrders?: { id: string; created_at: string; profiles?: { full_name: string; email?: string; phone?: string } }[];
+  pendingOrders?: {
+    id: string;
+    order_number: number;
+    created_at: string;
+    profiles?: { full_name: string; email?: string; phone?: string };
+  }[];
   lowStockProductsData?: LowStockProduct[];
+  outOfStockProductsData?: LowStockProduct[];
+  users?: UserProfile[];
+  products?: Product[];
 }
 
-const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({ 
-  onFilterUsers, 
+const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
+  onFilterUsers,
   onFilterOrders,
   pendingOrders = [],
-  lowStockProductsData = []
+  lowStockProductsData = [],
+  outOfStockProductsData = [],
+  users = [],
+  products = [],
 }) => {
+  const { categories: categoriesList } = useCategoriesRealtime();
   const { t, language } = useLanguage();
   const navigate = useNavigate();
   const [isUsersExpanded, setIsUsersExpanded] = useState(false);
   const [isOrdersExpanded, setIsOrdersExpanded] = useState(false);
   const [isRevenueExpanded, setIsRevenueExpanded] = useState(false);
-  const [showPendingOrdersDetails, setShowPendingOrdersDetails] = useState(false);
+  const [showPendingOrdersDetails, setShowPendingOrdersDetails] =
+    useState(false);
   const [showLowStockDetails, setShowLowStockDetails] = useState(false);
+  const [showOutOfStockDetails, setShowOutOfStockDetails] = useState(false);
+  const [isTotalOrdersExpanded, setIsTotalOrdersExpanded] = useState(false);
+  const [isProductsExpanded, setIsProductsExpanded] = useState(false);
 
-  // Fetch users statistics
-  const { data: usersStats = [], isLoading: usersLoading, error: usersError } = useQuery({
-    queryKey: ["admin-users-stats"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('user_type, created_at');
-
-      if (error) throw error;
-
-      const usersByType: UsersByType = data.reduce((acc: UsersByType, user: { user_type: string }) => {
-        acc[user.user_type] = (acc[user.user_type] || 0) + 1;
-        return acc;
-      }, {});
-
-      return [
-        { name: t('admin'), value: usersByType.admin || 0, color: '#ef4444' },
-        { name: t('wholesale'), value: usersByType.wholesale || 0, color: '#3b82f6' },
-        { name: t('retail'), value: usersByType.retail || 0, color: '#10b981' },
-      ];
-    },
-    retry: 3,
-    staleTime: 0,
-    refetchOnWindowFocus: true,
-    refetchInterval: false, // تم تعطيل polling (refetchInterval) لأن المتصفح يوقفه بالخلفية،
-    // والاعتماد على WebSocket أو إعادة الجلب عند العودة للواجهة أفضل
-  });
-
-  // Fetch products statistics
-  const { data: productsStats = [], isLoading: productsLoading, error: productsError } = useQuery({
-    queryKey: ["admin-products-stats", language],
-    queryFn: async () => {
-      const { data: products, error: productsError } = await supabase
-        .from('products')
-        .select('category_id, in_stock, active');
-
-      const { data: categories, error: categoriesError } = await supabase
-        .from('categories')
-        .select('id, name_ar, name_en, name_he');
-
-      if (productsError || categoriesError) throw productsError || categoriesError;
-
-      const getCategoryName = (cat: Category | undefined) => {
-        if (!cat) return t('notProvided');
-        if (language === 'ar') return cat.name_ar || t('notProvided');
-        if (language === 'en') return cat.name_en || t('notProvided');
-        if (language === 'he') return cat.name_he || t('notProvided');
-        return t('notProvided');
-      };
-
-      const productsByCategory: Record<string, ProductsByCategoryStats> = products.reduce((acc: Record<string, ProductsByCategoryStats>, product: { category_id: string; in_stock: boolean; active: boolean }) => {
-        const category = categories.find((cat: { id: string }) => cat.id === product.category_id);
-        const categoryName = getCategoryName(category);
-        if (!acc[categoryName]) {
-          acc[categoryName] = { total: 0, inStock: 0, outOfStock: 0 };
-        }
-        acc[categoryName].total += 1;
-        if (product.in_stock) {
-          acc[categoryName].inStock += 1;
-        } else {
-          acc[categoryName].outOfStock += 1;
-        }
-        return acc;
-      }, {});
-      return Object.entries(productsByCategory).map(([name, stats]: [string, ProductsByCategoryStats]) => ({
-        name,
-        total: stats.total,
-        inStock: stats.inStock,
-        outOfStock: stats.outOfStock,
-      }));
-    },
-    retry: 3,
-    staleTime: 0,
-    refetchOnWindowFocus: true,
-    refetchInterval: false,
-  });
-
-  // Fetch orders statistics
-  const { data: ordersStats, isLoading: ordersLoading, error: ordersError } = useQuery({
-    queryKey: ["admin-orders-stats"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('orders')
-        .select('status, total, created_at');
-
-      if (error) throw error;
-
-      const ordersByStatus: Record<string, number> = data.reduce((acc: Record<string, number>, order: { status: string }) => {
-        acc[order.status] = (acc[order.status] || 0) + 1;
-        return acc;
-      }, {});
-      const revenueByStatus: Record<string, number> = data.reduce((acc: Record<string, number>, order: { status: string; total: number }) => {
-        if (!acc[order.status]) acc[order.status] = 0;
-        // لا نحسب الإيرادات للطلبات الملغية
-        if (order.status !== 'cancelled') {
-          acc[order.status] += order.total || 0;
-        }
-        return acc;
-      }, {});
-
-      const totalRevenue = data
-        .filter(order => order.status !== 'cancelled')
-        .reduce((sum, order) => sum + (order.total || 0), 0);
-
-      return {
-        statusStats: [
-          { 
-            status: 'pending', 
-            label: t('pending'), 
-            value: ordersByStatus.pending || 0, 
-            revenue: revenueByStatus.pending || 0,
-            color: '#8b5cf6' 
-          },
-          { 
-            status: 'processing', 
-            label: t('processing'), 
-            value: ordersByStatus.processing || 0, 
-            revenue: revenueByStatus.processing || 0,
-            color: '#f59e0b' 
-          },
-          { 
-            status: 'shipped', 
-            label: t('shipped'), 
-            value: ordersByStatus.shipped || 0, 
-            revenue: revenueByStatus.shipped || 0,
-            color: '#3b82f6' 
-          },
-          { 
-            status: 'delivered', 
-            label: t('delivered'), 
-            value: ordersByStatus.delivered || 0, 
-            revenue: revenueByStatus.delivered || 0,
-            color: '#10b981' 
-          },
-          { 
-            status: 'cancelled', 
-            label: t('cancelled'), 
-            value: ordersByStatus.cancelled || 0, 
-            revenue: 0,
-            color: '#ef4444' 
-          },
-        ],
-        totalOrders: data.length,
-        totalRevenue
-      };
-    },
-    retry: 3,
-    staleTime: 0,
-    refetchOnWindowFocus: true,
-    refetchInterval: false, // تم تعطيل polling (refetchInterval) لأن المتصفح يوقفه بالخلفية،
-    // والاعتماد على WebSocket أو إعادة الجلب عند العودة للواجهة أفضل
-  });
+  // إحصائيات الطلبات
+  const {
+    data: ordersStats,
+    isLoading: ordersLoading,
+    error: ordersError,
+  } = useAdminOrdersStats(t);
 
   const handleUserTypeClick = (userType: string) => {
     if (onFilterUsers) {
       onFilterUsers(userType);
     }
-    navigate('/admin/users', { state: { filterType: userType } });
+    navigate("/admin/users", { state: { filterType: userType } });
   };
 
   const handleOrderStatusClick = (status: string) => {
     if (onFilterOrders) {
       onFilterOrders(status);
     }
-    navigate('/admin/orders', { state: { filterStatus: status } });
+    navigate("/admin/orders", { state: { filterStatus: status } });
   };
 
   // Fetch monthly orders and revenue data
   const { data: monthlyData = [], isLoading: monthlyLoading } = useQuery({
     queryKey: ["admin-monthly-data"],
     queryFn: async () => {
+      // جلب جميع الحقول اللازمة لحساب الخصم
       const { data, error } = await supabase
-        .from('orders')
-        .select('created_at, total, status')
-        .gte('created_at', new Date(new Date().getFullYear(), 0, 1).toISOString())
-        .order('created_at', { ascending: true });
+        .from("orders")
+        .select("created_at, total, status, discount_type, discount_value, total_after_discount")
+        .gte(
+          "created_at",
+          new Date(new Date().getFullYear(), 0, 1).toISOString(),
+        )
+        .order("created_at", { ascending: true });
 
       if (error) throw error;
 
-      const monthlyStats: Record<number, { month: string; orders: number; revenue: number }> = data.reduce((acc: Record<number, { month: string; orders: number; revenue: number }>, order: { created_at: string; status: string; total: number }) => {
+      // طباعة بيانات الطلبات الخام قبل التجميع
+      if (typeof window !== 'undefined') {
+        console.log('orders raw', data);
+      }
+
+      const monthNames = [
+        t("january"),
+        t("february"),
+        t("march"),
+        t("april"),
+        t("may"),
+        t("june"),
+        t("july"),
+        t("august"),
+        t("september"),
+        t("october"),
+        t("november"),
+        t("december"),
+      ];
+      // تجهيز إحصائيات الطلبات والإيرادات لكل شهر حتى الشهر الحالي فقط
+      const now = new Date();
+      const currentMonth = now.getMonth(); // 0-based
+      const monthlyStats: Record<
+        number,
+        { month: string; orders: number; revenue: number }
+      > = {};
+      // املأ الشهور من 0 حتى الشهر الحالي فقط
+      for (let i = 0; i <= currentMonth; i++) {
+        monthlyStats[i] = { month: monthNames[i], orders: 0, revenue: 0 };
+      }
+      // اجمع الطلبات حسب الشهر
+      data.forEach((order: any) => {
         const date = new Date(order.created_at);
         const monthKey = date.getMonth();
-        const monthNames = [
-          t('january'), t('february'), t('march'), t('april'), t('may'), t('june'),
-          t('july'), t('august'), t('september'), t('october'), t('november'), t('december')
-        ];
-        if (!acc[monthKey]) {
-          acc[monthKey] = {
-            month: monthNames[monthKey],
-            orders: 0,
-            revenue: 0
-          };
+        if (monthKey <= currentMonth) {
+          monthlyStats[monthKey].orders += 1;
+          if (order.status !== "cancelled") {
+            const displayTotal = getOrderDisplayTotal(order);
+            monthlyStats[monthKey].revenue += displayTotal.totalAfterDiscount || 0;
+          }
         }
-        acc[monthKey].orders += 1;
-        if (order.status !== 'cancelled') {
-          acc[monthKey].revenue += order.total || 0;
-        }
-        return acc;
-      }, {});
-
-      return Object.values(monthlyStats);
+      });
+      // فقط الشهور حتى الشهر الحالي
+      const result = Object.values(monthlyStats);
+      // طباعة بيانات الطلبات الخام قبل التجميع
+      if (typeof window !== 'undefined') {
+        console.log('orders raw', data);
+      }
+      // طباعة بيانات الرسم البياني للتشخيص
+      if (typeof window !== 'undefined') {
+        console.log('monthlyData', result);
+      }
+      return result;
     },
-    retry: 3,
-    staleTime: 0,
-    refetchOnWindowFocus: true,
-    refetchInterval: false, // تم تعطيل polling (refetchInterval) لأن المتصفح يوقفه بالخلفية،
-    // والاعتماد على WebSocket أو إعادة الجلب عند العودة للواجهة أفضل
+    retry: 2, // تقليل عدد المحاولات
+    staleTime: 10 * 60 * 1000, // البيانات طازجة لمدة 10 دقائق
+    refetchOnWindowFocus: false, // عدم إعادة الجلب عند التركيز على النافذة
+    refetchInterval: false, // إيقاف التحديث التلقائي تماماً
   });
 
-  // Fetch recent activity data
-  const { data: recentActivity = [], isLoading: activityLoading, refetch: refetchRecentActivity } = useQuery({
+  // Fetch recent activity data مع تحسين الأداء
+  const {
+    data: recentActivity = [],
+    isLoading: activityLoading,
+    refetch: refetchRecentActivity,
+  } = useQuery({
     queryKey: ["admin-recent-activity"],
     queryFn: async () => {
       const activities = [];
-      
-      // Get recent users
+
+      // تقليل عدد البيانات المجلبة للأداء
+      // Get recent users (تقليل إلى 1 بدلاً من 2)
       const { data: recentUsers } = await supabase
-        .from('profiles')
-        .select('created_at, full_name')
-        .order('created_at', { ascending: false })
-        .limit(2);
-      
-      // Get recent orders
+        .from("profiles")
+        .select("created_at, full_name")
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      // Get recent orders (تقليل إلى 1 بدلاً من 2)
       const { data: recentOrders } = await supabase
-        .from('orders')
-        .select('created_at, status')
-        .order('created_at', { ascending: false })
-        .limit(2);
-      
-      // Get products with low stock
+        .from("orders")
+        .select("created_at, status")
+        .order("created_at", { ascending: false })
+        .limit(1); // تقليل إلى 1
+
+      // Get products with low stock (تقليل العدد)
       const { data: lowStockProducts } = await supabase
-        .from('products')
-        .select('name_ar, name_en, name_he, stock_quantity, updated_at')
-        .lte('stock_quantity', 5)
-        .order('updated_at', { ascending: false })
-        .limit(2);
-      
+        .from("products")
+        .select("name_ar, name_en, name_he, stock_quantity, updated_at")
+        .lte("stock_quantity", 10)
+        .gt("stock_quantity", 0)
+        .order("updated_at", { ascending: false })
+        .limit(1); // تقليل إلى 1
+
+      // Get products that are out of stock
+      const { data: outOfStockProducts } = await supabase
+        .from("products")
+        .select("name_ar, name_en, name_he, stock_quantity, updated_at")
+        .eq("stock_quantity", 0)
+        .order("updated_at", { ascending: false })
+        .limit(1); // تقليل إلى 1
+
       // Add user registrations
-      recentUsers?.forEach(user => {
+      recentUsers?.forEach((user) => {
         activities.push({
-          type: 'user',
-          message: t('newUserRegistered'),
+          type: "user",
+          message: t("newUserRegistered"),
           time: user.created_at,
-          color: 'green'
+          color: "green",
         });
       });
-      
+
       // Add order activities
-      recentOrders?.forEach(order => {
-        const message = order.status === 'cancelled' ? t('orderCancelled') : t('newOrderReceived');
-        const color = order.status === 'cancelled' ? 'red' : 'blue';
+      recentOrders?.forEach((order) => {
+        const message =
+          order.status === "cancelled"
+            ? t("orderCancelled")
+            : t("newOrderReceived");
+        const color = order.status === "cancelled" ? "red" : "blue";
         activities.push({
-          type: 'order',
+          type: "order",
           message,
           time: order.created_at,
-          color
+          color,
         });
       });
-      
+
       // Add low stock alerts
-      lowStockProducts?.forEach(product => {
+      lowStockProducts?.forEach((product) => {
         activities.push({
-          type: 'stock',
-          message: t('productOutOfStock'),
+          type: "stock",
+          message: t("productLowStock"),
           time: product.updated_at,
-          color: 'yellow'
+          color: "orange",
         });
       });
-      
+
+      // Add out of stock alerts
+      outOfStockProducts?.forEach((product) => {
+        activities.push({
+          type: "stock",
+          message: t("productOutOfStock"),
+          time: product.updated_at,
+          color: "red",
+        });
+      });
+
       // Sort by time and return latest 4
       return activities
         .sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
@@ -335,227 +291,551 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
   }, [language, refetchRecentActivity]);
 
   const chartConfig = {
-    users: { label: t('users'), color: '#3b82f6' },
-    products: { label: t('products'), color: '#10b981' },
-    orders: { label: t('orders'), color: '#f59e0b' },
-    revenue: { label: t('revenue'), color: '#ef4444' },
-    inStock: { label: t('inStock'), color: '#10b981' },
-    outOfStock: { label: t('outOfStock'), color: '#ef4444' },
-    admin: { label: t('admin'), color: '#ef4444' },
-    wholesale: { label: t('wholesale'), color: '#3b82f6' },
-    retail: { label: t('retail'), color: '#10b981' },
+    users: { label: t("users"), color: "#3b82f6" },
+    products: { label: t("products"), color: "#10b981" },
+    orders: { label: t("orders"), color: "#f59e0b" },
+    revenue: { label: t("revenue"), color: "#ef4444" },
+    inStock: { label: t("inStock"), color: "#10b981" },
+    outOfStock: { label: t("outOfStock"), color: "#ef4444" },
+    admin: { label: t("admin"), color: "#ef4444" },
+    wholesale: { label: t("wholesale"), color: "#3b82f6" },
+    retail: { label: t("retail"), color: "#10b981" },
   };
 
+  // حساب إجمالي المستخدمين والمنتجات من البيانات القادمة من الصفحة الرئيسية
+  const totalUsers = Array.isArray(users) ? users.length : 0;
+  const totalProducts = Array.isArray(products) ? products.length : 0;
+
+  // حساب المنتجات المنتهية من المخزون من البيانات الموجودة
+  const calculatedOutOfStockProducts = Array.isArray(products) 
+    ? products.filter(product => product.stock_quantity === 0)
+    : [];
+
+  // حساب المنتجات منخفضة المخزون من البيانات الموجودة
+  const calculatedLowStockProducts = Array.isArray(products) 
+    ? products.filter(product => product.stock_quantity > 0 && product.stock_quantity <= 10)
+    : [];
+
+  // دالة لاختصار الأرقام الكبيرة (مثلاً: 1.2K, 3.4M)
+  function formatNumberShort(num: number) {
+    if (num >= 1_000_000_000) return (num / 1_000_000_000).toFixed(1).replace(/\.0$/, '') + 'B';
+    if (num >= 1_000_000) return (num / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
+    if (num >= 1_000) return (num / 1_000).toFixed(1).replace(/\.0$/, '') + 'K';
+    return num.toLocaleString();
+  }
+
   // Show loading state
-  if (usersLoading || productsLoading || ordersLoading) {
+  if (ordersLoading) {
     return (
       <div className="space-y-6">
-        <h1 className="text-3xl font-bold">{t('adminPanel')}</h1>
+        <h1 className="text-3xl font-bold">{t("adminPanel")}</h1>
         <div className="text-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto animate-spin rounded-full border-primary"></div>
-          <p className="mt-4 text-gray-600">{t('loadingAdminDashboard')}</p>
+          <p className="mt-4 text-gray-600">{t("loadingAdminDashboard")}</p>
         </div>
       </div>
     );
   }
 
   // Show error state
-  if (usersError || productsError || ordersError) {
+  if (ordersError) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <div className="text-red-500 mb-4">
-            <svg className="h-12 w-12 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            <svg
+              className="h-12 w-12 mx-auto"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+              />
             </svg>
           </div>
-          <p className="text-red-600 font-medium mb-2">{t('error')}</p>
+          <p className="text-red-600 font-medium mb-2">{t("error")}</p>
           <p className="text-muted-foreground text-sm">
-             {usersError?.message || productsError?.message || ordersError?.message || t('unexpectedError')}
-           </p>
+            {ordersError?.message || t("unexpectedError")}
+          </p>
         </div>
       </div>
     );
   }
 
+  // توزيع المستخدمين حسب النوع
+  const usersDistributionData = [
+    {
+      name: t("admin"),
+      value: users.filter((u) => u.user_type === "admin").length,
+      color: "#ef4444",
+    },
+    {
+      name: t("wholesale"),
+      value: users.filter((u) => u.user_type === "wholesale").length,
+      color: "#3b82f6",
+    },
+    {
+      name: t("retail"),
+      value: users.filter((u) => u.user_type === "retail").length,
+      color: "#10b981",
+    },
+  ];
+
+  // المنتجات حسب الفئة (عرض الاسم الصحيح)
+  const categoriesStats: {
+    name: string;
+    inStock: number;
+    outOfStock: number;
+  }[] = [];
+  if (Array.isArray(products) && Array.isArray(categoriesList)) {
+    const categoriesMap: Record<
+      string,
+      { name: string; inStock: number; outOfStock: number }
+    > = {};
+    categoriesList.forEach((cat) => {
+      // اختر الاسم المناسب حسب اللغة
+      let catName = cat.name;
+      if (language === "en" && cat.nameEn) catName = cat.nameEn;
+      else if (language === "he" && cat.nameHe) catName = cat.nameHe;
+      categoriesMap[cat.id] = { name: catName, inStock: 0, outOfStock: 0 };
+    });
+    products.forEach((product) => {
+      const catId = product.category;
+      if (categoriesMap[catId]) {
+        if (product.stock_quantity > 0) categoriesMap[catId].inStock += 1;
+        else categoriesMap[catId].outOfStock += 1;
+      } else {
+        // منتجات بدون فئة معروفة
+        const unknown = t("unknown");
+        if (!categoriesMap[unknown])
+          categoriesMap[unknown] = { name: unknown, inStock: 0, outOfStock: 0 };
+        if (product.stock_quantity > 0) categoriesMap[unknown].inStock += 1;
+        else categoriesMap[unknown].outOfStock += 1;
+      }
+    });
+    for (const key in categoriesMap) categoriesStats.push(categoriesMap[key]);
+  }
+
+  // بيانات رسم توزيع الطلبات حسب الحالة
+  const ordersStatusData = Array.isArray(ordersStats?.statusStats)
+    ? ordersStats.statusStats.map((s) => ({
+        name: s.label || s.status,
+        value: s.value,
+        color: s.color || "#8884d8",
+      }))
+    : [];
+
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-        <Card 
-          className="hover:shadow-lg transition-shadow cursor-pointer"
-          onClick={() => setIsUsersExpanded(!isUsersExpanded)}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 mt-2">
+        {/* إجمالي الإيرادات */}
+        <Card
+          className="group relative overflow-hidden shadow-lg border-0 bg-gradient-to-br from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 transition-all cursor-pointer"
+          onClick={() => setIsRevenueExpanded((v) => !v)}
         >
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('totalUsers')}</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {!isUsersExpanded ? (
-              <>
-                <div className="text-2xl font-bold">
-                  {usersStats.reduce((sum, stat) => sum + stat.value, 0)}
+          <div className="absolute -top-6 -right-6 bg-blue-400/20 rounded-full w-24 h-24 z-0 group-hover:scale-110 transition-transform" />
+          <CardContent className="relative z-10 flex flex-col items-center justify-center py-8">
+            <div className="flex flex-col items-center gap-2 mb-2 w-full">
+              <div className="flex items-center justify-center w-full gap-2">
+                <div className="bg-blue-500 text-white rounded-full p-2 shadow-lg flex items-center justify-center flex-shrink-0">
+                  <BarChart3 className="h-5 w-5" />
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  {t('registeredUsers')}
-                </p>
-              </>
-            ) : (
-              <div className="grid grid-cols-3 gap-2">
-                {usersStats.map((stat) => (
-                  <div 
-                    key={stat.name} 
-                    className="rounded-lg border bg-card p-2 text-center hover:bg-muted/50 transition-colors cursor-pointer"
-                    onClick={() => handleUserTypeClick(stat.name)}
-                  >
-                    <div className="text-[0.9rem] font-medium">{stat.name}</div>
-                    <div className="text-xl font-bold mt-1">{stat.value}</div>
-                  </div>
-                ))}
               </div>
-            )}
-          </CardContent>
-        </Card>
-        
-        <Card className="hover:shadow-lg transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('totalProducts')}</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {Array.isArray(productsStats) && productsStats.length > 0
-                ? productsStats.reduce((sum, stat) => sum + (stat?.total || 0), 0)
-                : 0}
+              <div className="w-full flex justify-center">
+                <div
+                  className="text-2xl md:text-3xl lg:text-4xl font-extrabold text-blue-900 text-center whitespace-nowrap overflow-hidden text-ellipsis max-w-full"
+                  style={{wordBreak: 'normal'}}
+                  title={ordersStats && typeof ordersStats.totalRevenue === "number" ? ordersStats.totalRevenue.toLocaleString() : '0'}
+                >
+                  {ordersStats && typeof ordersStats.totalRevenue === "number"
+                    ? formatNumberShort(ordersStats.totalRevenue)
+                    : 0}
+                </div>
+                <span className="text-lg font-bold text-blue-600 ml-1 self-end">{t("currency")}</span>
+              </div>
+              <div className="text-base font-semibold text-blue-700 mt-1">
+                {t("totalRevenue")}
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground">
-              {t('activeProducts')}
-            </p>
-          </CardContent>
-        </Card>
-        
-        <Card 
-          className="hover:shadow-lg transition-shadow cursor-pointer"
-          onClick={() => setIsOrdersExpanded(!isOrdersExpanded)}
-        >
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('totalOrders')}</CardTitle>
-            <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {!isOrdersExpanded ? (
-              <>
-                <div className="text-2xl font-bold">
-                  {ordersStats && typeof ordersStats.totalOrders === 'number' ? ordersStats.totalOrders : 0}
+            {isRevenueExpanded &&
+              Array.isArray(ordersStats?.statusStats) && (
+                <div className="w-full mt-4">
+                  <table className="w-full text-sm border rounded-lg bg-white">
+                    <thead>
+                      <tr className="bg-blue-100">
+                        <th className="p-2 text-center">{t("status")}</th>
+                        <th className="p-2 text-right">{t("revenue")}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {['pending', 'processing', 'shipped', 'delivered', 'cancelled'].map((statusKey) => {
+                        const stat = ordersStats.statusStats.find(s => s.status === statusKey);
+                        return (
+                          <tr
+                            key={statusKey}
+                            className="hover:bg-blue-50 cursor-pointer"
+                            onClick={() => navigate('/admin/orders', { state: { filterStatus: statusKey } })}
+                          >
+                            <td className="p-2">{t(statusKey)}</td>
+                            <td
+                              className="p-2 text-right font-bold"
+                              style={{ color: stat?.color || undefined }}
+                            >
+                              {stat && typeof stat.revenue === "number"
+                                ? stat.revenue.toLocaleString()
+                                : 0} {t("currency")}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  {t('totalOrders')}
-                </p>
-              </>
-            ) : (
-              <div className="grid grid-cols-2 gap-2">
-                {Array.isArray(ordersStats?.statusStats) && ordersStats.statusStats.length > 0
-                  ? ordersStats.statusStats.map((stat) => (
-                      <div 
-                        key={stat.status} 
-                        className="rounded-lg border bg-card p-2 text-center hover:bg-muted/50 transition-colors cursor-pointer"
-                        onClick={() => handleOrderStatusClick(stat.status)}
-                      >
-                        <div className="text-[0.9rem] font-medium">{stat.label}</div>
-                        <div className="text-xl font-bold mt-1" style={{ color: stat.color }}>
-                          {typeof stat.value === 'number' ? stat.value : 0}
-                        </div>
-                      </div>
-                    ))
-                  : null}
-              </div>
-            )}
+              )}
           </CardContent>
         </Card>
-        
-        <Card 
-          className="hover:shadow-lg transition-shadow cursor-pointer"
-          onClick={() => setIsRevenueExpanded(!isRevenueExpanded)}
-        >
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('totalRevenue')}</CardTitle>
-            <BarChart3 className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            {!isRevenueExpanded ? (
-              <>
-                <div className="text-2xl font-bold">
-                  {ordersStats && typeof ordersStats.totalRevenue === 'number' ? ordersStats.totalRevenue.toLocaleString() : 0} {t('currency')}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {t('totalRevenue')}
-                </p>
-              </>
-            ) : (
-              <div className="grid grid-cols-1 gap-2">
-                {Array.isArray(ordersStats?.statusStats) && ordersStats.statusStats.length > 0
-                  ? ordersStats.statusStats.filter(stat => stat.status !== 'cancelled').map((stat) => (
-                      <div 
-                        key={stat.status} 
-                        className="rounded-lg border bg-card p-2 hover:bg-muted/50 transition-colors"
-                      >
-                        <div className="text-[0.8rem] font-medium">{stat.label}</div>
-                        <div className="text-lg font-bold mt-1" style={{ color: stat.color }}>
-                          {typeof stat.revenue === 'number' ? stat.revenue.toLocaleString() : 0} {t('currency')}
-                        </div>
-                      </div>
-                    ))
-                  : null}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
 
-      {/* إشعارات الطلبات الجديدة والمنتجات منخفضة المخزون */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6 mb-8 mt-2">
-        <Card className="hover:shadow-lg transition-shadow cursor-pointer border-yellow-300 bg-yellow-50" onClick={() => setShowPendingOrdersDetails((v) => !v)}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-yellow-900">{t('newOrders')}</CardTitle>
-            <ShoppingCart className="h-4 w-4 text-yellow-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-yellow-900">{pendingOrders.length}</div>
-            <p className="text-xs text-yellow-800">{t('ordersPendingProcessing')}</p>
-            {showPendingOrdersDetails && pendingOrders.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-2">
-                {pendingOrders.slice(0, 3).map(order => (
-                  <button key={order.id} className="underline text-yellow-700 hover:text-yellow-900 text-xs" onClick={e => { e.stopPropagation(); navigate(`/admin/orders?orderId=${order.id}`); }}>
-                    {t('orderDetails')} {order.profiles?.full_name ? order.profiles.full_name : t('unknownCustomer')}
-                  </button>
-                ))}
-                {pendingOrders.length > 3 && <span className="text-xs text-yellow-700">{t('andMore')}</span>}
+        {/* إجمالي المستخدمين */}
+        <Card
+          className="group relative overflow-hidden shadow-lg border-0 bg-gradient-to-br from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 transition-all cursor-pointer"
+          onClick={() => setIsUsersExpanded((v) => !v)}
+        >
+          <div className="absolute -top-6 -right-6 bg-green-400/20 rounded-full w-24 h-24 z-0 group-hover:scale-110 transition-transform" />
+          <CardContent className="relative z-10 flex flex-col items-center justify-center py-8">
+            <div className="flex flex-col items-center gap-2 mb-2 w-full">
+              <div className="flex items-center justify-center w-full gap-2">
+                <div className="bg-green-500 text-white rounded-full p-2 shadow-lg flex items-center justify-center flex-shrink-0">
+                  <Users className="h-5 w-5" />
+                </div>
+              </div>
+              <div className="w-full flex justify-center">
+                <div
+                  className="text-2xl md:text-3xl lg:text-4xl font-extrabold text-green-900 text-center whitespace-nowrap overflow-hidden text-ellipsis max-w-full"
+                  style={{wordBreak: 'normal'}}
+                  title={typeof totalUsers === "number" ? totalUsers.toLocaleString() : '0'}
+                >
+                  {typeof totalUsers === "number" ? formatNumberShort(totalUsers) : 0}
+                </div>
+              </div>
+              <div className="text-base font-semibold text-green-700 mt-1">{t("users")}</div>
+            </div>
+            {isUsersExpanded && (
+              <div className="w-full mt-4">
+                <table className="w-full text-sm border rounded-lg bg-white">
+                  <thead>
+                    <tr className="bg-green-100">
+                      <th className="p-2 text-center">{t("userType")}</th>
+                      <th className="p-2 text-right">{t("count")}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {usersDistributionData.map((type) => (
+                      <tr key={type.name} className="hover:bg-green-50 cursor-pointer" onClick={() => navigate('/admin/users', { state: { filterType: type.name } })}>
+                        <td className="p-2">{type.name}</td>
+                        <td className="p-2 text-right font-bold" style={{ color: type.color }}>{type.value}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </CardContent>
         </Card>
-        <Card className="hover:shadow-lg transition-shadow cursor-pointer border-red-300 bg-red-50" onClick={() => setShowLowStockDetails((v) => !v)}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-red-900">{t('lowStockProducts')}</CardTitle>
-            <Package className="h-4 w-4 text-red-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-900">{lowStockProductsData.length}</div>
-            <p className="text-xs text-red-800">{t('restockNeededProducts')}</p>
-            {showLowStockDetails && lowStockProductsData.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-2">
-                {lowStockProductsData.slice(0, 3).map(product => {
-                  let productName = product.name;
-                  if (language === 'ar' && product.name_ar) productName = product.name_ar;
-                  else if (language === 'en' && product.name_en) productName = product.name_en;
-                  else if (language === 'he' && product.name_he) productName = product.name_he;
-                  return (
-                    <button key={product.id} className="underline text-red-700 hover:text-red-900 text-xs" onClick={e => { e.stopPropagation(); navigate(`/admin/products?productId=${product.id}`); }}>
-                      {productName} ({product.stock_quantity})
-                    </button>
-                  );
-                })}
-                {lowStockProductsData.length > 3 && <span className="text-xs text-red-700">{t('andMore')}</span>}
+
+        {/* إجمالي المنتجات */}
+        <Card
+          className="group relative overflow-hidden shadow-lg border-0 bg-gradient-to-br from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 transition-all cursor-pointer"
+          onClick={() => setIsProductsExpanded((v) => !v)}
+        >
+          <div className="absolute -top-6 -right-6 bg-purple-400/20 rounded-full w-24 h-24 z-0 group-hover:scale-110 transition-transform" />
+          <CardContent className="relative z-10 flex flex-col items-center justify-center py-8">
+            <div className="flex flex-col items-center gap-2 mb-2 w-full">
+              <div className="flex items-center justify-center w-full gap-2">
+                <div className="bg-purple-500 text-white rounded-full p-2 shadow-lg flex items-center justify-center flex-shrink-0">
+                  <Package className="h-5 w-5" />
+                </div>
+              </div>
+              <div className="w-full flex justify-center">
+                <div
+                  className="text-2xl md:text-3xl lg:text-4xl font-extrabold text-purple-900 text-center whitespace-nowrap overflow-hidden text-ellipsis max-w-full"
+                  style={{wordBreak: 'normal'}}
+                  title={typeof totalProducts === "number" ? totalProducts.toLocaleString() : '0'}
+                >
+                  {typeof totalProducts === "number" ? formatNumberShort(totalProducts) : 0}
+                </div>
+              </div>
+              <div className="text-base font-semibold text-purple-700 mt-1">{t("products")}</div>
+            </div>
+            {/* تفاصيل المنتجات حسب الفئة */}
+            {isProductsExpanded && categoriesStats.length > 0 && (
+              <div className="w-full mt-4">
+                <table className="w-full text-sm border rounded-lg bg-white">
+                  <thead>
+                    <tr className="bg-purple-100">
+                      <th className="p-2 text-center">{t("category")}</th>
+                      <th className="p-2 text-right">{t("inStock")}</th>
+                      <th className="p-2 text-right">{t("outOfStock")}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {categoriesStats.map((cat) => (
+                      <tr
+                        key={cat.name}
+                        className="hover:bg-purple-50 cursor-pointer"
+                        onClick={() => {
+                          // إذا كان اسم الفئة "الكل" أو "غير معروف" لا ترسل فلتر
+                          if (cat.name === t("allCategories") || cat.name === t("unknown")) {
+                            navigate('/admin/products');
+                          } else {
+                            navigate('/admin/products', { state: { filterCategory: cat.name } });
+                          }
+                        }}
+                      >
+                        <td className="p-2">{cat.name}</td>
+                        <td className="p-2 text-right text-green-700 font-bold">{cat.inStock}</td>
+                        <td className="p-2 text-right text-red-700 font-bold">{cat.outOfStock}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* الطلبات الجديدة */}
+        <Card
+          className="group relative overflow-hidden shadow-lg border-0 bg-gradient-to-br from-yellow-50 to-yellow-100 hover:from-yellow-100 hover:to-yellow-200 transition-all cursor-pointer"
+          onClick={() => setShowPendingOrdersDetails((v) => !v)}
+        >
+          <div className="absolute -top-6 -right-6 bg-yellow-400/20 rounded-full w-24 h-24 z-0 group-hover:scale-110 transition-transform" />
+          <CardContent className="relative z-10 flex flex-col items-center justify-center py-8">
+            <div className="flex flex-col items-center gap-2 mb-2 w-full">
+              <div className="flex items-center justify-center w-full gap-2">
+                <div className="bg-yellow-400 text-white rounded-full p-2 shadow-lg flex items-center justify-center flex-shrink-0">
+                  <ShoppingCart className="h-5 w-5" />
+                </div>
+              </div>
+              <div className="w-full flex justify-center">
+                <div
+                  className="text-2xl md:text-3xl lg:text-4xl font-extrabold text-yellow-900 text-center whitespace-nowrap overflow-hidden text-ellipsis max-w-full"
+                  style={{wordBreak: 'normal'}}
+                  title={typeof pendingOrders.length === "number" ? pendingOrders.length.toLocaleString() : '0'}
+                >
+                  {typeof pendingOrders.length === "number" ? formatNumberShort(pendingOrders.length) : 0}
+                </div>
+              </div>
+              <div className="text-base font-semibold text-yellow-700 mt-1">{t("newOrders")}</div>
+            </div>
+            {showPendingOrdersDetails && pendingOrders.length > 0 && (
+              <div className="w-full mt-4 max-h-64 overflow-y-auto">
+                <table className="w-full text-sm border rounded-lg bg-white">
+                  <thead>
+                    <tr className="bg-yellow-100">
+                      <th className="p-2 text-center">{t("orderNumber")}</th>
+                      <th className="p-2 text-center">{t("customer")}</th>
+                      <th className="p-2 text-right">{t("orderDate")}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pendingOrders.map((order) => (
+                      <tr
+                        key={order.id}
+                        className="hover:bg-yellow-50 cursor-pointer"
+                        onClick={() => navigate(`/admin/orders`, { state: { searchQuery: order.order_number.toString() } })}
+                      >
+                        <td className="p-2 text-center font-bold text-blue-600">#{order.order_number}</td>
+                        <td className="p-2">{order.profiles?.full_name || t("unknownCustomer")}</td>
+                        <td className="p-2 text-right font-mono">
+                          {order.created_at ? new Date(order.created_at).toLocaleString('en-US', { calendar: 'gregory' }) : "-"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* المنتجات منخفضة المخزون */}
+        <Card
+          className="group relative overflow-hidden shadow-lg border-0 bg-gradient-to-br from-red-50 to-red-100 hover:from-red-100 hover:to-red-200 transition-all cursor-pointer"
+          onClick={() => setShowLowStockDetails((v) => !v)}
+        >
+          <div className="absolute -top-6 -right-6 bg-red-400/20 rounded-full w-24 h-24 z-0 group-hover:scale-110 transition-transform" />
+          <CardContent className="relative z-10 flex flex-col items-center justify-center py-8">
+            <div className="flex flex-col items-center gap-2 mb-2 w-full">
+              <div className="flex items-center justify-center w-full gap-2">
+                <div className="bg-red-500 text-white rounded-full p-2 shadow-lg flex items-center justify-center flex-shrink-0">
+                  <Package className="h-5 w-5" />
+                </div>
+              </div>
+              <div className="w-full flex justify-center">
+                <div
+                  className="text-2xl md:text-3xl lg:text-4xl font-extrabold text-red-900 text-center whitespace-nowrap overflow-hidden text-ellipsis max-w-full"
+                  style={{wordBreak: 'normal'}}
+                  title={typeof calculatedLowStockProducts.length === "number" ? calculatedLowStockProducts.length.toLocaleString() : '0'}
+                >
+                  {typeof calculatedLowStockProducts.length === "number" ? formatNumberShort(calculatedLowStockProducts.length) : 0}
+                </div>
+              </div>
+              <div className="text-base font-semibold text-red-700 mt-1">{t("lowStockProducts")}</div>
+            </div>
+            {showLowStockDetails && calculatedLowStockProducts.length > 0 && (
+              <div className="w-full mt-4 max-h-64 overflow-y-auto">
+                <table className="w-full text-sm border rounded-lg bg-white">
+                  <thead>
+                    <tr className="bg-red-100">
+                      <th className="p-2 text-center">{t("productName")}</th>
+                      <th className="p-2 text-right">{t("stockQuantity")}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {calculatedLowStockProducts.map(product => {
+                      let productName = product.name;
+                      if (language === "ar" && product.name)
+                        productName = product.name;
+                      else if (language === "en" && product.nameEn)
+                        productName = product.nameEn;
+                      else if (language === "he" && product.nameHe)
+                        productName = product.nameHe;
+                      return (
+                        <tr key={product.id} className="hover:bg-red-50 cursor-pointer" onClick={() => navigate(`/admin/products`, { state: { filterLowStock: true } })}>
+                          <td className="p-2">{productName}</td>
+                          <td className="p-2 text-right">{product.stock_quantity}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* المنتجات المنتهية من المخزون */}
+        <Card
+          className="group relative overflow-hidden shadow-lg border-0 bg-gradient-to-br from-gray-50 to-gray-100 hover:from-gray-100 hover:to-gray-200 transition-all cursor-pointer"
+          onClick={() => setShowOutOfStockDetails((v) => !v)}
+        >
+          <div className="absolute -top-6 -right-6 bg-gray-400/20 rounded-full w-24 h-24 z-0 group-hover:scale-110 transition-transform" />
+          <CardContent className="relative z-10 flex flex-col items-center justify-center py-8">
+            <div className="flex flex-col items-center gap-2 mb-2 w-full">
+              <div className="flex items-center justify-center w-full gap-2">
+                <div className="bg-gray-500 text-white rounded-full p-2 shadow-lg flex items-center justify-center flex-shrink-0">
+                  <Package className="h-5 w-5" />
+                </div>
+              </div>
+              <div className="w-full flex justify-center">
+                <div
+                  className="text-2xl md:text-3xl lg:text-4xl font-extrabold text-gray-900 text-center whitespace-nowrap overflow-hidden text-ellipsis max-w-full"
+                  style={{wordBreak: 'normal'}}
+                  title={typeof calculatedOutOfStockProducts.length === "number" ? calculatedOutOfStockProducts.length.toLocaleString() : '0'}
+                >
+                  {typeof calculatedOutOfStockProducts.length === "number" ? formatNumberShort(calculatedOutOfStockProducts.length) : 0}
+                </div>
+              </div>
+              <div className="text-base font-semibold text-gray-700 mt-1">{t("outOfStockProducts")}</div>
+            </div>
+            {showOutOfStockDetails && calculatedOutOfStockProducts.length > 0 && (
+              <div className="w-full mt-4 max-h-64 overflow-y-auto">
+                <table className="w-full text-sm border rounded-lg bg-white">
+                  <thead>
+                    <tr className="bg-gray-100">
+                      <th className="p-2 text-center">{t("productName")}</th>
+                      <th className="p-2 text-right">{t("stockQuantity")}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {calculatedOutOfStockProducts.map(product => {
+                      let productName = product.name;
+                      if (language === "ar" && product.name)
+                        productName = product.name;
+                      else if (language === "en" && product.nameEn)
+                        productName = product.nameEn;
+                      else if (language === "he" && product.nameHe)
+                        productName = product.nameHe;
+                      return (
+                        <tr key={product.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => navigate(`/admin/products`, { state: { filterOutOfStock: true } })}>
+                          <td className="p-2">{productName}</td>
+                          <td className="p-2 text-right text-red-600 font-bold">{product.stock_quantity}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* كرت إجمالي الطلبات */}
+        <Card
+          className="group relative overflow-hidden shadow-lg border-0 bg-gradient-to-br from-orange-50 to-orange-100 hover:from-orange-100 hover:to-orange-200 transition-all cursor-pointer"
+          onClick={() => setIsTotalOrdersExpanded((v) => !v)}
+        >
+          <div className="absolute -top-6 -right-6 bg-orange-400/20 rounded-full w-24 h-24 z-0 group-hover:scale-110 transition-transform" />
+          <CardContent className="relative z-10 flex flex-col items-center justify-center py-8">
+            <div className="flex flex-col items-center gap-2 mb-2 w-full">
+              <div className="flex items-center justify-center w-full gap-2">
+                <div className="bg-orange-500 text-white rounded-full p-2 shadow-lg flex items-center justify-center flex-shrink-0">
+                  <ShoppingCart className="h-5 w-5" />
+                </div>
+              </div>
+              <div className="w-full flex justify-center">
+                <div
+                  className="text-2xl md:text-3xl lg:text-4xl font-extrabold text-orange-900 text-center whitespace-nowrap overflow-hidden text-ellipsis max-w-full"
+                  style={{wordBreak: 'normal'}}
+                  title={typeof (ordersStats?.totalOrders) === "number"
+                    ? ordersStats.totalOrders.toLocaleString()
+                    : (ordersStats?.statusStats?.reduce((acc, s) => acc + (s.value || 0), 0) ?? 0).toLocaleString()}
+                >
+                  {typeof (ordersStats?.totalOrders) === "number"
+                    ? formatNumberShort(ordersStats.totalOrders)
+                    : formatNumberShort(ordersStats?.statusStats?.reduce((acc, s) => acc + (s.value || 0), 0) ?? 0)}
+                </div>
+              </div>
+              <div className="text-base font-semibold text-orange-700 mt-1">{t("totalOrders")}</div>
+            </div>
+            {isTotalOrdersExpanded && (
+              <div className="w-full mt-4">
+                <table className="w-full text-sm border rounded-lg bg-white">
+                  <tbody>
+                    {(() => {
+                      // استخدم statusStats إذا لم تتوفر القيم مباشرة
+                      const stats = ordersStats?.statusStats || [];
+                      const getCount = (status) => {
+                        const found = stats.find(s => s.status === status);
+                        return found ? found.value : 0;
+                      };
+                      return [
+                        { key: 'pending', label: t('pending'), color: 'text-yellow-700', status: 'pending' },
+                        { key: 'processing', label: t('processing'), color: 'text-blue-700', status: 'processing' },
+                        { key: 'shipped', label: t('shipped'), color: 'text-purple-700', status: 'shipped' },
+                        { key: 'delivered', label: t('delivered'), color: 'text-green-700', status: 'delivered' },
+                        { key: 'cancelled', label: t('cancelled'), color: 'text-red-700', status: 'cancelled' },
+                      ].map(row => (
+                        <tr
+                          key={row.key}
+                          className={`hover:bg-orange-50 cursor-pointer`}
+                          onClick={e => {
+                            e.stopPropagation();
+                            navigate(`/admin/orders`, { state: { filterStatus: row.status } });
+                          }}
+                        >
+                          <td className="p-2 font-medium">{row.label}</td>
+                          <td className={`p-2 text-right font-bold ${row.color}`}>{ordersStats?.[row.key] ?? getCount(row.status)}</td>
+                        </tr>
+                      ));
+                    })()}
+                  </tbody>
+                </table>
               </div>
             )}
           </CardContent>
@@ -567,22 +847,25 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
         {/* Users Distribution Chart */}
         <Card className="hover:shadow-lg transition-shadow">
           <CardHeader>
-            <CardTitle className="text-lg font-semibold">{t('usersDistribution')}</CardTitle>
+            <CardTitle className="text-lg font-semibold">
+              {t("usersDistribution")}
+            </CardTitle>
           </CardHeader>
           <CardContent className="p-4">
             <ChartContainer config={chartConfig} className="h-80 w-full">
               <PieChart>
                 <Pie
-                  data={usersStats}
+                  data={usersDistributionData}
+                  dataKey="value"
+                  nameKey="name"
                   cx="50%"
                   cy="50%"
                   innerRadius={60}
                   outerRadius={100}
                   paddingAngle={5}
-                  dataKey="value"
                 >
-                  {usersStats.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  {usersDistributionData.map((entry, idx) => (
+                    <Cell key={entry.name} fill={entry.color} />
                   ))}
                 </Pie>
                 <ChartTooltip content={<ChartTooltipContent />} />
@@ -594,13 +877,18 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
         {/* Products by Category Chart */}
         <Card className="hover:shadow-lg transition-shadow">
           <CardHeader>
-            <CardTitle className="text-lg font-semibold">{t('productsByCategory')}</CardTitle>
+            <CardTitle className="text-lg font-semibold">
+              {t("productsByCategory")}
+            </CardTitle>
           </CardHeader>
           <CardContent className="p-4">
             <ChartContainer config={chartConfig} className="h-80 w-full">
-              <BarChart data={productsStats} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                <XAxis 
-                  dataKey="name" 
+              <BarChart
+                data={categoriesStats}
+                margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+              >
+                <XAxis
+                  dataKey="name"
                   tick={{ fontSize: 12 }}
                   interval={0}
                   angle={-45}
@@ -608,10 +896,44 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
                   height={80}
                 />
                 <YAxis tick={{ fontSize: 12 }} />
-                <Bar dataKey="inStock" fill="#10b981" name={t('inStock')} />
-                <Bar dataKey="outOfStock" fill="#ef4444" name={t('outOfStock')} />
+                <Bar dataKey="inStock" fill="#10b981" name={t("inStock")} />
+                <Bar
+                  dataKey="outOfStock"
+                  fill="#ef4444"
+                  name={t("outOfStock")}
+                />
                 <ChartTooltip content={<ChartTooltipContent />} />
               </BarChart>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+
+        {/* Orders by Status Chart */}
+        <Card className="hover:shadow-lg transition-shadow">
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold">
+              {t("ordersByStatus")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4">
+            <ChartContainer config={chartConfig} className="h-80 w-full">
+              <PieChart>
+                <Pie
+                  data={ordersStatusData}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={100}
+                  paddingAngle={5}
+                >
+                  {ordersStatusData.map((entry, idx) => (
+                    <Cell key={entry.name} fill={entry.color} />
+                  ))}
+                </Pie>
+                <ChartTooltip content={<ChartTooltipContent />} />
+              </PieChart>
             </ChartContainer>
           </CardContent>
         </Card>
@@ -622,7 +944,9 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
         {/* Orders Trend Chart */}
         <Card className="xl:col-span-2 hover:shadow-lg transition-shadow">
           <CardHeader>
-            <CardTitle className="text-lg font-semibold">{t('ordersAndRevenueTrend')}</CardTitle>
+            <CardTitle className="text-lg font-semibold">
+              {t("ordersAndRevenueTrend")}
+            </CardTitle>
           </CardHeader>
           <CardContent className="p-4">
             {monthlyLoading ? (
@@ -631,29 +955,36 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
               </div>
             ) : (
               <ChartContainer config={chartConfig} className="h-80 w-full">
-                <LineChart data={monthlyData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-                <YAxis yAxisId="left" tick={{ fontSize: 12 }} />
-                <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 12 }} />
-                <Line 
-                  yAxisId="left" 
-                  type="monotone" 
-                  dataKey="orders" 
-                  stroke="#3b82f6" 
-                  strokeWidth={3}
-                  name={t('orders')}
-                  dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
-                />
-                <Line 
-                  yAxisId="right" 
-                  type="monotone" 
-                  dataKey="revenue" 
-                  stroke="#ef4444" 
-                  strokeWidth={3}
-                  name={t('revenue')}
-                  dot={{ fill: '#ef4444', strokeWidth: 2, r: 4 }}
-                />
-                <ChartTooltip content={<ChartTooltipContent />} />
+                <LineChart
+                  data={monthlyData}
+                  margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                >
+                  <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                  <YAxis yAxisId="left" tick={{ fontSize: 12 }} />
+                  <YAxis
+                    yAxisId="right"
+                    orientation="right"
+                    tick={{ fontSize: 12 }}
+                  />
+                  <Line
+                    yAxisId="left"
+                    type="monotone"
+                    dataKey="orders"
+                    stroke="#3b82f6"
+                    strokeWidth={3}
+                    name={t("orders")}
+                    dot={{ fill: "#3b82f6", strokeWidth: 2, r: 4 }}
+                  />
+                  <Line
+                    yAxisId="right"
+                    type="monotone"
+                    dataKey="revenue"
+                    stroke="#ef4444"
+                    strokeWidth={3}
+                    name={t("revenue")}
+                    dot={{ fill: "#ef4444", strokeWidth: 2, r: 4 }}
+                  />
+                  <ChartTooltip content={<ChartTooltipContent />} />
                 </LineChart>
               </ChartContainer>
             )}
@@ -663,7 +994,9 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
         {/* Recent Activity */}
         <Card className="hover:shadow-lg transition-shadow">
           <CardHeader>
-            <CardTitle className="text-lg font-semibold">{t('recentActivity')}</CardTitle>
+            <CardTitle className="text-lg font-semibold">
+              {t("recentActivity")}
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6 p-4">
             {activityLoading ? (
@@ -675,34 +1008,62 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
                 const getTimeAgo = (time: string) => {
                   const now = new Date();
                   const activityTime = new Date(time);
-                  const diffInMinutes = Math.floor((now.getTime() - activityTime.getTime()) / (1000 * 60));
-                  
-                  if (diffInMinutes < 1) return t('now');
-                  if (diffInMinutes < 60) return t('minutesAgo').replace('{count}', diffInMinutes.toString());
-                  if (diffInMinutes < 1440) return t('hoursAgo').replace('{count}', Math.floor(diffInMinutes / 60).toString());
-                  return t('daysAgo').replace('{count}', Math.floor(diffInMinutes / 1440).toString());
+                  const diffInMinutes = Math.floor(
+                    (now.getTime() - activityTime.getTime()) / (1000 * 60),
+                  );
+
+                  if (diffInMinutes < 1) return t("now");
+                  if (diffInMinutes < 60) {
+                    // ترجمة دقيقة
+                    const minutes = diffInMinutes.toString();
+                    return t("minutesAgo").replace("{count}", minutes);
+                  }
+                  if (diffInMinutes < 1440) {
+                    // ترجمة ساعة
+                    const hours = Math.floor(diffInMinutes / 60).toString();
+                    return t("hoursAgo").replace("{count}", hours);
+                  }
+                  // ترجمة يوم
+                  const days = Math.floor(diffInMinutes / 1440).toString();
+                  return t("daysAgo").replace("{count}", days);
                 };
-                
-                const colorClasses = {
-                  green: 'bg-green-500',
-                  blue: 'bg-blue-500',
-                  yellow: 'bg-yellow-500',
-                  red: 'bg-red-500'
-                };
-                
+
                 return (
-                  <div key={index} className="flex items-start space-x-4 rtl:space-x-reverse">
-                    <div className={`w-3 h-3 ${colorClasses[activity.color as keyof typeof colorClasses]} rounded-full mt-1 flex-shrink-0`}></div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{activity.message}</p>
-                      <p className="text-xs text-muted-foreground">{getTimeAgo(activity.time)}</p>
+                  <div
+                    key={index}
+                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 transition-all"
+                  >
+                    <div
+                      className="w-10 h-10 rounded-full flex items-center justify-center"
+                      style={{
+                        backgroundColor: activity.color,
+                        color: "white",
+                      }}
+                    >
+                      {activity.type === "user" && (
+                        <Users className="w-5 h-5" />
+                      )}
+                      {activity.type === "order" && (
+                        <ShoppingCart className="w-5 h-5" />
+                      )}
+                      {activity.type === "stock" && (
+                        <Package className="w-5 h-5" />
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm text-gray-800">
+                        {activity.message}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {getTimeAgo(activity.time)}
+                      </p>
                     </div>
                   </div>
                 );
               })
             ) : (
-              <div className="text-center text-muted-foreground py-8">
-                <p className="text-sm">{t('noRecentActivity')}</p>
+              <div className="text-center text-gray-500 py-12">
+                {t("noRecentActivity")}
               </div>
             )}
           </CardContent>
@@ -713,5 +1074,3 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
 };
 
 export default AdminDashboardStats;
-
-// ملاحظة: للحصول على إحصائيات حية، يمكنك استخدام useProductsRealtime/useCategoriesRealtime لجلب المنتجات والفئات ثم حساب الإحصائيات منها مباشرة، أو إضافة اشتراك Realtime مخصص لجداول الإحصائيات إذا لزم الأمر.

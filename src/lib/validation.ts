@@ -35,9 +35,9 @@ export const productSchema = z.object({
   name_ar: z.string().min(2, 'Arabic name is required'),
   name_en: z.string().min(2, 'English name is required'),
   name_he: z.string().min(2, 'Hebrew name is required'),
-  description_ar: z.string().min(10, 'Arabic description must be at least 10 characters'),
-  description_en: z.string().min(10, 'English description must be at least 10 characters'),
-  description_he: z.string().min(10, 'Hebrew description must be at least 10 characters'),
+  description_ar: z.string().min(0, 'Arabic description must be at least 0 characters'),
+  description_en: z.string().min(0, 'English description must be at least 0 characters'),
+  description_he: z.string().min(0, 'Hebrew description must be at least 0 characters'),
   price: z.number().positive('Price must be positive'),
   original_price: z.number().positive('Original price must be positive').optional(),
   wholesale_price: z.number().positive('Wholesale price must be positive').optional(),
@@ -60,7 +60,7 @@ export const categorySchema = z.object({
 // Order validation schemas
 export const orderSchema = z.object({
   shipping_address: addressSchema,
-  payment_method: z.enum(['cash', 'credit_card']),
+  payment_method: z.enum(['cash', 'credit_card', 'bank_transfer']),
   notes: z.string().optional(),
 });
 

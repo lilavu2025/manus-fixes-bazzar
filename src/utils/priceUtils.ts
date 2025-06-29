@@ -9,8 +9,16 @@ import { Product } from '@/types/product';
  */
 export function getDisplayPrice(product: Product, userType?: string): number {
   if (!product) return 0;
-  if (userType === 'wholesale' && typeof product.wholesalePrice === 'number') {
-    return product.wholesalePrice;
+  
+  // إصلاح للتعامل مع كلا الاسمين (wholesalePrice و wholesale_price)
+  const wholesalePrice = product.wholesalePrice || (product as any).wholesale_price;
+  
+  // المدراء ومستخدمو الجملة يحصلون على سعر الجملة إذا كان متوفراً
+  if ((userType === 'wholesale' || userType === 'admin') && 
+      typeof wholesalePrice === 'number' && 
+      wholesalePrice > 0) {
+    return wholesalePrice;
   }
-  return product.price;
+  
+  return product.price || 0;
 }

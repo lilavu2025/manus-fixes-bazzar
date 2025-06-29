@@ -9,7 +9,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Product } from "@/types"; // Assuming Product type is defined
 import { Language } from "@/types/language";
 import { useLiveSupabaseQuery } from './useLiveSupabaseQuery';
-import { setCookie, getCookie } from '../utils/cookieUtils';
+import { setCookie, getCookie } from '@/utils/commonUtils';
 
 export const useFavorites = () => {
   const { user } = useAuth();
@@ -231,4 +231,3 @@ export const useFavorites = () => {
   };
 };
 */
-

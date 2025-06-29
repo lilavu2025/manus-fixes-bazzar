@@ -1,44 +1,58 @@
-import { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import type { Database } from '@/integrations/supabase/types';
+import { useOrdersWithDetailsQuery } from "@/integrations/supabase/reactQueryHooks";
+import { useEffect, useRef } from "react";
 
-// Add options param to control realtime
-export function useOrdersRealtime(options?: { disableRealtime?: boolean }) {
-  const [orders, setOrders] = useState<Database['public']['Tables']['orders']['Row'][]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+// Hook جلب الطلبات مع تفاصيلها للوحة تحكم الأدمن مع تحديث محسن للأداء
+export function useOrdersRealtime() {
+  const intervalRef = useRef<number | null>(null);
+  
+  const { data, isLoading, error, refetch } = useOrdersWithDetailsQuery({
+    refetchInterval: false, // تعطيل التحديث التلقائي المستمر
+    refetchOnWindowFocus: true,
+    staleTime: 5 * 60 * 1000, // البيانات تعتبر طازجة لمدة 5 دقائق
+    gcTime: 10 * 60 * 1000, // الاحتفاظ بالبيانات في الكاش لمدة 10 دقائق
+    queryKey: [],
+  });
 
-  const fetchOrders = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('orders')
-      .select(`*, profiles:profiles(id, full_name, email, phone), order_items(*, products(name_ar, name_en, image))`)
-      .order('created_at', { ascending: false });
-    if (error) setError(error as Error);
-    setOrders(data || []);
-    setLoading(false);
-  };
-
+  // تحديث بيانات الطلبات كل دقيقتين فقط (بدلاً من 3 ثواني)
   useEffect(() => {
-    fetchOrders();
-    if (options?.disableRealtime) return;
-    const channel = supabase
-      .channel('orders_realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
-        fetchOrders();
-      })
-      .subscribe();
-    // Refetch on tab visibility
-    const handleVisibility = () => {
-      if (document.visibilityState === 'visible') fetchOrders();
-    };
-    document.addEventListener('visibilitychange', handleVisibility);
-    return () => {
-      channel.unsubscribe();
-      document.removeEventListener('visibilitychange', handleVisibility);
-    };
-  }, [options?.disableRealtime]);
+    intervalRef.current = window.setInterval(() => {
+      // التحديث فقط إذا كانت النافذة مرئية
+      if (!document.hidden) {
+        refetch();
+      }
+    }, 2 * 60 * 1000); // كل دقيقتين
 
-  // expose setOrders for local UI updates
-  return { orders, loading, error, refetch: fetchOrders, setOrders };
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [refetch]);
+
+  // تنظيف عند إخفاء النافذة
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden && intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      } else if (!document.hidden && !intervalRef.current) {
+        intervalRef.current = window.setInterval(() => {
+          refetch();
+        }, 2 * 60 * 1000);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [refetch]);
+
+  return {
+    orders: data || [],
+    loading: isLoading,
+    error,
+    refetch,
+    setOrders: () => {}, // placeholder للتوافق مع الكود القديم
+  };
 }

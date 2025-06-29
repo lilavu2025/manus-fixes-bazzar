@@ -9,19 +9,27 @@
     "paths": {
       "@/*": ["./src/*"]
     },
-    "types": ["react", "react-native"],  // ✅ مهم جداً
-    "jsx": "react-native",               // ✅ مطلوب لملفات JSX/TSX
+    "types": ["vite/client", "node"],
+    "jsx": "react-jsx",
     "allowJs": true,
     "noImplicitAny": false,
     "noUnusedParameters": false,
     "noUnusedLocals": false,
     "strictNullChecks": false,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true
   },
   "exclude": [
-    "node_modules/@tanstack/react-query/build/lib",
-    "node_modules/@tanstack/react-query/src",
+    "node_modules",
+    "dist",
+    "build",
     "**/*.test.ts",
-    "**/*.test.tsx"
+    "**/*.test.tsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx"
   ]
 }

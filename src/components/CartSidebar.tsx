@@ -1,14 +1,16 @@
 import * as React from "react";
-import { X, Minus, Plus, ShoppingBag, Trash2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
-import { useCart } from '@/hooks/useCart';
-import { useLanguage } from '@/utils/languageContextUtils';
-import { Link } from 'react-router-dom';
-import { useAuth } from '@/contexts/useAuth';
-import { useToast } from '@/hooks/use-toast';
+import { X, Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { useCart } from "@/hooks/useCart";
+import { useLanguage } from "@/utils/languageContextUtils";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/useAuth";
+import { useEnhancedToast } from "@/hooks/useEnhancedToast";
+import { getLocalizedName } from "@/utils/getLocalizedName";
+import type { Product as ProductFull } from '@/types/product';
 
 interface CartSidebarProps {
   isOpen: boolean;
@@ -18,18 +20,30 @@ interface CartSidebarProps {
 const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
   const { state, updateQuantity, removeItem, getTotalItems } = useCart();
   const cartItems = state.items;
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, language } = useLanguage();
   const { user } = useAuth();
-  const { toast } = useToast();
+  const enhancedToast = useEnhancedToast();
+  const navigate = useNavigate();
 
   // دالة مخصصة للتعامل مع الدفع
   const handleCheckoutClick = (e: React.MouseEvent) => {
     if (!user) {
       e.preventDefault();
-      toast({
-        title: t('error'),
-        description: t('pleaseLoginToCheckout') || t('pleaseLogin'),
-      });
+      
+      // حفظ نية الدفع قبل التوجيه لتسجيل الدخول
+      const checkoutIntent = {
+        action: 'checkout',
+        timestamp: Date.now(),
+        fromCart: true // إشارة أنه قادم من السلة وليس buyNow
+      };
+      
+      localStorage.setItem('checkout_intent', JSON.stringify(checkoutIntent));
+      
+      // إغلاق السلة أولاً
+      onClose();
+      
+      // التوجه لتسجيل الدخول مع redirect parameter فوراً
+      navigate('/auth?redirect=checkout');
     } else {
       onClose();
     }
@@ -47,96 +61,119 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
 
       {/* Sidebar */}
       <div
-        className={`fixed top-0 ${isRTL ? 'right-0' : 'left-0'} h-full w-full max-w-md bg-white z-50 transform transition-transform duration-300 shadow-2xl ${
-          isOpen ? 'translate-x-0' : isRTL ? 'translate-x-full' : '-translate-x-full'
+        className={`fixed top-0 ${isRTL ? "left-0" : "right-0"} h-full w-full sm:max-w-md bg-white z-50 transform transition-transform duration-300 shadow-2xl ${
+          isOpen
+            ? "translate-x-0"
+            : isRTL
+              ? "-translate-x-full"
+              : "translate-x-full"
         }`}
       >
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b">
+          <div className="flex items-center justify-between p-4 sm:p-6 border-b">
             <div className="flex items-center gap-2">
-              <ShoppingBag className="h-6 w-6 text-primary" />
-              <h2 className="text-xl font-bold">{t('cart')}</h2>
+              <ShoppingBag className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+              <h2 className="text-lg sm:text-xl font-bold">{t("cart")}</h2>
               {getTotalItems() > 0 && (
                 <Badge variant="secondary">{getTotalItems()}</Badge>
               )}
             </div>
-            <Button variant="ghost" size="icon" onClick={onClose} aria-label="إغلاق السلة" /* Close cart */>
-              <X className="h-6 w-6" />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onClose}
+              className="h-8 w-8 sm:h-10 sm:w-10"
+              aria-label="إغلاق السلة" /* Close cart */
+            >
+              <X className="h-5 w-5 sm:h-6 sm:w-6" />
             </Button>
           </div>
 
           {/* Content */}
           {cartItems.length === 0 ? (
-            <div className="flex-1 flex items-center justify-center flex-col gap-4 p-6">
-              <ShoppingBag className="h-24 w-24 text-gray-300" />
+            <div className="flex-1 flex items-center justify-center flex-col gap-4 p-4 sm:p-6">
+              <ShoppingBag className="h-16 w-16 sm:h-24 sm:w-24 text-gray-300" />
               <div className="text-center">
-                <h3 className="text-lg font-semibold text-gray-600 mb-2">
-                  {t('cartEmpty')}
+                <h3 className="text-base sm:text-lg font-semibold text-gray-600 mb-2">
+                  {t("cartEmpty")}
                 </h3>
-                <p className="text-gray-500 mb-4">
-                  {t('noProductsAdded')}
-                </p>
-                <Button onClick={onClose} asChild>
-                  <Link to="/products">
-                    {t('browseProducts')}
-                  </Link>
+                <p className="text-sm sm:text-base text-gray-500 mb-4">{t("noProductsAdded")}</p>
+                <Button onClick={onClose} asChild className="text-sm sm:text-base">
+                  <Link to="/products">{t("browseProducts")}</Link>
                 </Button>
               </div>
             </div>
           ) : (
             <>
               {/* Items */}
-              <ScrollArea className="flex-1 p-4">
-                <div className="space-y-4">
+              <ScrollArea className="flex-1 p-3 sm:p-4">
+                <div className="space-y-3 sm:space-y-4">
                   {cartItems.map((item) => (
-                    <div key={item.id} className="flex gap-4 p-4 bg-gray-50 rounded-lg animate-fade-in">
+                    <div
+                      key={item.id}
+                      className={`flex ${isRTL ? "flex-row-reverse" : "flex-row"} gap-4 p-4 bg-gray-50 rounded-lg shadow-md animate-fade-in`}
+                    >
                       <img
                         src={item.product.image}
                         alt={item.product.name}
-                        className="w-16 h-16 object-cover rounded-lg"
+                        className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-lg flex-shrink-0 border border-gray-200"
                       />
-                      
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-sm mb-1 line-clamp-2">
-                          {item.product.name}
-                        </h4>
-                        <p className="text-primary font-bold text-sm">
-                          {item.product.price} {t('currency')}
-                        </p>
-                        
-                        <div className="flex items-center justify-between mt-2">
-                          <div className="flex items-center gap-2">
+
+                      <div className={`flex-1 flex flex-col justify-between ${isRTL ? "items-end" : "items-start"}`}>
+                        <div>
+                          <h4 className="font-semibold text-sm sm:text-base mb-1 line-clamp-2">
+                            {getLocalizedName(item.product, language)}
+                          </h4>
+                          <p className="text-primary font-bold text-sm sm:text-base">
+                            {item.product.price} {t("currency")}
+                          </p>
+                        </div>
+
+                        <div className={`flex items-center justify-between mt-2 ${isRTL ? "flex-row-reverse" : "flex-row"}`}>
+                          <div className={`flex items-center gap-2 ${isRTL ? "flex-row-reverse" : "flex-row"}`}>
                             <Button
                               size="icon"
                               variant="outline"
                               className="h-8 w-8"
-                              onClick={() => updateQuantity(item.id, item.quantity - 1, item.product.id)}
+                              onClick={() =>
+                                updateQuantity(
+                                  item.id,
+                                  item.quantity - 1,
+                                  item.product.id,
+                                )
+                              }
                             >
-                              <Minus className="h-3 w-3" />
+                              <Minus className="h-4 w-4" />
                             </Button>
-                            
+
                             <span className="w-8 text-center font-semibold">
                               {item.quantity}
                             </span>
-                            
+
                             <Button
                               size="icon"
                               variant="outline"
                               className="h-8 w-8"
-                              onClick={() => updateQuantity(item.id, item.quantity + 1, item.product.id)}
+                              onClick={() =>
+                                updateQuantity(
+                                  item.id,
+                                  item.quantity + 1,
+                                  item.product.id,
+                                )
+                              }
                             >
-                              <Plus className="h-3 w-3" />
+                              <Plus className="h-4 w-4" />
                             </Button>
                           </div>
-                          
+
                           <Button
                             size="icon"
                             variant="ghost"
                             className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
                             onClick={() => removeItem(item.id, item.product.id)}
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-5 w-5" />
                           </Button>
                         </div>
                       </div>
@@ -146,36 +183,30 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
               </ScrollArea>
 
               {/* Footer */}
-              <div className="border-t p-6 space-y-4">
+              <div className={`border-t p-6 space-y-4 ${isRTL ? "mb-16 sm:mb-0" : "mb-16 sm:mb-0"}`}>
                 <div className="flex justify-between items-center">
-                  <span className="text-lg font-semibold">{t('total')}:</span>
+                  <span className="text-lg font-semibold">{t("total")}:</span>
                   <span className="text-2xl font-bold text-primary">
-                    {state.total.toFixed(2)} {t('currency')}
+                    {state.total.toFixed(2)} {t("currency")}
                   </span>
                 </div>
-                
+
                 <Separator />
-                
+
                 <div className="space-y-2">
-                  <Button 
-                    className="w-full" 
-                    size="lg"
-                    asChild
-                  >
+                  <Button className="w-full" size="lg" asChild>
                     <Link to="/checkout" onClick={handleCheckoutClick}>
-                      {t('checkout')}
+                      {t("checkout")}
                     </Link>
                   </Button>
-                  
-                  <Button 
-                    variant="outline" 
+
+                  <Button
+                    variant="outline"
                     className="w-full"
                     onClick={onClose}
                     asChild
                   >
-                    <Link to="/products">
-                      {t('continueShopping')}
-                    </Link>
+                    <Link to="/products">{t("continueShopping")}</Link>
                   </Button>
                 </div>
               </div>

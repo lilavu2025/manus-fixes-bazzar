@@ -26,6 +26,12 @@ export function Toaster(props: React.ComponentProps<typeof ToastProvider>) {
                     ? t(
                         description === "Invalid login credentials"
                           ? "invalidLoginCredentials"
+                          : description === "Passwords do not match"
+                          ? "passwordsDoNotMatch"
+                          : description === "Invalid login code"
+                          ? "invalidLoginCode"
+                          : description === "Invalid email or password"
+                          ? "invalidLoginCredentials"
                           : description
                       )
                     : description}

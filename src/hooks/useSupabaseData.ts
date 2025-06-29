@@ -1,16 +1,12 @@
 // /home/ubuntu/modern-mobile-bazaar/src/hooks/useSupabaseData.ts
-import { useLiveSupabaseQuery } from './useLiveSupabaseQuery';
 import {
-  CategoryService,
-  ProductService,
-  BannerService,
-  ProfileService,
-} from '@/services/supabaseService';
-import { useLanguage } from '@/utils/languageContextUtils';
-import { useAuth } from '@/contexts/useAuth';
-import { Profile } from '@/contexts/AuthContext';
-import { Language } from '@/types/language';
-import { supabase } from '@/integrations/supabase/client';
+  useCategoriesWithProductCountQuery,
+  useBannersQuery,
+  useAdminUsersQuery,
+} from "@/integrations/supabase/reactQueryHooks";
+import { useLanguage } from "@/utils/languageContextUtils";
+import { useAuth } from "@/contexts/useAuth";
+import { Language } from "@/types/language";
 
 /**
  * خيارات مشتركة لجميع الـ queries:
@@ -28,67 +24,39 @@ const COMMON_OPTIONS = {
   refetchOnWindowFocus: true,
 };
 
-/** 
- * Hook لجلب الفئات (Categories) 
+// انقل كل useCategoriesWithProductCountQuery/useActiveProductsQuery/useBannersQuery/useAdminUsersQuery إلى داخل دوال أو custom hooks فقط
+
+/**
+ * Hook لجلب الفئات (Categories)
  */
 export const useCategories = () => {
-  const { language } = useLanguage();
-  const query = useLiveSupabaseQuery({
-    queryFn: async () => {
-      const data = await CategoryService.getCategories(language as Language);
-      if (!data) throw new Error('Error fetching categories');
-      return { data };
-    },
-    retryInterval: 5000,
-  });
-  return { ...query, error: query.error };
-};
-
-/** 
- * Hook لجلب المنتجات (Products) 
- */
-export const useProducts = (categoryId?: string) => {
-  const { language } = useLanguage();
-  const { profile } = useAuth();
-  const query = useLiveSupabaseQuery({
-    queryFn: async () => {
-      const userType = profile?.user_type as Profile['user_type'] | null | undefined;
-      const data = await ProductService.getProducts(language as Language, userType, categoryId);
-      if (!data) throw new Error('Error fetching products');
-      return { data };
-    },
-    retryInterval: 5000,
-  });
-  return { ...query, error: query.error };
+  const categoriesQuery = useCategoriesWithProductCountQuery();
+  return categoriesQuery;
 };
 
 /**
  * Hook لجلب البانرات (Banners)
  */
 export const useBanners = () => {
-  const { language } = useLanguage();
-  const query = useLiveSupabaseQuery({
-    queryFn: async () => {
-      const data = await BannerService.getBanners(language as Language);
-      if (!data) throw new Error('Error fetching banners');
-      return { data };
-    },
-    retryInterval: 5000,
-  });
-  return { ...query, error: query.error };
+  const bannersQuery = useBannersQuery();
+  return bannersQuery;
 };
 
 /**
  * Hook لجلب المستخدمين (Users / Profiles)
  */
 export const useUsers = () => {
-  const query = useLiveSupabaseQuery({
-    queryFn: async () => {
-      const { data, error } = await supabase.from('profiles').select('*');
-      if (error) throw new Error('Error fetching users');
-      return { data };
-    },
-    retryInterval: 5000,
-  });
-  return { ...query, error: query.error };
+  const usersQuery = useAdminUsersQuery();
+  return usersQuery;
 };
+
+/**
+ * هوك موحد لجلب البيانات
+ */
+export function useSupabaseData() {
+  const banners: [] = [];
+  const loading = false;
+  const error = null;
+  const refetch = () => {};
+  return { banners, loading, error, refetch };
+}

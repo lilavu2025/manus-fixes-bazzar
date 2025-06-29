@@ -122,6 +122,22 @@ exports.handler = async function(event, context) {
     };
   }
 
+  // 5. تسجيل نشاط الأدمن
+  if (adminId) {
+    try {
+      await supabase.from('user_activity_log').insert([{
+        admin_id: adminId,
+        user_id: userId,
+        action: 'delete',
+        details: { deletedUser: true, deletedUserName: userData.full_name },
+        created_at: new Date().toISOString()
+      }]);
+    } catch (logError) {
+      // لا نريد إيقاف العملية إذا فشل تسجيل النشاط
+      console.error('Error logging admin activity:', logError);
+    }
+  }
+
   return {
     statusCode: 200,
     body: JSON.stringify({ success: true })

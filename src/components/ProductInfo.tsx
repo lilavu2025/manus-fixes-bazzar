@@ -5,6 +5,7 @@ import { useLanguage } from '@/utils/languageContextUtils';
 import { getLocalizedName } from '@/utils/getLocalizedName';
 import { useAuth } from '@/contexts/useAuth';
 import { getDisplayPrice } from '@/utils/priceUtils';
+import ProductCardBadges from '@/components/ProductCard/ProductCardBadges';
 import type { Product as ProductFull } from '@/types/product';
 
 interface ProductInfoProps {
@@ -17,27 +18,31 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
   const displayPrice = getDisplayPrice(product, profile?.user_type);
 
   return (
-    <div className={`space-y-6 ${isRTL ? 'text-right' : 'text-left'}`}>
+    <div className={`space-y-4 sm:space-y-6 ${isRTL ? 'text-right' : 'text-left'}`}>
       <div>
-        <h1 className="text-3xl font-bold mb-2 text-center">{getLocalizedName(product, language)}</h1>
+        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold mb-2 text-center leading-tight">{getLocalizedName(product, language)}</h1>
+        {/* البادجز */}
+        <div className="flex justify-center mb-4">
+          <ProductCardBadges product={product} variant="belowName" />
+        </div>
       </div>
       {/* السعر */}
       <div className={`flex flex-col gap-2 w-full`}>
-        <div className={`flex items-center gap-4 w-full ${isRTL ? 'flex-row-reverse justify-end' : 'justify-start'}`}> 
+        <div className={`flex items-center gap-2 sm:gap-4 w-full ${isRTL ? 'flex-row-reverse justify-end' : 'justify-start'}`}> 
           {product.originalPrice !== displayPrice && (
-            <span className="text-lg text-gray-500 line-through">
+            <span className="text-sm sm:text-base md:text-lg text-gray-500 line-through">
               {product.originalPrice} {t('currency')}
             </span>
           )}
-          <span className="text-3xl font-bold text-primary">
+          <span className="text-xl sm:text-2xl md:text-3xl font-bold text-primary">
             {displayPrice} {t('currency')}
           </span>
         </div>
       </div>
       {/* Description */}
       <div className={isRTL ? 'text-right' : 'text-left'}>
-        <h3 className="font-semibold mb-2">{t('productDescription')}</h3>
-        <p className="text-gray-600 leading-relaxed">{product.description}</p>
+        <h3 className="font-semibold mb-2 text-sm sm:text-base">{t('productDescription')}</h3>
+        <p className="text-gray-600 leading-relaxed text-sm sm:text-base">{product.description}</p>
       </div>
     </div>
   );

@@ -14,24 +14,24 @@ const ProductCategoryField: React.FC<ProductCategoryFieldProps> = ({
   formData,
   setFormData,
 }) => {
-  const { t } = useLanguage();
-  const { data, loading, error } = useCategories();
-  const categories = data?.data ?? [];
+  const { isRTL, t, language } = useLanguage();
+  const { data, isLoading, error } = useCategories();
+  const categories = data ?? [];
 
   console.log('ProductCategoryField - categories:', categories);
-  console.log('ProductCategoryField - loading:', loading);
+  console.log('ProductCategoryField - loading:', isLoading);
   console.log('ProductCategoryField - error:', error);
   console.log('ProductCategoryField - formData.category_id:', formData.category_id);
   const found = categories.find((cat) => cat.id === formData.category_id);
   console.log('ProductCategoryField - category_id match:', found ? 'MATCH' : 'NO MATCH', found);
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div>
         <Label htmlFor="category">{t('category')}</Label>
         <Select disabled>
           <SelectTrigger>
-            <SelectValue placeholder="جاري التحميل..." />
+            <SelectValue placeholder={t("categoriesLoading")} />
           </SelectTrigger>
         </Select>
       </div>
@@ -44,7 +44,7 @@ const ProductCategoryField: React.FC<ProductCategoryFieldProps> = ({
         <Label htmlFor="category">{t('category')}</Label>
         <Select disabled>
           <SelectTrigger>
-            <SelectValue placeholder="خطأ في تحميل الفئات" />
+            <SelectValue placeholder={t("categoriesLoadError")} />
           </SelectTrigger>
         </Select>
       </div>
@@ -61,7 +61,7 @@ const ProductCategoryField: React.FC<ProductCategoryFieldProps> = ({
         <SelectContent>
           {categories.map((category) => (
             <SelectItem key={category.id} value={category.id}>
-              {category.name}
+              {(language === 'en' && category.nameEn) ? category.nameEn : (language === 'he' && category.nameHe) ? category.nameHe : category.name /* fallback للعربي */ || category.nameEn || category.nameHe || ''}
             </SelectItem>
           ))}
         </SelectContent>
