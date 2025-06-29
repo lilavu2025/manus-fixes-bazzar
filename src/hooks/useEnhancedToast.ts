@@ -23,7 +23,22 @@ export const useEnhancedToast = () => {
 
   // Helper function to get translated message - simplified to use translation keys directly
   const getTranslatedMessage = (messageKey: string): string => {
-    return t(messageKey) || messageKey;
+    const translatedMessage = t(messageKey);
+    // إذا لم تجد الترجمة، أرجع رسالة افتراضية بدلاً من المفتاح
+    if (translatedMessage === messageKey) {
+      // رسائل افتراضية للمفاتيح الشائعة
+      const fallbackMessages: Record<string, string> = {
+        userDeleted: isRTL ? "تم حذف المستخدم بنجاح" : "User deleted successfully",
+        userDeleteFailed: isRTL ? "فشل حذف المستخدم" : "Failed to delete user",
+        userDisabledSuccess: isRTL ? "تم تعطيل المستخدم بنجاح" : "User disabled successfully",
+        userEnabledSuccess: isRTL ? "تم تفعيل المستخدم بنجاح" : "User enabled successfully",
+        userStatusUpdateFailed: isRTL ? "فشل في تحديث حالة المستخدم" : "Failed to update user status",
+        operationSuccessful: isRTL ? "تمت العملية بنجاح" : "Operation successful",
+        operationFailed: isRTL ? "فشلت العملية" : "Operation failed"
+      };
+      return fallbackMessages[messageKey] || translatedMessage;
+    }
+    return translatedMessage;
   };
 
   const toast = {
@@ -159,12 +174,12 @@ export const useEnhancedToast = () => {
     },
 
     // Admin operations
-    adminSuccess: (operation: 'userDeleted' | 'orderAdded' | 'orderEdited' | 'orderDeleted' | 'productAdded' | 'productUpdated' | 'productDeleted') => {
+    adminSuccess: (operation: string) => {
       const message = getTranslatedMessage(operation);
       toast.success(message);
     },
 
-    adminError: (operation: 'userDeleteFailed' | 'orderAddFailed') => {
+    adminError: (operation: string) => {
       const message = getTranslatedMessage(operation);
       toast.error(message);
     },

@@ -122,6 +122,17 @@ exports.handler = async function(event, context) {
     };
   }
 
+  // 5. تسجيل نشاط الأدمن
+  if (adminId) {
+    await supabase.from('user_activity_logs').insert([{
+      admin_id: adminId,
+      user_id: userId,
+      action: 'delete',
+      details: { deletedUser: true, deletedUserName: userData.full_name },
+      created_at: new Date().toISOString()
+    }]);
+  }
+
   return {
     statusCode: 200,
     body: JSON.stringify({ success: true })
