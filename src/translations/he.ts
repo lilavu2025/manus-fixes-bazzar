@@ -65,6 +65,32 @@ export const heTranslations = {
   pleaseWait: "אנא המתן",
   confirmationExpired: "האימות פג תוקף",
   confirmationLinkExpired: "קישור האימות פג תוקף",
+  // Phone Authentication
+  loginWithPhone: "התחבר עם טלפון",
+  signupWithPhone: "הרשם עם טלפון",
+  phoneNumber: "מספר טלפון",
+  enterPhone: "הזן את מספר הטלפון שלך",
+  verificationCode: "קוד אימות",
+  enterCode: "הזן קוד אימות",
+  sendCode: "שלח קוד",
+  verifyCode: "אמת קוד",
+  resendCode: "שלח קוד שוב",
+  codeExpired: "קוד פג תוקף",
+  invalidCode: "קוד אימות לא חוקי",
+  phoneVerificationSent: "קוד אימות נשלח לטלפון שלך",
+  phoneVerified: "הטלפון אומת בהצלחה",
+  phoneAuthError: "שגיאה באימות הטלפון",
+
+  // Google Authentication
+  loginWithGoogle: "התחבר עם Google",
+  signupWithGoogle: "הרשם עם Google",
+  continueWithGoogle: "המשך עם Google",
+  googleAuthError: "שגיאה באימות Google",
+  
+  // Alternative Login Methods
+  orLoginWith: "או התחבר עם",
+  orSignupWith: "או הרשם עם",
+  alternativeLogin: "שיטות התחברות חלופיות",
 
   // Admin Panel
   adminDashboard: "לוח בקרה מנהל",
@@ -550,7 +576,6 @@ export const heTranslations = {
   createOrder: "צור הזמנה",
   selectCustomer: "בחר לקוח",
   selectPaymentMethod: "בחר אמצעי תשלום",
-  phoneNumber: "מספר טלפון",
   orderItems: "פריטי הזמנה",
   addItem: "הוסף פריט",
   selectProduct: "בחר מוצר",

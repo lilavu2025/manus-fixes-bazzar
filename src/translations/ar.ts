@@ -36,6 +36,32 @@ export const arTranslations = {
   passwordTooShort: "كلمة المرور يجب أن تكون 6 أحرف على الأقل",
   invalidPhone: "رقم الهاتف غير صحيح، يجب أن يبدأ بـ 05 ويحتوي على 10 أرقام",
 
+  // Phone Authentication
+  loginWithPhone: "تسجيل الدخول بالهاتف",
+  signupWithPhone: "إنشاء حساب بالهاتف",
+  enterPhone: "أدخل رقم هاتفك",
+  verificationCode: "رمز التحقق",
+  enterCode: "أدخل رمز التحقق",
+  sendCode: "إرسال الرمز",
+  verifyCode: "تحقق من الرمز",
+  resendCode: "إعادة إرسال الرمز",
+  codeExpired: "انتهت صلاحية الرمز",
+  invalidCode: "رمز التحقق غير صحيح",
+  phoneVerificationSent: "تم إرسال رمز التحقق إلى هاتفك",
+  phoneVerified: "تم التحقق من الهاتف بنجاح",
+  phoneAuthError: "خطأ في المصادقة بالهاتف",
+  
+  // Google Authentication
+  loginWithGoogle: "تسجيل الدخول بـ Google",
+  signupWithGoogle: "إنشاء حساب بـ Google",
+  continueWithGoogle: "المتابعة بـ Google",
+  googleAuthError: "خطأ في المصادقة بـ Google",
+  
+  // Alternative Login Methods
+  orLoginWith: "أو سجل الدخول بواسطة",
+  orSignupWith: "أو أنشئ حساب بواسطة",
+  alternativeLogin: "طرق تسجيل دخول أخرى",
+
   // Email Confirmation
   confirmYourEmail: "تأكيد البريد الإلكتروني",
   checkYourEmail: "تحقق من بريدك الإلكتروني",

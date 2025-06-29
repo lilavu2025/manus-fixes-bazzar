@@ -66,6 +66,33 @@ export const enTranslations = {
   confirmationExpired: "Confirmation Expired",
   confirmationLinkExpired: "Confirmation link expired",
 
+   // Phone Authentication
+  loginWithPhone: "Login with Phone",
+  signupWithPhone: "Sign Up with Phone", 
+  phoneNumber: "Phone Number",
+  enterPhone: "Enter your phone number",
+  verificationCode: "Verification Code",
+  enterCode: "Enter verification code",
+  sendCode: "Send Code",
+  verifyCode: "Verify Code",
+  resendCode: "Resend Code",
+  codeExpired: "Code expired",
+  invalidCode: "Invalid verification code",
+  phoneVerificationSent: "Verification code sent to your phone",
+  phoneVerified: "Phone verified successfully",
+  phoneAuthError: "Phone authentication error",
+  
+  // Google Authentication
+  loginWithGoogle: "Login with Google",
+  signupWithGoogle: "Sign Up with Google",
+  continueWithGoogle: "Continue with Google",
+  googleAuthError: "Google authentication error",
+  
+  // Alternative Login Methods
+  orLoginWith: "Or login with",
+  orSignupWith: "Or sign up with",
+  alternativeLogin: "Alternative login methods",
+
   // Admin Panel
   adminDashboard: "Admin Dashboard",
   adminPanel: "Admin Panel",
@@ -507,7 +534,6 @@ export const enTranslations = {
   createOrder: "Create Order",
   selectCustomer: "Select Customer",
   selectPaymentMethod: "Select Payment Method",
-  phoneNumber: "Phone Number",
   orderItems: "Order Items",
   addItem: "Add Item",
   selectProduct: "Select Product",

@@ -16,6 +16,8 @@ import { useLanguage } from "@/utils/languageContextUtils";
 import { useEnhancedToast } from "@/hooks/useEnhancedToast";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import EmailConfirmationPending from "@/components/EmailConfirmationPending";
+import { PhoneAuth } from "@/components/PhoneAuth";
+import { GoogleAuth } from "@/components/GoogleAuth";
 import { getCookie } from "@/utils/commonUtils";
 
 const Auth: React.FC = () => {
@@ -43,6 +45,8 @@ const Auth: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showEmailConfirmation, setShowEmailConfirmation] = useState(false);
   const [pendingEmail, setPendingEmail] = useState("");
+  const [authMethod, setAuthMethod] = useState<'email' | 'phone' | 'google'>('email');
+  const [showPhoneAuth] = useState(false); // تعطيل مصادقة الهاتف مؤقتاً
 
   const location = window.location;
   const state = (window.history.state && window.history.state.usr && window.history.state.usr.from) ? window.history.state.usr : undefined;
@@ -174,6 +178,14 @@ const Auth: React.FC = () => {
     }
   };
 
+  const handleAuthSuccess = (message: string) => {
+    enhancedToast.success(message);
+  };
+
+  const handleAuthError = (error: string) => {
+    enhancedToast.error(error);
+  };
+
   const handleBackFromConfirmation = () => {
     setShowEmailConfirmation(false);
     setPendingEmail("");
@@ -261,165 +273,297 @@ const Auth: React.FC = () => {
                 </TabsList>
 
                 <TabsContent value="login">
-                  <form onSubmit={handleLogin} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="login-email">{t("email")}</Label>
-                      <Input
-                        id="login-email"
-                        name="login-email"
-                        type="email"
-                        autoComplete="username"
-                        value={loginData.email}
-                        onChange={(e) =>
-                          setLoginData((prev) => ({
-                            ...prev,
-                            email: e.target.value,
-                          }))
-                        }
-                        required
+                  {authMethod === 'email' && (
+                    <form onSubmit={handleLogin} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="login-email">{t("email")}</Label>
+                        <Input
+                          id="login-email"
+                          name="login-email"
+                          type="email"
+                          autoComplete="username"
+                          value={loginData.email}
+                          onChange={(e) =>
+                            setLoginData((prev) => ({
+                              ...prev,
+                              email: e.target.value,
+                            }))
+                          }
+                          required
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="login-password">{t("password")}</Label>
+                        <Input
+                          id="login-password"
+                          name="login-password"
+                          type="password"
+                          autoComplete="current-password"
+                          value={loginData.password}
+                          onChange={(e) =>
+                            setLoginData((prev) => ({
+                              ...prev,
+                              password: e.target.value,
+                            }))
+                          }
+                          required
+                        />
+                      </div>
+
+                      <Button
+                        type="submit"
+                        className="w-full"
+                        disabled={isLoading}
+                      >
+                        {isLoading ? t("loading") : t("login")}
+                      </Button>
+                    </form>
+                  )}
+
+                  {authMethod === 'phone' && showPhoneAuth && (
+                    <PhoneAuth
+                      onSuccess={handleAuthSuccess}
+                      onError={handleAuthError}
+                      loading={isLoading}
+                      setLoading={setIsLoading}
+                    />
+                  )}
+
+                  {authMethod === 'google' && (
+                    <div className="space-y-4">
+                      <GoogleAuth
+                        onSuccess={handleAuthSuccess}
+                        onError={handleAuthError}
+                        loading={isLoading}
+                        setLoading={setIsLoading}
+                        isSignUp={false}
                       />
                     </div>
+                  )}
 
-                    <div className="space-y-2">
-                      <Label htmlFor="login-password">{t("password")}</Label>
-                      <Input
-                        id="login-password"
-                        name="login-password"
-                        type="password"
-                        autoComplete="current-password"
-                        value={loginData.password}
-                        onChange={(e) =>
-                          setLoginData((prev) => ({
-                            ...prev,
-                            password: e.target.value,
-                          }))
-                        }
-                        required
-                      />
+                  {/* طرق المصادقة البديلة */}
+                  <div className="mt-6 space-y-3">
+                    <div className="relative">
+                      <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t" />
+                      </div>
+                      <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-background px-2 text-muted-foreground">
+                          {t("orLoginWith")}
+                        </span>
+                      </div>
                     </div>
 
-                    <Button
-                      type="submit"
-                      className="w-full"
-                      disabled={isLoading}
-                    >
-                      {isLoading ? t("loading") : t("login")}
-                    </Button>
-                  </form>
+                    <div className={`grid gap-2 ${showPhoneAuth ? 'grid-cols-3' : 'grid-cols-2'}`}>
+                      <Button
+                        variant={authMethod === 'email' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setAuthMethod('email')}
+                        className="text-xs"
+                      >
+                        {t("email")}
+                      </Button>
+                      {showPhoneAuth && (
+                        <Button
+                          variant={authMethod === 'phone' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setAuthMethod('phone')}
+                          className="text-xs"
+                        >
+                          {t("phone")}
+                        </Button>
+                      )}
+                      <Button
+                        variant={authMethod === 'google' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setAuthMethod('google')}
+                        className="text-xs"
+                      >
+                        Google
+                      </Button>
+                    </div>
+                  </div>
                 </TabsContent>
 
                 <TabsContent value="signup">
-                  <form onSubmit={handleSignup} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="signup-name">{t("fullName")}</Label>
-                      <Input
-                        id="signup-name"
-                        name="signup-name"
-                        type="text"
-                        autoComplete="name"
-                        value={signupData.fullName}
-                        onChange={(e) =>
-                          setSignupData((prev) => ({
-                            ...prev,
-                            fullName: e.target.value,
-                          }))
-                        }
-                        required
+                  {authMethod === 'email' && (
+                    <form onSubmit={handleSignup} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="signup-name">{t("fullName")}</Label>
+                        <Input
+                          id="signup-name"
+                          name="signup-name"
+                          type="text"
+                          autoComplete="name"
+                          value={signupData.fullName}
+                          onChange={(e) =>
+                            setSignupData((prev) => ({
+                              ...prev,
+                              fullName: e.target.value,
+                            }))
+                          }
+                          required
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="signup-phone">{t("phone")}</Label>
+                        <Input
+                          id="signup-phone"
+                          name="signup-phone"
+                          type="tel"
+                          autoComplete="tel"
+                          value={signupData.phone}
+                          onChange={(e) =>
+                            setSignupData((prev) => ({
+                              ...prev,
+                              phone: e.target.value,
+                            }))
+                          }
+                          required
+                          aria-invalid={!!signupErrors.phone}
+                          aria-describedby="signup-phone-error"
+                        />
+                        {signupErrors.phone && (
+                          <span
+                            id="signup-phone-error"
+                            className="text-xs text-red-600 block mt-1"
+                          >
+                            {signupErrors.phone}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="signup-email">{t("email")}</Label>
+                        <Input
+                          id="signup-email"
+                          name="signup-email"
+                          type="email"
+                          autoComplete="email"
+                          value={signupData.email}
+                          onChange={(e) =>
+                            setSignupData((prev) => ({
+                              ...prev,
+                              email: e.target.value,
+                            }))
+                          }
+                          required
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="signup-password">{t("password")}</Label>
+                        <Input
+                          id="signup-password"
+                          name="signup-password"
+                          type="password"
+                          autoComplete="new-password"
+                          value={signupData.password}
+                          onChange={(e) =>
+                            setSignupData((prev) => ({
+                              ...prev,
+                              password: e.target.value,
+                            }))
+                          }
+                          required
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="signup-confirm">
+                          {t("confirmPassword")}
+                        </Label>
+                        <Input
+                          id="signup-confirm"
+                          name="signup-confirm"
+                          type="password"
+                          autoComplete="new-password"
+                          value={signupData.confirmPassword}
+                          onChange={(e) =>
+                            setSignupData((prev) => ({
+                              ...prev,
+                              confirmPassword: e.target.value,
+                            }))
+                          }
+                          required
+                        />
+                      </div>
+
+                      <Button
+                        type="submit"
+                        className="w-full"
+                        disabled={isLoading}
+                      >
+                        {isLoading ? t("loading") : t("signup")}
+                      </Button>
+                    </form>
+                  )}
+
+                  {authMethod === 'phone' && showPhoneAuth && (
+                    <PhoneAuth
+                      onSuccess={handleAuthSuccess}
+                      onError={handleAuthError}
+                      loading={isLoading}
+                      setLoading={setIsLoading}
+                    />
+                  )}
+
+                  {authMethod === 'google' && (
+                    <div className="space-y-4">
+                      <GoogleAuth
+                        onSuccess={handleAuthSuccess}
+                        onError={handleAuthError}
+                        loading={isLoading}
+                        setLoading={setIsLoading}
+                        isSignUp={true}
                       />
                     </div>
+                  )}
 
-                    <div className="space-y-2">
-                      <Label htmlFor="signup-phone">{t("phone")}</Label>
-                      <Input
-                        id="signup-phone"
-                        name="signup-phone"
-                        type="tel"
-                        autoComplete="tel"
-                        value={signupData.phone}
-                        onChange={(e) =>
-                          setSignupData((prev) => ({
-                            ...prev,
-                            phone: e.target.value,
-                          }))
-                        }
-                        required
-                        aria-invalid={!!signupErrors.phone}
-                        aria-describedby="signup-phone-error"
-                      />
-                      {signupErrors.phone && (
-                        <span
-                          id="signup-phone-error"
-                          className="text-xs text-red-600 block mt-1"
-                        >
-                          {signupErrors.phone}
+                  {/* طرق المصادقة البديلة */}
+                  <div className="mt-6 space-y-3">
+                    <div className="relative">
+                      <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t" />
+                      </div>
+                      <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-background px-2 text-muted-foreground">
+                          {t("orSignupWith")}
                         </span>
+                      </div>
+                    </div>
+
+                    <div className={`grid gap-2 ${showPhoneAuth ? 'grid-cols-3' : 'grid-cols-2'}`}>
+                      <Button
+                        variant={authMethod === 'email' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setAuthMethod('email')}
+                        className="text-xs"
+                      >
+                        {t("email")}
+                      </Button>
+                      {showPhoneAuth && (
+                        <Button
+                          variant={authMethod === 'phone' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setAuthMethod('phone')}
+                          className="text-xs"
+                        >
+                          {t("phone")}
+                        </Button>
                       )}
+                      <Button
+                        variant={authMethod === 'google' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setAuthMethod('google')}
+                        className="text-xs"
+                      >
+                        Google
+                      </Button>
                     </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="signup-email">{t("email")}</Label>
-                      <Input
-                        id="signup-email"
-                        name="signup-email"
-                        type="email"
-                        autoComplete="email"
-                        value={signupData.email}
-                        onChange={(e) =>
-                          setSignupData((prev) => ({
-                            ...prev,
-                            email: e.target.value,
-                          }))
-                        }
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="signup-password">{t("password")}</Label>
-                      <Input
-                        id="signup-password"
-                        name="signup-password"
-                        type="password"
-                        autoComplete="new-password"
-                        value={signupData.password}
-                        onChange={(e) =>
-                          setSignupData((prev) => ({
-                            ...prev,
-                            password: e.target.value,
-                          }))
-                        }
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="signup-confirm">
-                        {t("confirmPassword")}
-                      </Label>
-                      <Input
-                        id="signup-confirm"
-                        name="signup-confirm"
-                        type="password"
-                        autoComplete="new-password"
-                        value={signupData.confirmPassword}
-                        onChange={(e) =>
-                          setSignupData((prev) => ({
-                            ...prev,
-                            confirmPassword: e.target.value,
-                          }))
-                        }
-                        required
-                      />
-                    </div>
-
-                    <Button
-                      type="submit"
-                      className="w-full"
-                      disabled={isLoading}
-                    >
-                      {isLoading ? t("loading") : t("signup")}
-                    </Button>
-                  </form>
+                  </div>
                 </TabsContent>
               </Tabs>
             </CardContent>

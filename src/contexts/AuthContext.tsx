@@ -168,6 +168,48 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setProfile((prev) => (prev ? { ...prev, ...data } : null));
   };
 
+  // تسجيل الدخول بالهاتف
+  const signInWithPhone = async (phone: string) => {
+    const { error } = await supabase.auth.signInWithOtp({
+      phone,
+      options: {
+        shouldCreateUser: true,
+      }
+    });
+    if (error) throw error;
+  };
+
+  // التحقق من رمز الهاتف
+  const verifyPhoneOtp = async (phone: string, token: string) => {
+    const { data, error } = await supabase.auth.verifyOtp({
+      phone,
+      token,
+      type: 'sms'
+    });
+    if (error) throw error;
+    
+    if (data.user) {
+      await fetchAndSetProfile(data.user.id);
+      handleUserRedirection({ ...profile!, id: data.user.id });
+    }
+    if (data.session) setSession(data.session);
+  };
+
+  // تسجيل الدخول بـ Google
+  const signInWithGoogle = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth`,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
+      }
+    });
+    if (error) throw error;
+  };
+
   // مراقبة جلسة supabase وتحديث البروفايل تلقائياً
   useEffect(() => {
     let ignore = false;
@@ -248,6 +290,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     signUp,
     signOut,
     updateProfile,
+    signInWithPhone,
+    verifyPhoneOtp,
+    signInWithGoogle,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -267,4 +312,7 @@ export type AuthContextType = {
   ) => Promise<void>;
   signOut: () => Promise<void>;
   updateProfile: (data: Partial<Profile>) => Promise<void>;
+  signInWithPhone: (phone: string) => Promise<void>;
+  verifyPhoneOtp: (phone: string, token: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
 };
