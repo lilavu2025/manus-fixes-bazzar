@@ -37,8 +37,15 @@ export const useAdminUsers = () => {
       const matchesSearch =
         user.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         user.email?.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesType =
-        userTypeFilter === "all" || user.user_type === userTypeFilter;
+      let matchesType = false;
+      if (userTypeFilter === "all") {
+        matchesType = true;
+      } else if (userTypeFilter === "new") {
+        // New users: created in last 30 days
+        matchesType = new Date(user.created_at) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      } else {
+        matchesType = user.user_type === userTypeFilter;
+      }
       let matchesStatus = true;
       if (statusFilter === "confirmed") {
         matchesStatus = !!user.email_confirmed_at;

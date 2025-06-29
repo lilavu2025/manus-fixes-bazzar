@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useLanguage } from "@/utils/languageContextUtils";
 import { useProductsRealtime } from "@/hooks/useProductsRealtime";
 import { useCategories } from "@/hooks/useSupabaseData";
@@ -29,6 +29,7 @@ const AdminProducts: React.FC = () => {
   const { isRTL, t, language } = useLanguage();
   const enhancedToast = useEnhancedToast();
   const location = useLocation();
+  const navigate = useNavigate();
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showViewDialog, setShowViewDialog] = useState(false);
@@ -132,6 +133,7 @@ const AdminProducts: React.FC = () => {
         setFilterCategory(foundCat.id);
         setFilterAppliedFromDashboard(`تم الفلترة حسب الفئة: ${filterCategoryName}`);
         setHasAppliedLocationFilters(true);
+        navigate(location.pathname, { replace: true }); // مسح state بعد تطبيق الفلتر
       }
     }
     
@@ -141,6 +143,7 @@ const AdminProducts: React.FC = () => {
       setFilterStock("low");
       setFilterAppliedFromDashboard("تم الفلترة: المنتجات منخفضة المخزون (1-10 قطع)");
       setHasAppliedLocationFilters(true);
+      navigate(location.pathname, { replace: true });
     }
     
     // فلترة المنتجات المنتهية من المخزون
@@ -149,9 +152,18 @@ const AdminProducts: React.FC = () => {
       setFilterStock("out");
       setFilterAppliedFromDashboard("تم الفلترة: المنتجات المنتهية من المخزون (0 قطع)");
       setHasAppliedLocationFilters(true);
+      navigate(location.pathname, { replace: true });
     }
-    
-    // البحث عن منتج محدد بالـ ID
+    else if (location.state.filterActive) {
+      setFilterActive(location.state.filterActive === "نشط" ? "active" : location.state.filterActive === "غير نشط" ? "inactive" : location.state.filterActive);
+      setFilterAppliedFromDashboard(
+        location.state.filterActive === "inactive" || location.state.filterActive === "غير نشط"
+          ? "تم الفلترة: المنتجات غير النشطة"
+          : "تم الفلترة: المنتجات النشطة"
+      );
+      setHasAppliedLocationFilters(true);
+      navigate(location.pathname, { replace: true });
+    }
     else if (location.state.filterProductId && products.length > 0) {
       const productId = location.state.filterProductId;
       const foundProduct = products.find(p => p.id === productId);
@@ -159,6 +171,7 @@ const AdminProducts: React.FC = () => {
         setSearchName(foundProduct.name || "");
         setFilterAppliedFromDashboard(`تم البحث عن المنتج: ${foundProduct.name}`);
         setHasAppliedLocationFilters(true);
+        navigate(location.pathname, { replace: true });
       }
     }
   }, [location.state, productCategories, products, hasAppliedLocationFilters]); // إضافة dependencies محددة

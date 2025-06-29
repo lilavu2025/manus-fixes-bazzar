@@ -7,9 +7,32 @@ import { useUsers } from "@/hooks/useSupabaseData";
 import { useProductsRealtime } from "@/hooks/useProductsRealtime";
 import { fetchTopOrderedProducts } from "@/integrations/supabase/dataSenders";
 import { Users, ShoppingCart, Package, BarChart3, CheckCircle, XCircle, AlertTriangle, UserPlus, UserCog, Truck, CreditCard, Star } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
-const ReportCard = ({ icon, color, title, value, label, loading, emptyMsg }) => (
-  <Card className="flex flex-col items-center justify-center p-4 shadow-md border-0 bg-white hover:shadow-lg transition-all min-h-[140px]">
+const reportRoutes = [
+  { path: null },
+  { path: "/admin/users", state: { filterType: "all" } },
+  { path: "/admin/users", state: { filterType: "wholesale" } },
+  { path: "/admin/users", state: { filterType: "retail" } },
+  { path: "/admin/users", state: { filterType: "admin" } },
+  { path: "/admin/users", state: { filterType: "new" } },
+  { path: "/admin/orders", state: { filterStatus: "delivered" } },
+  { path: "/admin/orders", state: { filterStatus: "pending" } },
+  { path: "/admin/orders", state: { filterStatus: "processing" } },
+  { path: "/admin/orders", state: { filterStatus: "shipped" } },
+  { path: "/admin/orders", state: { filterStatus: "cancelled" } },
+  { path: "/admin/products", state: { filterLowStock: true } },
+  { path: "/admin/products", state: { filterOutOfStock: true } },
+  { path: "/admin/products", state: { filterActive: "active" } },
+  { path: "/admin/products", state: { filterActive: "inactive" } },
+  { path: "/admin/products", state: { filterTopSelling: true } },
+];
+
+const ReportCard = ({ icon, color, title, value, label, loading, emptyMsg, onClick }) => (
+  <Card
+    className="flex flex-col items-center justify-center p-4 shadow-md border-0 bg-white hover:shadow-lg transition-all min-h-[140px] cursor-pointer"
+    onClick={onClick}
+  >
     <div className={`rounded-full p-2 mb-2 bg-opacity-10 ${color}`}>
       {icon}
     </div>
@@ -22,6 +45,7 @@ const ReportCard = ({ icon, color, title, value, label, loading, emptyMsg }) => 
 
 const AdminReports = () => {
   const { t } = useLanguage();
+  const navigate = useNavigate();
   // استخدم نفس الهُوكس كما في صفحة الأدمن الرئيسية
   const { data: ordersStats, isLoading: ordersLoading } = useAdminOrdersStats(t);
   const { data: users = [], isLoading: usersLoading } = useUsers();
@@ -44,7 +68,7 @@ const AdminReports = () => {
 
   const activeProducts = products.filter(p => p.active).length;
   const inactiveProducts = products.filter(p => !p.active).length;
-  const lowStock = products.filter(p => p.stock_quantity > 0 && p.stock_quantity <= 5).length;
+  const lowStock = products.filter(p => p.stock_quantity > 0 && p.stock_quantity <= 10).length;
   const outOfStock = products.filter(p => p.stock_quantity === 0).length;
 
   const [topSelling, setTopSelling] = useState({ count: 0, totalSales: 0, loading: true });
@@ -122,7 +146,15 @@ const AdminReports = () => {
       <h1 className="text-3xl font-bold mb-8 text-center text-gray-800">{t("reports")}</h1>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-10">
         {reports.map((r, i) => (
-          <ReportCard key={i} {...r} />
+          <ReportCard
+            key={i}
+            {...r}
+            onClick={() => {
+              const route = reportRoutes[i];
+              if (!route || !route.path) return;
+              navigate(route.path, route.state ? { state: route.state } : undefined);
+            }}
+          />
         ))}
       </div>
       <div className="max-w-4xl mx-auto">

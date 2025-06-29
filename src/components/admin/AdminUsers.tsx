@@ -45,6 +45,8 @@ const AdminUsers: React.FC = () => {
         admin: "admin",
         wholesale: "wholesale",
         retail: "retail",
+        all: "all",
+        new: "new",
       };
       const mappedType = typeMapping[filterType] || filterType;
       setUserTypeFilter(mappedType);

@@ -71,6 +71,7 @@ const UserFilters: React.FC<UserFiltersProps> = ({
                   <SelectItem value="admin">{t("admin")}</SelectItem>
                   <SelectItem value="wholesale">{t("wholesale")}</SelectItem>
                   <SelectItem value="retail">{t("retail")}</SelectItem>
+                  <SelectItem value="new">{t("newUsersReport")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
