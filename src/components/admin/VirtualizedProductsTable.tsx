@@ -104,81 +104,59 @@ const PaginatedProductsTable: React.FC<PaginatedProductsTableProps> = ({
       </CardHeader>
       <CardContent>
         {/* Products Grid */}
-        <div className="space-y-2">
+        <div className="space-y-3 divide-y divide-gray-100">
           {currentProducts.map((product) => (
             <div
               key={product.id}
-              className="flex items-center border border-gray-200 rounded-lg hover:bg-gray-50 p-3"
+              className="flex flex-col sm:flex-row items-center sm:items-stretch bg-white border border-gray-200 rounded-xl shadow-sm hover:shadow-lg transition-all p-4 gap-4 sm:gap-6 relative overflow-hidden"
             >
               {/* Product Image */}
-              <div className="w-16 h-16 flex-shrink-0">
+              <div className="w-20 h-20 flex-shrink-0 flex items-center justify-center bg-gray-50 rounded-lg border">
                 {product.image ? (
                   <img
                     src={product.image}
                     alt={getProductName(product)}
-                    className="w-full h-full object-cover rounded-md"
+                    className="w-full h-full object-cover rounded-lg"
                     loading="lazy"
                   />
                 ) : (
-                  <div className="w-full h-full bg-gray-200 rounded-md flex items-center justify-center">
-                    <span className="text-xs text-gray-500">لا توجد صورة</span>
-                  </div>
+                  <span className="text-xs text-gray-400">{t("noImage")}</span>
                 )}
               </div>
 
               {/* Product Info */}
-              <div className="flex-1 min-w-0 px-4">
-                <p className="font-medium text-gray-900 truncate">
-                  {getProductName(product)}
-                </p>
-                <div className="flex items-center gap-2 mt-1">
-                  <Badge variant="outline" className="text-xs">
-                    {getCategoryName(product.category || "")}
-                  </Badge>
-                  <span className="font-semibold text-gray-900">
-                    {formatPrice(product.price)}
-                  </span>
-                  <span className="text-xs text-blue-700 font-bold ml-2">
-                    {t("salesCount")}: {product.sales_count ?? 0}
-                  </span>
+              <div className="flex-1 min-w-0 flex flex-col justify-center">
+                <div className="flex flex-wrap items-center gap-2 mb-1">
+                  <span className="font-bold text-lg text-gray-800 truncate max-w-[180px]">{getProductName(product)}</span>
+                  <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">{getCategoryName(product.category || "")}</Badge>
+                  <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">{formatPrice(product.price)}</Badge>
+                  <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">{t("salesCount")}: {product.sales_count ?? 0}</Badge>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                  <span>{t("stockQuantity")}: <span className="font-semibold text-gray-700">{product.stock_quantity ?? 0}</span></span>
+                  <span>{t("status")}: <span className={product.active ? "text-green-600 font-bold" : "text-red-600 font-bold"}>{product.active ? t("active") : t("inactive")}</span></span>
                 </div>
               </div>
 
-              {/* Stock & Status */}
-              <div className="flex items-center gap-3">                  <Badge
-                    variant={
-                      (product.stock_quantity ?? 0) <= 0
-                        ? "destructive"
-                        : (product.stock_quantity ?? 0) <= 10
-                        ? "secondary"
-                        : "default"
-                    }
-                    className="text-xs"
-                  >
-                    المخزون: {product.stock_quantity ?? 0}
-                  </Badge>
-                <Badge variant={product.active ? "default" : "secondary"} className="text-xs">
-                  {product.active ? t("active") : t("inactive")}
-                </Badge>
-              </div>
-
               {/* Actions */}
-              <div className="flex gap-1 ml-3">
+              <div className="flex flex-row gap-2 items-center mt-4 sm:mt-0 sm:ml-2">
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  variant="outline"
+                  size="icon"
+                  className="rounded-full border-blue-200 text-blue-700 hover:bg-blue-50"
                   onClick={() => onViewProduct(product)}
-                  className="h-8 w-8 p-0"
+                  aria-label={t("view")}
                 >
-                  <Eye className="h-4 w-4" />
+                  <Eye className="h-5 w-5" />
                 </Button>
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  variant="outline"
+                  size="icon"
+                  className="rounded-full border-green-200 text-green-700 hover:bg-green-50"
                   onClick={() => onEditProduct(product)}
-                  className="h-8 w-8 p-0"
+                  aria-label={t("edit")}
                 >
-                  <Edit className="h-4 w-4" />
+                  <Edit className="h-5 w-5" />
                 </Button>
                 <AlertDialog open={deleteDialogOpen && productToDelete?.id === product.id} onOpenChange={(open) => {
                   setDeleteDialogOpen(open);
@@ -186,28 +164,30 @@ const PaginatedProductsTable: React.FC<PaginatedProductsTableProps> = ({
                 }}>
                   <AlertDialogTrigger asChild>
                     <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                      variant="outline"
+                      size="icon"
+                      className="rounded-full border-red-200 text-red-600 hover:bg-red-50"
                       onClick={() => {
                         setProductToDelete(product);
                         setDeleteDialogOpen(true);
                       }}
+                      aria-label={t("delete")}
                     >
-                      <Trash className="h-4 w-4" />
+                      <Trash className="h-5 w-5" />
                     </Button>
                   </AlertDialogTrigger>
-                  <AlertDialogContent>
+                  <AlertDialogContent className="max-w-md mx-auto rounded-xl p-6">
                     <AlertDialogHeader>
-                      <AlertDialogTitle className={isRTL ? "text-right" : "text-left"}>{t("deleteProduct")}</AlertDialogTitle>
-                      <AlertDialogDescription className={isRTL ? "text-right" : "text-left"}>
-                        {t("deleteProductConfirmation")} "{getProductName(product)}"?
+                      <AlertDialogTitle className="text-lg font-bold text-red-700 text-center">{t("deleteProduct")}</AlertDialogTitle>
+                      <AlertDialogDescription className="text-center text-gray-600">
+                        {t("deleteProductConfirmation")}<br />
+                        <span className="font-bold text-gray-900">"{getProductName(product)}"</span>
                       </AlertDialogDescription>
                     </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
+                    <AlertDialogFooter className="flex justify-center gap-4 mt-4">
+                      <AlertDialogCancel className="rounded-lg px-4 py-2 bg-gray-100 text-gray-700 font-bold hover:bg-gray-200">{t("cancel")}</AlertDialogCancel>
                       <AlertDialogAction
-                        className="bg-red-600 hover:bg-red-700"
+                        className="rounded-lg px-4 py-2 bg-red-600 text-white font-bold hover:bg-red-700"
                         onClick={() => {
                           if (productToDelete) {
                             onDeleteProduct(productToDelete.id, getProductName(productToDelete));
@@ -225,20 +205,18 @@ const PaginatedProductsTable: React.FC<PaginatedProductsTableProps> = ({
             </div>
           ))}
         </div>
-
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex justify-center items-center gap-2 mt-6">
+          <div className="flex flex-wrap justify-center items-center gap-2 mt-8">
             <Button
               variant="outline"
               size="sm"
               onClick={() => goToPage(currentPage - 1)}
               disabled={currentPage === 1}
+              className="rounded-lg"
             >
-              السابق
+              {t("prev")}
             </Button>
-            
-            {/* Page Numbers */}
             <div className="flex gap-1">
               {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                 let pageNum;
@@ -251,28 +229,28 @@ const PaginatedProductsTable: React.FC<PaginatedProductsTableProps> = ({
                 } else {
                   pageNum = currentPage - 2 + i;
                 }
-                
+                if (pageNum < 1 || pageNum > totalPages) return null;
                 return (
                   <Button
                     key={pageNum}
                     variant={currentPage === pageNum ? "default" : "outline"}
                     size="sm"
                     onClick={() => goToPage(pageNum)}
-                    className="w-8 h-8 p-0"
+                    className={`w-8 h-8 p-0 rounded-lg ${currentPage === pageNum ? 'bg-blue-600 text-white' : ''}`}
                   >
                     {pageNum}
                   </Button>
                 );
               })}
             </div>
-
             <Button
               variant="outline"
               size="sm"
               onClick={() => goToPage(currentPage + 1)}
               disabled={currentPage === totalPages}
+              className="rounded-lg"
             >
-              التالي
+              {t("next")}
             </Button>
           </div>
         )}
