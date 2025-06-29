@@ -1,10 +1,21 @@
 import React, { useMemo, useState } from "react";
-import { useLanguage } from "../../utils/languageContextUtils";
+import { isRTL, useLanguage } from "../../utils/languageContextUtils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Edit, Trash, Eye } from "lucide-react";
 import { Product } from "@/types/product";
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
 
 interface AdminCategory {
   id: string;
@@ -32,6 +43,8 @@ const PaginatedProductsTable: React.FC<PaginatedProductsTableProps> = ({
 }) => {
   const { t, language } = useLanguage();
   const [currentPage, setCurrentPage] = useState(1);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
 
   // دالة لجلب اسم المنتج حسب اللغة
   const getProductName = (product: Product) => {
@@ -164,14 +177,47 @@ const PaginatedProductsTable: React.FC<PaginatedProductsTableProps> = ({
                 >
                   <Edit className="h-4 w-4" />
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onDeleteProduct(product.id, getProductName(product))}
-                  className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
-                >
-                  <Trash className="h-4 w-4" />
-                </Button>
+                <AlertDialog open={deleteDialogOpen && productToDelete?.id === product.id} onOpenChange={(open) => {
+                  setDeleteDialogOpen(open);
+                  if (!open) setProductToDelete(null);
+                }}>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                      onClick={() => {
+                        setProductToDelete(product);
+                        setDeleteDialogOpen(true);
+                      }}
+                    >
+                      <Trash className="h-4 w-4" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle className={isRTL ? "text-right" : "text-left"}>{t("deleteProduct")}</AlertDialogTitle>
+                      <AlertDialogDescription className={isRTL ? "text-right" : "text-left"}>
+                        {t("deleteProductConfirmation")} "{getProductName(product)}"?
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
+                      <AlertDialogAction
+                        className="bg-red-600 hover:bg-red-700"
+                        onClick={() => {
+                          if (productToDelete) {
+                            onDeleteProduct(productToDelete.id, getProductName(productToDelete));
+                            setDeleteDialogOpen(false);
+                            setProductToDelete(null);
+                          }
+                        }}
+                      >
+                        {t("delete")}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             </div>
           ))}
