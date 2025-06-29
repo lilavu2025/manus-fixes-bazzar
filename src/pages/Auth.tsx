@@ -84,8 +84,6 @@ const Auth: React.FC = () => {
         }
       } else if (redirectParam) {
         // التوجه للصفحة المحددة في redirect parameter فوراً
-        console.log("Immediate redirect after login to:", redirectParam);
-        // استخدام navigate للتوجيه السلس
         navigate(`/${redirectParam}`, { replace: true });
         return; // منع التنفيذ الإضافي
       } else if (state && state.from) {
@@ -95,17 +93,6 @@ const Auth: React.FC = () => {
       }
     }
   }, [user, loading, navigate, state, checkProfileCompleteness]);
-
-  // التحقق من وجود بيانات مؤقتة عند تحميل الصفحة
-  useEffect(() => {
-    const tempUserData = localStorage.getItem('tempUserData');
-    if (tempUserData && user) {
-      console.log('Found temp user data on page load, user exists');
-      // إذا كان المستخدم موجود والبيانات المؤقتة موجودة، 
-      // هذا يعني أن OAuth نجح لكن البيانات لم تُطبق بعد
-      setShowCompleteProfile(true);
-    }
-  }, [user]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -619,8 +606,7 @@ const Auth: React.FC = () => {
         open={showCompleteProfile}
         onCompleted={() => {
           setShowCompleteProfile(false);
-          // إعادة تشغيل useEffect للتوجيه بعد إكمال البيانات
-          window.location.reload();
+          // التوجيه سيحدث تلقائياً في AuthContext بعد إكمال البيانات
         }}
       />
     </div>

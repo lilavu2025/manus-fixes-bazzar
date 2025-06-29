@@ -40,6 +40,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const location = useLocation();
   const sessionRef = useRef<Session | null>(null);
   const lastSessionCheck = useRef<number>(Date.now());
+  const hasShownToastRef = useRef<boolean>(false); // منع تكرار Toast
   const enhancedToast = useEnhancedToast();
 
   // hooks
@@ -119,11 +120,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       throw new Error('User not authenticated');
     }
 
-    console.log('=== Starting completeGoogleProfile ===');
-    console.log('User ID:', session.user.id);
-    console.log('Full name to save:', fullName);
-    console.log('Phone to save:', phone);
-
     let retryCount = 0;
     const maxRetries = 3;
 
@@ -136,34 +132,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           email_confirmed_at: new Date().toISOString() // تأكيد الإيميل للتسجيل عبر Google
         };
         
-        console.log(`Attempt ${retryCount + 1} - Updates to send:`, updates);
-        
         const result = await updateProfileMutation.mutateAsync({
           userId: session.user.id,
           updates
         });
-        
-        console.log('Profile update result:', result);
         
         // انتظار قصير لضمان تطبيق التحديث في قاعدة البيانات
         await new Promise(resolve => setTimeout(resolve, 1000));
         
         // إعادة جلب البيانات لتحديث الحالة
         await fetchAndSetProfile(session.user.id);
-        console.log('Profile refetched successfully');
         
-        // التحقق من أن البيانات تم حفظها فعلاً
-        console.log('Profile update completed successfully');
+        // التوجيه بعد إكمال البيانات
+        const updatedProfile = await fetchUserProfile(session.user.id);
+        if (updatedProfile) {
+          handleUserRedirection(updatedProfile);
+        }
         
         // إذا وصلنا هنا، العملية نجحت
         return;
         
       } catch (error) {
         retryCount++;
-        console.error(`Attempt ${retryCount} failed:`, error);
         
         if (retryCount >= maxRetries) {
-          console.error('All retry attempts failed');
           throw error;
         }
         
@@ -232,6 +224,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     await signOutMutation.mutateAsync();
     setProfile(null);
     setSession(null);
+    hasShownToastRef.current = false; // إعادة تعيين التوست عند تسجيل الخروج
     deleteCookie("lastLoginTime");
     deleteCookie("lastVisitedPath");
     navigate("/", { replace: true });
@@ -303,57 +296,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     });
     // مراقبة تغيّر حالة المصادقة، وعند وجود مستخدم جديد يتم جلب بياناته بعد التأكد من وجود session.user باستخدام setTimeout
     const { data: listener } = supabase.auth.onAuthStateChange(
-      async (_, session) => {
+      async (event, session) => {
         setSession(session);
         sessionRef.current = session;
-        if (session?.user?.id) {
+        
+        if (session?.user?.id && !hasShownToastRef.current) {
           setTimeout(async () => {
             // جلب البروفايل عبر الدالة المخصصة فقط (وليس مباشرة من قاعدة البيانات)
             await fetchAndSetProfile(session.user.id);
             
-            // التحقق من وجود بيانات مؤقتة وتطبيقها إذا لزم الأمر
-            const tempUserData = localStorage.getItem('tempUserData');
-            console.log('Checking for temp user data:', tempUserData);
-            
-            if (tempUserData) {
-              try {
-                const userData = JSON.parse(tempUserData);
-                console.log('Processing temp user data after OAuth:', userData);
-                
-                // التحقق من صحة البيانات قبل المعالجة
-                if (userData.fullName && userData.fullName.trim() && 
-                    userData.phone && userData.phone.trim()) {
-                  
-                  console.log('Valid temp data found, proceeding with profile completion');
-                  
-                  // إكمال البيانات باستخدام البيانات المؤقتة
-                  await completeGoogleProfile(userData.fullName.trim(), userData.phone.trim());
-                  
-                  // حذف البيانات المؤقتة بعد نجاح العملية
-                  localStorage.removeItem('tempUserData');
-                  console.log('Temp user data processed and cleaned up');
-                  
-                  // إظهار toast النجاح بعد إكمال التسجيل
-                  enhancedToast.authSuccess('signup');
-                } else {
-                  console.warn('Invalid temp data found:', userData);
-                  localStorage.removeItem('tempUserData');
-                  enhancedToast.authError('signup', 'بيانات التسجيل غير مكتملة');
-                }
-              } catch (error) {
-                console.error('Error processing temp user data:', error);
-                // حذف البيانات المؤقتة حتى لو فشلت العملية
-                localStorage.removeItem('tempUserData');
-                enhancedToast.authError('signup', 'خطأ في إكمال بيانات التسجيل');
+            if (event === 'SIGNED_IN' && !hasShownToastRef.current) {
+              // التحقق من أن المستخدم لديه بيانات كاملة
+              const currentProfile = await fetchUserProfile(session.user.id);
+              
+              if (currentProfile && currentProfile.full_name && currentProfile.phone) {
+                // مستخدم موجود مع بيانات كاملة - تسجيل دخول عادي
+                enhancedToast.authSuccess('login');
+                handleUserRedirection(currentProfile);
+              } else {
+                // مستخدم جديد أو ناقص البيانات - يحتاج إكمال البيانات
+                enhancedToast.authSuccess('signup');
+                // ستظهر نافذة إكمال البيانات تلقائياً في صفحة Auth
               }
-            } else {
-              console.log('No temp data found - this is a regular login');
-              // إذا لم توجد بيانات مؤقتة، هذا يعني تسجيل دخول عادي
-              enhancedToast.authSuccess('login');
+              hasShownToastRef.current = true;
             }
           }, 1000); // زيادة الانتظار لضمان اكتمال العمليات
-        } else {
+        } else if (!session?.user?.id) {
           setProfile(null);
+          hasShownToastRef.current = false; // إعادة تعيين التوست عند تسجيل الخروج
         }
       },
     );

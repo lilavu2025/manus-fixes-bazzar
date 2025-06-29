@@ -33,22 +33,14 @@ export const CompleteProfileAfterGoogle: React.FC<CompleteProfileAfterGoogleProp
 
   const isRTL = language === 'ar' || language === 'he';
 
-  // تحميل البيانات المؤقتة إذا كانت متوفرة
+  // إعادة تعيين النموذج عند فتح/إغلاق النافذة
   useEffect(() => {
     if (open) {
-      const tempUserData = localStorage.getItem('tempUserData');
-      if (tempUserData) {
-        try {
-          const userData = JSON.parse(tempUserData);
-          console.log('Loading temp data into complete profile form:', userData);
-          setFormData({
-            fullName: userData.fullName || '',
-            phone: userData.phone || ''
-          });
-        } catch (error) {
-          console.error('Error parsing temp user data in complete profile:', error);
-        }
-      }
+      setFormData({
+        fullName: '',
+        phone: ''
+      });
+      setFormErrors({});
     }
   }, [open]);
 
@@ -95,14 +87,9 @@ export const CompleteProfileAfterGoogle: React.FC<CompleteProfileAfterGoogleProp
     try {
       await completeGoogleProfile(formData.fullName, formData.phone);
       
-      // حذف البيانات المؤقتة بعد النجاح
-      localStorage.removeItem('tempUserData');
-      console.log('Profile completed and temp data cleaned up');
-      
       enhancedToast.success(t('profileCompletedSuccess'));
       onCompleted();
     } catch (error: any) {
-      console.error('Error completing profile:', error);
       enhancedToast.error(error.message || t('profileCompletionError'));
     } finally {
       setLoading(false);
