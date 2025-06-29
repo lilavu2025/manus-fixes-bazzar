@@ -255,7 +255,7 @@ const BannerCard = ({
                   {banner.active ? (
                     <>
                       <EyeOff className="h-4 w-4 mr-2" />
-                      {t("deactivate") || "إلغاء التفعيل"}
+                      {t("deactivated") || "إلغاء التفعيل"}
                     </>
                   ) : (
                     <>

@@ -1061,6 +1061,8 @@ export const enTranslations = {
   failedToLoadBanners: "Failed to load banners. Please try again.",
   bannerCreatedSuccessfully: "Banner created successfully",
   failedToCreateBanner: "Failed to create banner",
+  createBanner: "Create Banner",
+  banners: "Banners",
   failedToUpdateBanner: "Failed to update banner",
   failedToDeleteBanner: "Failed to delete banner",
   activated: "Activated",
@@ -1103,4 +1105,8 @@ export const enTranslations = {
   productAddFailed: "Failed to add product",
   invalidCredentials: "Invalid credentials provided",
   serverError: "Server error, please try again later",
+
+  activeOnly: "Active Only",
+  inactiveOnly: "Inactive Only",
+  remove: "Remove"
 };

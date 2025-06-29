@@ -570,6 +570,7 @@ export const heTranslations = {
   retry: "נסה שוב",
   bannerCreatedSuccessfully: "באנר נוצר בהצלחה!",
   failedToCreateBanner: "נכשל ביצירת באנר",
+  createBanner: "צור באנר",
   failedToUpdateBanner: "נכשל בעדכון באנר",
   failedToDeleteBanner: "נכשל במחיקת באנר",
   activated: "הופעל",
@@ -1084,4 +1085,6 @@ export const heTranslations = {
   productAddFailed: "הוספת המוצר נכשלה",
   serverError: "שגיאה בשרת, אנא נסה שוב מאוחר יותר",
   invalidCredentials: "פרטי ההתחברות אינם נכונים",
+
+  remove: "הסר",
 };

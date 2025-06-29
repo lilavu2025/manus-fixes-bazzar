@@ -1029,8 +1029,11 @@ export const arTranslations = {
   failedToLoadBanners: "فشل في تحميل البانرات. يرجى المحاولة مرة أخرى.",
   bannerCreatedSuccessfully: "تم إنشاء البانر بنجاح!",
   failedToCreateBanner: "فشل في إنشاء البانر",
+  createBanner: "إنشاء بانر",
   failedToUpdateBanner: "فشل في تحديث البانر",
   failedToDeleteBanner: "فشل في حذف البانر",
+  banners: "البانرات",
+  banner: "بانر",
   activated: "تفعيل",
   deactivated: "إلغاء تفعيل",
   successfully: "البانر بنجاح!",
@@ -1078,4 +1081,9 @@ export const arTranslations = {
   changeHistory: "تاريخ التغييرات",
   noChangesRecorded: "لم يتم تسجيل تغييرات",
   activityLogEnhanced: "سجل النشاط المحسن",
+
+  prices: "الأسعار",
+  activeOnly: "نشط فقط",
+  inactiveOnly: "غير نشط فقط",
+  remove: "إزالة",
 };

@@ -100,7 +100,7 @@ const OrderAddDialog: React.FC<OrderAddDialogProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl w-full max-h-[90vh] overflow-y-auto p-0 sm:p-0">
         <DialogHeader className="sticky top-0 z-10 bg-white/90 backdrop-blur border-b px-6 py-4 rounded-t-2xl">
-          <DialogTitle className="text-2xl font-bold mb-1 text-primary text-center">
+          <DialogTitle className={`text-2xl font-bold mb-1 text-primary text-center ${isRTL ? "text-right" : "text-left"}`}>
             <Plus className="h-5 w-5 text-primary" />
             {t("addNewOrder") + " " || "إضافة طلب جديد"}
             {nextOrderNumber && (
