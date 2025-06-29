@@ -138,6 +138,9 @@ const PaginatedProductsTable: React.FC<PaginatedProductsTableProps> = ({
                   <span className="font-semibold text-gray-900">
                     {formatPrice(product.price)}
                   </span>
+                  <span className="text-xs text-blue-700 font-bold ml-2">
+                    {t("salesCount")}: {product.sales_count ?? 0}
+                  </span>
                 </div>
               </div>
 
