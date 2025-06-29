@@ -43,7 +43,7 @@ export const AuthMethodsDemo: React.FC = () => {
         handleSuccess(t('signupSuccess'));
       } else {
         await signIn(formData.email, formData.password);
-        handleSuccess(t('loginSuccess'));
+        // Success message will be handled by AuthContext onAuthStateChange
       }
     } catch (error: any) {
       handleError(error.message);

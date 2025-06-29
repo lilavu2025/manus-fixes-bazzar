@@ -25,9 +25,9 @@ export const GoogleAuth: React.FC<GoogleAuthProps> = ({
     setLoading(true);
     try {
       await signInWithGoogle();
-
-      // لا نحتاج لانتظار النتيجة هنا لأن OAuth سيعيد توجيه المستخدم
-      onSuccess(isSignUp ? t('signupSuccess') : t('loginSuccess'));
+      
+      // لا نظهر toast هنا لأن المستخدم سيُوجه إلى Google
+      // سيتم التعامل مع النجاح/الفشل بعد العودة من Google في AuthContext
     } catch (error: any) {
       onError(error.message || t('googleAuthError'));
     } finally {

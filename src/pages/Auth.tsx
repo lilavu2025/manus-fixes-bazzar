@@ -108,7 +108,7 @@ const Auth: React.FC = () => {
       }
 
       await signIn(loginData.email, loginData.password);
-      enhancedToast.authSuccess('login');
+      // Success message will be handled by AuthContext onAuthStateChange
     } catch (error: unknown) {
       console.error("Login error:", error);
       if (

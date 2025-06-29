@@ -306,28 +306,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setSession(session);
         sessionRef.current = session;
         
-        if (session?.user?.id && !hasShownToastRef.current) {
+        if (session?.user?.id && !hasShownToastRef.current && event === 'SIGNED_IN') {
           setTimeout(async () => {
+            // التأكد من أن التوست لم يتم عرضه بعد
+            if (hasShownToastRef.current) return;
+            
             // جلب البروفايل عبر الدالة المخصصة فقط (وليس مباشرة من قاعدة البيانات)
             await fetchAndSetProfile(session.user.id);
             
-            if (event === 'SIGNED_IN' && !hasShownToastRef.current) {
-              // التحقق من أن المستخدم لديه بيانات كاملة
-              const currentProfile = await fetchUserProfile(session.user.id);
-              
-              if (currentProfile && currentProfile.full_name && currentProfile.phone) {
-                // مستخدم موجود مع بيانات كاملة - تسجيل دخول عادي
-                enhancedToast.authSuccess('login');
-                handleUserRedirection(currentProfile);
-              } else {
-                // مستخدم جديد أو ناقص البيانات - يحتاج إكمال البيانات
-                enhancedToast.info(t('pleaseCompleteYourProfile'));
-                // ستظهر نافذة إكمال البيانات تلقائياً في صفحة Auth
-              }
-              hasShownToastRef.current = true;
+            // التحقق مرة أخرى من أن التوست لم يتم عرضه بعد
+            if (hasShownToastRef.current) return;
+            
+            // التحقق من أن المستخدم لديه بيانات كاملة
+            const currentProfile = await fetchUserProfile(session.user.id);
+            
+            if (currentProfile && currentProfile.full_name && currentProfile.phone) {
+              // مستخدم موجود مع بيانات كاملة - تسجيل دخول عادي
+              enhancedToast.authSuccess('login');
+              handleUserRedirection(currentProfile);
+            } else {
+              // مستخدم جديد أو ناقص البيانات - يحتاج إكمال البيانات
+              enhancedToast.info(t('pleaseCompleteYourProfile'));
+              // ستظهر نافذة إكمال البيانات تلقائياً في صفحة Auth
             }
+            hasShownToastRef.current = true;
           }, 1000); // زيادة الانتظار لضمان اكتمال العمليات
-        } else if (!session?.user?.id) {
+        } else if (!session?.user?.id && event === 'SIGNED_OUT') {
           setProfile(null);
           hasShownToastRef.current = false; // إعادة تعيين التوست عند تسجيل الخروج
         }
