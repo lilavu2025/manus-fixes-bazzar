@@ -41,6 +41,7 @@ import { mapProductFromDb } from "@/types/mapProductFromDb";
 import type { Product } from "@/types/index";
 import type { ProductRow } from "@/integrations/supabase/dataFetchers";
 import AdminReports from "@/pages/AdminReports";
+import { storeConfig } from "@/config/storeConfig";
 
 // تعريف أنواع الطلب والمنتج بشكل مبسط
 interface PendingOrder {
@@ -154,8 +155,7 @@ const AdminDashboard: React.FC = () => {
 
   return (
     <div
-      className={`min-h-screen bg-gray-50 ${isRTL ? "rtl" : "ltr"}`}
-      dir={isRTL ? "rtl" : "ltr"}
+      className={`min-h-screen`} style={{ background: "var(--background)" }} dir={isRTL ? "rtl" : "ltr"}
     >
       <div className="flex">
         {/* Mobile Overlay */}
@@ -179,6 +179,7 @@ const AdminDashboard: React.FC = () => {
             flex flex-col min-h-screen
             fixed lg:relative z-50
           `}
+          style={{ background: "var(--card)", borderRight: "1px solid var(--border)" }}
         >
           {/* Toggle Button - Desktop */}
           <Button
@@ -215,17 +216,29 @@ const AdminDashboard: React.FC = () => {
             <div
               className={`flex items-center gap-4 mb-6 lg:mb-8 transition-all duration-300 ${sidebarCollapsed ? "lg:justify-center" : ""}`}
             >
-              <div className="w-10 h-10 lg:w-12 lg:h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
-                <span className="text-white font-bold text-lg lg:text-xl">
-                  م
-                </span>
+              {/* لون خلفية مربع اللوجو (card) */}
+              <div className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0 overflow-hidden" style={{ background: "var(--card)" }}>
+                {storeConfig.logo ? (
+                  <img
+                    src={storeConfig.logo}
+                    alt={t('storeName')}
+                    className="w-full h-full object-contain"
+                  />
+                ) : (
+                  // لون نص أول حرف (text)
+                  <span className="text-gray-700 font-bold text-lg lg:text-xl" style={{ color: "var(--text)" }}>
+                    {t('storeName')?.charAt(0) || 'م'}
+                  </span>
+                )}
               </div>
               {(!sidebarCollapsed || sidebarOpen) && (
                 <div className="animate-fade-in min-w-0">
-                  <h2 className="font-bold text-base lg:text-lg text-gray-800 truncate">
+                  {/* لون اسم المتجر (text) */}
+                  <h2 className="font-bold text-base lg:text-lg text-gray-800 truncate" style={{ color: "var(--text)" }}>
                     {t("storeName")}
                   </h2>
                   <p className="text-xs lg:text-sm text-gray-500 truncate">
+                  {/* لون وصف/وصف لوحة الأدمن (muted) */}
                     {t("adminPanel")}
                   </p>
                 </div>
@@ -264,19 +277,23 @@ const AdminDashboard: React.FC = () => {
 
           {/* User Section */}
           <div className="p-4 lg:p-6 border-t border-gray-200 bg-gray-50">
+          {/* لون خلفية قسم المستخدم (muted) وحدود القسم (border) */}
             {!sidebarCollapsed || sidebarOpen ? (
               <div className="animate-fade-in">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3 min-w-0">
+                    {/* لون دائرة أول حرف من اسم المستخدم (accent) */}
                     <div className="w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center flex-shrink-0">
                       <span className="text-white font-semibold text-xs lg:text-sm">
                         {profile?.full_name?.charAt(0) || "A"}
                       </span>
                     </div>
                     <div className="min-w-0">
+                      {/* لون اسم المستخدم (text) */}
                       <p className="font-medium text-gray-800 text-sm lg:text-base truncate">
                         {profile?.full_name}
                       </p>
+                      {/* لون وصف المستخدم (muted) */}
                       <p className="text-xs lg:text-sm text-gray-500">
                         {t("admin")}
                       </p>
@@ -287,6 +304,7 @@ const AdminDashboard: React.FC = () => {
                   </div>
                 </div>
                 <div className="space-y-2">
+                  {/* لون خلفية زر العودة للمتجر (card) */}
                   <Button
                     asChild
                     variant="outline"
@@ -321,12 +339,10 @@ const AdminDashboard: React.FC = () => {
         {/* Main Content */}
         <div className="flex-1 min-w-0">
           {/* Sticky Header */}
+          {/* لون خلفية الهيدر العلوي (card) وحدود الهيدر (border) */}
           <div
-            className="lg:hidden bg-white border-b border-gray-200 p-4 flex items-center justify-between sticky top-0 z-40 transition-all duration-300"
-            style={{
-              height: "56px",
-              transition: "height 0.3s, padding 0.3s",
-            }}
+            className="lg:hidden border-b p-4 flex items-center justify-between sticky top-0 z-40 transition-all duration-300"
+            style={{ background: "var(--card)", borderColor: "var(--border)" }}
           >
             <Button
               variant="ghost"
@@ -336,7 +352,8 @@ const AdminDashboard: React.FC = () => {
             >
               <Menu className="h-6 w-6" />
             </Button>
-            <h1 className="font-bold text-lg text-gray-800">
+            {/* لون نص عنوان الهيدر (text) */}
+            <h1 className="font-bold text-lg" style={{ color: "var(--text)" }}>
               {t("adminPanel")}
             </h1>
             <div className="w-10" /> {/* Spacer */}

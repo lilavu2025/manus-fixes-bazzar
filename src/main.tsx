@@ -14,5 +14,9 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
+import { storeConfig, applyThemeColors } from "@/config/storeConfig";
+
+// تطبيق ألوان الثيم تلقائياً عند بدء التطبيق
+applyThemeColors();
 
 createRoot(document.getElementById("root")!).render(<App />);

@@ -1,3 +1,11 @@
+:root {
+  --primary: 29 78 216; /* #1D4ED8 */
+  --secondary: 245 158 66; /* #F59E42 */
+  --background: 255 255 255; /* #FFFFFF */
+  --foreground: 34 34 34; /* #222222 */
+  /* أضف المزيد حسب الحاجة */
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
