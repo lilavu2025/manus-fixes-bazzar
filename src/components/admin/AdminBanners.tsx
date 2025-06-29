@@ -449,7 +449,7 @@ const BannerForm = ({
         <Label className="text-sm font-medium text-gray-700 mb-2">
           {t("bannerImage") || "صورة البانر"}
         </Label>
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors relative">
           {formData.image ? (
             <div className="space-y-4">
               <img
@@ -473,15 +473,29 @@ const BannerForm = ({
             <div className="space-y-2">
               <Upload className="h-12 w-12 text-gray-400 mx-auto" />
               <div>
-                <p className="text-gray-600">{t("clickToUpload") || "اضغط لرفع صورة"}</p>
+                <label
+                  htmlFor="banner-upload"
+                  className="text-blue-600 font-medium cursor-pointer hover:underline"
+                >
+                  {t("clickToUpload") || "اضغط لرفع صورة"}
+                </label>
                 <p className="text-sm text-gray-500">{t("imageFormat") || "PNG, JPG, GIF حتى 10 ميجا"}</p>
               </div>
-              <Input
-                type="url"
-                value={formData.image}
-                onChange={(e) => handleInputChange("image", e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded"
-                placeholder={t("pasteImageUrl") || "أو الصق رابط الصورة"}
+              <input
+                id="banner-upload"
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                      handleInputChange("image", reader.result as string);
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                }}
+                className="hidden"
               />
             </div>
           )}
