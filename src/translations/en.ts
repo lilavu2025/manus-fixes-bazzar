@@ -88,6 +88,23 @@ export const enTranslations = {
   continueWithGoogle: "Continue with Google",
   googleAuthError: "Google authentication error",
   
+  // Pre-Google Auth Form
+  completeProfileBeforeGoogle: "Complete Your Profile First",
+  enterDetailsBeforeGoogleAuth: "Please enter your full name and phone number before continuing with Google",
+  fullNameRequired: "Full name is required",
+  phoneRequired: "Phone number is required",
+  fullNameTooShort: "Full name must be at least 2 characters",
+  fullNamePlaceholder: "Enter your full name",
+  phonePlaceholder: "Enter your phone number (05xxxxxxxx)",
+  
+  // Post-Google Auth Profile Completion
+  completeYourProfile: "Complete Your Profile",
+  completeProfileAfterGoogle: "To complete your registration, please enter your full name and phone number",
+  completeProfile: "Complete Profile",
+  profileCompletionRequired: "This information is required to complete your account",
+  profileCompletedSuccess: "Profile completed successfully!",
+  profileCompletionError: "Error completing profile",
+
   // Alternative Login Methods
   orLoginWith: "Or login with",
   orSignupWith: "Or sign up with",

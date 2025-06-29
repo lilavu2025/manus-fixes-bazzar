@@ -91,6 +91,22 @@ export const heTranslations = {
   orLoginWith: "או התחבר עם",
   orSignupWith: "או הרשם עם",
   alternativeLogin: "שיטות התחברות חלופיות",
+  // Pre-Google Auth Form
+  completeProfileBeforeGoogle: "השלם את הפרופיל תחילה",
+  enterDetailsBeforeGoogleAuth: "אנא הזן את שמך המלא ומספר הטלפון לפני המשך עם Google",
+  fullNameRequired: "שם מלא נדרש",
+  phoneRequired: "מספר טלפון נדרש",
+  fullNameTooShort: "שם מלא חייב להיות לפחות 2 תווים",
+  fullNamePlaceholder: "הזן את שמך המלא",
+  phonePlaceholder: "הזן את מספר הטלפון שלך (05xxxxxxxx)",
+
+  // Post-Google Auth Profile Completion
+  completeYourProfile: "השלם את הפרופיל שלך",
+  completeProfileAfterGoogle: "כדי להשלים את הרישום, אנא הזן את שמך המלא ומספר הטלפון",
+  completeProfile: "השלם פרופיל",
+  profileCompletionRequired: "מידע זה נדרש להשלמת החשבון שלך",
+  profileCompletedSuccess: "הפרופיל הושלם בהצלחה!",
+  profileCompletionError: "שגיאה בהשלמת הפרופיל",
 
   // Admin Panel
   adminDashboard: "לוח בקרה מנהל",

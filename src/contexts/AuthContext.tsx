@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { AuthContext } from "./AuthContext.context";
+import { useEnhancedToast } from "@/hooks/useEnhancedToast";
 import type {
   Tables,
   TablesInsert,
@@ -39,6 +40,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const location = useLocation();
   const sessionRef = useRef<Session | null>(null);
   const lastSessionCheck = useRef<number>(Date.now());
+  const enhancedToast = useEnhancedToast();
 
   // hooks
   const signInMutation = useSignIn();
@@ -98,6 +100,79 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     else setProfile(null);
   }, []);
 
+  // التحقق من اكتمال بيانات المستخدم بعد Google OAuth
+  const checkProfileCompleteness = useCallback((profile: Profile | null) => {
+    if (!profile) return false;
+    
+    // التحقق من وجود الاسم الكامل ورقم الهاتف
+    const isComplete = profile.full_name && 
+                      profile.full_name.trim().length > 1 && 
+                      profile.phone && 
+                      profile.phone.trim().length > 0;
+    
+    return isComplete;
+  }, []);
+
+  // إكمال البيانات الناقصة للمستخدم الذي سجل عبر Google
+  const completeGoogleProfile = async (fullName: string, phone: string) => {
+    if (!session?.user?.id) {
+      throw new Error('User not authenticated');
+    }
+
+    console.log('=== Starting completeGoogleProfile ===');
+    console.log('User ID:', session.user.id);
+    console.log('Full name to save:', fullName);
+    console.log('Phone to save:', phone);
+
+    let retryCount = 0;
+    const maxRetries = 3;
+
+    while (retryCount < maxRetries) {
+      try {
+        // التأكد من أن البيانات صحيحة قبل الإرسال
+        const updates = {
+          full_name: fullName?.trim() || null,
+          phone: phone?.trim() || null,
+          email_confirmed_at: new Date().toISOString() // تأكيد الإيميل للتسجيل عبر Google
+        };
+        
+        console.log(`Attempt ${retryCount + 1} - Updates to send:`, updates);
+        
+        const result = await updateProfileMutation.mutateAsync({
+          userId: session.user.id,
+          updates
+        });
+        
+        console.log('Profile update result:', result);
+        
+        // انتظار قصير لضمان تطبيق التحديث في قاعدة البيانات
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // إعادة جلب البيانات لتحديث الحالة
+        await fetchAndSetProfile(session.user.id);
+        console.log('Profile refetched successfully');
+        
+        // التحقق من أن البيانات تم حفظها فعلاً
+        console.log('Profile update completed successfully');
+        
+        // إذا وصلنا هنا، العملية نجحت
+        return;
+        
+      } catch (error) {
+        retryCount++;
+        console.error(`Attempt ${retryCount} failed:`, error);
+        
+        if (retryCount >= maxRetries) {
+          console.error('All retry attempts failed');
+          throw error;
+        }
+        
+        // انتظار قبل المحاولة التالية
+        await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+      }
+    }
+  };
+
   // تسجيل الدخول
   const signIn = async (email: string, password: string) => {
     const data = await signInMutation.mutateAsync({ email, password });
@@ -127,17 +202,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
     if (data.user.id) {
       try {
+        // تنظيف رقم الهاتف قبل الإرسال
+        const cleanPhone = phone && phone.trim() !== '' ? phone.trim() : null;
+        
         await createProfile({
           id: data.user.id,
           email,
           full_name: fullName,
-          phone: phone || "",
+          phone: cleanPhone,
           user_type: "retail",
         });
         await fetchAndSetProfile(data.user.id);
         handleUserRedirection({ ...profile!, id: data.user.id });
       } catch (e) {
-        /* ignore if profile exists */
+        console.error("Profile creation error:", e);
+        /* ignore if profile exists, but log other errors */
       }
     }
     if (!data.session) {
@@ -204,7 +283,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         queryParams: {
           access_type: 'offline',
           prompt: 'consent',
-        },
+        }
       }
     });
     if (error) throw error;
@@ -231,7 +310,48 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setTimeout(async () => {
             // جلب البروفايل عبر الدالة المخصصة فقط (وليس مباشرة من قاعدة البيانات)
             await fetchAndSetProfile(session.user.id);
-          });
+            
+            // التحقق من وجود بيانات مؤقتة وتطبيقها إذا لزم الأمر
+            const tempUserData = localStorage.getItem('tempUserData');
+            console.log('Checking for temp user data:', tempUserData);
+            
+            if (tempUserData) {
+              try {
+                const userData = JSON.parse(tempUserData);
+                console.log('Processing temp user data after OAuth:', userData);
+                
+                // التحقق من صحة البيانات قبل المعالجة
+                if (userData.fullName && userData.fullName.trim() && 
+                    userData.phone && userData.phone.trim()) {
+                  
+                  console.log('Valid temp data found, proceeding with profile completion');
+                  
+                  // إكمال البيانات باستخدام البيانات المؤقتة
+                  await completeGoogleProfile(userData.fullName.trim(), userData.phone.trim());
+                  
+                  // حذف البيانات المؤقتة بعد نجاح العملية
+                  localStorage.removeItem('tempUserData');
+                  console.log('Temp user data processed and cleaned up');
+                  
+                  // إظهار toast النجاح بعد إكمال التسجيل
+                  enhancedToast.authSuccess('signup');
+                } else {
+                  console.warn('Invalid temp data found:', userData);
+                  localStorage.removeItem('tempUserData');
+                  enhancedToast.authError('signup', 'بيانات التسجيل غير مكتملة');
+                }
+              } catch (error) {
+                console.error('Error processing temp user data:', error);
+                // حذف البيانات المؤقتة حتى لو فشلت العملية
+                localStorage.removeItem('tempUserData');
+                enhancedToast.authError('signup', 'خطأ في إكمال بيانات التسجيل');
+              }
+            } else {
+              console.log('No temp data found - this is a regular login');
+              // إذا لم توجد بيانات مؤقتة، هذا يعني تسجيل دخول عادي
+              enhancedToast.authSuccess('login');
+            }
+          }, 1000); // زيادة الانتظار لضمان اكتمال العمليات
         } else {
           setProfile(null);
         }
@@ -293,6 +413,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     signInWithPhone,
     verifyPhoneOtp,
     signInWithGoogle,
+    checkProfileCompleteness,
+    completeGoogleProfile,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -315,4 +437,6 @@ export type AuthContextType = {
   signInWithPhone: (phone: string) => Promise<void>;
   verifyPhoneOtp: (phone: string, token: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
+  checkProfileCompleteness: (profile: Profile | null) => boolean;
+  completeGoogleProfile: (fullName: string, phone: string) => Promise<void>;
 };

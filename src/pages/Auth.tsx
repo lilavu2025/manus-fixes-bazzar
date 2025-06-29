@@ -17,12 +17,13 @@ import { useEnhancedToast } from "@/hooks/useEnhancedToast";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import EmailConfirmationPending from "@/components/EmailConfirmationPending";
 import { PhoneAuth } from "@/components/PhoneAuth";
-import { GoogleAuth } from "@/components/GoogleAuth";
+import { GoogleSignupForm } from "@/components/GoogleSignupForm";
+import { CompleteProfileAfterGoogle } from "@/components/CompleteProfileAfterGoogle";
 import { getCookie } from "@/utils/commonUtils";
 
 const Auth: React.FC = () => {
   const navigate = useNavigate();
-  const { signIn, signUp, user, loading } = useAuth();
+  const { signIn, signUp, user, loading, checkProfileCompleteness } = useAuth();
   const { t, isRTL } = useLanguage();
   const enhancedToast = useEnhancedToast();
 
@@ -46,6 +47,7 @@ const Auth: React.FC = () => {
   const [showEmailConfirmation, setShowEmailConfirmation] = useState(false);
   const [pendingEmail, setPendingEmail] = useState("");
   const [authMethod, setAuthMethod] = useState<'email' | 'phone' | 'google'>('email');
+  const [showCompleteProfile, setShowCompleteProfile] = useState(false);
   const [showPhoneAuth] = useState(false); // تعطيل مصادقة الهاتف مؤقتاً
 
   const location = window.location;
@@ -58,6 +60,12 @@ const Auth: React.FC = () => {
 
   useEffect(() => {
     if (user && !loading) {
+      // التحقق من اكتمال البيانات للمستخدمين الذين سجلوا عبر Google
+      if (!checkProfileCompleteness(user)) {
+        setShowCompleteProfile(true);
+        return; // لا نتابع التوجيه حتى يكمل البيانات
+      }
+
       // الحصول على redirect parameter من URL
       const urlParams = new URLSearchParams(window.location.search);
       const redirectParam = urlParams.get('redirect');
@@ -86,7 +94,18 @@ const Auth: React.FC = () => {
         navigate("/");
       }
     }
-  }, [user, loading, navigate, state]);
+  }, [user, loading, navigate, state, checkProfileCompleteness]);
+
+  // التحقق من وجود بيانات مؤقتة عند تحميل الصفحة
+  useEffect(() => {
+    const tempUserData = localStorage.getItem('tempUserData');
+    if (tempUserData && user) {
+      console.log('Found temp user data on page load, user exists');
+      // إذا كان المستخدم موجود والبيانات المؤقتة موجودة، 
+      // هذا يعني أن OAuth نجح لكن البيانات لم تُطبق بعد
+      setShowCompleteProfile(true);
+    }
+  }, [user]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -149,6 +168,9 @@ const Auth: React.FC = () => {
       if (!isValidPhone(signupData.phone)) {
         setSignupErrors({ phone: t("invalidPhone") });
       }
+      
+      console.log("Starting signup process for:", signupData.email);
+      
       await signUp(
         signupData.email,
         signupData.password,
@@ -159,12 +181,32 @@ const Auth: React.FC = () => {
       setShowEmailConfirmation(true);
       enhancedToast.authSuccess('signup');
     } catch (error: unknown) {
-      console.error("Signup error:", error);
+      console.error("Signup error details:", error);
+      
+      // Enhanced error reporting for debugging
+      if (error && typeof error === 'object') {
+        const err = error as any;
+        console.group("🚨 Detailed Error Information");
+        console.log("Error message:", err.message);
+        console.log("Error code:", err.code);
+        console.log("Error details:", err.details);
+        console.log("Error hint:", err.hint);
+        console.log("Full error object:", err);
+        console.groupEnd();
+      }
+      
       const errorMsg =
         typeof error === "object" && error && "message" in error
           ? (error as { message?: string }).message || "signupError"
           : "signupError";
-      if (
+          
+      // Check for specific database errors
+      if (errorMsg.includes("Database error saving new user")) {
+        enhancedToast.error("Database configuration issue. Please check your Supabase setup.", {
+          description: "This error usually indicates RLS policy or table configuration issues.",
+          duration: 8000
+        });
+      } else if (
         errorMsg.toLowerCase().includes("confirmation") ||
         errorMsg.toLowerCase().includes("تحقق") ||
         errorMsg.toLowerCase().includes("confirm")
@@ -332,7 +374,7 @@ const Auth: React.FC = () => {
 
                   {authMethod === 'google' && (
                     <div className="space-y-4">
-                      <GoogleAuth
+                      <GoogleSignupForm
                         onSuccess={handleAuthSuccess}
                         onError={handleAuthError}
                         loading={isLoading}
@@ -512,7 +554,7 @@ const Auth: React.FC = () => {
 
                   {authMethod === 'google' && (
                     <div className="space-y-4">
-                      <GoogleAuth
+                      <GoogleSignupForm
                         onSuccess={handleAuthSuccess}
                         onError={handleAuthError}
                         loading={isLoading}
@@ -569,7 +611,18 @@ const Auth: React.FC = () => {
             </CardContent>
           </Card>
         )}
+        
       </div>
+      
+      {/* نافذة إكمال البيانات بعد Google OAuth */}
+      <CompleteProfileAfterGoogle
+        open={showCompleteProfile}
+        onCompleted={() => {
+          setShowCompleteProfile(false);
+          // إعادة تشغيل useEffect للتوجيه بعد إكمال البيانات
+          window.location.reload();
+        }}
+      />
     </div>
   );
 };

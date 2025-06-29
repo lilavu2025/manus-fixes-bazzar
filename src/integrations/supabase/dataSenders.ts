@@ -84,12 +84,28 @@ export async function signUp(
   phone?: string,
 ) {
   try {
+    // تنظيف رقم الهاتف - تحويل string فارغ إلى null
+    const cleanPhone = phone && phone.trim() !== '' ? phone.trim() : null;
+    
+    console.log('Signup data:', { email, fullName, cleanPhone });
+    
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name: fullName, phone: phone || "" } },
+      options: { 
+        data: { 
+          full_name: fullName, 
+          phone: cleanPhone
+        } 
+      },
     });
-    if (error) throw error;
+    
+    if (error) {
+      console.error('Supabase auth error:', error);
+      throw error;
+    }
+    
+    console.log('Signup successful:', data);
     return data;
   } catch (error: unknown) {
     console.error("Error signing up:", error);

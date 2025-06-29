@@ -57,6 +57,23 @@ export const arTranslations = {
   continueWithGoogle: "المتابعة بـ Google",
   googleAuthError: "خطأ في المصادقة بـ Google",
   
+  // Pre-Google Auth Form
+  completeProfileBeforeGoogle: "أكمل بياناتك أولاً",
+  enterDetailsBeforeGoogleAuth: "يرجى إدخال اسمك الكامل ورقم هاتفك قبل المتابعة مع Google",
+  fullNameRequired: "الاسم الكامل مطلوب",
+  phoneRequired: "رقم الهاتف مطلوب",
+  fullNameTooShort: "الاسم الكامل يجب أن يكون حرفين على الأقل",
+  fullNamePlaceholder: "أدخل اسمك الكامل",
+  phonePlaceholder: "أدخل رقم هاتفك (05xxxxxxxx)",
+  
+  // Post-Google Auth Profile Completion
+  completeYourProfile: "أكمل ملفك الشخصي",
+  completeProfileAfterGoogle: "لإكمال التسجيل، يرجى إدخال اسمك الكامل ورقم هاتفك",
+  completeProfile: "إكمال الملف الشخصي",
+  profileCompletionRequired: "هذه المعلومات مطلوبة لإكمال حسابك",
+  profileCompletedSuccess: "تم إكمال ملفك الشخصي بنجاح!",
+  profileCompletionError: "خطأ في إكمال الملف الشخصي",
+  
   // Alternative Login Methods
   orLoginWith: "أو سجل الدخول بواسطة",
   orSignupWith: "أو أنشئ حساب بواسطة",
