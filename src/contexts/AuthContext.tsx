@@ -43,6 +43,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const sessionRef = useRef<Session | null>(null);
   const lastSessionCheck = useRef<number>(Date.now());
   const hasShownToastRef = useRef<boolean>(false); // منع تكرار Toast
+  const isInitialLoad = useRef<boolean>(true); // للتمييز بين التحميل الأولي وتسجيل الدخول الفعلي
   const enhancedToast = useEnhancedToast();
 
   // hooks
@@ -231,6 +232,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setProfile(null);
     setSession(null);
     hasShownToastRef.current = false; // إعادة تعيين التوست عند تسجيل الخروج
+    isInitialLoad.current = false; // إعادة تعيين التحميل الأولي
     deleteCookie("lastLoginTime");
     deleteCookie("lastVisitedPath");
     navigate("/", { replace: true });
@@ -298,6 +300,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         sessionRef.current = session;
         fetchAndSetProfile(session?.user?.id);
         setLoading(false);
+        // عند التحميل الأولي، لا نعرض توست إذا كان المستخدم مسجل دخول مسبقاً
+        if (session?.user?.id) {
+          hasShownToastRef.current = true; // منع عرض التوست للجلسة الموجودة
+        }
       }
     });
     // مراقبة تغيّر حالة المصادقة، وعند وجود مستخدم جديد يتم جلب بياناته بعد التأكد من وجود session.user باستخدام setTimeout
@@ -306,7 +312,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setSession(session);
         sessionRef.current = session;
         
-        if (session?.user?.id && !hasShownToastRef.current && event === 'SIGNED_IN') {
+        if (session?.user?.id && !hasShownToastRef.current && event === 'SIGNED_IN' && !isInitialLoad.current) {
           setTimeout(async () => {
             // التأكد من أن التوست لم يتم عرضه بعد
             if (hasShownToastRef.current) return;
@@ -331,7 +337,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             }
             hasShownToastRef.current = true;
           }, 1000); // زيادة الانتظار لضمان اكتمال العمليات
-        } else if (!session?.user?.id && event === 'SIGNED_OUT') {
+        }
+        
+        // بعد التحميل الأولي، نسمح بعرض التوست للعمليات القادمة
+        if (isInitialLoad.current) {
+          isInitialLoad.current = false;
+        }
+        
+        if (!session?.user?.id && event === 'SIGNED_OUT') {
           setProfile(null);
           hasShownToastRef.current = false; // إعادة تعيين التوست عند تسجيل الخروج
         }
