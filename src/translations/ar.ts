@@ -1,7 +1,10 @@
+import config from "@/configs/activeConfig";
+
+
 export const arTranslations = {
   // Store & Brand
-  storeName: "متجر المدينة",
-  storeDescription: "أفضل المنتجات بأفضل الأسعار",
+  storeName: config.names.ar,
+  storeDescription: config.descriptions.ar,
 
   // Navigation
   home: "الرئيسية",

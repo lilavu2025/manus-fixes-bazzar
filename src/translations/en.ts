@@ -1,7 +1,9 @@
+import config from "@/configs/activeConfig";
+
 export const enTranslations = {
   // Store & Brand
-  storeName: "City Store",
-  storeDescription: "Best products at best prices",
+  storeName: config.names.en,
+  storeDescription: config.descriptions.en,
 
   // Navigation
   home: "Home",

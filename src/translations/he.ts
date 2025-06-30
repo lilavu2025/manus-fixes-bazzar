@@ -1,7 +1,9 @@
+import config from "@/configs/activeConfig";
+
 export const heTranslations = {
   // Store & Brand
-  storeName: "חנות העיר",
-  storeDescription: "המוצרים הטובים ביותר במחירים הטובים ביותר",
+  storeName: config.names.he,
+  storeDescription: config.descriptions.he,
 
   // Navigation
   home: "בית",
