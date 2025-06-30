@@ -13,7 +13,8 @@
     "preview": "vite preview",
     "type-check": "tsc --noEmit",
     "clean": "rimraf dist",
-    "test": "echo \"No tests yet\" && exit 0"
+    "test": "echo \"No tests yet\" && exit 0",
+    "build:client": "node scripts/build-client.cjs"
   },
   "dependencies": {
     "@capacitor/android": "^7.2.0",

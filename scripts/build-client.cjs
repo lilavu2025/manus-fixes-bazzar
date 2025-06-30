@@ -1,4 +1,6 @@
 // عن طريقه بعمل build للعميل المحدد
+//npm run build:client <client_name>
+// مثال: npm run build:client zgayer
 const { execSync } = require("child_process");
 
 const client = process.argv[2];
