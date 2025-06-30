@@ -187,7 +187,7 @@ const Index = ({ searchQuery, setSearchQuery }: IndexProps) => {
                   <Button
                     asChild
                     variant="outline"
-                    className="w-full font-bold border-orange-200 text-orange-600 hover:bg-orange-50"
+                    className="font-bold py-2 px-4 rounded shadow-md transition-all duration-300 text-[hsl(var(--primary))] hover:text-[hsl(var(--secondary))] bg-white"
                   >
                     <Link to="/categories" aria-label={t("viewAllCategories")}>{t("viewAllCategories")}</Link>
                   </Button>
@@ -205,7 +205,7 @@ const Index = ({ searchQuery, setSearchQuery }: IndexProps) => {
               <Button
                 asChild
                 variant="outline"
-                className="w-full font-bold border-orange-200 text-orange-600 hover:bg-orange-50"
+                className="font-bold py-2 px-4 rounded shadow-md transition-all duration-300 text-[hsl(var(--primary))] hover:text-[hsl(var(--secondary))] bg-white"
               >
                 <Link to="/products" aria-label={t("viewAllProducts")}>{t("viewAllProducts")}</Link>
               </Button>
@@ -249,7 +249,7 @@ const Index = ({ searchQuery, setSearchQuery }: IndexProps) => {
                   <Button
                     asChild
                     variant="outline"
-                    className="w-full font-bold border-orange-200 text-orange-600 hover:bg-orange-50"
+                    className="font-bold py-2 px-4 rounded shadow-md transition-all duration-300 text-[hsl(var(--primary))] hover:text-[hsl(var(--secondary))] bg-white"
                   >
                     <Link to="/products?topOrdered=1" aria-label={t("viewAll")}>{t("viewAll")}</Link>
                   </Button>
@@ -293,7 +293,7 @@ const Index = ({ searchQuery, setSearchQuery }: IndexProps) => {
                   <Button
                     asChild
                     variant="outline"
-                    className="w-full font-bold border-orange-200 text-orange-600 hover:bg-orange-50"
+                    className="font-bold py-2 px-4 rounded shadow-md transition-all duration-300 text-[hsl(var(--primary))] hover:text-[hsl(var(--secondary))] bg-white"
                   >
                     <Link to="/products?featured=1" aria-label={t("viewAll")}>{t("viewAll")}</Link>
                   </Button>
