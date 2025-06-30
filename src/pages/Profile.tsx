@@ -339,7 +339,7 @@ const Profile: React.FC = () => {
                       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
-                            <h4 className="font-medium text-orange-700">
+                            <h4 className="font-medium text-[hsl(var(--primary))]">
                               {address.full_name}
                             </h4>
                             {address.is_default && (

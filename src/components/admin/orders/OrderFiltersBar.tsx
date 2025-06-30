@@ -119,7 +119,7 @@ const OrderFiltersBar: React.FC<OrderFiltersBarProps> = ({
             </button>
             <button
               type="button"
-              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-2 py-1.5 rounded-md bg-blue-600 text-white font-bold shadow border border-blue-700 hover:bg-blue-700 transition-all duration-200 h-9 text-xs sm:text-sm"
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-2 py-1.5 rounded-md bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--secondary))] text-white font-bold shadow border border-blue-700 hover:bg-blue-700 transition-all duration-200 h-9 text-xs sm:text-sm"
               onClick={onExportExcel}
             >
               <BarChart3 className="h-4 w-4" />

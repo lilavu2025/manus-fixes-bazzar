@@ -114,7 +114,7 @@ const UserTableRow: React.FC<UserTableRowProps> = ({
       >
         <TableCell className="font-medium p-2 lg:p-4">
           <div className="flex items-center gap-2 lg:gap-3">
-            <div className="w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold text-xs lg:text-sm flex-shrink-0">
+            <div className="w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--secondary))] rounded-full flex items-center justify-center text-white font-semibold text-xs lg:text-sm flex-shrink-0">
               {user.full_name?.charAt(0) || "U"}
             </div>
             <div className="min-w-0 flex-1">

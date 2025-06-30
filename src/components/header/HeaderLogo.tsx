@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '@/utils/languageContextUtils';
-import { storeConfig } from '@/config/storeConfig';
+import config from "@/configs/activeConfig";
 
 const HeaderLogo: React.FC = () => {
   const { t } = useLanguage();
@@ -9,9 +9,9 @@ const HeaderLogo: React.FC = () => {
   return (
     <Link to="/" className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
       <img
-        src={storeConfig.logo}
+        src={config.visual.logo}
         alt={t('storeName')}
-        className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg object-contain bg-white shadow"
+        className="w-16 h-16 sm:w-16 sm:h-16 rounded-lg object-contain bg-white shadow"
       />
       <div className="hidden sm:block">
         <h1 className="text-lg sm:text-xl font-bold text-gradient">{t('storeName')}</h1>

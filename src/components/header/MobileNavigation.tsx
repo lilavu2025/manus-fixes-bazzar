@@ -6,6 +6,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/useAuth";
 import { useLanguage } from "@/utils/languageContextUtils";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import config from "@/configs/activeConfig";
 
 interface MobileNavigationProps {
   mobileMenuOpen: boolean;
@@ -35,6 +36,7 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
   };
 
   const isActive = (path: string) => location.pathname === path;
+  const { primaryColor, secondaryColor } = config.visual;
 
   return (
     <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
@@ -46,8 +48,12 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
               className="flex items-center gap-3"
               onClick={() => setMobileMenuOpen(false)}
             >
-              <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl flex items-center justify-center shadow-lg">
-                <span className="text-white font-bold text-xl">م</span>
+              <div className="w-24 h-24 bg-gradient-to-r [hsl(var(--primary))] to-[hsl(var(--secondary))] text-[hsl(var(--primary-foreground))] rounded-full flex items-center justify-center mx-auto mb-4">
+                <img
+                  src={config.visual.logo}
+                  alt={t('storeName')}
+                  className="w-24 h-24 sm:w-24 sm:h-24 rounded-lg object-contain bg-white shadow"
+                />
               </div>
               <div>
                 <h1 className="text-xl font-bold text-gray-800">
@@ -67,7 +73,7 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
                   onClick={() => setMobileMenuOpen(false)}
                   className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 ${
                     isActive(item.path)
-                      ? "bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg"
+                      ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] shadow-lg transform scale-105"
                       : "text-gray-600 hover:bg-gray-100"
                   }`}
                 >
@@ -82,7 +88,7 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
             {user ? (
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                  <div className="w-12 h-12 bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--secondary))] rounded-full flex items-center justify-center">
                     <span className="text-white font-semibold">
                       {profile?.full_name?.charAt(0) || "U"}
                     </span>

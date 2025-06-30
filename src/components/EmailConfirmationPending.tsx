@@ -14,6 +14,7 @@ import { useLanguage } from "@/utils/languageContextUtils";
 import { useAuth } from "@/contexts/useAuth";
 import { useEnhancedToast } from "@/hooks/useEnhancedToast";
 import { useResendConfirmationEmail } from "@/integrations/supabase/reactQueryHooks";
+import config from "@/configs/activeConfig";
 
 interface EmailConfirmationPendingProps {
   email: string;
@@ -32,6 +33,7 @@ const EmailConfirmationPending: React.FC<EmailConfirmationPendingProps> = ({
   const [countdown, setCountdown] = useState(60);
   const [canResend, setCanResend] = useState(false);
   const resendEmailMutation = useResendConfirmationEmail();
+  const { primaryColor, secondaryColor } = config.visual;
 
   // Countdown timer for resend button
   useEffect(() => {
@@ -78,7 +80,10 @@ const EmailConfirmationPending: React.FC<EmailConfirmationPendingProps> = ({
       {/* زر الرجوع صغير دائري أعلى طرف الكرت */}
       <button
         onClick={onBack}
-        className="absolute -top-4 ltr:-left-4 rtl:-right-4 w-10 h-10 rounded-full bg-gradient-to-r from-orange-500 to-red-500 text-white flex items-center justify-center shadow-lg hover:from-orange-600 hover:to-red-600 transition-all duration-200 z-10 border-4 border-white dark:border-neutral-900"
+        className="absolute top-4 ltr:left-4 rtl:right-4 w-10 h-10 rounded-full text-white flex items-center justify-center shadow-lg transition-all duration-200 z-10 border-4 border-white dark:border-neutral-900"
+                style={{
+                  background: `linear-gradient(to right, ${secondaryColor})`,
+                }}
         aria-label={t("back")}
         type="button"
       >
@@ -98,8 +103,12 @@ const EmailConfirmationPending: React.FC<EmailConfirmationPendingProps> = ({
       </button>
 
       <CardHeader className="text-center">
-        <div className="w-16 h-16 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
-          <span className="text-white font-bold text-2xl">م</span>
+        <div className="w-16 h-16 bg-gradient-to-r [hsl(var(--primary))] to-[hsl(var(--secondary))] text-[hsl(var(--primary-foreground))] rounded-full flex items-center justify-center mx-auto mb-4">
+                <img
+                  src={config.visual.logo}
+                  alt={t('storeName')}
+                  className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg object-contain bg-white shadow"
+                />
         </div>
         <CardTitle className="text-2xl">{t("storeName")}</CardTitle>
         <CardDescription>{t("confirmYourEmail")}</CardDescription>

@@ -1,7 +1,10 @@
+import config from "@/configs/activeConfig";
+
+
 export const arTranslations = {
   // Store & Brand
-  storeName: "متجر المدينة",
-  storeDescription: "أفضل المنتجات بأفضل الأسعار",
+  storeName: config.names.ar,
+  storeDescription: config.descriptions.ar,
 
   // Navigation
   home: "الرئيسية",
@@ -77,8 +80,9 @@ export const arTranslations = {
   orYouCanLogout: "أو يمكنك تسجيل الخروج",
   
   // Alternative Login Methods
-  orLoginWith: "أو سجل الدخول بواسطة",
-  orSignupWith: "أو أنشئ حساب بواسطة",
+  loginWith: "سجل الدخول بواسطة",
+  signupWith: "أنشئ حساب بواسطة",
+  or: "أو",
   alternativeLogin: "طرق تسجيل دخول أخرى",
 
   // Email Confirmation
@@ -213,6 +217,7 @@ export const arTranslations = {
   productDetails: "تفاصيل المنتج",
   inStock: "متوفر",
   outOfStock: "نفد المخزون",
+  productOutOfStockMessage: "هذا المنتج غير متوفر حالياً وسيعود قريباً!",
 
   // User Management
   users: "المستخدمين",

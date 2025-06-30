@@ -25,8 +25,8 @@ const LanguageSwitcher: React.FC = () => {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="sm" className="gap-2">
-          <Globe className="h-4 w-4" />
-          <span className="hidden sm:inline">
+          <Globe className="h-6 w-6" />
+          <span>
             {currentLanguage?.flag} {currentLanguage?.name}
           </span>
         </Button>

@@ -14,5 +14,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
+import { applyThemeColors } from "@/lib/applyThemeColors";
+applyThemeColors();
 
 createRoot(document.getElementById("root")!).render(<App />);

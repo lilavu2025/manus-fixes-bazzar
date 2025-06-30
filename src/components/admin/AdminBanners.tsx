@@ -322,7 +322,13 @@ const BannerForm = ({
       return;
     }
 
-    onSave(formData);
+    // تحقق من الرابط: إذا موجود وليس فارغ ولا يبدأ بـ http/https أضف http:// تلقائياً
+    let link = formData.link?.trim() || "";
+    if (link && !/^https?:\/\//i.test(link)) {
+      link = "http://" + link;
+    }
+
+    onSave({ ...formData, link });
   };
 
   return (
@@ -423,7 +429,7 @@ const BannerForm = ({
             {t("bannerLink") || "رابط البانر"}
           </Label>
           <Input
-            type="url"
+            type="text"
             value={formData.link}
             onChange={(e) => handleInputChange("link", e.target.value)}
             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"

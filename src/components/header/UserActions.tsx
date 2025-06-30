@@ -15,6 +15,7 @@ import { useCart } from "@/hooks/useCart";
 import { useAuth } from "@/contexts/useAuth";
 import { useLanguage } from "@/utils/languageContextUtils";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import config from "@/configs/activeConfig";
 
 interface UserActionsProps {
   onCartClick: () => void;
@@ -33,6 +34,7 @@ const UserActions: React.FC<UserActionsProps> = ({ onCartClick }) => {
       console.error("Error signing out:", error);
     }
   };
+  const { primaryColor, secondaryColor } = config.visual;
 
   //const favoritesCount = getFavoritesCount();
 
@@ -70,8 +72,8 @@ const UserActions: React.FC<UserActionsProps> = ({ onCartClick }) => {
         <ShoppingCart className="h-5 w-5" />
         {getTotalItems() > 0 && (
           <Badge
-            variant="destructive"
             className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs animate-bounce-in"
+            style={{ backgroundColor: primaryColor, color: "#fff" }}
           >
             {getTotalItems()}
           </Badge>

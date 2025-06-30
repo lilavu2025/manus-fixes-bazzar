@@ -41,6 +41,7 @@ import { mapProductFromDb } from "@/types/mapProductFromDb";
 import type { Product } from "@/types/index";
 import type { ProductRow } from "@/integrations/supabase/dataFetchers";
 import AdminReports from "@/pages/AdminReports";
+import config from "@/configs/activeConfig";
 
 // تعريف أنواع الطلب والمنتج بشكل مبسط
 interface PendingOrder {
@@ -215,10 +216,12 @@ const AdminDashboard: React.FC = () => {
             <div
               className={`flex items-center gap-4 mb-6 lg:mb-8 transition-all duration-300 ${sidebarCollapsed ? "lg:justify-center" : ""}`}
             >
-              <div className="w-10 h-10 lg:w-12 lg:h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
-                <span className="text-white font-bold text-lg lg:text-xl">
-                  م
-                </span>
+              <div>
+                <img
+                  src={config.visual.logo}
+                  alt={t('storeName')}
+                  className="w-20 h-20 sm:w-20 sm:h-20 rounded-lg object-contain bg-white shadow"
+                />
               </div>
               {(!sidebarCollapsed || sidebarOpen) && (
                 <div className="animate-fade-in min-w-0">
@@ -244,7 +247,7 @@ const AdminDashboard: React.FC = () => {
                     onClick={() => setSidebarOpen(false)}
                     className={`group flex items-center gap-3 lg:gap-4 px-3 lg:px-4 py-2 lg:py-3 rounded-xl transition-all duration-200 hover:shadow-md ${
                       active
-                        ? "bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg transform scale-105"
+                        ? "bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--secondary))] text-[hsl(var(--primary-foreground))] shadow-lg transform scale-105"
                         : "text-gray-600 hover:bg-gray-50 hover:text-gray-800"
                     } ${sidebarCollapsed ? "lg:justify-center lg:px-2" : ""}`}
                   >
@@ -268,7 +271,7 @@ const AdminDashboard: React.FC = () => {
               <div className="animate-fade-in">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center flex-shrink-0">
+                    <div className="w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--secondary))] rounded-full flex items-center justify-center flex-shrink-0">
                       <span className="text-white font-semibold text-xs lg:text-sm">
                         {profile?.full_name?.charAt(0) || "A"}
                       </span>
@@ -305,7 +308,7 @@ const AdminDashboard: React.FC = () => {
               </div>
             ) : (
               <div className="flex flex-col items-center gap-2">
-                <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                <div className="w-8 h-8 bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--secondary))] rounded-full flex items-center justify-center">
                   <span className="text-white font-semibold text-xs">
                     {profile?.full_name?.charAt(0) || "A"}
                   </span>

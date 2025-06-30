@@ -238,7 +238,7 @@ const UserActivityLogTable: React.FC = () => {
         <CardTitle>{t("activityLog") || "سجل نشاط الأدمن"}</CardTitle>
         <button
           onClick={exportAdminActivityToExcel}
-          className="bg-blue-600 text-white px-4 py-2 rounded font-bold hover:bg-blue-700 mt-2"
+          className="bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--secondary))] text-white px-4 py-2 rounded font-bold hover:bg-blue-700 mt-2"
           style={{ float: "left" }}
         >
           {t("exportExcel") || "تصدير Excel"}

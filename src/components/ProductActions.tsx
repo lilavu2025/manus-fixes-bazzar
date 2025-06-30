@@ -115,50 +115,54 @@ const ProductActions = ({ product, onBuyNow }: ProductActionsProps) => {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Quantity & Add to Cart */}
-      {product.inStock && (
-        <div className="space-y-3 sm:space-y-4">
-          <div
-            className={`flex items-center gap-4 sm:gap-8 lg:gap-12 w-full ${isRTL ? "flex-row-reverse justify-end" : "justify-start"}`}
-          >
-            <QuantitySelector
-              quantity={quantity}
-              onQuantityChange={setQuantity}
-              max={99}
-              min={1}
-            />
-            <label className="block text-xs sm:text-sm font-semibold">
-              {t("quantity")}
-            </label>
+      <div className="space-y-3 sm:space-y-4">
+        {!product.inStock && (
+          <div className="w-full text-center text-red-600 bg-red-50 border border-red-200 rounded p-2 mb-2 font-semibold">
+            {t("productOutOfStockMessage")}
           </div>
-
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-            <Button
-              onClick={handleAddToCart}
-              className="flex-1 gap-2 text-sm sm:text-base py-2 sm:py-3"
-              size="lg"
-              disabled={!product.inStock}
-            >
-              <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
-              {t("addToCart")}
-              {cartQuantity > 0 && (
-                <Badge variant="secondary" className="mr-2 text-xs">
-                  {cartQuantity}
-                </Badge>
-              )}
-            </Button>
-
-            <Button
-              onClick={onBuyNow}
-              variant="secondary"
-              size="lg"
-              className="flex-1"
-              disabled={!product.inStock}
-            >
-              {t("buyNow")}
-            </Button>
-          </div>
+        )}
+        <div
+          className={`flex items-center gap-4 sm:gap-8 lg:gap-12 w-full ${isRTL ? "flex-row-reverse justify-end" : "justify-start"}`}
+        >
+          <QuantitySelector
+            quantity={quantity}
+            onQuantityChange={setQuantity}
+            max={99}
+            min={1}
+            disabled={!product.inStock}
+          />
+          <label className="block text-xs sm:text-sm font-semibold">
+            {t("quantity")}
+          </label>
         </div>
-      )}
+
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+          <Button
+            onClick={handleAddToCart}
+            className="flex-1 gap-2 text-sm sm:text-base py-2 sm:py-3"
+            size="lg"
+            disabled={!product.inStock}
+          >
+            <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
+            {t("addToCart")}
+            {cartQuantity > 0 && (
+              <Badge variant="secondary" className="mr-2 text-xs">
+                {cartQuantity}
+              </Badge>
+            )}
+          </Button>
+
+          <Button
+            onClick={onBuyNow}
+            variant="secondary"
+            size="lg"
+            className="flex-1"
+            disabled={!product.inStock}
+          >
+            {t("buyNow")}
+          </Button>
+        </div>
+      </div>
 
       {/* Action Buttons */}
       <div className="flex gap-3">

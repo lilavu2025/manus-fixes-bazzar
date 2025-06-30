@@ -1,7 +1,9 @@
+import config from "@/configs/activeConfig";
+
 export const enTranslations = {
   // Store & Brand
-  storeName: "City Store",
-  storeDescription: "Best products at best prices",
+  storeName: config.names.en,
+  storeDescription: config.descriptions.en,
 
   // Navigation
   home: "Home",
@@ -108,8 +110,9 @@ export const enTranslations = {
   orYouCanLogout: "Or you can logout",
 
   // Alternative Login Methods
-  orLoginWith: "Or login with",
-  orSignupWith: "Or sign up with",
+  loginWith: "Login with",
+  signupWith: "Sign up with",
+  or: "Or",
   alternativeLogin: "Alternative login methods",
 
   // Admin Panel
@@ -411,6 +414,7 @@ export const enTranslations = {
   discount: "Discount",
   reviews: "reviews",
   currency: "₪",
+  productOutOfStockMessage: "This product is currently out of stock and will be back soon!",
 
   // Admin Products
   image: "Image",

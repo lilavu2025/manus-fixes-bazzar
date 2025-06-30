@@ -12,8 +12,6 @@ import {
   Mail,
   Phone,
   MapPin,
-  Facebook,
-  Instagram,
   Clock,
   MessageCircle,
 } from "lucide-react";
@@ -23,18 +21,12 @@ const FIELD_COMPONENTS = [
   "email",
   "phone",
   "address",
-  "facebook",
-  "instagram",
-  "whatsapp",
   "working_hours",
 ];
 const FIELD_ICONS: Record<string, React.ReactNode> = {
   email: <Mail className="inline w-5 h-5 text-blue-600" />,
   phone: <Phone className="inline w-5 h-5 text-green-600" />,
   address: <MapPin className="inline w-5 h-5 text-gray-600" />,
-  facebook: <Facebook className="inline w-5 h-5 text-blue-700" />,
-  instagram: <Instagram className="inline w-5 h-5 text-pink-500" />,
-  whatsapp: <MessageCircle className="inline w-5 h-5 text-green-500" />,
   working_hours: <Clock className="inline w-5 h-5 text-yellow-600" />,
 };
 
@@ -52,7 +44,7 @@ const AdminContactInfo: React.FC = () => {
       let order: string[] = FIELD_COMPONENTS;
       if (Array.isArray(contactInfo.fields_order)) {
         order = contactInfo.fields_order.filter(
-          (f): f is string => typeof f === "string",
+          (f): f is string => typeof f === "string" && FIELD_COMPONENTS.includes(f),
         );
       }
       setFieldsOrder(order);
@@ -123,27 +115,6 @@ const AdminContactInfo: React.FC = () => {
       <h2 className="text-2xl font-bold mb-4 text-center">
         {t("contactInfoTitle")}
       </h2>
-      <div className="mb-4">
-        <div className="font-semibold mb-2">{t("fieldsOrderHint")}</div>
-        <ul className="flex flex-wrap gap-2">
-          {fieldsOrder.map((field, idx) => (
-            <li
-              key={field}
-              draggable
-              onDragStart={handleDragStart(idx)}
-              onDrop={handleDrop(idx)}
-              onDragOver={handleDragOver}
-              className="bg-gray-100 dark:bg-gray-800 rounded px-2 py-1 mb-1 cursor-move flex items-center gap-2 shadow-sm border border-gray-200 dark:border-gray-700"
-              style={{ minWidth: 120 }}
-            >
-              <span className="material-icons text-gray-400">
-                {t("drag_indicator")}
-              </span>
-              {FIELD_ICONS[field]} {t(field)}
-            </li>
-          ))}
-        </ul>
-      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {fieldsOrder.map((field) => (
           <div key={field} className="flex flex-col gap-1 relative group">
@@ -184,38 +155,6 @@ const AdminContactInfo: React.FC = () => {
                   >
                     <Copy className="w-4 h-4 text-gray-500" />
                   </button>
-                )}
-              </div>
-            )}
-            {/* روابط مباشرة */}
-            {form[field as keyof typeof form] && (
-              <div className="text-xs mt-1 text-blue-600 dark:text-blue-400">
-                {field === "whatsapp" && (
-                  <a
-                    href={`https://wa.me/${form["whatsapp"] as string}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {t("whatsappChat")}
-                  </a>
-                )}
-                {field === "facebook" && (
-                  <a
-                    href={form["facebook"] as string}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {t("visitFacebook")}
-                  </a>
-                )}
-                {field === "instagram" && (
-                  <a
-                    href={form["instagram"] as string}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {t("visitInstagram")}
-                  </a>
                 )}
               </div>
             )}

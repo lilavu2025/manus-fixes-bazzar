@@ -13,7 +13,8 @@
     "preview": "vite preview",
     "type-check": "tsc --noEmit",
     "clean": "rimraf dist",
-    "test": "echo \"No tests yet\" && exit 0"
+    "test": "echo \"No tests yet\" && exit 0",
+    "build:client": "node scripts/build-client.cjs"
   },
   "dependencies": {
     "@capacitor/android": "^7.2.0",
@@ -105,6 +106,7 @@
     "@types/react-i18next": "^7.8.3",
     "@vitejs/plugin-react-swc": "^3.5.0",
     "autoprefixer": "^10.4.20",
+    "cross-env": "^7.0.3",
     "eslint": "^9.9.0",
     "eslint-plugin-react-hooks": "^5.1.0-rc.0",
     "eslint-plugin-react-refresh": "^0.4.9",

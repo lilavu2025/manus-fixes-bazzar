@@ -1,7 +1,9 @@
+import config from "@/configs/activeConfig";
+
 export const heTranslations = {
   // Store & Brand
-  storeName: "חנות העיר",
-  storeDescription: "המוצרים הטובים ביותר במחירים הטובים ביותר",
+  storeName: config.names.he,
+  storeDescription: config.descriptions.he,
 
   // Navigation
   home: "בית",
@@ -88,8 +90,9 @@ export const heTranslations = {
   googleAuthError: "שגיאה באימות Google",
   
   // Alternative Login Methods
-  orLoginWith: "או התחבר עם",
-  orSignupWith: "או הרשם עם",
+  loginWith: "התחבר עם",
+  signupWith: "הרשם עם",
+  or: "או",
   alternativeLogin: "שיטות התחברות חלופיות",
   // Pre-Google Auth Form
   completeProfileBeforeGoogle: "השלם את הפרופיל תחילה",
@@ -400,6 +403,7 @@ export const heTranslations = {
   discount: "הנחה",
   reviews: "ביקורות",
   currency: "₪",
+  productOutOfStockMessage: "המוצר הזה אזל מהמלאי ויחזור בקרוב!",
 
   // Admin Products
   image: "תמונה",
