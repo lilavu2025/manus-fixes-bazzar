@@ -56,12 +56,28 @@ const BannerCarousel: React.FC<BannerCarouselProps> = ({ banners }) => {
                 <p className="text-sm sm:text-base md:text-lg lg:text-xl opacity-90 mb-3 sm:mb-6">
                   {banner.subtitle}
                 </p>
-                <Button
-                  size="sm"
-                  className="bg-primary hover:bg-primary/90 text-white font-semibold px-2 sm:px-6 md:px-8 text-xs sm:text-sm md:text-base"
-                >
-                  {t("shopNow")}
-                </Button>
+                {banner.link ? (
+                  <a
+                    href={banner.link}
+                    target={banner.link.startsWith("http") ? "_blank" : undefined}
+                    rel={banner.link.startsWith("http") ? "noopener" : undefined}
+                  >
+                    <Button
+                      size="sm"
+                      className="bg-primary hover:bg-primary/90 text-white font-semibold px-2 sm:px-6 md:px-8 text-xs sm:text-sm md:text-base"
+                    >
+                      {t("shopNow")}
+                    </Button>
+                  </a>
+                ) : (
+                  <Button
+                    size="sm"
+                    className="bg-primary hover:bg-primary/90 text-white font-semibold px-2 sm:px-6 md:px-8 text-xs sm:text-sm md:text-base"
+                    disabled
+                  >
+                    {t("shopNow")}
+                  </Button>
+                )}
               </div>
             </div>
           </div>
