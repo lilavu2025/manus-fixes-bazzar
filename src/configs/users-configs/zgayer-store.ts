@@ -18,8 +18,8 @@ const config = createConfig({
   },
 
   visual: {
-    logo: "public/assets/logos/zgayerStore.png",
-    splashScreen: "public/assets/splash/zgayerStore.png",
+    logo: "/assets/logos/zgayerStore.png",
+    splashScreen: "/assets/splash/zgayerStore.png",
     primaryColor: "#000000",
     secondaryColor: "#D4AF37",
     fontFamily: "Tajawal, sans-serif",
