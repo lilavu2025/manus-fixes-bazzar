@@ -57,7 +57,7 @@ export default defineConfig(({ mode }) => ({
       compress: {
         drop_console: mode === 'production',
         drop_debugger: mode === 'production',
-        pure_funcs: mode === 'production' ? ['console.log', 'console.info'] : [],
+        pure_funcs: mode === 'production' ? ['console.log', 'console.info', 'console.warn', 'console.error'] : [],
       },
       mangle: {
         safari10: true,
