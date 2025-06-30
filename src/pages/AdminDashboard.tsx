@@ -220,7 +220,7 @@ const AdminDashboard: React.FC = () => {
                 <img
                   src={config.visual.logo}
                   alt={t('storeName')}
-                  className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg object-contain bg-white shadow"
+                  className="w-20 h-20 sm:w-20 sm:h-20 rounded-lg object-contain bg-white shadow"
                 />
               </div>
               {(!sidebarCollapsed || sidebarOpen) && (
@@ -271,7 +271,7 @@ const AdminDashboard: React.FC = () => {
               <div className="animate-fade-in">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center flex-shrink-0">
+                    <div className="w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--secondary))] rounded-full flex items-center justify-center flex-shrink-0">
                       <span className="text-white font-semibold text-xs lg:text-sm">
                         {profile?.full_name?.charAt(0) || "A"}
                       </span>
@@ -308,7 +308,7 @@ const AdminDashboard: React.FC = () => {
               </div>
             ) : (
               <div className="flex flex-col items-center gap-2">
-                <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                <div className="w-8 h-8 bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--secondary))] rounded-full flex items-center justify-center">
                   <span className="text-white font-semibold text-xs">
                     {profile?.full_name?.charAt(0) || "A"}
                   </span>

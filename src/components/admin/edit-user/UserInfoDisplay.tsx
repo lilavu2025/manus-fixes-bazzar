@@ -34,7 +34,7 @@ const UserInfoDisplay: React.FC<UserInfoDisplayProps> = ({ user, isRTL }) => {
   return (
     <div className={`bg-gray-50 rounded-xl p-4 mb-6 space-y-3 ${isRTL ? 'text-right' : 'text-left'}`} dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="flex items-center gap-3">
-        <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+        <div className="w-10 h-10 bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--secondary))] rounded-full flex items-center justify-center">
           <span className="text-white font-semibold text-sm">
             {user.full_name?.charAt(0) || 'U'}
           </span>

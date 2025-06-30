@@ -73,7 +73,7 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
                   onClick={() => setMobileMenuOpen(false)}
                   className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 ${
                     isActive(item.path)
-                      ? "bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--secondary))] text-[hsl(var(--primary-foreground))] shadow-lg transform scale-105"
+                      ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] shadow-lg transform scale-105"
                       : "text-gray-600 hover:bg-gray-100"
                   }`}
                 >
@@ -88,7 +88,7 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
             {user ? (
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                  <div className="w-12 h-12 bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--secondary))] rounded-full flex items-center justify-center">
                     <span className="text-white font-semibold">
                       {profile?.full_name?.charAt(0) || "U"}
                     </span>

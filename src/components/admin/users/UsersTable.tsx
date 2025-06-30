@@ -153,7 +153,7 @@ const UsersTable: React.FC<UsersTableProps> = ({
         </CardTitle>
         <button
           onClick={exportUsersToExcel}
-          className="bg-green-600 text-white px-4 py-2 rounded font-bold hover:bg-green-700"
+          className="bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--secondary))] text-white px-4 py-2 rounded font-bold hover:bg-green-700"
         >
           {t("exportUsersExcel") || "תצא משתמשים לאקסל"}
         </button>

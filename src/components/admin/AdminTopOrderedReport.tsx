@@ -36,7 +36,7 @@ const AdminTopOrderedReport = () => {
         <CardTitle>{t("topSellingReport")}</CardTitle>
         <Button
           variant="outline"
-          className="ml-4 text-xs border-orange-300 text-orange-600 hover:bg-orange-50"
+          className="ml-4 text-xs border-[hsl(var(--secondary))] text-[hsl(var(--primary))] hover:bg-[hsl(var(--secondary))]"
           onClick={async () => {
             try {
               await updateTopOrderedProducts();
@@ -112,7 +112,7 @@ const AdminTopOrderedReport = () => {
                         <td>
                           <div className="h-3 w-24 bg-gray-200 rounded overflow-hidden">
                             <div
-                              className="h-3 bg-orange-500"
+                              className="h-3 bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--secondary))]"
                               style={{ width: `${percent}%` }}
                             ></div>
                           </div>

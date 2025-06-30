@@ -118,7 +118,7 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({ user }) => {
       <DialogTrigger asChild>
         <Button
           size="sm"
-          className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5 text-xs lg:text-sm h-8 lg:h-9"
+          className="bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))] hover:bg-[hsl(var(--secondary))] text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-0.5 text-xs lg:text-sm h-8 lg:h-9"
         >
           <Edit className="h-3 w-3 lg:h-4 lg:w-4 mr-1" />
           <span className="hidden lg:inline">{t("edit")}</span>

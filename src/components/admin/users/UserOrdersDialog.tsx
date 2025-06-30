@@ -482,7 +482,7 @@ const UserOrdersDialog: React.FC<UserOrdersDialogProps> = ({
               <option value="cancelled">{t("cancelled")}</option>
             </select>
             <button
-              className="bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-lg px-4 py-2 font-semibold shadow hover:from-blue-600 hover:to-purple-600 transition-all"
+              className="bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--secondary))] text-white rounded-lg px-4 py-2 font-semibold shadow hover:from-blue-600 hover:to-purple-600 transition-all"
               onClick={handleExport}
               type="button"
             >

@@ -64,7 +64,7 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({ user, open, onOpe
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center gap-4 mb-4">
-                <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                <div className="w-16 h-16 bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--secondary))] rounded-full flex items-center justify-center">
                   <span className="text-white font-bold text-xl">
                     {user.full_name?.charAt(0) || 'U'}
                   </span>

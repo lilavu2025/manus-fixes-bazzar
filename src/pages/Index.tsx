@@ -15,6 +15,7 @@ import type { Banner as SupabaseBanner } from "@/integrations/supabase/dataFetch
 import type { Banner as AppBanner, Product } from "@/types/index";
 import TopOrderedProducts from "@/components/TopOrderedProducts";
 import { fetchTopOrderedProducts } from "@/integrations/supabase/dataSenders";
+import config from "@/configs/activeConfig";
 
 interface IndexProps {
   searchQuery: string;
@@ -65,6 +66,7 @@ const Index = ({ searchQuery, setSearchQuery }: IndexProps) => {
     );
   });
   const displayProducts = searchQuery ? filteredProducts : featuredHome;
+  const { primaryColor, secondaryColor } = config.visual;
 
   useEffect(() => {
     console.log("[Index] mounted at", new Date().toISOString());
@@ -140,7 +142,7 @@ const Index = ({ searchQuery, setSearchQuery }: IndexProps) => {
               <Button
                 asChild
                 variant="outline"
-                className="font-bold border-orange-200 text-orange-600 hover:bg-orange-50"
+                className="font-bold py-2 px-4 rounded shadow-md transition-all duration-300 text-[hsl(var(--primary))] hover:text-[hsl(var(--secondary))] bg-white"
               >
                 <Link to="/categories" aria-label={t("viewAllCategories")}>{t("viewAllCategories")}</Link>
               </Button>
@@ -220,7 +222,7 @@ const Index = ({ searchQuery, setSearchQuery }: IndexProps) => {
                 <Button
                   asChild
                   variant="outline"
-                  className="font-bold border-orange-200 text-orange-600 hover:bg-orange-50"
+                  className="font-bold py-2 px-4 rounded shadow-md transition-all duration-300 text-[hsl(var(--primary))] hover:text-[hsl(var(--secondary))] bg-white"
                 >
                   <Link to="/products?topOrdered=1" aria-label={t("viewAll")}>{t("viewAll")}</Link>
                 </Button>
@@ -266,7 +268,7 @@ const Index = ({ searchQuery, setSearchQuery }: IndexProps) => {
                 <Button
                   asChild
                   variant="outline"
-                  className="font-bold border-orange-200 text-orange-600 hover:bg-orange-50"
+                  className="font-bold py-2 px-4 rounded shadow-md transition-all duration-300 text-[hsl(var(--primary))] hover:text-[hsl(var(--secondary))] bg-white"
                 >
                   <Link to="/products?featured=1" aria-label={t("viewAll")}>{t("viewAll")}</Link>
                 </Button>

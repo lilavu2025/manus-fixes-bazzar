@@ -7,7 +7,7 @@ const EditUserDialogHeader: React.FC = () => {
   const { t } = useLanguage();
   return (
     <DialogHeader className="text-center pb-4 lg:pb-6 space-y-3">
-      <div className="w-12 h-12 lg:w-16 lg:h-16 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center mx-auto shadow-lg">
+      <div className="w-12 h-12 lg:w-16 lg:h-16 bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--secondary))] rounded-full flex items-center justify-center mx-auto shadow-lg">
         <Edit className="h-6 w-6 lg:h-8 lg:w-8 text-white" />
       </div>
       <DialogTitle className="text-2xl font-bold mb-1 text-primary text-center">
