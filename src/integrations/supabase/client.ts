@@ -2,15 +2,16 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = "https://gcjqjcuwsofzrgohwleg.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdjanFqY3V3c29menJnb2h3bGVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgyMTU5NDYsImV4cCI6MjA2Mzc5MTk0Nn0.LXduYXTaCHMEf0RTr-rAcfIrYsp2R7NhgM_voHpc7dw";
+// استخدم متغيرات البيئة من Vite
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
 export const supabase = createClient<Database>(
   SUPABASE_URL,
-  SUPABASE_PUBLISHABLE_KEY,
+  SUPABASE_ANON_KEY,
   {
     auth: {
       persistSession: true,
