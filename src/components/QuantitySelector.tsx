@@ -10,6 +10,7 @@ interface QuantitySelectorProps {
   onQuantityChange: (quantity: number) => void;
   max?: number;
   min?: number;
+  disabled?: boolean;
 }
 
 const QuantitySelector: React.FC<QuantitySelectorProps> = ({
@@ -17,6 +18,7 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
   onQuantityChange,
   max = 999,
   min = 1,
+  disabled = false,
 }) => {
   const { isRTL } = useLanguage();
   const [inputValue, setInputValue] = useState(quantity.toString());
@@ -74,7 +76,7 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
           e.stopPropagation();
           decrement();
         }}
-        disabled={quantity <= min}
+        disabled={quantity <= min || disabled}
       >
         <Minus className="h-4 w-4" />
       </Button>
@@ -96,6 +98,7 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
         min={min}
         max={max}
         dir={isRTL ? "rtl" : "ltr"}
+        disabled={disabled}
       />
 
       <Button
@@ -107,7 +110,7 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
           e.stopPropagation();
           increment();
         }}
-        disabled={quantity >= max}
+        disabled={quantity >= max || disabled}
       >
         <Plus className="h-4 w-4" />
       </Button>

@@ -414,6 +414,7 @@ export const enTranslations = {
   discount: "Discount",
   reviews: "reviews",
   currency: "₪",
+  productOutOfStockMessage: "This product is currently out of stock and will be back soon!",
 
   // Admin Products
   image: "Image",

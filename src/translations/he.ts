@@ -403,6 +403,7 @@ export const heTranslations = {
   discount: "הנחה",
   reviews: "ביקורות",
   currency: "₪",
+  productOutOfStockMessage: "המוצר הזה אזל מהמלאי ויחזור בקרוב!",
 
   // Admin Products
   image: "תמונה",

@@ -74,18 +74,24 @@ const ProductCardContent: React.FC<ProductCardContentProps> = ({
             </span>
           </div>
         </div>
-        <div
-          className={`flex items-center gap-4 w-full `}
-        >
-          <span className="text-sm sm:text-base text-gray-600 whitespace-nowrap">
-            {t("quantity")}:
-          </span>
-          <QuantitySelector
-            quantity={quantity}
-            onQuantityChange={onQuantityChange}
-            max={99}
-            min={1}
-          />
+        <div className="flex flex-col w-full gap-1">
+          {!product.inStock && (
+            <div className="w-full text-center text-red-600 bg-red-50 border border-red-200 rounded p-2 mb-2 font-semibold text-xs sm:text-sm md:text-base lg:text-base leading-tight sm:leading-normal break-words">
+              {t("productOutOfStockMessage") || "هذا المنتج غير متوفر حالياً وسيعود قريباً!"}
+            </div>
+          )}
+          <div className="flex items-center gap-4 w-full">
+            <span className="text-sm sm:text-base text-gray-600 whitespace-nowrap">
+              {t("quantity")}:
+            </span>
+            <QuantitySelector
+              quantity={quantity}
+              onQuantityChange={onQuantityChange}
+              max={99}
+              min={1}
+              disabled={!product.inStock || isLoading}
+            />
+          </div>
         </div>
       </div>
       {/* أزرار الإجراءات */}

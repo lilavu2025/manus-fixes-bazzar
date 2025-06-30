@@ -217,6 +217,7 @@ export const arTranslations = {
   productDetails: "تفاصيل المنتج",
   inStock: "متوفر",
   outOfStock: "نفد المخزون",
+  productOutOfStockMessage: "هذا المنتج غير متوفر حالياً وسيعود قريباً!",
 
   // User Management
   users: "المستخدمين",
