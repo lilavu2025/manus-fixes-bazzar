@@ -20,6 +20,7 @@ import { PhoneAuth } from "@/components/PhoneAuth";
 import { GoogleSignupForm } from "@/components/GoogleSignupForm";
 import { CompleteProfileAfterGoogle } from "@/components/CompleteProfileAfterGoogle";
 import { getCookie } from "@/utils/commonUtils";
+import config from "@/configs/activeConfig";
 
 const Auth: React.FC = () => {
   const navigate = useNavigate();
@@ -58,6 +59,8 @@ const Auth: React.FC = () => {
 
   const isValidPhone = (phone: string) => /^05\d{8}$/.test(phone);
 
+  const { primaryColor, secondaryColor } = config.visual;
+  
   useEffect(() => {
     if (user && !loading) {
       // التحقق من اكتمال البيانات للمستخدمين الذين سجلوا عبر Google
@@ -259,7 +262,10 @@ const Auth: React.FC = () => {
             {/* زر رجوع دائري صغير داخل الكرت بالطرف مع مسافة عن الحدود */}
             <button
               onClick={() => navigate(-1)}
-              className="absolute top-4 ltr:left-4 rtl:right-4 w-10 h-10 rounded-full bg-gradient-to-r from-orange-500 to-red-500 text-white flex items-center justify-center shadow-lg hover:from-orange-600 hover:to-red-600 transition-all duration-200 z-10 border-4 border-white dark:border-neutral-900"
+              className="absolute top-4 ltr:left-4 rtl:right-4 w-10 h-10 rounded-full text-white flex items-center justify-center shadow-lg transition-all duration-200 z-10 border-4 border-white dark:border-neutral-900"
+                style={{
+                  background: `linear-gradient(to right, ${secondaryColor})`,
+                }}
               aria-label={t("back")}
               type="button"
             >
@@ -278,8 +284,12 @@ const Auth: React.FC = () => {
               </svg>
             </button>
             <CardHeader className="text-center">
-              <div className="w-16 h-16 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-white font-bold text-2xl">م</span>
+              <div className="w-24 h-24 bg-gradient-to-r [hsl(var(--primary))] to-[hsl(var(--secondary))] text-[hsl(var(--primary-foreground))] rounded-full flex items-center justify-center mx-auto mb-4">
+                <img
+                  src={config.visual.logo}
+                  alt={t('storeName')}
+                  className="w-24 h-24 sm:w-24 sm:h-24 rounded-lg object-contain bg-white shadow"
+                />
               </div>
               <CardTitle className="text-2xl">{t("storeName")}</CardTitle>
               <CardDescription>{t("storeDescription")}</CardDescription>

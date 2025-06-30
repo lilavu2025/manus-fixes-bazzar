@@ -8,6 +8,7 @@ import { Percent } from "lucide-react";
 import { Navigate } from "react-router-dom";
 import type { Database } from "@/integrations/supabase/types";
 import { getSetting } from "@/services/settingsService";
+import config from "@/configs/activeConfig";
 
 const Offers: React.FC = () => {
   const { t, isRTL } = useLanguage();
@@ -16,6 +17,7 @@ const Offers: React.FC = () => {
 
   // استخدم hook الجديد لجلب العروض مع التحديث الفوري
   const { offers, loading: isLoading, error } = useOffersRealtime();
+  const { primaryColor, secondaryColor } = config.visual;
 
   useEffect(() => {
     getSetting("hide_offers_page").then((val) => setHideOffers(val === "true"));
@@ -96,7 +98,12 @@ const Offers: React.FC = () => {
 
         {/* Special Offers Banner */}
         {!searchQuery && (
-          <div className="bg-gradient-to-r from-red-500 to-orange-500 rounded-xl p-8 text-white text-center mb-8">
+          <div
+            className="rounded-xl p-8 text-white text-center mb-8"
+            style={{
+              background: `linear-gradient(to left, ${primaryColor}, ${secondaryColor})`,
+            }}
+          >
             <h2 className="text-2xl font-bold mb-2">
               {t("limitedTimeOffers")}
             </h2>

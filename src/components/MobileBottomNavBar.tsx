@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useCart } from "@/hooks/useCart";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useLanguage } from "@/utils/languageContextUtils";
+import config from "@/configs/activeConfig";
 
 interface MobileBottomNavBarProps {
   onMenuClick: () => void;
@@ -39,6 +40,7 @@ const MobileBottomNavBar: React.FC<MobileBottomNavBarProps> = ({
     }
     touch-manipulation select-none
   `;
+  const { primaryColor, secondaryColor } = config.visual;
 
   return (
     <nav 
@@ -75,9 +77,12 @@ const MobileBottomNavBar: React.FC<MobileBottomNavBarProps> = ({
         <div className="relative">
           <ShoppingCart className="h-6 w-6 mb-1" />
           {getTotalItems() > 0 && (
-            <span className={`absolute -top-2 ${isRTL ? '-left-2' : '-right-2'} bg-red-500 text-white 
-              rounded-full text-[9px] min-w-[18px] h-[18px] flex items-center justify-center 
-              border-2 border-white font-bold shadow-md animate-pulse`}>
+            <span
+              className={`absolute -top-2 ${isRTL ? '-left-2' : '-right-2'} text-white 
+                rounded-full text-[9px] min-w-[18px] h-[18px] flex items-center justify-center 
+                border-2 border-white font-bold shadow-md animate-pulse`}
+              style={{ backgroundColor: primaryColor }}
+            >
               {getTotalItems() > 99 ? '99+' : getTotalItems()}
             </span>
           )}
