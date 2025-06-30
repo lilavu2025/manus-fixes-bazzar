@@ -345,8 +345,8 @@ const App = () => {
                           setOpenCart(false);
                           setOpenMobileMenu(false);
                         }}
-                        onCartClick={() => {
-                          setOpenCart(true);
+                        onCartClick={(open) => {
+                          setOpenCart(open);
                           setOpenMobileMenu(false);
                           setShowMobileSearch(false);
                         }}
@@ -402,7 +402,7 @@ function AppHeaderWrapper(props: {
 function MobileBottomNavBarWrapper(props: {
   onMenuClick: () => void;
   onSearchClick: () => void;
-  onCartClick: () => void;
+  onCartClick: (open: boolean) => void;
   onHomeClick: () => void;
 }) {
   const location = useLocation();

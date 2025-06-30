@@ -183,7 +183,7 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
               </ScrollArea>
 
               {/* Footer */}
-              <div className={`border-t p-6 space-y-4 ${isRTL ? "mb-16 sm:mb-0" : "mb-16 sm:mb-0"}`}>
+              <div className={`border-t p-6 space-y-4 ${isRTL ? "mb-24 sm:mb-0" : "mb-24 sm:mb-0"}`}>
                 <div className="flex justify-between items-center">
                   <span className="text-lg font-semibold">{t("total")}:</span>
                   <span className="text-2xl font-bold text-primary">
