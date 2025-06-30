@@ -10,6 +10,7 @@ interface SearchBarProps {
   showMobileSearch?: boolean;
   setShowMobileSearch?: (show: boolean) => void;
   isMobileOnly?: boolean;
+  isScrolled?: boolean;
 }
 
 const SearchBar: React.FC<SearchBarProps> = ({
@@ -18,6 +19,7 @@ const SearchBar: React.FC<SearchBarProps> = ({
   showMobileSearch,
   setShowMobileSearch,
   isMobileOnly = false,
+  isScrolled = false,
 }) => {
   const { t, isRTL } = useLanguage();
 
@@ -33,14 +35,14 @@ const SearchBar: React.FC<SearchBarProps> = ({
       >
         <div className="relative w-full max-w-sm">
           <Search
-            className={`absolute top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 ${isRTL ? "right-3" : "left-3"}`}
+            className={`absolute top-1/2 transform -translate-y-1/2 text-gray-400 ${isScrolled ? 'h-3 w-3' : 'h-4 w-4'} ${isRTL ? "right-3" : "left-3"}`}
           />
           <ClearableInput
             placeholder={t("search")}
             value={searchQuery}
             onChange={handleSearchChange}
             onClear={() => onSearchChange("")}
-            className={`${isRTL ? "pr-9 pl-3" : "pl-9 pr-3"} h-10 rounded-full border-2 border-gray-200 focus:border-primary text-sm w-full`}
+            className={`${isRTL ? "pr-9 pl-3" : "pl-9 pr-3"} ${isScrolled ? 'h-7 text-xs' : 'h-10 text-sm'} rounded-full border-2 border-gray-200 focus:border-primary w-full`}
             autoFocus
             aria-label={t("searchInput")}
           />
@@ -53,19 +55,19 @@ const SearchBar: React.FC<SearchBarProps> = ({
     <>
       {/* Desktop Search */}
       <div
-        className="hidden md:flex flex-1 max-w-md mx-4"
+        className={`hidden md:flex flex-1 max-w-md mx-4`}
         aria-label={t("searchBarDesktop")}
       >
         <div className="relative w-full">
           <Search
-            className={`absolute top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5 ${isRTL ? "right-3" : "left-3"}`}
+            className={`absolute top-1/2 transform -translate-y-1/2 text-gray-400 ${isScrolled ? 'h-4 w-4' : 'h-5 w-5'} ${isRTL ? "right-3" : "left-3"}`}
           />
           <ClearableInput
             placeholder={t("search")}
             value={searchQuery}
             onChange={handleSearchChange}
             onClear={() => onSearchChange("")}
-            className={`${isRTL ? "pr-10 pl-4" : "pl-10 pr-4"} h-11 rounded-full border-2 border-gray-200 focus:border-primary text-base`}
+            className={`${isRTL ? "pr-10 pl-4" : "pl-10 pr-4"} ${isScrolled ? 'h-8 text-xs' : 'h-11 text-base'} rounded-full border-2 border-gray-200 focus:border-primary`}
             aria-label={t("searchInput")}
           />
         </div>
