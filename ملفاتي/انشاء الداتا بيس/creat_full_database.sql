@@ -273,3 +273,55 @@ on conflict do nothing;
 
 -- إدخال افتراضي لإعداد إخفاء صفحة العروض
 insert into public.settings (key, value) values ('hide_offers_page', 'false') on conflict (key) do nothing;
+
+
+
+----------------- تريجرات إضافية -----------------
+-- تريجر لتحديث حالة المنتج في المخزون بناءً على الكمية
+-- هذا التريجر يقوم بتحديث حالة المنتج في المخزون (in_stock) بناءً على الكمية المتاحة
+CREATE OR REPLACE FUNCTION update_in_stock_status()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.stock_quantity <= 0 THEN
+    NEW.in_stock := FALSE;
+  ELSE
+    NEW.in_stock := TRUE;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_update_in_stock ON products;
+
+CREATE TRIGGER trg_update_in_stock
+BEFORE INSERT OR UPDATE ON products
+FOR EACH ROW
+EXECUTE FUNCTION update_in_stock_status();
+
+
+----- تريجر لتحديث إحصائيات الطلبات في ملف المستخدم عند إضافة طلب جديد
+CREATE OR REPLACE FUNCTION public.update_profile_order_stats()
+RETURNS trigger AS $$
+BEGIN
+  UPDATE profiles
+  SET
+    last_order_date = NEW.created_at,
+    highest_order_value = GREATEST(
+      COALESCE(highest_order_value, 0),
+      COALESCE(NEW.total, 0)
+    )
+  WHERE id = NEW.user_id;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+
+-- حذف الـ Trigger إذا كان موجودًا
+DROP TRIGGER IF EXISTS trg_update_profile_order_stats ON public.orders;
+
+-- إنشاء الـ Trigger بعد الحذف
+CREATE TRIGGER trg_update_profile_order_stats
+AFTER INSERT ON public.orders
+FOR EACH ROW
+EXECUTE FUNCTION public.update_profile_order_stats();
+
