@@ -178,6 +178,10 @@ export const enTranslations = {
   searchByNameProductPlaceholder: "Type product name...",
   searchByNameOfferPlaceholder: "Type offer name...",
   searchByNameBannerPlaceholder: "Type banner name...",
+  bannerVisible: "Banner Visible",
+  clickToUpload: "Click to upload",
+  imageFormat: "Image format: PNG, JPG, JPEG",
+  pasteImageUrl: "Paste image URL here",
   searchByOrderNumberNameOrPhone: "Search by order number or customer name ...",
   searchResults: "Search Results",
   noProductsFound: "No products found",
@@ -1057,6 +1061,8 @@ export const enTranslations = {
   failedToLoadBanners: "Failed to load banners. Please try again.",
   bannerCreatedSuccessfully: "Banner created successfully",
   failedToCreateBanner: "Failed to create banner",
+  createBanner: "Create Banner",
+  banners: "Banners",
   failedToUpdateBanner: "Failed to update banner",
   failedToDeleteBanner: "Failed to delete banner",
   activated: "Activated",
@@ -1099,4 +1105,8 @@ export const enTranslations = {
   productAddFailed: "Failed to add product",
   invalidCredentials: "Invalid credentials provided",
   serverError: "Server error, please try again later",
+
+  activeOnly: "Active Only",
+  inactiveOnly: "Inactive Only",
+  remove: "Remove"
 };

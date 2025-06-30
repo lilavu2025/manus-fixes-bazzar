@@ -681,7 +681,7 @@ const AdminOffers: React.FC = () => {
             <DialogTitle className="text-2xl font-bold mb-1 text-primary text-center">
               {t("addOffer")}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className={isRTL ? "text-right" : "text-left"}>
               {t("addOfferDesc") || "أدخل بيانات العرض الجديد"}
             </DialogDescription>
           </DialogHeader>
