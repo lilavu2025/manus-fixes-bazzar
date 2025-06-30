@@ -49,18 +49,20 @@ const BannerCarousel: React.FC<BannerCarouselProps> = ({ banners }) => {
 
           <div className="absolute inset-0 flex items-center justify-start p-4 sm:p-6 md:p-8">
             <div className="text-white max-w-xs sm:max-w-md animate-fade-in">
-              <h2 className="text-lg sm:text-xl md:text-2xl lg:text-4xl font-bold mb-2 sm:mb-4">
-                {banner.title}
-              </h2>
-              <p className="text-sm sm:text-base md:text-lg lg:text-xl opacity-90 mb-3 sm:mb-6">
-                {banner.subtitle}
-              </p>
-              {/* <Button
-                size="sm"
-                className="bg-primary hover:bg-primary/90 text-white font-semibold px-4 sm:px-6 md:px-8 text-xs sm:text-sm md:text-base"
-              >
-                {t("shopNow")}
-              </Button> */}
+              <div className="bg-black/30 sm:bg-black/70 rounded-lg p-1 sm:p-4 max-w-full">
+                <h2 className="text-lg sm:text-xl md:text-2xl lg:text-4xl font-bold mb-2 sm:mb-4">
+                  {banner.title}
+                </h2>
+                <p className="text-sm sm:text-base md:text-lg lg:text-xl opacity-90 mb-3 sm:mb-6">
+                  {banner.subtitle}
+                </p>
+                <Button
+                  size="sm"
+                  className="bg-primary hover:bg-primary/90 text-white font-semibold px-2 sm:px-6 md:px-8 text-xs sm:text-sm md:text-base"
+                >
+                  {t("shopNow")}
+                </Button>
+              </div>
             </div>
           </div>
         </div>
