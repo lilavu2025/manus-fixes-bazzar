@@ -54,17 +54,30 @@ const Index = ({ searchQuery, setSearchQuery }: IndexProps) => {
     : [];
 
   // المنتجات المميزة للصفحة الرئيسية فقط (حد أقصى 4)
-  const featuredHome = products.filter((product) => product.featured && product.active !== false).slice(0, 4);
+  const featuredHome = products
+    .filter((product) => product.featured && product.active !== false)
+    .sort((a, b) => {
+      if (a.inStock && !b.inStock) return -1;
+      if (!a.inStock && b.inStock) return 1;
+      return 0;
+    })
+    .slice(0, 4);
 
-  const filteredProducts = products.filter((product) => {
-    if (searchQuery === "") return true;
-    const q = searchQuery.toLowerCase();
-    return (
-      (product.name && product.name.toLowerCase().includes(q)) ||
-      (product.nameEn && product.nameEn.toLowerCase().includes(q)) ||
-      (product.nameHe && product.nameHe.toLowerCase().includes(q))
-    );
-  });
+  const filteredProducts = products
+    .filter((product) => {
+      if (searchQuery === "") return true;
+      const q = searchQuery.toLowerCase();
+      return (
+        (product.name && product.name.toLowerCase().includes(q)) ||
+        (product.nameEn && product.nameEn.toLowerCase().includes(q)) ||
+        (product.nameHe && product.nameHe.toLowerCase().includes(q))
+      );
+    })
+    .sort((a, b) => {
+      if (a.inStock && !b.inStock) return -1;
+      if (!a.inStock && b.inStock) return 1;
+      return 0;
+    });
   const displayProducts = searchQuery ? filteredProducts : featuredHome;
   const { primaryColor, secondaryColor } = config.visual;
 

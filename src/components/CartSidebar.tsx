@@ -112,7 +112,7 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
                   {cartItems.map((item) => (
                     <div
                       key={item.id}
-                      className={`flex ${isRTL ? "flex-row-reverse" : "flex-row"} gap-4 p-4 bg-gray-50 rounded-lg shadow-md animate-fade-in`}
+                      className={`flex ${isRTL ? "flex-row-reverse" : "flex-row"} gap-4 p-4 bg-gray-50 rounded-lg shadow-md animate-fade-in relative`}
                     >
                       <img
                         src={item.product.image}
@@ -166,16 +166,16 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
                               <Plus className="h-4 w-4" />
                             </Button>
                           </div>
-
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50"
-                            onClick={() => removeItem(item.id, item.product.id)}
-                          >
-                            <Trash2 className="h-5 w-5" />
-                          </Button>
                         </div>
+
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 absolute top-2 end-2"
+                          onClick={() => removeItem(item.id, item.product.id)}
+                        >
+                          <Trash2 className="h-5 w-5" />
+                        </Button>
                       </div>
                     </div>
                   ))}

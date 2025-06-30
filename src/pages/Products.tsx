@@ -126,6 +126,9 @@ const Products: React.FC = () => {
       return matchesCategory && matchesSearch && matchesPrice;
     })
     .sort((a, b) => {
+      // المنتجات غير المتوفرة تظهر في النهاية دائماً
+      if (a.inStock && !b.inStock) return -1;
+      if (!a.inStock && b.inStock) return 1;
       switch (sortBy) {
         case "price-low":
           return a.price - b.price;

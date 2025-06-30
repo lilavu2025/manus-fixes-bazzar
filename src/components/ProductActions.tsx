@@ -118,7 +118,7 @@ const ProductActions = ({ product, onBuyNow }: ProductActionsProps) => {
       <div className="space-y-3 sm:space-y-4">
         {!product.inStock && (
           <div className="w-full text-center text-red-600 bg-red-50 border border-red-200 rounded p-2 mb-2 font-semibold">
-            {t("productOutOfStockMessage", "هذا المنتج غير متوفر حالياً وسيعود قريباً!")}
+            {t("productOutOfStockMessage")}
           </div>
         )}
         <div
