@@ -22,6 +22,8 @@ import { CompleteProfileAfterGoogle } from "@/components/CompleteProfileAfterGoo
 import { getCookie } from "@/utils/commonUtils";
 import config from "@/configs/activeConfig";
 
+const primary = config.visual.primaryColor;
+const secondary = config.visual.secondaryColor;
 const Auth: React.FC = () => {
   const navigate = useNavigate();
   const { signIn, signUp, user, loading, checkProfileCompleteness } = useAuth();
@@ -299,19 +301,83 @@ const Auth: React.FC = () => {
                 <TabsList className="grid w-full grid-cols-2 mb-4 rounded-lg overflow-hidden shadow">
                   <TabsTrigger
                     value="login"
-                    className="text-base font-semibold flex items-center justify-center data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-purple-500 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
+                    className="text-base font-semibold flex items-center justify-center px-4 py-2 transition-all duration-200
+                              bg-white text-[color:var(--secondaryColor)]
+                              data-[state=active]:bg-gradient-to-r
+                              data-[state=active]:from-[var(--primaryColor)]
+                              data-[state=active]:to-[var(--secondaryColor)]
+                              data-[state=active]:text-white
+                              data-[state=active]:shadow-md"
+                    style={{
+                      '--primaryColor': config.visual.primaryColor,
+                      '--secondaryColor': config.visual.secondaryColor,
+                    } as React.CSSProperties}
                   >
                     {t("login") || "تسجيل الدخول"}
                   </TabsTrigger>
                   <TabsTrigger
                     value="signup"
-                    className="text-base font-semibold flex items-center justify-center data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-teal-500 data-[state=active]:text-white data-[state=active]:shadow-md transition-all"
+                    className="text-base font-semibold flex items-center justify-center px-4 py-2 transition-all duration-200
+                              bg-white text-[color:var(--secondaryColor)]
+                              data-[state=active]:bg-gradient-to-r
+                              data-[state=active]:from-[var(--primaryColor)]
+                              data-[state=active]:to-[var(--secondaryColor)]
+                              data-[state=active]:text-white
+                              data-[state=active]:shadow-md"
+                    style={{
+                      '--primaryColor': config.visual.primaryColor,
+                      '--secondaryColor': config.visual.secondaryColor,
+                    } as React.CSSProperties}
                   >
                     {t("signup") || "إنشاء حساب"}
                   </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="login">
+
+                  {/* طرق المصادقة البديلة */}
+                  <div className="mt-6 space-y-3 mb-5">
+                    <div className="relative">
+                      <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t" />
+                      </div>
+                      <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-background px-2 text-muted-foreground">
+                          {t("loginWith")}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className={`grid gap-2 ${showPhoneAuth ? 'grid-cols-3' : 'grid-cols-2'}`}>
+                      <Button
+                        variant={authMethod === 'email' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setAuthMethod('email')}
+                        className="text-xs"
+                      >
+                        {t("email")}
+                      </Button>
+                      {showPhoneAuth && (
+                        <Button
+                          variant={authMethod === 'phone' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setAuthMethod('phone')}
+                          className="text-xs"
+                        >
+                          {t("phone")}
+                        </Button>
+                      )}
+                      <Button
+                        variant={authMethod === 'google' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setAuthMethod('google')}
+                        className="text-xs"
+                      >
+                        Google
+                      </Button>
+                    </div>
+                  </div>
+
                   {authMethod === 'email' && (
                     <form onSubmit={handleLogin} className="space-y-4">
                       <div className="space-y-2">
@@ -380,16 +446,18 @@ const Auth: React.FC = () => {
                       />
                     </div>
                   )}
+                </TabsContent>
 
+                <TabsContent value="signup">
                   {/* طرق المصادقة البديلة */}
-                  <div className="mt-6 space-y-3">
+                  <div className="mt-6 space-y-3 mb-5">
                     <div className="relative">
                       <div className="absolute inset-0 flex items-center">
                         <span className="w-full border-t" />
                       </div>
                       <div className="relative flex justify-center text-xs uppercase">
                         <span className="bg-background px-2 text-muted-foreground">
-                          {t("orLoginWith")}
+                          {t("signupWith")}
                         </span>
                       </div>
                     </div>
@@ -423,9 +491,7 @@ const Auth: React.FC = () => {
                       </Button>
                     </div>
                   </div>
-                </TabsContent>
 
-                <TabsContent value="signup">
                   {authMethod === 'email' && (
                     <form onSubmit={handleSignup} className="space-y-4">
                       <div className="space-y-2">
@@ -560,49 +626,6 @@ const Auth: React.FC = () => {
                       />
                     </div>
                   )}
-
-                  {/* طرق المصادقة البديلة */}
-                  <div className="mt-6 space-y-3">
-                    <div className="relative">
-                      <div className="absolute inset-0 flex items-center">
-                        <span className="w-full border-t" />
-                      </div>
-                      <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-background px-2 text-muted-foreground">
-                          {t("orSignupWith")}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className={`grid gap-2 ${showPhoneAuth ? 'grid-cols-3' : 'grid-cols-2'}`}>
-                      <Button
-                        variant={authMethod === 'email' ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => setAuthMethod('email')}
-                        className="text-xs"
-                      >
-                        {t("email")}
-                      </Button>
-                      {showPhoneAuth && (
-                        <Button
-                          variant={authMethod === 'phone' ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => setAuthMethod('phone')}
-                          className="text-xs"
-                        >
-                          {t("phone")}
-                        </Button>
-                      )}
-                      <Button
-                        variant={authMethod === 'google' ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => setAuthMethod('google')}
-                        className="text-xs"
-                      >
-                        Google
-                      </Button>
-                    </div>
-                  </div>
                 </TabsContent>
               </Tabs>
             </CardContent>

@@ -80,8 +80,9 @@ export const arTranslations = {
   orYouCanLogout: "أو يمكنك تسجيل الخروج",
   
   // Alternative Login Methods
-  orLoginWith: "أو سجل الدخول بواسطة",
-  orSignupWith: "أو أنشئ حساب بواسطة",
+  loginWith: "سجل الدخول بواسطة",
+  signupWith: "أنشئ حساب بواسطة",
+  or: "أو",
   alternativeLogin: "طرق تسجيل دخول أخرى",
 
   // Email Confirmation

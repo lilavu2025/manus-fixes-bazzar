@@ -110,8 +110,9 @@ export const enTranslations = {
   orYouCanLogout: "Or you can logout",
 
   // Alternative Login Methods
-  orLoginWith: "Or login with",
-  orSignupWith: "Or sign up with",
+  loginWith: "Login with",
+  signupWith: "Sign up with",
+  or: "Or",
   alternativeLogin: "Alternative login methods",
 
   // Admin Panel

@@ -90,8 +90,9 @@ export const heTranslations = {
   googleAuthError: "שגיאה באימות Google",
   
   // Alternative Login Methods
-  orLoginWith: "או התחבר עם",
-  orSignupWith: "או הרשם עם",
+  loginWith: "התחבר עם",
+  signupWith: "הרשם עם",
+  or: "או",
   alternativeLogin: "שיטות התחברות חלופיות",
   // Pre-Google Auth Form
   completeProfileBeforeGoogle: "השלם את הפרופיל תחילה",
