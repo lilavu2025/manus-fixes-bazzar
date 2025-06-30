@@ -1,10 +1,8 @@
-import defaultConfig from "./defaultConfig";
-import zgayerStore from "./users-configs/zgayer-store";
-// import client2 from "./users-configs/client2";
+import zgayer from "./users-configs/zgayer-store";
 
-const configMap: Record<string, any> = {
-  "zgayer-store": zgayerStore,
-  // "client2": client2,
+const configMap = {
+  zgayer,
+  // ضيف عملاء ثانيين
 };
 
-export { configMap, defaultConfig };
+export default configMap;
