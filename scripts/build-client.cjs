@@ -1,3 +1,6 @@
+// عن طريقه بعمل build للعميل المحدد
+// عن طريق الامر : node scripts/build-client.cjs <client_name>
+
 const fs = require("fs");
 const path = require("path");
 
