@@ -33,6 +33,16 @@ const ProductToggleFields: React.FC<ProductToggleFieldsProps> = ({
         />
         <Label htmlFor="featured">{t('featured')}</Label>
       </div>
+      <div className="flex items-center gap-2">
+              <Switch
+                id="active"
+                checked={formData.active}
+                onCheckedChange={(checked) =>
+                  setFormData({ ...formData, active: checked })
+                }
+              />
+              <Label htmlFor="active">{t("active")}</Label>
+            </div>
     </div>
   );
 };
