@@ -7,6 +7,8 @@ import fs from "fs";
 import fsExtra from "fs-extra";
 import path from "path";
 import { register } from "ts-node";
+import { cleanupBackups } from "./cleanup-backups";
+
 
 // ✅ فعّل ts-node لتشغيل TypeScript داخل هذا الملف
 register({
@@ -57,3 +59,9 @@ for (const client of clients) {
   }
   log(`\n-----------------------نهاية بناء كل العملاء------------------\n`);
 }
+
+// 🔥 حذف النسخ الاحتياطية القديمة وخلي اخر 2
+// ✅ نفذ التنظيف بعد كل عمليات البناء
+cleanupBackups();
+console.log("🧹 تم تنظيف النسخ الاحتياطية لكل العملاء بعد البناء.");
+

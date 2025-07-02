@@ -10,6 +10,8 @@ import fsExtra from "fs-extra";
 import path from "path";
 import { pathToFileURL } from "url";
 import { register } from "ts-node";
+import { cleanupBackups } from "./cleanup-backups";
+
 
 // ✅ فعّل ts-node لتشغيل ملفات TypeScript مباشرة
 register({
@@ -52,6 +54,10 @@ try {
   log(`❌ فشل البناء للعميل: ${client}`);
   process.exit(1);
 }
+
+// 🔥 حذف النسخ الاحتياطية القديمة وخلي اخر 2
+cleanupBackups();
+console.log("🧹 تم تنظيف النسخ الاحتياطية لكل العملاء بعد البناء.");
 
 // 🔥 استورد ملف الكونفج الخاص بالعميل
 const configPath = pathToFileURL(path.resolve(`./src/configs/users-configs/${client}-store.ts`)).href;
