@@ -4,9 +4,9 @@
 // scripts/build-all-clients.ts
 import { execSync } from "child_process";
 import fs from "fs";
+import fsExtra from "fs-extra";
 import path from "path";
 import { register } from "ts-node";
-import { pathToFileURL } from "url";
 
 // ✅ فعّل ts-node لتشغيل TypeScript داخل هذا الملف
 register({
@@ -14,10 +14,10 @@ register({
   compilerOptions: { module: "ESNext" },
 });
 
-const timestamp = new Date().toISOString();
+const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
 const logFile = "logs/deploy.log";
 
-function log(message) {
+function log(message: string) {
   fs.appendFileSync(logFile, `[${timestamp}] ${message}\n`);
 }
 
@@ -28,10 +28,23 @@ const clients = files
   .map((file) => file.replace("-store.ts", ""));
 
 for (const client of clients) {
+  const distPath = `dist-clients/${client}`;
+  const backupPath = `backups/${client}/${timestamp}`;
+
   console.log(`\n-----------------------بداية بناء ${client}------------------`);
   log(`\n-----------------------بداية بناء كل العملاء------------------`);
   console.log(`\n🚧 بناء عميل: ${client}`);
   log(`\n🚧 بناء عميل: ${client}`);
+  log(`\n-----------------------بداية بناء ${client}------------------`);
+
+  if (fs.existsSync(distPath)) {
+    fsExtra.copySync(distPath, backupPath);
+    log(`📦 تم أخذ نسخة احتياطية من مجلد البناء إلى: ${backupPath}`);
+  }
+
+  console.log(`🚧 بناء عميل: ${client}`);
+  log(`🚧 بناء عميل: ${client}`);
+
   try {
     execSync(`cross-env VITE_CLIENT_KEY=${client} npm run build`, {
       stdio: "inherit",

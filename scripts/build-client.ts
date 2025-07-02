@@ -6,6 +6,7 @@
 
 import { execSync } from "child_process";
 import fs from "fs";
+import fsExtra from "fs-extra";
 import path from "path";
 import { pathToFileURL } from "url";
 import { register } from "ts-node";
@@ -13,9 +14,7 @@ import { register } from "ts-node";
 // ✅ فعّل ts-node لتشغيل ملفات TypeScript مباشرة
 register({
   transpileOnly: true,
-  compilerOptions: {
-    module: "ESNext",
-  },
+  compilerOptions: { module: "ESNext" },
 });
 
 const client = process.argv[2];
@@ -24,16 +23,23 @@ if (!client) {
   process.exit(1);
 }
 
-const timestamp = new Date().toISOString();
+const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
 const logFile = "logs/deploy.log";
 const distPath = `dist-clients/${client}`;
+const backupPath = `backups/${client}/${timestamp}`;
 
-function log(message) {
+function log(message: string) {
   fs.appendFileSync(logFile, `[${timestamp}] ${message}\n`);
 }
 
 console.log(`\n-----------------------بداية بناء ${client}------------------\n`);
 log(`\n-----------------------بداية بناء ${client}------------------\n`);
+
+if (fs.existsSync(distPath)) {
+  fsExtra.copySync(distPath, backupPath);
+  log(`📦 تم أخذ نسخة احتياطية من مجلد البناء إلى: ${backupPath}`);
+}
+
 console.log(`🚀 بيبدأ البناء للعميل: ${client}`);
 log(`🚀 بدأ البناء للعميل: ${client}`);
 
