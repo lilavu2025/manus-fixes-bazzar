@@ -25,7 +25,10 @@ if (!client) {
   process.exit(1);
 }
 
-const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+const timestamp = new Date().toLocaleString("sv-SE", {
+  timeZone: "Asia/Jerusalem",
+}).replace(/[: ]/g, "-");
+
 const logFile = "logs/deploy.log";
 const distPath = `dist-clients/${client}`;
 const backupPath = `backups/${client}/${timestamp}`;

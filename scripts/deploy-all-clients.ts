@@ -17,7 +17,10 @@ register({
   },
 });
 
-const timestamp = new Date().toISOString();
+const timestamp = new Date().toLocaleString("sv-SE", {
+  timeZone: "Asia/Jerusalem",
+}).replace(/[: ]/g, "-");
+
 const logFile = "logs/deploy-all.log";
 
 function log(message: string) {

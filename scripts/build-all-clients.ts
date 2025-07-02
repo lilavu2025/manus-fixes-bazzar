@@ -16,7 +16,9 @@ register({
   compilerOptions: { module: "ESNext" },
 });
 
-const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+const timestamp = new Date().toLocaleString("sv-SE", {
+  timeZone: "Asia/Jerusalem",
+}).replace(/[: ]/g, "-");
 const logFile = "logs/deploy.log";
 
 function log(message: string) {

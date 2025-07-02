@@ -6,7 +6,7 @@
   "description": "موقع تجارة إلكترونية متعدد اللغات مع دعم كامل للعربية والعبرية والإنجليزية",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "npx tsx scripts/build-default.ts",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
