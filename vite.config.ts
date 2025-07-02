@@ -2,48 +2,36 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
-import { VitePWA } from 'vite-plugin-pwa';
-import viteCompression from 'vite-plugin-compression';
-import { visualizer } from 'rollup-plugin-visualizer';
+import { visualizer } from "rollup-plugin-visualizer";
+import viteCompression from "vite-plugin-compression";
 
-// https://vitejs.dev/config/
+// تحديد مجلد الإخراج بناءً على العميل
+const client = process.env.VITE_CLIENT_KEY || null;
+const outDir = client ? `dist-clients/${client}` : "dist";
+
 export default defineConfig(({ mode }) => ({
   define: {
-    global: 'globalThis',
+    global: "globalThis",
   },
   server: {
     host: "::",
     port: 8080,
     historyApiFallback: true,
     hmr: {
-      overlay: true
+      overlay: true,
     },
-    // إزالة allowedHosts المحدد للسماح بمرونة أكبر
   },
   plugins: [
     react(),
-    mode === 'development' && componentTagger(),
-    viteCompression({ 
-      algorithm: 'brotliCompress',
-      ext: '.br'
-    }),
-    viteCompression({ 
-      algorithm: 'gzip',
-      ext: '.gz'
-    }),
-    visualizer({ 
-      open: false, 
-      filename: 'dist/bundle-stats.html',
+    mode === "development" && componentTagger(),
+    viteCompression({ algorithm: "brotliCompress", ext: ".br" }),
+    viteCompression({ algorithm: "gzip", ext: ".gz" }),
+    visualizer({
+      open: false,
+      filename: `${outDir}/bundle-stats.html`,
       gzipSize: true,
-      brotliSize: true
+      brotliSize: true,
     }),
-    // PWA Support - يمكن تفعيلها لاحقاً
-    // VitePWA({
-    //   registerType: 'autoUpdate',
-    //   workbox: {
-    //     globPatterns: ['**/*.{js,css,html,ico,png,svg,webp}']
-    //   }
-    // })
   ].filter(Boolean),
   resolve: {
     alias: {
@@ -51,13 +39,20 @@ export default defineConfig(({ mode }) => ({
     },
   },
   build: {
-    target: 'esnext',
-    minify: 'terser',
+    outDir,
+    emptyOutDir: true,
+    target: "esnext",
+    minify: "terser",
+    sourcemap: false,
+    chunkSizeWarningLimit: 500,
     terserOptions: {
       compress: {
-        drop_console: mode === 'production',
-        drop_debugger: mode === 'production',
-        pure_funcs: mode === 'production' ? ['console.log', 'console.info', 'console.warn', 'console.error'] : [],
+        drop_console: mode === "production",
+        drop_debugger: mode === "production",
+        pure_funcs:
+          mode === "production"
+            ? ["console.log", "console.info", "console.warn", "console.error"]
+            : [],
       },
       mangle: {
         safari10: true,
@@ -65,27 +60,25 @@ export default defineConfig(({ mode }) => ({
     },
     rollupOptions: {
       output: {
-        // manualChunks: (id) => { ... } // تم التعطيل مؤقتًا لحل مشكلة React
+        // manualChunks: ... (اختياري لاحقًا)
       },
     },
-    chunkSizeWarningLimit: 500,
-    sourcemap: false,
   },
   optimizeDeps: {
     include: [
-      'react',
-      'react-dom',
-      'react-router-dom',
-      'react-hook-form',
-      'lucide-react',
-      'date-fns',
-      'recharts',
-      'react-intersection-observer',
-      'react-helmet-async',
-      'yup',
-      'clsx',
-      'tailwind-merge',
-      '@supabase/supabase-js'
-    ]
+      "react",
+      "react-dom",
+      "react-router-dom",
+      "react-hook-form",
+      "lucide-react",
+      "date-fns",
+      "recharts",
+      "react-intersection-observer",
+      "react-helmet-async",
+      "yup",
+      "clsx",
+      "tailwind-merge",
+      "@supabase/supabase-js",
+    ],
   },
 }));
