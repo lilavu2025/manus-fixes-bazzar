@@ -1,9 +1,9 @@
 // عن طريقه بعمل build للعميل المحدد
+// وبتم رفعه على Netlify للعميل المحدد
 //npm run build:client <client_name>
 // مثال: npm run build:client zgayer
-// scripts/build-client.cjs
+// scripts/build-client.ts
 
-// scripts/build-client.cjs
 import { execSync } from "child_process";
 import fs from "fs";
 import path from "path";
@@ -32,6 +32,8 @@ function log(message) {
   fs.appendFileSync(logFile, `[${timestamp}] ${message}\n`);
 }
 
+console.log(`\n-----------------------بداية بناء ${client}------------------\n`);
+log(`\n-----------------------بداية بناء ${client}------------------\n`);
 console.log(`🚀 بيبدأ البناء للعميل: ${client}`);
 log(`🚀 بدأ البناء للعميل: ${client}`);
 
@@ -60,6 +62,7 @@ if (!token || !siteId) {
 }
 
 console.log("⬆️ بيرفع النسخة إلى Netlify...");
+log("⬆️ بيرفع النسخة إلى Netlify...");
 try {
   execSync(
     `npx netlify deploy --prod --dir=${distPath} --auth=${token} --site=${siteId}`,
@@ -70,5 +73,7 @@ try {
 } catch (err) {
   console.error("❌ فشل النشر على Netlify.");
   log(`❌ فشل النشر للعميل ${client}`);
+  console.log(`\n-----------------------نهاية بناء ${client}------------------\n`);
+  log(`\n-----------------------نهاية بناء ${client}------------------\n`);
   process.exit(1);
 }

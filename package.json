@@ -14,7 +14,9 @@
     "type-check": "tsc --noEmit",
     "clean": "rimraf dist",
     "test": "echo \"No tests yet\" && exit 0",
-    "build:client": "tsx scripts/build-client.ts"
+    "build:client": "tsx scripts/build-client.ts",
+    "build:all-clients": "tsx scripts/build-all-clients.ts",
+    "deploy:all-clients": "tsx scripts/deploy-all-clients.ts"
   },
   "dependencies": {
     "@capacitor/android": "^7.2.0",
