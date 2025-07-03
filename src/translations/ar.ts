@@ -1095,4 +1095,6 @@ export const arTranslations = {
 
   //order invoice
   orderInvoice: "فاتورة الطلب",
+  printedAt: "تمت الطباعة في",
+  printedBy: "تمت الطباعة بواسطة",
 };

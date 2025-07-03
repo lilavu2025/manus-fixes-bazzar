@@ -65,6 +65,9 @@ export function mapOrderFromDb(order: Record<string, unknown>): Order {
         item.products?.name_en ||
         item.products?.name_he ||
         item.id,
+      product_name_ar: item.products?.name_ar,
+      product_name_en: item.products?.name_en,
+      product_name_he: item.products?.name_he,
     }));
   } else if (typeof order["items"] === "string") {
     items = JSON.parse(order["items"] as string);

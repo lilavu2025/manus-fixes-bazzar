@@ -412,7 +412,11 @@ const AdminOrders: React.FC = () => {
 
   // توليد رسالة واتساب (تحميل الفاتورة)
   const generateWhatsappMessage = async (order: any, t: any, currentLang: "ar" | "en" | "he") => {
-    await generateInvoicePdf(order, t, currentLang);
+    await generateInvoicePdf(
+      { ...order, admin_creator_name: profile?.full_name || user?.full_name || "-" },
+      t,
+      currentLang
+    );
   };
 
   // شاشة تحميل الطلبات
@@ -580,7 +584,11 @@ const AdminOrders: React.FC = () => {
                     );
                   }}
                   onDownloadOrder={(order) => {
-                    const pdf = generateInvoicePdf(order, t, language);
+                    const pdf = generateInvoicePdf(
+                      { ...order, admin_creator_name: profile?.full_name || user?.full_name || "-" },
+                      t,
+                      language
+                    );
 
                     // لو بدك تبعتها على واتساب
                     // const msg = encodeURIComponent(pdf);

@@ -1117,4 +1117,6 @@ export const enTranslations = {
 
   //order invoice
   orderInvoice: "Order Invoice",
+  printedAt: "Printed At",
+  printedBy: "Printed By",
 };

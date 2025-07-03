@@ -1,203 +1,156 @@
-import jsPDF from "jspdf";
-import { amiriFontBase64 } from "../../public/fonts/amiriFontBase64";
-import { notoSansHebrewFontBase64 } from "../../public/fonts/notoSansHebrewFontBase64";
 import config from "@/configs/activeConfig";
-import { getOrderDisplayTotal } from "./order.displayTotal";
 import type { Order } from "./order.types";
-
-// 🧠 تحويل base64 إلى صورة
-function loadImageFromBase64(src: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.src = src;
-    img.onload = () => resolve(img);
-    img.onerror = reject;
-  });
-}
-
-function isHebrew(text: string) {
-  return /[\u0590-\u05FF]/.test(text);
-}
-function isArabic(text: string) {
-  return /[\u0600-\u06FF]/.test(text);
-}
-function isEnglishOnly(text: string) {
-  return /^[A-Za-z0-9 .,:;!?@#$%^&*()_+=\-\[\]{}'"/\\]*$/.test(text);
-}
-
-type AlignType = "right" | "left" | "center" | "justify";
+import { getOrderDisplayTotal } from "./order.displayTotal";
 
 export async function generateInvoicePdf(
   order: Order,
   t: (key: string) => string,
   currentLang: "ar" | "en" | "he"
 ) {
-  let doc: jsPDF;
-  doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-  doc.addFileToVFS("Amiri-Regular.ttf", amiriFontBase64);
-  doc.addFont("Amiri-Regular.ttf", "Amiri", "normal");
-  doc.addFileToVFS("NotoSansHebrew-Regular.ttf", notoSansHebrewFontBase64);
-  doc.addFont("NotoSansHebrew-Regular.ttf", "NotoSansHebrew", "normal");
-  doc.setFontSize(13);
-
-  function reverseEnglishWords(text: string) {
-    // يعكس فقط الكلمات الإنجليزية (وليس كل النص)
-    return text.replace(/[A-Za-z][A-Za-z0-9'\-]*/g, (match) => match.split('').reverse().join(''));
-  }
-
-  function reverseHebrewAndEnglish(text: string) {
-    // إذا كان النص عبري فقط: نعكس الحروف
-    if (isHebrew(text) && !/[A-Za-z]/.test(text)) {
-      return text.split('').reverse().join('');
-    }
-    // إذا كان النص يبدأ بكلمة عبرية متبوعة بـ : (مثل לקוח: ...)
-    const colonMatchHebrew = text.match(/^([\u0590-\u05FF]+:)(.*)$/);
-    if (colonMatchHebrew) {
-      const beforeColon = colonMatchHebrew[1];
-      const afterColon = colonMatchHebrew[2].trim();
-      if (/^[A-Za-z0-9 .,'"-]+$/.test(afterColon)) {
-        return text;
-      } else {
-        return beforeColon + ' ' + afterColon.split(' ').reverse().join(' ');
-      }
-    }
-    // إذا كان النص يبدأ بكلمة عربية متبوعة بـ : (مثل العميل: ...)
-    const colonMatchArabic = text.match(/^([\u0600-\u06FF]+:)(.*)$/);
-    if (colonMatchArabic) {
-      const beforeColon = colonMatchArabic[1];
-      const afterColon = colonMatchArabic[2].trim();
-      if (/^[A-Za-z0-9 .,'"-]+$/.test(afterColon)) {
-        return text;
-      } else {
-        return beforeColon + ' ' + afterColon.replace(/[A-Za-z][A-Za-z0-9'\-]*/g, (match) => match.split('').reverse().join(''));
-      }
-    }
-    // إذا كان النص عبري + إنجليزي (مختلط): نعكس ترتيب الكلمات فقط
-    if (isHebrew(text) && /[A-Za-z]/.test(text)) {
-      return text.split(' ').reverse().join(' ');
-    }
-    // إذا كان عربي: فقط نعكس الكلمات الإنجليزية داخله
-    if (isArabic(text)) {
-      return text.replace(/[A-Za-z][A-Za-z0-9'\-]*/g, (match) => match.split('').reverse().join(''));
-    }
-    // إذا كان إنجليزي فقط أو غير ذلك
-    return text;
-  }
-
-  const setFontAndAlign = (text: string): { align: AlignType; x: number; processedText: string } => {
-    if (isHebrew(text)) {
-      doc.setFont("NotoSansHebrew");
-      return { align: "right", x: 200, processedText: reverseHebrewAndEnglish(text) };
-    } else if (isArabic(text)) {
-      doc.setFont("Amiri");
-      return { align: "right", x: 200, processedText: reverseHebrewAndEnglish(text) };
-    } else if (isEnglishOnly(text)) {
-      doc.setFont("helvetica");
-      return { align: "left", x: 15, processedText: text };
-    } else {
-      doc.setFont("helvetica");
-      return { align: "left", x: 15, processedText: text };
-    }
-  };
-
   const storeName = config.names[currentLang];
-  const logoPath = config.visual.logo;
+  const logo = `${window.location.origin}${config.visual.logo}`;
+  console.log("📷 logo URL:", logo);
+
   const profile = order.profiles ?? { full_name: "", phone: "" };
-  const paddingX = 15;
-  let y = 20;
-
-  // 🖼️ الشعار
-  try {
-    const logo = await loadImageFromBase64(logoPath);
-    doc.addImage(logo, "PNG", 85, 10, 40, 20);
-  } catch {}
-
-  // 🏪 اسم المتجر والعنوان
-  doc.setFontSize(16);
-  let fontAlign = setFontAndAlign(storeName);
-  doc.text(fontAlign.processedText, 105, y, { align: "center" });
-  y += 10;
-  doc.setFontSize(14);
-  const invoiceTitle = t("orderInvoice") || "فاتورة الطلب";
-  fontAlign = setFontAndAlign(invoiceTitle);
-  doc.text(fontAlign.processedText, 105, y, { align: "center" });
-  y += 15;
-
-  // 🧾 معلومات الزبون
-  const rightColX = 200;
-  doc.setFontSize(12);
-  let infoText = `${t("orderNumber")}: ${order.order_number}`;
-  fontAlign = setFontAndAlign(infoText);
-  doc.text(fontAlign.processedText, fontAlign.align === "right" ? rightColX : paddingX, y, { align: fontAlign.align }); y += 6;
-  infoText = `${t("date")}: ${new Date(order.created_at).toLocaleDateString("en-GB")}`;
-  fontAlign = setFontAndAlign(infoText);
-  doc.text(fontAlign.processedText, fontAlign.align === "right" ? rightColX : paddingX, y, { align: fontAlign.align }); y += 6;
-  infoText = `${t("customer")}: ${profile?.full_name || "-"}`;
-  fontAlign = setFontAndAlign(infoText);
-  doc.text(fontAlign.processedText, fontAlign.align === "right" ? rightColX : paddingX, y, { align: fontAlign.align }); y += 6;
-  infoText = `${t("phone")}: ${profile?.phone || "-"}`;
-  fontAlign = setFontAndAlign(infoText);
-  doc.text(fontAlign.processedText, fontAlign.align === "right" ? rightColX : paddingX, y, { align: fontAlign.align }); y += 10;
-
-  // 🧮 جدول المنتجات
-  doc.setFontSize(13);
-  const productsTitle = t("products") || "المنتجات:";
-  fontAlign = setFontAndAlign(productsTitle);
-  doc.text(fontAlign.processedText, fontAlign.align === "right" ? rightColX : paddingX, y, { align: fontAlign.align });
-  y += 7;
-
-  // رأس الجدول
-  const tableX = 195;
-  const colWidths = [60, 25, 30, 30];
-  const headers = [t("product"), t("quantity"), t("price"), t("total")];
-
-  doc.setFontSize(12);
-  let colX = tableX;
-  headers.forEach((header, idx) => {
-    fontAlign = setFontAndAlign(header);
-    doc.text(fontAlign.processedText, colX, y, { align: "right" });
-    colX -= colWidths[idx];
-  });
-
-  y += 6;
-  doc.setDrawColor(150);
-  doc.line(paddingX, y, 210 - paddingX, y);
-  y += 2;
-
-  // المنتجات
-  order.items?.forEach((item) => {
-    colX = tableX;
-    const row = [
-      item.product_name,
-      String(item.quantity),
-      item.price.toFixed(2),
-      (item.quantity * item.price).toFixed(2),
-    ];
-    row.forEach((cell, idx) => {
-      fontAlign = setFontAndAlign(cell);
-      doc.text(fontAlign.processedText, colX, y, { align: "right" });
-      colX -= colWidths[idx];
-    });
-    y += 6;
-  });
-
-  y += 10;
   const displayTotal = getOrderDisplayTotal(order);
 
-  // 🧾 المجموع
-  doc.setFontSize(13);
-  let totalText = `${t("total")}: ${order.total.toFixed(2)} ₪`;
-  fontAlign = setFontAndAlign(totalText);
-  doc.text(fontAlign.processedText, fontAlign.align === "right" ? rightColX : paddingX, y, { align: fontAlign.align }); y += 6;
+  const direction = currentLang === "ar" || currentLang === "he" ? "rtl" : "ltr";
+  const align = direction === "rtl" ? "right" : "left";
 
-  if (displayTotal.totalAfterDiscount !== order.total) {
-    totalText = `${t("totalAfterDiscount")}: ${displayTotal.totalAfterDiscount.toFixed(2)} ₪`;
-    fontAlign = setFontAndAlign(totalText);
-    doc.text(fontAlign.processedText, fontAlign.align === "right" ? rightColX : paddingX, y, { align: fontAlign.align });
-    y += 6;
+  const productsRows = order.items
+    ?.map(
+      (item) => {
+        // دعم تعدد اللغات لاسم المنتج
+        let productName = "-";
+        if ((item as any)[`product_name_${currentLang}`]) {
+          productName = (item as any)[`product_name_${currentLang}`];
+        } else if ((item as any).product_name_ar) {
+          productName = (item as any).product_name_ar;
+        } else if (item.product_name) {
+          productName = item.product_name;
+        }
+        return `
+      <tr>
+        <td>${productName}</td>
+        <td>${item.quantity}</td>
+        <td>${item.price.toFixed(2)} ₪</td>
+        <td>${(item.quantity * item.price).toFixed(2)} ₪</td>
+      </tr>
+    `;
+      }
+    )
+    .join("") ?? "";
+
+  const html = `
+    <html lang="${currentLang}" dir="${direction}">
+      <head>
+        <meta charset="UTF-8">
+        <title>${t("orderInvoice")}</title>
+        <style>
+          body {
+            font-family: 'Arial', sans-serif;
+            background: #f9f9f9;
+            color: #333;
+            padding: 30px;
+          }
+          .invoice {
+            max-width: 850px;
+            margin: auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            padding: 30px;
+          }
+          .header {
+            text-align: center;
+            margin-bottom: 20px;
+          }
+          .header img {
+            height: 60px;
+            margin-bottom: 10px;
+          }
+          .company-name {
+            font-size: 20px;
+            font-weight: bold;
+          }
+          .info {
+            margin-top: 20px;
+            margin-bottom: 20px;
+            text-align: ${align};
+            line-height: 1.6;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+          }
+          th, td {
+            border: 1px solid #ccc;
+            padding: 10px;
+            text-align: center;
+          }
+          th {
+            background-color: #f0f0f0;
+          }
+          .footer {
+            margin-top: 40px;
+            font-size: 0.9em;
+            color: #777;
+            text-align: center;
+          }
+        </style>
+      </head>
+      <body onload="window.print();">
+        <div class="invoice">
+          <div class="header">
+            <img src="${logo}" alt="Logo" />
+            <div class="company-name">${storeName}</div>
+            <div>${t("orderInvoice")}</div>
+          </div>
+
+          <div class="info">
+            <div>${t("orderNumber")}: ${order.order_number}</div>
+            <div>${t("date")}: ${new Date(order.created_at).toLocaleDateString("en-GB")}</div>
+            <div>${t("customer")}: ${profile.full_name || "-"}</div>
+            <div>${t("phone")}: ${profile.phone || "-"}</div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>${t("product")}</th>
+                <th>${t("quantity")}</th>
+                <th>${t("price")}</th>
+                <th>${t("total")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${productsRows}
+            </tbody>
+          </table>
+
+          <div class="info" style="margin-top: 20px;">
+            <div>${t("total")}: ${order.total.toFixed(2)} ₪</div>
+            ${
+              displayTotal.totalAfterDiscount !== order.total
+                ? `<div>${t("totalAfterDiscount")}: ${displayTotal.totalAfterDiscount.toFixed(2)} ₪</div>`
+                : ""
+            }
+          </div>
+
+          <div class="footer">
+            ${t("printedAt") || "تمت الطباعة في"}: ${new Date().toLocaleString("en-GB")}
+            <br />
+            ${t("printedBy") || "تمت الطباعة بواسطة"}: ${order.admin_creator_name || "-"}
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+
+  const printWindow = window.open("", "_blank");
+  if (printWindow) {
+    printWindow.document.write(html);
+    printWindow.document.close();
   }
-
-  // 🖨️ حفظ الفاتورة
-  // 🖨️ تحميل الفاتورة
-  doc.save(`order-${order.order_number || "order"}.pdf`);
 }

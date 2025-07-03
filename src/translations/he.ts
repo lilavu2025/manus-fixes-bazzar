@@ -1095,4 +1095,6 @@ export const heTranslations = {
 
   //order invoice
   orderInvoice: "חשבונית הזמנה",
+  printedAt: "הודפס ב",
+  printedBy: "הודפס על ידי",
 };
