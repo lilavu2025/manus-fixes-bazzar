@@ -218,7 +218,6 @@ export const arTranslations = {
   inStock: "متوفر",
   outOfStock: "نفد المخزون",
   productOutOfStockMessage: "هذا المنتج غير متوفر حالياً وسيعود قريباً!",
-  downloadOrder: "تحميل الطلبية",
 
   // User Management
   users: "المستخدمين",
@@ -1097,4 +1096,7 @@ export const arTranslations = {
   orderInvoice: "فاتورة الطلب",
   printedAt: "تمت الطباعة في",
   printedBy: "تمت الطباعة بواسطة",
+  orderPrint: "طباعة الطلبية",
+  downloadOrder: "تحميل الطلبية",
+
 };

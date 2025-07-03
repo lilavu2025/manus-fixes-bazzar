@@ -38,7 +38,7 @@ import { mapOrderFromDb } from "../../orders/order.helpers";
 import { initialOrderForm } from "../../orders/order.initialForm";
 import OrderAddDialog from "./orders/OrderAddDialog";
 import OrderEditDialog from "./orders/OrderEditDialog";
-import { generateInvoicePdf } from "@/orders/order.whatsapp";
+import { orderPrint } from "@/orders/order.print";
 import VirtualScrollList from "../VirtualScrollList";
 
 // مكون إدارة الطلبات الرئيسي في لوحة تحكم الأدمن
@@ -412,7 +412,7 @@ const AdminOrders: React.FC = () => {
 
   // توليد رسالة واتساب (تحميل الفاتورة)
   const generateWhatsappMessage = async (order: any, t: any, currentLang: "ar" | "en" | "he") => {
-    await generateInvoicePdf(
+    await orderPrint(
       { ...order, admin_creator_name: profile?.full_name || user?.full_name || "-" },
       t,
       currentLang
@@ -583,8 +583,8 @@ const AdminOrders: React.FC = () => {
                       } as Record<string, unknown>),
                     );
                   }}
-                  onDownloadOrder={(order) => {
-                    const pdf = generateInvoicePdf(
+                  onPrintOrder={(order) => {
+                    const pdf = orderPrint(
                       { ...order, admin_creator_name: profile?.full_name || user?.full_name || "-" },
                       t,
                       language

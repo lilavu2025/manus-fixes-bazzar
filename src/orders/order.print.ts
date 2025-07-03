@@ -2,7 +2,7 @@ import config from "@/configs/activeConfig";
 import type { Order } from "./order.types";
 import { getOrderDisplayTotal } from "./order.displayTotal";
 
-export async function generateInvoicePdf(
+export async function orderPrint(
   order: Order,
   t: (key: string) => string,
   currentLang: "ar" | "en" | "he"

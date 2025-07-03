@@ -212,7 +212,6 @@ export const heTranslations = {
   productDetails: "פרטי המוצר",
   inStock: "במלאי",
   outOfStock: "אזל מהמלאי",
-  downloadOrder: "הורד הזמנה",
 
   // User Management
   users: "משתמשים",
@@ -1097,4 +1096,7 @@ export const heTranslations = {
   orderInvoice: "חשבונית הזמנה",
   printedAt: "הודפס ב",
   printedBy: "הודפס על ידי",
+  orderPrint: "הדפסת הזמנה",
+  downloadOrder: "הורדת הזמנה",
+
 };
