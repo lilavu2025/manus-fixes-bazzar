@@ -50,6 +50,28 @@ export async function generateInvoicePdf(
     if (isHebrew(text) && !/[A-Za-z]/.test(text)) {
       return text.split('').reverse().join('');
     }
+    // إذا كان النص يبدأ بكلمة عبرية متبوعة بـ : (مثل לקוח: ...)
+    const colonMatchHebrew = text.match(/^([\u0590-\u05FF]+:)(.*)$/);
+    if (colonMatchHebrew) {
+      const beforeColon = colonMatchHebrew[1];
+      const afterColon = colonMatchHebrew[2].trim();
+      if (/^[A-Za-z0-9 .,'"-]+$/.test(afterColon)) {
+        return text;
+      } else {
+        return beforeColon + ' ' + afterColon.split(' ').reverse().join(' ');
+      }
+    }
+    // إذا كان النص يبدأ بكلمة عربية متبوعة بـ : (مثل العميل: ...)
+    const colonMatchArabic = text.match(/^([\u0600-\u06FF]+:)(.*)$/);
+    if (colonMatchArabic) {
+      const beforeColon = colonMatchArabic[1];
+      const afterColon = colonMatchArabic[2].trim();
+      if (/^[A-Za-z0-9 .,'"-]+$/.test(afterColon)) {
+        return text;
+      } else {
+        return beforeColon + ' ' + afterColon.replace(/[A-Za-z][A-Za-z0-9'\-]*/g, (match) => match.split('').reverse().join(''));
+      }
+    }
     // إذا كان النص عبري + إنجليزي (مختلط): نعكس ترتيب الكلمات فقط
     if (isHebrew(text) && /[A-Za-z]/.test(text)) {
       return text.split(' ').reverse().join(' ');
