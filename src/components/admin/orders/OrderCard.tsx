@@ -13,7 +13,7 @@ interface OrderCardProps {
   orders: Order[];
   t: any;
   onShowDetails: (order: Order) => void;
-  onShareWhatsapp: (order: Order) => void;
+  onDownloadOrder?: (order: Order) => void;
   onEdit: (order: Order) => void;
   onDelete: (order: Order) => void;
   onUpdateStatus: (orderId: string, status: string) => void;
@@ -24,7 +24,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
   orders,
   t,
   onShowDetails,
-  onShareWhatsapp,
+  onDownloadOrder,
   onEdit,
   onDelete,
   onUpdateStatus,
@@ -119,15 +119,18 @@ const OrderCard: React.FC<OrderCardProps> = ({
             >
               <Eye className="h-4 w-4" /> {t("details")}
             </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="font-bold flex items-center gap-1 px-3 py-2 border-green-500 text-green-700 hover:bg-green-50 min-w-[90px] flex-1 sm:flex-none"
-              style={{ borderWidth: 2 }}
-              onClick={() => onShareWhatsapp(order)}
-            >
-              <Copy className="h-4 w-4" /> {t("shareOnWhatsapp")}
-            </Button>
+            {onDownloadOrder && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="font-bold flex items-center gap-1 px-3 py-2 border-blue-500 text-blue-700 hover:bg-blue-50 min-w-[90px] flex-1 sm:flex-none"
+                style={{ borderWidth: 2, background: '#2563eb', color: 'white' }}
+                onClick={() => onDownloadOrder(order)}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24" className="h-4 w-4"><path d="M19 8h-1V3H6v5H5c-1.1 0-2 .9-2 2v7c0 1.1.9 2 2 2h1v3h12v-3h1c1.1 0 2-.9 2-2v-7c0-1.1-.9-2-2-2zm-3 13H8v-5h8v5zm3-7c0 .55-.45 1-1 1H5c-.55 0-1-.45-1-1v-7c0-.55.45-1 1-1h14c.55 0 1 .45 1 1v7z"></path></svg>
+                {t("downloadOrder") || "تحميل الطلب"}
+              </Button>
+            )}
             <Button
               size="sm"
               variant="secondary"

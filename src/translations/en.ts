@@ -214,6 +214,7 @@ export const enTranslations = {
   productDetails: "Product Details",
   inStock: "In Stock",
   outOfStock: "Out of Stock",
+  downloadOrder: "Download Order",
 
   // User Management
   users: "Users",

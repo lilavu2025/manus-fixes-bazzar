@@ -212,6 +212,7 @@ export const heTranslations = {
   productDetails: "פרטי המוצר",
   inStock: "במלאי",
   outOfStock: "אזל מהמלאי",
+  downloadOrder: "הורד הזמנה",
 
   // User Management
   users: "משתמשים",

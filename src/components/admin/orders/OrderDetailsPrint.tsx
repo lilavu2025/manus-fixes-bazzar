@@ -9,12 +9,13 @@ import type { Product } from "@/types";
 import OrderTotalDisplay from "@/components/OrderTotalDisplay";
 import { LanguageContext } from '@/contexts/LanguageContext.context';
 import { useProductsRealtime } from '@/hooks/useProductsRealtime';
+import { isRTL, useLanguage } from "@/utils/languageContextUtils";
 
 interface OrderDetailsPrintProps {
   order: Order;
   t: any;
   profile?: any;
-  generateWhatsappMessage: (order: Order, t: any) => string;
+  generateWhatsappMessage: (order: Order, t: any, currentLang: "ar" | "en" | "he") => Promise<void>;
 }
 
 const OrderDetailsPrint: React.FC<OrderDetailsPrintProps> = ({ order, t, profile, generateWhatsappMessage }) => {
@@ -23,13 +24,13 @@ const OrderDetailsPrint: React.FC<OrderDetailsPrintProps> = ({ order, t, profile
 
   return (
     <div
-      className="space-y-6 px-6 py-6 print:p-0 print:space-y-4 print:bg-white print:text-black print:rounded-none print:shadow-none print:w-full print:max-w-full print:mx-0 print:my-0"
+      className={`space-y-6 px-6 py-6 print:p-0 print:space-y-4 print:bg-white print:text-black print:rounded-none print:shadow-none print:w-full print:max-w-full print:mx-0 print:my-0 ${isRTL ? "text-right" : "text-left"}`}
       id="print-order-details"
     >
       {/* رأس الورقة للطباعة */}
       <div className="print:flex print:flex-col print:items-center print:mb-6 hidden">
         <img src="/favicon.ico" alt="logo" className="h-14 w-14 mb-2" />
-        <div className="text-2xl font-bold text-primary print:text-black">متجر موبايل بازار</div>
+        <div className="text-2xl font-bold text-primary print:text-black">{t("storeName") || "متجر موبايل بازار"}</div>
         <div className="text-sm text-gray-600 print:text-gray-700">www.mobilebazaar.ps</div>
         <div className="w-full border-b border-gray-300 my-2" />
       </div>
@@ -93,14 +94,12 @@ const OrderDetailsPrint: React.FC<OrderDetailsPrintProps> = ({ order, t, profile
             <Button
               size="sm"
               variant="outline"
-              className="font-bold flex items-center gap-1 px-4 py-2 border-green-500 text-green-700 hover:bg-green-50"
-              style={{ borderWidth: 2 }}
-              onClick={() => {
-                const msg = encodeURIComponent(generateWhatsappMessage(order, t));
-                window.open(`https://wa.me/?text=${msg}`, "_blank");
-              }}
+              className="font-bold flex items-center gap-1 px-4 py-2 border-blue-500 text-blue-700 hover:bg-blue-50"
+              style={{ borderWidth: 2, background: '#2563eb', color: 'white' }}
+              onClick={() => generateWhatsappMessage(order, t, language)}
             >
-              <Copy className="h-4 w-4" /> {t("shareOnWhatsapp") || "مشاركة عبر واتساب"}
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24" className="h-4 w-4"><path d="M19 8h-1V3H6v5H5c-1.1 0-2 .9-2 2v7c0 1.1.9 2 2 2h1v3h12v-3h1c1.1 0 2-.9 2-2v-7c0-1.1-.9-2-2-2zm-3 13H8v-5h8v5zm3-7c0 .55-.45 1-1 1H5c-.55 0-1-.45-1-1v-7c0-.55.45-1 1-1h14c.55 0 1 .45 1 1v7z"></path></svg>
+              {t("downloadOrder") || "تحميل الطلب"}
             </Button>
           </div>
         </div>
@@ -132,12 +131,18 @@ const OrderDetailsPrint: React.FC<OrderDetailsPrintProps> = ({ order, t, profile
               {order.items && order.items.length > 0 ? (
                 order.items.map((item: OrderItem, idx: number) => {
                   const product = products.find((p) => p.id === item.product_id);
+                  // اسم المنتج حسب اللغة، fallback للعربي إذا غير موجود
+                  let productName = '';
+                  if (product) {
+                    productName = product[`name_${language}`] || product.name_ar || product.name_en || product.name_he || '';
+                  } else {
+                    productName = item[`product_name_${language}`] || item.product_name || '';
+                  }
+                  if (!productName) productName = item.product_name || '-';
                   return (
                     <tr key={item.id} className="border-b hover:bg-gray-50 print:hover:bg-transparent">
                       <td className="p-2 text-center">{idx + 1}</td>
-                      <td className="p-2">
-                        {product ? product[`name_${language}`] || product.name_ar : item.product_name}
-                      </td>
+                      <td className="p-2">{productName}</td>
                       <td className="p-2 text-center">{item.quantity}</td>
                       <td className="p-2 text-center">{getDisplayPrice(([] as Product[]).find((p) => p.id === item.product_id) as Product, profile?.user_type) || item.price} ₪</td>
                       <td className="p-2 text-center font-semibold">{(item.price * item.quantity).toFixed(2)} ₪</td>

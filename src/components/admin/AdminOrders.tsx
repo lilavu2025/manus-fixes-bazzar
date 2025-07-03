@@ -38,7 +38,7 @@ import { mapOrderFromDb } from "../../orders/order.helpers";
 import { initialOrderForm } from "../../orders/order.initialForm";
 import OrderAddDialog from "./orders/OrderAddDialog";
 import OrderEditDialog from "./orders/OrderEditDialog";
-import { generateWhatsappMessage } from "@/orders/order.whatsapp";
+import { generateInvoicePdf } from "@/orders/order.whatsapp";
 import VirtualScrollList from "../VirtualScrollList";
 
 // مكون إدارة الطلبات الرئيسي في لوحة تحكم الأدمن
@@ -410,6 +410,11 @@ const AdminOrders: React.FC = () => {
     [users],
   );
 
+  // توليد رسالة واتساب (تحميل الفاتورة)
+  const generateWhatsappMessage = async (order: any, t: any, currentLang: "ar" | "en" | "he") => {
+    await generateInvoicePdf(order, t, currentLang);
+  };
+
   // شاشة تحميل الطلبات
   if (ordersLoading) {
     return (
@@ -574,9 +579,14 @@ const AdminOrders: React.FC = () => {
                       } as Record<string, unknown>),
                     );
                   }}
-                  onShareWhatsapp={() => {
-                    const msg = encodeURIComponent(generateWhatsappMessage(order, t));
-                    window.open(`https://wa.me/?text=${msg}`, "_blank");
+                  onDownloadOrder={(order) => {
+                    const pdf = generateInvoicePdf(order, t, language);
+
+                    // لو بدك تبعتها على واتساب
+                    // const msg = encodeURIComponent(pdf);
+                    // window.open(`https://wa.me/?text=${msg}`, "_blank");
+
+                    // أو بس تولدها محليًا
                   }}
                   onEdit={() => {
                     setEditOrderId(latestOrder.id);

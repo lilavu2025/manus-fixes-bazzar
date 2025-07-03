@@ -9,7 +9,7 @@ interface OrderDetailsDialogProps {
   order: any; // يمكن تحسين النوع لاحقًا
   t: any;
   profile?: any;
-  generateWhatsappMessage: (order: any, t: any) => string;
+  generateWhatsappMessage: (order: any, t: any, currentLang: "ar" | "en" | "he") => Promise<void>;
 }
 
 const OrderDetailsDialog: React.FC<OrderDetailsDialogProps> = ({ open, onOpenChange, order, t, profile, generateWhatsappMessage }) => {
