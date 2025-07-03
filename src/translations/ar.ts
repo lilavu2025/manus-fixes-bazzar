@@ -1092,4 +1092,7 @@ export const arTranslations = {
   activeOnly: "نشط فقط",
   inactiveOnly: "غير نشط فقط",
   remove: "إزالة",
+
+  //order invoice
+  orderInvoice: "فاتورة الطلب",
 };

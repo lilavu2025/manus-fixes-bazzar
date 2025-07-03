@@ -1092,4 +1092,7 @@ export const heTranslations = {
   invalidCredentials: "פרטי ההתחברות אינם נכונים",
 
   remove: "הסר",
+
+  //order invoice
+  orderInvoice: "חשבונית הזמנה",
 };

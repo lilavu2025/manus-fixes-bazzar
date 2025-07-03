@@ -1113,5 +1113,8 @@ export const enTranslations = {
 
   activeOnly: "Active Only",
   inactiveOnly: "Inactive Only",
-  remove: "Remove"
+  remove: "Remove",
+
+  //order invoice
+  orderInvoice: "Order Invoice",
 };
