@@ -5,7 +5,8 @@ import { getOrderDisplayTotal } from "./order.displayTotal";
 export async function orderPrint(
   order: Order,
   t: (key: string) => string,
-  currentLang: "ar" | "en" | "he"
+  currentLang: "ar" | "en" | "he",
+  adminName?: string // اسم الأدمن الحالي
 ) {
   const storeName = config.names[currentLang];
   const logo = `${window.location.origin}${config.visual.logo}`;
@@ -141,7 +142,7 @@ export async function orderPrint(
           <div class="footer">
             ${t("printedAt") || "تمت الطباعة في"}: ${new Date().toLocaleString("en-GB")}
             <br />
-            ${t("printedBy") || "تمت الطباعة بواسطة"}: ${order.admin_creator_name || "-"}
+            ${t("printedBy") || "تمت الطباعة بواسطة"}: ${(adminName && adminName !== "-") ? adminName : ("-")}
           </div>
         </div>
       </body>

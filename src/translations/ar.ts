@@ -1098,5 +1098,6 @@ export const arTranslations = {
   printedBy: "تمت الطباعة بواسطة",
   orderPrint: "طباعة الطلبية",
   downloadOrder: "تحميل الطلبية",
+  downloadPdf: "تحميل PDF",
 
 };

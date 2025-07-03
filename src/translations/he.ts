@@ -1098,5 +1098,6 @@ export const heTranslations = {
   printedBy: "הודפס על ידי",
   orderPrint: "הדפסת הזמנה",
   downloadOrder: "הורדת הזמנה",
+  downloadPdf: "הורדת PDF",
 
 };

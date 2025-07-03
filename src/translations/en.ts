@@ -1120,5 +1120,6 @@ export const enTranslations = {
   printedBy: "Printed By",
   orderPrint: "Order Print",
   downloadOrder: "Download Order",
+  downloadPdf: "Download PDF",
 
 };

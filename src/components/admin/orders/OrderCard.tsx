@@ -14,6 +14,7 @@ interface OrderCardProps {
   t: any;
   onShowDetails: (order: Order) => void;
   onPrintOrder?: (order: Order) => void;
+  onDownloadPdf?: (order: Order) => void;
   onEdit: (order: Order) => void;
   onDelete: (order: Order) => void;
   onUpdateStatus: (orderId: string, status: string) => void;
@@ -24,7 +25,8 @@ const OrderCard: React.FC<OrderCardProps> = ({
   orders,
   t,
   onShowDetails,
-  onPrintOrder: onPrintOrder,
+  onPrintOrder,
+  onDownloadPdf,
   onEdit,
   onDelete,
   onUpdateStatus,
@@ -131,6 +133,17 @@ const OrderCard: React.FC<OrderCardProps> = ({
                 {t("orderPrint") || "طباعة الطلبية"}
               </Button>
             )}
+            {/* زر تحميل PDF */}
+            <Button
+              size="sm"
+              variant="outline"
+              className="font-bold flex items-center gap-1 px-3 py-2 border-green-500 text-green-700 hover:bg-green-50 min-w-[90px] flex-1 sm:flex-none"
+              style={{ borderWidth: 2, background: '#22c55e', color: 'white' }}
+              onClick={() => onDownloadPdf && onDownloadPdf(order)}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24" className="h-4 w-4"><path d="M5 20h14v-2H5v2zm7-18C8.13 2 5 5.13 5 9c0 3.87 3.13 7 7 7s7-3.13 7-7c0-3.87-3.13-7-7-7zm1 10h-2V7h2v5z"/></svg>
+              {t("downloadPdf") || "تحميل PDF"}
+            </Button>
             <Button
               size="sm"
               variant="secondary"

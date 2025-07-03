@@ -15,10 +15,11 @@ interface OrderDetailsPrintProps {
   order: Order;
   t: any;
   profile?: any;
-  generateWhatsappMessage: (order: Order, t: any, currentLang: "ar" | "en" | "he") => Promise<void>;
+  generateOrderPrint: (order: Order, t: any, currentLang: "ar" | "en" | "he") => Promise<void>;
+  onDownloadPdf?: (order: Order) => void;
 }
 
-const OrderDetailsPrint: React.FC<OrderDetailsPrintProps> = ({ order, t, profile, generateWhatsappMessage }) => {
+const OrderDetailsPrint: React.FC<OrderDetailsPrintProps> = ({ order, t, profile, generateOrderPrint: generateOrderPrint, onDownloadPdf }) => {
   const { language } = useContext(LanguageContext) ?? { language: 'ar' };
   const { products } = useProductsRealtime();
 
@@ -96,10 +97,21 @@ const OrderDetailsPrint: React.FC<OrderDetailsPrintProps> = ({ order, t, profile
               variant="outline"
               className="font-bold flex items-center gap-1 px-4 py-2 border-blue-500 text-blue-700 hover:bg-blue-50"
               style={{ borderWidth: 2, background: '#2563eb', color: 'white' }}
-              onClick={() => generateWhatsappMessage(order, t, language)}
+              onClick={() => generateOrderPrint(order, t, language)}
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24" className="h-4 w-4"><path d="M19 8h-1V3H6v5H5c-1.1 0-2 .9-2 2v7c0 1.1.9 2 2 2h1v3h12v-3h1c1.1 0 2-.9 2-2v-7c0-1.1-.9-2-2-2zm-3 13H8v-5h8v5zm3-7c0 .55-.45 1-1 1H5c-.55 0-1-.45-1-1v-7c0-.55.45-1 1-1h14c.55 0 1 .45 1 1v7z"></path></svg>
               {t("orderPrint") || "طباعة الطلبية"}
+            </Button>
+            {/* زر تحميل PDF */}
+            <Button
+              size="sm"
+              variant="outline"
+              className="font-bold flex items-center gap-1 px-4 py-2 border-green-500 text-green-700 hover:bg-green-50"
+              style={{ borderWidth: 2, background: '#22c55e', color: 'white' }}
+              onClick={() => onDownloadPdf && onDownloadPdf(order)}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24" className="h-4 w-4"><path d="M5 20h14v-2H5v2zm7-18C8.13 2 5 5.13 5 9c0 3.87 3.13 7 7 7s7-3.13 7-7c0-3.87-3.13-7-7-7zm1 10h-2V7h2v5z"/></svg>
+              {t("downloadPdf") || "تحميل PDF"}
             </Button>
           </div>
         </div>

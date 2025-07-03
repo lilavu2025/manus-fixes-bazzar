@@ -6,7 +6,8 @@ import html2pdf from "html2pdf.js";
 export async function downloadInvoicePdf(
   order: Order,
   t: (key: string) => string,
-  currentLang: "ar" | "en" | "he"
+  currentLang: "ar" | "en" | "he",
+  adminName?: string // اسم الأدمن الحالي
 ) {
   const storeName = config.names[currentLang];
   const logo = `${window.location.origin}${config.visual.logo}`;
@@ -35,49 +36,117 @@ export async function downloadInvoicePdf(
     })
     .join("") ?? "";
 
-  // فقط محتوى الفاتورة (div.invoice)
-  const invoiceHtml = `
-    <div class="invoice" style="max-width:850px;margin:auto;background:white;border-radius:12px;box-shadow:0 0 10px rgba(0,0,0,0.1);padding:30px;direction:${direction};">
-      <div class="header" style="text-align:center;margin-bottom:20px;">
-        <img src="${logo}" alt="Logo" style="height:60px;margin-bottom:10px;" />
-        <div class="company-name" style="font-size:20px;font-weight:bold;">${storeName}</div>
-        <div>${t("orderInvoice")}</div>
-      </div>
-      <div class="info" style="margin-top:20px;margin-bottom:20px;text-align:${align};line-height:1.6;">
-        <div>${t("orderNumber")}: ${order.order_number}</div>
-        <div>${t("date")}: ${new Date(order.created_at).toLocaleDateString("en-GB")}</div>
-        <div>${t("customer")}: ${profile.full_name || "-"}</div>
-        <div>${t("phone")}: ${profile.phone || "-"}</div>
-      </div>
-      <table style="width:100%;border-collapse:collapse;margin-top:20px;">
-        <thead>
-          <tr>
-            <th style="border:1px solid #ccc;padding:10px;background-color:#f0f0f0;">${t("product")}</th>
-            <th style="border:1px solid #ccc;padding:10px;background-color:#f0f0f0;">${t("quantity")}</th>
-            <th style="border:1px solid #ccc;padding:10px;background-color:#f0f0f0;">${t("price")}</th>
-            <th style="border:1px solid #ccc;padding:10px;background-color:#f0f0f0;">${t("total")}</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${productsRows}
-        </tbody>
-      </table>
-      <div class="info" style="margin-top:20px;">
-        <div>${t("total")}: ${order.total.toFixed(2)} ₪</div>
-        ${displayTotal.totalAfterDiscount !== order.total
-          ? `<div>${t("totalAfterDiscount")}: ${displayTotal.totalAfterDiscount.toFixed(2)} ₪</div>`
-          : ""}
-      </div>
-      <div class="footer" style="margin-top:40px;font-size:0.9em;color:#777;text-align:center;">
-        ${t("printedAt") || "تمت الطباعة في"}: ${new Date().toLocaleString("en-GB")}
-        <br />
-        ${t("printedBy") || "تمت الطباعة بواسطة"}: ${order.admin_creator_name || "-"}
-      </div>
-    </div>
+  // HTML مطابق تماماً للطباعة
+  const html = `
+    <html lang="${currentLang}" dir="${direction}">
+      <head>
+        <meta charset="UTF-8">
+        <title>${t("orderInvoice")}</title>
+        <style>
+          body {
+            font-family: 'Arial', sans-serif;
+            background: #f9f9f9;
+            color: #333;
+            padding: 30px;
+          }
+          .invoice {
+            max-width: 850px;
+            margin: auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            padding: 30px;
+          }
+          .header {
+            text-align: center;
+            margin-bottom: 20px;
+          }
+          .header img {
+            height: 60px;
+            margin-bottom: 10px;
+          }
+          .company-name {
+            font-size: 20px;
+            font-weight: bold;
+          }
+          .info {
+            margin-top: 20px;
+            margin-bottom: 20px;
+            text-align: ${align};
+            line-height: 1.6;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+          }
+          th, td {
+            border: 1px solid #ccc;
+            padding: 10px;
+            text-align: center;
+          }
+          th {
+            background-color: #f0f0f0;
+          }
+          .footer {
+            margin-top: 40px;
+            font-size: 0.9em;
+            color: #777;
+            text-align: center;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="invoice">
+          <div class="header">
+            <img src="${logo}" alt="Logo" />
+            <div class="company-name">${storeName}</div>
+            <div>${t("orderInvoice")}</div>
+          </div>
+
+          <div class="info">
+            <div>${t("orderNumber")}: ${order.order_number}</div>
+            <div>${t("date")}: ${new Date(order.created_at).toLocaleDateString("en-GB")}</div>
+            <div>${t("customer")}: ${profile.full_name || "-"}</div>
+            <div>${t("phone")}: ${profile.phone || "-"}</div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>${t("product")}</th>
+                <th>${t("quantity")}</th>
+                <th>${t("price")}</th>
+                <th>${t("total")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${productsRows}
+            </tbody>
+          </table>
+
+          <div class="info" style="margin-top: 20px;">
+            <div>${t("total")}: ${order.total.toFixed(2)} ₪</div>
+            ${{
+              displayTotal: displayTotal.totalAfterDiscount !== order.total
+                ? `<div>${t("totalAfterDiscount")}: ${displayTotal.totalAfterDiscount.toFixed(2)} ₪</div>`
+                : ""
+            }.displayTotal}
+          </div>
+
+          <div class="footer">
+            ${t("printedAt") || "تمت الطباعة في"}: ${new Date().toLocaleString("en-GB")}
+            <br />
+            ${t("printedBy") || "تمت الطباعة بواسطة"}: ${(adminName && adminName !== "-") ? adminName : ("-")}
+          </div>
+        </div>
+      </body>
+    </html>
   `;
+
   // إنشاء div مخفي وتحويله إلى PDF
   const tempDiv = document.createElement("div");
-  tempDiv.innerHTML = invoiceHtml;
+  tempDiv.innerHTML = html;
   document.body.appendChild(tempDiv);
   await html2pdf()
     .from(tempDiv)
