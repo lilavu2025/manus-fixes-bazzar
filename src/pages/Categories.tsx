@@ -1,15 +1,20 @@
 import React, { useState } from "react";
+import { motion } from "framer-motion";
 import { useCategoriesRealtime } from "@/hooks/useCategoriesRealtime";
 import { useLanguage } from "@/utils/languageContextUtils";
 import { getLocalizedName } from "@/utils/getLocalizedName";
 import CategoryCard from "@/components/CategoryCard";
 import CartSidebar from "@/components/CartSidebar";
 import { ClearableInput } from "@/components/ui/ClearableInput";
+import config from "@/configs/activeConfig";
 
 const Categories: React.FC = () => {
+  // يمكنك تعديل الألوان حسب الحاجة أو جلبها من config إذا كانت متوفرة
+  
   const { t, isRTL, language } = useLanguage();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const { primaryColor, secondaryColor } = config.visual;
 
   const { categories, loading, error, refetch } = useCategoriesRealtime();
 
@@ -70,8 +75,30 @@ const Categories: React.FC = () => {
     <div
       className={`min-h-screen bg-gray-50 ${isRTL ? "rtl" : "ltr"}`}
       dir={isRTL ? "rtl" : "ltr"}
+      style={{ paddingTop: '2rem', paddingBottom: '2rem', paddingLeft: '1rem', paddingRight: '1rem' }}
     >
-      <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-6">
+      {/* Animated Banner */}
+      <div
+        className="rounded-xl p-8 text-white text-center mb-10"
+        style={{
+          backgroundImage: `linear-gradient(270deg, ${primaryColor}, ${secondaryColor}, ${primaryColor})`,
+          backgroundSize: "300% 300%",
+          animation: "gradientBG 6s ease infinite",
+        }}
+      >
+        <style>
+          {`
+            @keyframes gradientBG {
+              0% { background-position: 0% 50%; }
+              50% { background-position: 100% 50%; }
+              100% { background-position: 0% 50%; }
+            }
+          `}
+        </style>
+        <h1 className="text-3xl font-bold mb-2">{t("categories")}</h1>
+      </div>
+
+      <div className="container mx-auto px-2 sm:px-4">
         {/* Advanced Search Bar & Stats */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
           <div className="flex-1 flex items-center gap-2">
@@ -86,23 +113,6 @@ const Categories: React.FC = () => {
               onClear={() => setSearchQuery("")}
             />
           </div>
-          <div className="flex flex-wrap gap-2 justify-start sm:justify-end">
-            <span className="inline-flex items-center text-xs bg-primary/10 text-primary font-semibold rounded px-2 py-1">
-              {t("total")}: {categories.length}
-            </span>
-            <span className="inline-flex items-center text-xs bg-gray-200 text-gray-700 font-semibold rounded px-2 py-1">
-              {t("showing")}: {filteredCategories.length}
-            </span>
-          </div>
-        </div>
-
-        <div className="mb-6">
-          <h1 className="text-2xl sm:text-3xl font-bold mb-1 sm:mb-2 text-gray-900">
-            {t("categories")}
-          </h1>
-          <p className="text-gray-600 text-sm sm:text-base">
-            {t("browseProductCategories")}
-          </p>
         </div>
 
         {filteredCategories.length === 0 ? (
@@ -114,11 +124,32 @@ const Categories: React.FC = () => {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+          <motion.div
+            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6"
+            initial="hidden"
+            animate="show"
+            variants={{
+              hidden: {},
+              show: {
+                transition: {
+                  staggerChildren: 0.1
+                }
+              }
+            }}
+          >
             {filteredCategories.map((category) => (
-              <CategoryCard key={category.id} category={category} />
+              <motion.div
+                key={category.id}
+                variants={{
+                  hidden: { opacity: 0, y: 20 },
+                  show: { opacity: 1, y: 0 }
+                }}
+                transition={{ duration: 0.4 }}
+              >
+                <CategoryCard category={category} />
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
       </div>
 

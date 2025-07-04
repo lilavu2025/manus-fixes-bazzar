@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import { useOffersRealtime } from "@/hooks/useOffersRealtime";
 import { useLanguage } from "@/utils/languageContextUtils";
 import CartSidebar from "@/components/CartSidebar";
@@ -15,30 +16,30 @@ const Offers: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [hideOffers, setHideOffers] = useState(false);
 
-  // استخدم hook الجديد لجلب العروض مع التحديث الفوري
   const { offers, loading: isLoading, error } = useOffersRealtime();
   const { primaryColor, secondaryColor } = config.visual;
 
   useEffect(() => {
-    getSetting("hide_offers_page").then((val) => setHideOffers(val === "true"));
+    getSetting("hide_offers_page").then((val) =>
+      setHideOffers(val === "true")
+    );
   }, []);
 
-  // تصفية العروض حسب البحث
   const filteredOffers = offers.filter(
     (offer: Database["public"]["Tables"]["offers"]["Row"]) =>
       searchQuery === "" ||
       offer.title_ar?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      offer.title_en?.toLowerCase().includes(searchQuery.toLowerCase()),
+      offer.title_en?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   if (hideOffers) return <Navigate to="/" replace />;
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
+      <div className="min-h-screen flex items-center justify-center bg-muted">
+        <div className="text-center text-muted-foreground">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-2">{t("loading")}</p>
+          <p className="mt-3 text-sm">{t("loading")}</p>
         </div>
       </div>
     );
@@ -46,8 +47,8 @@ const Offers: React.FC = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
+      <div className="min-h-screen flex items-center justify-center bg-muted">
+        <div className="text-center text-muted-foreground max-w-md">
           <div className="text-red-500 mb-4">
             <svg
               className="h-12 w-12 mx-auto"
@@ -63,11 +64,11 @@ const Offers: React.FC = () => {
               />
             </svg>
           </div>
-          <h2 className="text-xl font-bold mb-2">{t("error")}</h2>
-          <p className="mb-4">{error.message || t("errorLoadingData")}</p>
+          <h2 className="text-xl font-semibold mb-2">{t("error")}</h2>
+          <p className="mb-4 text-sm">{error.message || t("errorLoadingData")}</p>
           <button
             onClick={() => window.location.reload()}
-            className="btn btn-primary"
+            className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90 transition"
           >
             {t("retry")}
           </button>
@@ -81,53 +82,73 @@ const Offers: React.FC = () => {
       className={`min-h-screen bg-gray-50 ${isRTL ? "rtl" : "ltr"}`}
       dir={isRTL ? "rtl" : "ltr"}
     >
-      <div className="container mx-auto px-4 py-6">
+      <div className="container mx-auto px-4 py-8">
         {/* Page Header */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <h1 className="text-3xl font-bold">{t("offers")}</h1>
-            <Percent className="h-8 w-8 text-primary" />
-          </div>
-          <p className="text-gray-600 mb-6">{t("specialOffers")}</p>
-          {filteredOffers.length > 0 && (
-            <Badge variant="secondary" className="text-lg px-4 py-2">
-              {filteredOffers.length} {t("offers")}
-            </Badge>
-          )}
-        </div>
+        
 
-        {/* Special Offers Banner */}
+        {/* Animated Banner */}
         {!searchQuery && (
-          <div
-            className="rounded-xl p-8 text-white text-center mb-8"
-            style={{
-              background: `linear-gradient(to left, ${primaryColor}, ${secondaryColor})`,
-            }}
-          >
-            <h2 className="text-2xl font-bold mb-2">
-              {t("limitedTimeOffers")}
-            </h2>
-            <p className="text-lg opacity-90">{t("dontMissOut")}</p>
-          </div>
-        )}
+  <div
+    className="rounded-xl p-8 text-white text-center mb-10"
+    style={{
+      backgroundImage: `linear-gradient(270deg, ${primaryColor}, ${secondaryColor}, ${primaryColor})`,
+      backgroundSize: "300% 300%",
+      animation: "gradientBG 6s ease infinite",
+    }}
+  >
+    <style>
+      {`
+        @keyframes gradientBG {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+      `}
+    </style>
+
+    <h2 className="text-2xl font-bold mb-2">{t("limitedTimeOffers")}</h2>
+  </div>
+)}
+
 
         {/* Offers Grid */}
         {filteredOffers.length === 0 ? (
-          <div className="text-center py-12">
-            <Percent className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
+          <div className="text-center py-20">
+            <Percent className="h-14 w-14 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-800 mb-1">
               {t("noOffersAvailable")}
             </h3>
-            <p className="text-gray-500">{t("checkBackLater")}</p>
+            <p className="text-gray-500 text-sm">{t("checkBackLater")}</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <motion.div
+            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6"
+            initial="hidden"
+            animate="show"
+            variants={{
+              hidden: {},
+              show: {
+                transition: {
+                  staggerChildren: 0.1
+                }
+              }
+            }}
+          >
             {filteredOffers.map(
               (offer: Database["public"]["Tables"]["offers"]["Row"]) => (
-                <OfferCard key={offer.id} offer={offer} />
-              ),
+                <motion.div
+                  key={offer.id}
+                  variants={{
+                    hidden: { opacity: 0, y: 20 },
+                    show: { opacity: 1, y: 0 }
+                  }}
+                  transition={{ duration: 0.4 }}
+                >
+                  <OfferCard offer={offer} />
+                </motion.div>
+              )
             )}
-          </div>
+          </motion.div>
         )}
       </div>
     </div>

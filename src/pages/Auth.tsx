@@ -249,11 +249,14 @@ const Auth: React.FC = () => {
       className={`min-h-screen bg-gray-50 flex items-center justify-center px-2 sm:px-4 ${isRTL ? "rtl" : "ltr"}`}
       dir={isRTL ? "rtl" : "ltr"}
     >
+      {/* حاوية الكرت */}
       <div className="w-full max-w-md mx-auto relative">
+        {/* سويتشر اللغة */}
         <div className="flex justify-center mb-6">
           <LanguageSwitcher />
         </div>
 
+        {/* تأكيد الإيميل */}
         {showEmailConfirmation ? (
           <EmailConfirmationPending
             email={pendingEmail}
@@ -261,13 +264,12 @@ const Auth: React.FC = () => {
           />
         ) : (
           <Card className="relative">
+            {/* // زر الرجوع الدائري */}
             {/* زر رجوع دائري صغير داخل الكرت بالطرف مع مسافة عن الحدود */}
             <button
               onClick={() => navigate(-1)}
-              className="absolute top-4 ltr:left-4 rtl:right-4 w-10 h-10 rounded-full text-white flex items-center justify-center shadow-lg transition-all duration-200 z-10 border-4 border-white dark:border-neutral-900"
-                style={{
-                  background: `linear-gradient(to right, ${secondaryColor})`,
-                }}
+              className="absolute top-4 ltr:left-4 rtl:right-4 w-10 h-10 rounded-full text-white flex items-center justify-center shadow-md transition hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[--secondary] z-10 border-4 border-white dark:border-neutral-900"
+              style={{ background: `linear-gradient(135deg, ${primaryColor})` }}
               aria-label={t("back")}
               type="button"
             >
@@ -277,6 +279,7 @@ const Auth: React.FC = () => {
                 stroke="currentColor"
                 strokeWidth="2"
                 viewBox="0 0 24 24"
+                aria-hidden="true"
               >
                 <path
                   strokeLinecap="round"
@@ -285,6 +288,8 @@ const Auth: React.FC = () => {
                 />
               </svg>
             </button>
+
+            {/* رأس الكرت: لوجو واسم المتجر */}
             <CardHeader className="text-center">
               <div className="w-24 h-24 bg-gradient-to-r [hsl(var(--primary))] to-[hsl(var(--secondary))] text-[hsl(var(--primary-foreground))] rounded-full flex items-center justify-center mx-auto mb-4">
                 <img
@@ -297,8 +302,10 @@ const Auth: React.FC = () => {
               <CardDescription>{t("storeDescription")}</CardDescription>
             </CardHeader>
             <CardContent>
+              {/* تبويبات تسجيل الدخول/التسجيل */}
               <Tabs defaultValue="login" className="w-full">
                 <TabsList className="grid w-full grid-cols-2 mb-4 rounded-lg overflow-hidden shadow">
+                  {/* تبويب تسجيل الدخول */}
                   <TabsTrigger
                     value="login"
                     className="text-base font-semibold flex items-center justify-center px-4 py-2 transition-all duration-200
@@ -315,6 +322,7 @@ const Auth: React.FC = () => {
                   >
                     {t("login") || "تسجيل الدخول"}
                   </TabsTrigger>
+                  {/* تبويب إنشاء حساب */}
                   <TabsTrigger
                     value="signup"
                     className="text-base font-semibold flex items-center justify-center px-4 py-2 transition-all duration-200
@@ -333,10 +341,12 @@ const Auth: React.FC = () => {
                   </TabsTrigger>
                 </TabsList>
 
+                {/* محتوى تبويب تسجيل الدخول */}
                 <TabsContent value="login">
 
                   {/* طرق المصادقة البديلة */}
                   <div className="mt-6 space-y-3 mb-5">
+                    {/* فاصل نصي */}
                     <div className="relative">
                       <div className="absolute inset-0 flex items-center">
                         <span className="w-full border-t" />
@@ -348,7 +358,9 @@ const Auth: React.FC = () => {
                       </div>
                     </div>
 
+                    {/* أزرار اختيار طريقة الدخول (إيميل/هاتف/جوجل) */}
                     <div className={`grid gap-2 ${showPhoneAuth ? 'grid-cols-3' : 'grid-cols-2'}`}>
+                      {/* زر اختيار الإيميل */}
                       <Button
                         variant={authMethod === 'email' ? 'default' : 'outline'}
                         size="sm"
@@ -357,6 +369,7 @@ const Auth: React.FC = () => {
                       >
                         {t("email")}
                       </Button>
+                      {/* زر اختيار الهاتف */}
                       {showPhoneAuth && (
                         <Button
                           variant={authMethod === 'phone' ? 'default' : 'outline'}
@@ -367,19 +380,33 @@ const Auth: React.FC = () => {
                           {t("phone")}
                         </Button>
                       )}
+                      {/* زر جوجل */}
                       <Button
-                        variant={authMethod === 'google' ? 'default' : 'outline'}
+                        variant={authMethod === "google" ? "default" : "outline"}
                         size="sm"
-                        onClick={() => setAuthMethod('google')}
-                        className="text-xs"
+                        onClick={() => setAuthMethod("google")}
+                        className="text-xs px-4 py-2 flex items-center gap-2"
+                        aria-pressed={authMethod === "google"}
                       >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 48 48"
+                          className="w-4 h-4"
+                        >
+                          <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C34 32.2 29.6 35 24 35c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l6-6C34.5 5.1 29.5 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21c10.5 0 20.1-7.5 20.1-21 0-1.3-.1-2.5-.5-3.5z" />
+                          <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.3 16 18.8 13 24 13c3.1 0 5.9 1.2 8 3.1l6-6C34.5 5.1 29.5 3 24 3 16 3 9.1 7.6 6.3 14.7z" />
+                          <path fill="#4CAF50" d="M24 45c5.3 0 10.2-1.8 14-4.9l-6.5-5.3C29.9 36.9 27.1 38 24 38c-5.5 0-10-3.7-11.6-8.7l-6.6 5C9 41.2 15.9 45 24 45z" />
+                          <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-1.2 3.4-3.8 6.1-7.3 7.6l6.5 5.3C38.4 37.4 43 31.4 43.6 20.5z" />
+                        </svg>
                         Google
                       </Button>
                     </div>
                   </div>
 
+                  {/* نموذج تسجيل الدخول بالإيميل */}
                   {authMethod === 'email' && (
                     <form onSubmit={handleLogin} className="space-y-4">
+                      {/* حقل الإيميل */}
                       <div className="space-y-2">
                         <Label htmlFor="login-email">{t("email")}</Label>
                         <Input
@@ -398,6 +425,7 @@ const Auth: React.FC = () => {
                         />
                       </div>
 
+                      {/* حقل كلمة المرور */}
                       <div className="space-y-2">
                         <Label htmlFor="login-password">{t("password")}</Label>
                         <Input
@@ -416,6 +444,7 @@ const Auth: React.FC = () => {
                         />
                       </div>
 
+                      {/* زر تسجيل الدخول */}
                       <Button
                         type="submit"
                         className="w-full"
@@ -596,6 +625,7 @@ const Auth: React.FC = () => {
                         />
                       </div>
 
+                      // زر إنشاء حساب جديد
                       <Button
                         type="submit"
                         className="w-full"

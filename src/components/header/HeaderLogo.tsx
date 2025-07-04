@@ -7,15 +7,18 @@ const HeaderLogo: React.FC = () => {
   const { t } = useLanguage();
 
   return (
-    <Link to="/" className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+    <Link to="/" className="flex items-center gap-3 flex-shrink-0 group">
       <img
         src={config.visual.logo}
         alt={t('storeName')}
-        className="w-16 h-16 sm:w-16 sm:h-16 rounded-lg object-contain bg-white shadow"
+        className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-contain bg-white/90 shadow-lg border-2 border-primary group-hover:scale-105 transition-transform duration-200"
+        style={{ boxShadow: '0 4px 24px 0 rgba(0,0,0,0.08)' }}
       />
-      <div className="hidden sm:block">
-        <h1 className="text-lg sm:text-xl font-bold text-gradient">{t('storeName')}</h1>
-        <p className="text-xs text-gray-500 hidden lg:block">{t('storeDescription')}</p>
+      <div className="hidden sm:flex flex-col justify-center">
+        <h1 className="text-2xl sm:text-3xl font-bold text-primary tracking-tight leading-tight drop-shadow-sm">
+          {t('storeName')}
+        </h1>
+        <p className="text-sm text-gray-500 hidden lg:block leading-tight font-medium">{t('storeDescription')}</p>
       </div>
     </Link>
   );

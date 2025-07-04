@@ -122,12 +122,14 @@ const Header: React.FC<HeaderProps> = memo(
                     navigationItems={navigationItems}
                   />
                 </Sheet>
-                {/* Logo */}
-                <div className={`transition-all duration-300 ${isScrolled ? 'scale-[0.7]' : 'scale-100'}`} style={{minWidth: isScrolled ? 40 : 100}}>
-                  <HeaderLogo />
+                {/* Centered Logo */}
+                <div className="flex-1 flex justify-center items-center relative">
+                  <div className={`transition-all duration-300 ${isScrolled ? 'scale-[0.7]' : 'scale-100'}`} style={{minWidth: isScrolled ? 40 : 100}}>
+                    <HeaderLogo />
+                  </div>
                 </div>
                 {/* Search */}
-                <div className={`flex-1 transition-all duration-300 ${isScrolled ? 'max-h-5' : 'max-h-12'}`}>
+                <div className={`hidden lg:flex flex-1 transition-all duration-300 ${isScrolled ? 'max-h-5' : 'max-h-12'} justify-end`}>
                   <SearchBar
                     searchQuery={searchQuery}
                     onSearchChange={onSearchChange}
@@ -137,7 +139,7 @@ const Header: React.FC<HeaderProps> = memo(
                   />
                 </div>
                 {/* Actions */}
-                <div className="transition-all duration-300 scale-100">
+                <div className="transition-all duration-300 scale-100 hidden lg:flex">
                   <UserActions onCartClick={onCartClick} />
                 </div>
               </div>

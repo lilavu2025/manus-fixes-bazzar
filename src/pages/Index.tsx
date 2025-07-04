@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import ProductCard from "@/components/ProductCard";
 import BannerCarousel from "@/components/BannerCarousel";
@@ -135,18 +136,32 @@ const Index = ({ searchQuery, setSearchQuery }: IndexProps) => {
                 <p className="text-gray-500">{t("noProductsFound")}</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <motion.div
+                className="grid grid-cols-1 md:grid-cols-3 gap-6"
+                initial="hidden"
+                animate="show"
+                variants={{
+                  hidden: {},
+                  show: {
+                    transition: {
+                      staggerChildren: 0.1
+                    }
+                  }
+                }}
+              >
                 {filteredProducts.map((product) => (
-                  <ProductCard
+                  <motion.div
                     key={product.id}
-                    product={product as import("@/types/product").Product}
-                  />
+                    variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
+                    transition={{ duration: 0.4 }}
+                  >
+                    <ProductCard product={product as import("@/types/product").Product} />
+                  </motion.div>
                 ))}
-              </div>
+              </motion.div>
             )}
           </section>
         )}
-
         {/* Categories */}
         {!searchQuery && (
           <section className="mb-12 bg-white/80 rounded-xl p-4 shadow-sm">
@@ -185,16 +200,35 @@ const Index = ({ searchQuery, setSearchQuery }: IndexProps) => {
             ) : (
               <>
                 {/* الفئات: 3 فقط على الشاشات الصغيرة، 6 على الشاشات الكبيرة */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <motion.div
+                  className="grid grid-cols-1 md:grid-cols-3 gap-4"
+                  initial="hidden"
+                  animate="show"
+                  variants={{
+                    hidden: {},
+                    show: {
+                      transition: {
+                        staggerChildren: 0.1
+                      }
+                    }
+                  }}
+                >
                   {categories
                     .filter((c) => c.active)
                     .slice(0, 6)
                     .map((category, idx) => {
-                      // على الشاشات الصغيرة، اعرض فقط أول 3
                       if (window.innerWidth < 768 && idx >= 3) return null;
-                      return <CategoryCard key={category.id} category={category} />;
+                      return (
+                        <motion.div
+                          key={category.id}
+                          variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
+                          transition={{ duration: 0.4 }}
+                        >
+                          <CategoryCard category={category} />
+                        </motion.div>
+                      );
                     })}
-                </div>
+                </motion.div>
                 {/* زر عرض كل الفئات أسفل الكروت على الشاشات الصغيرة فقط */}
                 <div className="mt-4 block md:hidden">
                   <Button
@@ -209,23 +243,67 @@ const Index = ({ searchQuery, setSearchQuery }: IndexProps) => {
             )}
           </section>
         )}
-
-        {/* زر عرض جميع المنتجات على الشاشات الصغيرة فقط */}
+        {/* Featured Products */}
         {!searchQuery && (
-          <section className="bg-white/80 rounded-xl p-4 shadow-sm mb-4 block md:hidden">
-            <div className="mb-4 block md:hidden mb-6 items-center justify-between">
-              <h2 className="text-2xl font-bold">{t("allProducts")}</h2>
-              <Button
-                asChild
-                variant="outline"
-                className="font-bold py-2 px-4 rounded shadow-md transition-all duration-300 text-[hsl(var(--primary))] hover:text-[hsl(var(--secondary))] bg-white"
-              >
-                <Link to="/products" aria-label={t("viewAllProducts")}>{t("viewAllProducts")}</Link>
-              </Button>
+          <section className="bg-white/80 rounded-xl p-4 shadow-sm">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold">{t("featuredProducts")}</h2>
+              <div className="hidden md:block">
+                <Button
+                  asChild
+                  variant="outline"
+                  className="font-bold py-2 px-4 rounded shadow-md transition-all duration-300 text-[hsl(var(--primary))] hover:text-[hsl(var(--secondary))] bg-white"
+                >
+                  <Link to="/products?featured=1" aria-label={t("viewAll")}>{t("viewAll")}</Link>
+                </Button>
+              </div>
             </div>
+            {featuredHome.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-gray-500">{t("noFeaturedProducts")}</p>
+                <Button asChild className="mt-4">
+                  <Link to="/products" aria-label={t("browseAllProducts")}>{t("browseAllProducts")}</Link>
+                </Button>
+              </div>
+            ) : (
+              <>
+                <motion.div
+                  className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6"
+                  initial="hidden"
+                  animate="show"
+                  variants={{
+                    hidden: {},
+                    show: {
+                      transition: {
+                        staggerChildren: 0.1
+                      }
+                    }
+                  }}
+                >
+                  {featuredHome.map((product) => (
+                    <motion.div
+                      key={product.id}
+                      variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
+                      transition={{ duration: 0.4 }}
+                    >
+                      <ProductCard product={product} />
+                    </motion.div>
+                  ))}
+                </motion.div>
+                {/* زر عرض الكل أسفل الكروت على الشاشات الصغيرة فقط */}
+                <div className="mt-4 block md:hidden">
+                  <Button
+                    asChild
+                    variant="outline"
+                    className="font-bold py-2 px-4 rounded shadow-md transition-all duration-300 text-[hsl(var(--primary))] hover:text-[hsl(var(--secondary))] bg-white"
+                  >
+                    <Link to="/products?featured=1" aria-label={t("viewAll")}>{t("viewAll")}</Link>
+                  </Button>
+                </div>
+              </>
+            )}
           </section>
         )}
-
         {/* Top Ordered Products */}
         {!searchQuery && (
           <section className="bg-white/80 rounded-xl p-4 shadow-sm">
@@ -252,11 +330,29 @@ const Index = ({ searchQuery, setSearchQuery }: IndexProps) => {
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+                <motion.div
+                  className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6"
+                  initial="hidden"
+                  animate="show"
+                  variants={{
+                    hidden: {},
+                    show: {
+                      transition: {
+                        staggerChildren: 0.1
+                      }
+                    }
+                  }}
+                >
                   {topOrdered.map((product) => (
-                    <ProductCard key={product.id} product={product} />
+                    <motion.div
+                      key={product.id}
+                      variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
+                      transition={{ duration: 0.4 }}
+                    >
+                      <ProductCard product={product} />
+                    </motion.div>
                   ))}
-                </div>
+                </motion.div>
                 {/* زر عرض الكل أسفل الكروت على الشاشات الصغيرة فقط */}
                 <div className="mt-4 block md:hidden">
                   <Button
@@ -271,50 +367,27 @@ const Index = ({ searchQuery, setSearchQuery }: IndexProps) => {
             )}
           </section>
         )}
+        
 
-        {/* Featured Products */}
+        {/* زر عرض جميع المنتجات على الشاشات الصغيرة فقط */}
         {!searchQuery && (
-          <section className="bg-white/80 rounded-xl p-4 shadow-sm">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold">{t("featuredProducts")}</h2>
-              <div className="hidden md:block">
-                <Button
-                  asChild
-                  variant="outline"
-                  className="font-bold py-2 px-4 rounded shadow-md transition-all duration-300 text-[hsl(var(--primary))] hover:text-[hsl(var(--secondary))] bg-white"
-                >
-                  <Link to="/products?featured=1" aria-label={t("viewAll")}>{t("viewAll")}</Link>
-                </Button>
-              </div>
+          <section className="bg-white/80 rounded-xl p-4 shadow-sm mb-4 block md:hidden">
+            <div className="mb-4 block md:hidden mb-6 items-center justify-between">
+              <h2 className="text-2xl font-bold">{t("allProducts")}</h2>
+              <Button
+                asChild
+                variant="outline"
+                className="font-bold py-2 px-4 rounded shadow-md transition-all duration-300 text-[hsl(var(--primary))] hover:text-[hsl(var(--secondary))] bg-white"
+              >
+                <Link to="/products" aria-label={t("viewAllProducts")}>{t("viewAllProducts")}</Link>
+              </Button>
             </div>
-            {featuredHome.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="text-gray-500">{t("noFeaturedProducts")}</p>
-                <Button asChild className="mt-4">
-                  <Link to="/products" aria-label={t("browseAllProducts")}>{t("browseAllProducts")}</Link>
-                </Button>
-              </div>
-            ) : (
-              <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-                  {featuredHome.map((product) => (
-                    <ProductCard key={product.id} product={product} />
-                  ))}
-                </div>
-                {/* زر عرض الكل أسفل الكروت على الشاشات الصغيرة فقط */}
-                <div className="mt-4 block md:hidden">
-                  <Button
-                    asChild
-                    variant="outline"
-                    className="font-bold py-2 px-4 rounded shadow-md transition-all duration-300 text-[hsl(var(--primary))] hover:text-[hsl(var(--secondary))] bg-white"
-                  >
-                    <Link to="/products?featured=1" aria-label={t("viewAll")}>{t("viewAll")}</Link>
-                  </Button>
-                </div>
-              </>
-            )}
           </section>
         )}
+
+        
+
+        
       </main>
 
       <CartSidebar isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />

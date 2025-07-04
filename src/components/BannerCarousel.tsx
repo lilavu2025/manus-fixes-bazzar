@@ -32,6 +32,24 @@ const BannerCarousel: React.FC<BannerCarouselProps> = ({ banners }) => {
 
   return (
     <div className="relative w-full h-48 sm:h-64 md:h-80 lg:h-96 rounded-xl overflow-hidden group">
+      {/* تعريف الانيميشن داخل JSX */}
+      <style>{`
+        @keyframes fadeInSlideUp {
+          0% {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-fade-in {
+          animation: fadeInSlideUp 1s ease forwards;
+          animation-delay: 0.3s;
+        }
+      `}</style>
+
       {banners.map((banner, index) => (
         <div
           key={banner.id}
@@ -114,6 +132,7 @@ const BannerCarousel: React.FC<BannerCarouselProps> = ({ banners }) => {
                 ? "bg-white"
                 : "bg-white/50 hover:bg-white/70"
             }`}
+            aria-label={`Slide ${index + 1}`}
           />
         ))}
       </div>

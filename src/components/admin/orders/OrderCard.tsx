@@ -147,7 +147,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
             <Button
               size="sm"
               variant="secondary"
-              className="font-bold flex items-center gap-1 px-3 py-2 border-blue-500 text-blue-700 hover:bg-blue-50 min-w-[90px] flex-1 sm:flex-none"
+              className="font-bold flex items-center gap-1 px-3 py-2  bg-yellow-500 text-white border-yellow-600 hover:bg-white hover:text-yellow-700 hover:border-yellow-500 flex-1 sm:flex-none"
               style={{ borderWidth: 2 }}
               onClick={() => onEdit(order)}
             >
@@ -156,7 +156,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
             <Button
               size="sm"
               variant="destructive"
-              className="font-bold flex items-center gap-1 px-3 py-2 border-red-500 text-red-700 hover:bg-red-50 min-w-[90px] flex-1 sm:flex-none"
+              className="font-bold flex items-center gap-1 px-3 py-2 border-red-500 text-white hover:bg-red-50 hover:text-red-500 min-w-[90px] flex-1 sm:flex-none"
               style={{ borderWidth: 2 }}
               onClick={() => onDelete(order)}
             >

@@ -6,22 +6,23 @@ const config = createConfig({
   appId: "com.mtgary.zgayerStore",
 
   names: {
-    ar: "شركة زغير للقوالب",
-    en: "ZGAYER DIES CO.",
-    he: "זגייר מבלטים  בע\"מ",
-  },
+  ar: "شركة زغير للقوالب",
+  en: "ZGAYER DIES CO.",
+  he: "זגייר מבלטים בע\"מ",
+},
 
-  descriptions: {
-    ar: "شركة زغير للقوالب",
-    en: "ZGAYER DIES CO. - Premium Dies",
-    he: "זגייר מבלטים - איכות ומקצועיות",
-  },
+descriptions: {
+  ar: " دقة عالية وحلول احترافية لتصنيع القوالب",
+  en: "Precision & Professional Die Solutions",
+  he: " פתרונות מקצועיים ומדויקים לייצור מבלטים",
+}
+,
 
   visual: {
     logo: "/assets/logos/zgayerStore.png",
     splashScreen: "/assets/splash/zgayerStore.png",
-    primaryColor: "#000000",
-    secondaryColor: "#D4AF37",
+    primaryColor: "#1C1C1C",
+    secondaryColor: "#E53935",
     fontFamily: "Tajawal, sans-serif",
   },
 

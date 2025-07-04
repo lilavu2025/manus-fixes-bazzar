@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import { useProductsRealtime } from "@/hooks/useProductsRealtime";
 import { useCategories } from "@/hooks/useSupabaseData";
 import { useLanguage } from "@/utils/languageContextUtils";
@@ -20,8 +21,11 @@ import { getLocalizedName } from "@/utils/getLocalizedName";
 import { mapProductFromDb } from "@/types/mapProductFromDb";
 import { fetchTopOrderedProducts } from "@/integrations/supabase/dataSenders";
 import { ClearableInput } from "@/components/ui/ClearableInput";
+import config from "@/configs/activeConfig";
 
 const Products: React.FC = () => {
+  // يمكنك تعديل الألوان حسب الحاجة أو جلبها من config إذا كانت متوفرة
+  const { primaryColor, secondaryColor } = config.visual;
   const { t, isRTL, language } = useLanguage();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -221,10 +225,32 @@ const Products: React.FC = () => {
     <div
       className={`min-h-screen bg-gray-50 ${isRTL ? "rtl" : "ltr"}`}
       dir={isRTL ? "rtl" : "ltr"}
+      style={{ paddingTop: '2rem', paddingBottom: '2rem', paddingLeft: '1rem', paddingRight: '1rem' }}
     >
       {/* <Header onSearchChange={setSearchQuery} onCartClick={() => setIsCartOpen(true)} onMenuClick={() => { } } searchQuery={''} /> */}
 
-      <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-6">
+      {/* Animated Banner */}
+      <div
+        className="rounded-xl p-8 text-white text-center mb-10"
+        style={{
+          backgroundImage: `linear-gradient(270deg, ${primaryColor}, ${secondaryColor}, ${primaryColor})`,
+          backgroundSize: "300% 300%",
+          animation: "gradientBG 6s ease infinite",
+        }}
+      >
+        <style>
+          {`
+            @keyframes gradientBG {
+              0% { background-position: 0% 50%; }
+              50% { background-position: 100% 50%; }
+              100% { background-position: 0% 50%; }
+            }
+          `}
+        </style>
+        <h1 className="text-3xl font-bold mb-2">{t("products")}</h1>
+      </div>
+
+      <div className="container mx-auto px-2 sm:px-4">
         {/* Advanced Filters & Search Bar */}
         {/* <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
           <div className="flex-1 flex items-center gap-2">
@@ -248,14 +274,6 @@ const Products: React.FC = () => {
 
         {/* Page Header */}
         <div className="flex flex-col sm:items-center sm:justify-between mb-4 gap-2">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-              {t("products")}
-            </h1>
-            <p className="text-gray-600 text-sm sm:text-base mt-1">
-              {filteredProducts.length} {t("products")}
-            </p>
-          </div>
           <Button
             variant="outline"
             onClick={() => setShowFilters(!showFilters)}
@@ -442,11 +460,32 @@ const Products: React.FC = () => {
             <p className="text-gray-500 text-lg">{t("noProductsFound")}</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+          <motion.div
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6"
+            initial="hidden"
+            animate="show"
+            variants={{
+              hidden: {},
+              show: {
+                transition: {
+                  staggerChildren: 0.1
+                }
+              }
+            }}
+          >
             {filteredProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
+              <motion.div
+                key={product.id}
+                variants={{
+                  hidden: { opacity: 0, y: 20 },
+                  show: { opacity: 1, y: 0 }
+                }}
+                transition={{ duration: 0.4 }}
+              >
+                <ProductCard product={product} />
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
       </div>
 
