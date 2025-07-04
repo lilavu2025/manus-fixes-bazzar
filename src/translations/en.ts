@@ -4,6 +4,8 @@ export const enTranslations = {
   // Store & Brand
   storeName: config.names.en,
   storeDescription: config.descriptions.en,
+  storeSubtitle: "Shop with confidence and comfort",
+  readyText: "Ready to use",
 
   // Navigation
   home: "Home",

@@ -4,6 +4,8 @@ export const heTranslations = {
   // Store & Brand
   storeName: config.names.he,
   storeDescription: config.descriptions.he,
+  storeSubtitle: "קנה בביטחון ובנוחות",
+  readyText: "מוכן לשימוש",
 
   // Navigation
   home: "בית",

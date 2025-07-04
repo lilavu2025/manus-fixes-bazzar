@@ -5,6 +5,8 @@ export const arTranslations = {
   // Store & Brand
   storeName: config.names.ar,
   storeDescription: config.descriptions.ar,
+  storeSubtitle: "تسوق بثقة وراحة",
+  readyText: "جاهز للاستخدام",
 
   // Navigation
   home: "الرئيسية",
