@@ -19,6 +19,10 @@ export const enTranslations = {
   dashboard: "Admin Dashboard",
   checkout: "Checkout",
 
+  // Welcome Messages
+  welcomeBack: "Welcome to our store",
+  welcomeUser: "Welcome Back {name}",
+
   // Authentication
   login: "Login",
   signup: "Sign Up",

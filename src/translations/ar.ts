@@ -21,6 +21,10 @@ export const arTranslations = {
   checkout: "الدفع",
   notifications: "إشعارات",
 
+  // Welcome Messages
+  welcomeBack: "أهلاً وسهلاً بك في متجرنا",
+  welcomeUser: "أهلاً وسهلاً {name}",
+
   // Authentication
   login: "تسجيل الدخول",
   signup: "إنشاء حساب",

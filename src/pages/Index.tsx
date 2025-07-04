@@ -4,6 +4,7 @@ import ProductCard from "@/components/ProductCard";
 import BannerCarousel from "@/components/BannerCarousel";
 import CategoryCard from "@/components/CategoryCard";
 import CartSidebar from "@/components/CartSidebar";
+import WelcomeMessage from "@/components/WelcomeMessage";
 import { Button } from "@/components/ui/button";
 import { useBanners } from "@/hooks/useSupabaseData";
 import { useCategoriesRealtime } from "@/hooks/useCategoriesRealtime";
@@ -109,12 +110,8 @@ const Index = ({ searchQuery, setSearchQuery }: IndexProps) => {
       className={`min-h-screen bg-gray-50 ${isRTL ? "rtl" : "ltr"}`}
       dir={isRTL ? "rtl" : "ltr"}
     >
-      {/* <Header
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        onCartClick={() => setIsCartOpen(true)}
-        onMenuClick={() => {}}
-      /> */}
+      {/* Welcome Message - يظهر دائماً عندما لا يكون هناك بحث */}
+      {!searchQuery && <WelcomeMessage />}
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Hero Banner */}

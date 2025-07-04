@@ -20,6 +20,10 @@ export const heTranslations = {
   checkout: "תשלום",
   notifications: "התראות",
 
+  // Welcome Messages
+  welcomeBack: "ברוך הבא",
+  welcomeUser: "ברוך הבא {name}",
+
   // Authentication
   login: "התחברות",
   signup: "הרשמה",
