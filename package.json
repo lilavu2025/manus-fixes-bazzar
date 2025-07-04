@@ -16,7 +16,9 @@
     "test": "echo \"No tests yet\" && exit 0",
     "build:client": "tsx scripts/build-client.ts",
     "build:all-clients": "tsx scripts/build-all-clients.ts",
-    "deploy:all-clients": "tsx scripts/deploy-all-clients.ts"
+    "deploy:all-clients": "tsx scripts/deploy-all-clients.ts",
+    "update-version": "node scripts/update-version.js",
+    "prebuild": "npm run update-version"
   },
   "dependencies": {
     "@capacitor/android": "^7.2.0",

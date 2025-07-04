@@ -267,9 +267,11 @@ const Auth: React.FC = () => {
             {/* // زر الرجوع الدائري */}
             {/* زر رجوع دائري صغير داخل الكرت بالطرف مع مسافة عن الحدود */}
             <button
-              onClick={() => navigate(-1)}
-              className="absolute top-4 ltr:left-4 rtl:right-4 w-10 h-10 rounded-full text-white flex items-center justify-center shadow-md transition hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[--secondary] z-10 border-4 border-white dark:border-neutral-900"
-              style={{ background: `linear-gradient(135deg, ${primaryColor})` }}
+              onClick={() => navigate("/")}
+              className="absolute top-4 ltr:left-4 rtl:right-4 w-10 h-10 rounded-full text-white flex items-center justify-center shadow-lg transition-all duration-200 z-10 border-4 border-white dark:border-neutral-900"
+                style={{
+                  background: `linear-gradient(to right, ${secondaryColor})`,
+                }}
               aria-label={t("back")}
               type="button"
             >

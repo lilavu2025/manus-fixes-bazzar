@@ -4,6 +4,8 @@ export const heTranslations = {
   // Store & Brand
   storeName: config.names.he,
   storeDescription: config.descriptions.he,
+  storeSubtitle: "קנה בביטחון ובנוחות",
+  readyText: "מוכן לשימוש",
 
   // Navigation
   home: "בית",
@@ -17,6 +19,10 @@ export const heTranslations = {
   dashboard: "לוח בקרה",
   checkout: "תשלום",
   notifications: "התראות",
+
+  // Welcome Messages
+  welcomeBack: "ברוך הבא",
+  welcomeUser: "ברוך הבא {name}",
 
   // Authentication
   login: "התחברות",

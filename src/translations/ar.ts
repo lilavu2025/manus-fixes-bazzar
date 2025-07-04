@@ -5,6 +5,8 @@ export const arTranslations = {
   // Store & Brand
   storeName: config.names.ar,
   storeDescription: config.descriptions.ar,
+  storeSubtitle: "تسوق بثقة وراحة",
+  readyText: "جاهز للاستخدام",
 
   // Navigation
   home: "الرئيسية",
@@ -18,6 +20,10 @@ export const arTranslations = {
   dashboard: "لوحة التحكم",
   checkout: "الدفع",
   notifications: "إشعارات",
+
+  // Welcome Messages
+  welcomeBack: "أهلاً وسهلاً بك في متجرنا",
+  welcomeUser: "أهلاً وسهلاً {name}",
 
   // Authentication
   login: "تسجيل الدخول",

@@ -25,6 +25,8 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import SEO from "@/components/SEO";
 import PerformanceMonitorComponent from "@/components/PerformanceMonitor";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { NativeSplashScreen } from "@/components/splash";
+import { useSplash } from "@/hooks/useSplash";
 
 // Critical pages - Regular imports for initial load
 import Index from "./pages/Index";
@@ -175,11 +177,40 @@ const App = () => {
   }
   const queryClient = queryClientRef.current;
 
+  // استخدام هوك السبلاش
+  const { showSplash, isInitialized, handleSplashFinish, duration } = useSplash({
+    duration: 3500,
+    enableOnMobile: true,
+    enableOnDesktop: false
+  });
+
   const [hideOffers, setHideOffers] = useState(false);
   const [openMobileMenu, setOpenMobileMenu] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [openCart, setOpenCart] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+
+  // عرض صفحة السبلاش إذا كانت مطلوبة - داخل LanguageProvider
+  const SplashWrapper = () => {
+    if (showSplash) {
+      return (
+        <LanguageProvider>
+          <NativeSplashScreen onFinish={handleSplashFinish} duration={duration} />
+        </LanguageProvider>
+      );
+    }
+    return null;
+  };
+
+  // عرض السبلاش مع دعم الترجمة
+  if (showSplash) {
+    return <SplashWrapper />;
+  }
+
+  // انتظار التهيئة
+  if (!isInitialized) {
+    return <LoadingSpinner />;
+  }
 
   // useEffect(() => {
   //   getSetting('hide_offers_page').then(val => setHideOffers(val === 'true'));

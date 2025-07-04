@@ -4,6 +4,8 @@ export const enTranslations = {
   // Store & Brand
   storeName: config.names.en,
   storeDescription: config.descriptions.en,
+  storeSubtitle: "Shop with confidence and comfort",
+  readyText: "Ready to use",
 
   // Navigation
   home: "Home",
@@ -16,6 +18,10 @@ export const enTranslations = {
   orders: "Orders",
   dashboard: "Admin Dashboard",
   checkout: "Checkout",
+
+  // Welcome Messages
+  welcomeBack: "Welcome to our store",
+  welcomeUser: "Welcome Back {name}",
 
   // Authentication
   login: "Login",

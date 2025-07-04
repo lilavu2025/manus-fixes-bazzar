@@ -1,6 +1,8 @@
 // src/configs/defaultConfig.ts
 const defaultConfig = {
   appId: "com.mtgary.defaultStore",
+  
+  version: "1.0.0", // سيتم تحديثه تلقائياً من package.json
 
   names: {
     ar: "متجري الإلكتروني",
