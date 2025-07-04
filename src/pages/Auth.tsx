@@ -263,7 +263,7 @@ const Auth: React.FC = () => {
           <Card className="relative">
             {/* زر رجوع دائري صغير داخل الكرت بالطرف مع مسافة عن الحدود */}
             <button
-              onClick={() => navigate(-1)}
+              onClick={() => navigate("/")}
               className="absolute top-4 ltr:left-4 rtl:right-4 w-10 h-10 rounded-full text-white flex items-center justify-center shadow-lg transition-all duration-200 z-10 border-4 border-white dark:border-neutral-900"
                 style={{
                   background: `linear-gradient(to right, ${secondaryColor})`,
