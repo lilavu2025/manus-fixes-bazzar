@@ -14,7 +14,7 @@
   opacity: 0;
 }
 
-/* الخلفية المتدرجة */
+/* الخلفية المتدرجة بألوان العلامة التجارية */
 .splash-background {
   position: absolute;
   top: 0;
@@ -23,11 +23,11 @@
   height: 100%;
   background: linear-gradient(
     135deg,
-    #667eea 0%,
-    #764ba2 25%,
-    #f093fb 50%,
-    #f5576c 75%,
-    #4facfe 100%
+    var(--primary-color, #667eea) 0%,
+    var(--secondary-color, #764ba2) 25%,
+    var(--primary-color, #f093fb) 50%,
+    var(--secondary-color, #f5576c) 75%,
+    var(--primary-color, #4facfe) 100%
   );
   background-size: 400% 400%;
   animation: gradientShift 6s ease infinite;
@@ -66,8 +66,8 @@
 
 .logo-wrapper {
   position: relative;
-  width: 120px;
-  height: 120px;
+  width: 280px;
+  height: 280px;
   margin: 0 auto;
 }
 
@@ -75,8 +75,9 @@
   width: 100%;
   height: 100%;
   object-fit: contain;
-  border-radius: 50%;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  border-radius: 20px;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+  border: 5px solid var(--secondary-color, rgba(255, 255, 255, 0.3));
   animation: logoFloat 3s ease-in-out infinite;
 }
 
@@ -88,12 +89,12 @@
 /* توهج اللوجو */
 .logo-glow {
   position: absolute;
-  top: -10px;
-  left: -10px;
-  right: -10px;
-  bottom: -10px;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, transparent 70%);
-  border-radius: 50%;
+  top: -15px;
+  left: -15px;
+  right: -15px;
+  bottom: -15px;
+  background: radial-gradient(ellipse, var(--primary-color, rgba(255, 255, 255, 0.3)) 0%, transparent 70%);
+  border-radius: 25px;
   animation: pulse 2s ease-in-out infinite;
 }
 
@@ -149,7 +150,7 @@
 .loading-dots span {
   width: 12px;
   height: 12px;
-  background: white;
+  background: var(--secondary-color, white);
   border-radius: 50%;
   animation: dotBounce 1.4s ease-in-out infinite both;
 }
@@ -237,8 +238,8 @@
   }
   
   .logo-wrapper {
-    width: 100px;
-    height: 100px;
+    width: 220px;
+    height: 220px;
   }
   
   .circle {
@@ -256,7 +257,7 @@
   }
   
   .logo-wrapper {
-    width: 90px;
-    height: 90px;
+    width: 180px;
+    height: 180px;
   }
 }

@@ -63,7 +63,13 @@ const NativeSplashScreen: React.FC<NativeSplashScreenProps> = ({
   }
 
   return (
-    <div className="native-splash-screen">
+    <div 
+      className="native-splash-screen"
+      style={{
+        '--primary-color': config.visual.primaryColor,
+        '--secondary-color': config.visual.secondaryColor
+      } as React.CSSProperties}
+    >
       <div className="native-splash-background">
         <div className="background-overlay"></div>
       </div>

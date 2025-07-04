@@ -47,7 +47,13 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onFinish, duration = 3000 }
   }, [onFinish, duration]);
 
   return (
-    <div className={`splash-screen ${fadeOut ? 'fade-out' : ''}`}>
+    <div 
+      className={`splash-screen ${fadeOut ? 'fade-out' : ''}`}
+      style={{
+        '--primary-color': config.visual.primaryColor,
+        '--secondary-color': config.visual.secondaryColor
+      } as React.CSSProperties}
+    >
       {/* خلفية متدرجة مع تأثير */}
       <div className="splash-background"></div>
       
