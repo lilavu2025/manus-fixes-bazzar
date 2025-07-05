@@ -6,6 +6,8 @@ import { X, ZoomIn, ChevronLeft, ChevronRight } from "lucide-react";
 import LazyImage from "@/components/LazyImage";
 import { Product } from '@/types';
 import ProductCardBadges from "./ProductCard/ProductCardBadges";
+import { useSimpleSwipe } from "@/hooks/use-touch-swipe";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface ProductImageGalleryProps {
   product: Product;
@@ -13,6 +15,7 @@ interface ProductImageGalleryProps {
 
 const ProductImageGallery = ({ product }: ProductImageGalleryProps) => {
   const { t, isRTL } = useLanguage();
+  const isMobile = useIsMobile();
   const [selectedImage, setSelectedImage] = useState(0);
   const [showModal, setShowModal] = useState(false);
   const [isZoomed, setIsZoomed] = useState(false);
@@ -35,6 +38,30 @@ const ProductImageGallery = ({ product }: ProductImageGalleryProps) => {
       }
     },
     [images.length],
+  );
+
+  // إعداد السحب للصور
+  const swipeHandlers = useSimpleSwipe(
+    () => {
+      // السحب لليسار = الصورة التالية (في اللغة العربية)
+      if (isRTL) {
+        navigateImage(1);
+      } else {
+        navigateImage(-1);
+      }
+    },
+    () => {
+      // السحب لليمين = الصورة السابقة (في اللغة العربية)
+      if (isRTL) {
+        navigateImage(-1);
+      } else {
+        navigateImage(1);
+      }
+    },
+    {
+      minSwipeDistance: 30,
+      preventDefaultDuringSwipe: true,
+    }
   );
 
   // التنقل بين الصور باستخدام لوحة المفاتيح
@@ -72,8 +99,10 @@ const ProductImageGallery = ({ product }: ProductImageGalleryProps) => {
     <div className="space-y-4">
       {/* صورة المنتج الرئيسية مع إمكانية التكبير */}
       <div
-        className="relative overflow-hidden rounded-xl bg-white border group cursor-zoom-in aspect-[4/3] h-64 sm:h-72 md:h-80 lg:h-96"
+        className="relative overflow-hidden rounded-xl bg-white border group cursor-zoom-in aspect-[4/3] h-64 sm:h-72 md:h-80 lg:h-96 select-none"
         onClick={openModal}
+        {...swipeHandlers}
+        style={{ touchAction: 'pan-y pinch-zoom' }}
       >
         {images.length > 0 && (
           <div
@@ -87,8 +116,8 @@ const ProductImageGallery = ({ product }: ProductImageGalleryProps) => {
           <ZoomIn className="h-8 w-8 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         </div>
 
-        {/* أسهم التنقل للصور المتعددة */}
-        {images.length > 1 && (
+        {/* أسهم التنقل للصور المتعددة - مخفية على الموبايل لأن السحب متوفر */}
+        {images.length > 1 && !isMobile && (
           <>
             <Button
               variant="ghost"
@@ -123,17 +152,60 @@ const ProductImageGallery = ({ product }: ProductImageGalleryProps) => {
           </>
         )}
 
-        {/* مؤشر الصور */}
+        {/* أسهم التنقل للموبايل - تظهر دائماً */}
+        {images.length > 1 && isMobile && (
+          <>
+            <Button
+              variant="ghost"
+              size="sm"
+              className={`absolute top-1/2 -translate-y-1/2 ${isRTL ? "right-2" : "left-2"} bg-white/80 hover:bg-white transition-opacity duration-300 z-10`}
+              onClick={(e) => {
+                e.stopPropagation();
+                navigateImage(-1);
+              }}
+            >
+              {isRTL ? (
+                <ChevronRight className="h-4 w-4" />
+              ) : (
+                <ChevronLeft className="h-4 w-4" />
+              )}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className={`absolute top-1/2 -translate-y-1/2 ${isRTL ? "left-2" : "right-2"} bg-white/80 hover:bg-white transition-opacity duration-300 z-10`}
+              onClick={(e) => {
+                e.stopPropagation();
+                navigateImage(1);
+              }}
+            >
+              {isRTL ? (
+                <ChevronLeft className="h-4 w-4" />
+              ) : (
+                <ChevronRight className="h-4 w-4" />
+              )}
+            </Button>
+          </>
+        )}
+
+        {/* مؤشر الصور مع نص توجيهي على الموبايل */}
         {images.length > 1 && (
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-            {images.map((_, index) => (
-              <div
-                key={index}
-                className={`w-2 h-2 rounded-full transition-colors ${
-                  index === selectedImage ? "bg-white" : "bg-white/50"
-                }`}
-              />
-            ))}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2">
+            <div className="flex gap-2">
+              {images.map((_, index) => (
+                <div
+                  key={index}
+                  className={`w-2 h-2 rounded-full transition-colors ${
+                    index === selectedImage ? "bg-white" : "bg-white/50"
+                  }`}
+                />
+              ))}
+            </div>
+            {isMobile && (
+              <div className="bg-black/50 text-white text-xs px-2 py-1 rounded-full opacity-80">
+                {t("swipeToNavigate")}
+              </div>
+            )}
           </div>
         )}
 
@@ -146,8 +218,10 @@ const ProductImageGallery = ({ product }: ProductImageGalleryProps) => {
       {/* Modal لتكبير الصورة مع ميزات متقدمة */}
       {showModal && (
         <div
-          className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm"
+          className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm select-none"
           onClick={closeModal}
+          {...swipeHandlers}
+          style={{ touchAction: 'pan-y pinch-zoom' }}
         >
           <div className="relative w-full h-full flex items-center justify-center p-4">
             {/* زر الإغلاق */}
@@ -160,8 +234,44 @@ const ProductImageGallery = ({ product }: ProductImageGalleryProps) => {
               <X className="h-6 w-6" />
             </Button>
 
-            {/* أسهم التنقل في المودال */}
-            {images.length > 1 && (
+            {/* أسهم التنقل في المودال - مخفية على الموبايل */}
+            {images.length > 1 && !isMobile && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="lg"
+                  className={`absolute top-1/2 -translate-y-1/2 ${isRTL ? "right-4" : "left-4"} z-10 bg-white/20 hover:bg-white/30 text-white`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigateImage(-1);
+                  }}
+                >
+                  {isRTL ? (
+                    <ChevronRight className="h-8 w-8" />
+                  ) : (
+                    <ChevronLeft className="h-8 w-8" />
+                  )}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="lg"
+                  className={`absolute top-1/2 -translate-y-1/2 ${isRTL ? "left-4" : "right-4"} z-10 bg-white/20 hover:bg-white/30 text-white`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigateImage(1);
+                  }}
+                >
+                  {isRTL ? (
+                    <ChevronLeft className="h-8 w-8" />
+                  ) : (
+                    <ChevronRight className="h-8 w-8" />
+                  )}
+                </Button>
+              </>
+            )}
+
+            {/* أسهم التنقل للموبايل في المودال - تظهر دائماً */}
+            {images.length > 1 && isMobile && (
               <>
                 <Button
                   variant="ghost"
@@ -214,9 +324,16 @@ const ProductImageGallery = ({ product }: ProductImageGalleryProps) => {
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-center text-white">
               <p className="text-lg font-medium mb-2">{product.name}</p>
               {images.length > 1 && (
-                <p className="text-sm opacity-80">
-                  {selectedImage + 1} من {images.length}
-                </p>
+                <div className="flex flex-col items-center gap-2">
+                  <p className="text-sm opacity-80">
+                    {selectedImage + 1} من {images.length}
+                  </p>
+                  {isMobile && (
+                    <p className="text-xs opacity-60 bg-black/30 px-2 py-1 rounded">
+                      {t("swipeToNavigateImages")}
+                    </p>
+                  )}
+                </div>
               )}
             </div>
           </div>

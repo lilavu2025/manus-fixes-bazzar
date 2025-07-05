@@ -1106,4 +1106,13 @@ export const arTranslations = {
   downloadOrder: "تحميل الطلبية",
   downloadPdf: "تحميل PDF",
 
+  // Touch & Swipe Navigation
+  swipeToNavigate: "اسحب للتنقل",
+  swipeToNavigateImages: "اسحب للتنقل بين الصور",
+  swipeLeft: "اسحب يساراً",
+  swipeRight: "اسحب يميناً",
+  touchToNavigate: "المس للتنقل",
+  swipeGestures: "إيماءات السحب",
+  touchSupported: "دعم اللمس متوفر",
+
 };

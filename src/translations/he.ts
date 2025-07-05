@@ -1106,4 +1106,13 @@ export const heTranslations = {
   downloadOrder: "הורדת הזמנה",
   downloadPdf: "הורדת PDF",
 
+  // Touch & Swipe Navigation
+  swipeToNavigate: "לגרור כדי לנווט",
+  swipeToNavigateImages: "לגרור כדי לנווט בתמונות",
+  swipeLeft: "לגרור שמאלה",
+  swipeRight: "לגרור ימינה",
+  touchToNavigate: "לגעת כדי לנווט",
+  swipeGestures: "מחוות גרירה",
+  touchSupported: "תמיכה במגע",
+
 };

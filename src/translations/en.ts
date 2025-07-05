@@ -1128,4 +1128,13 @@ export const enTranslations = {
   downloadOrder: "Download Order",
   downloadPdf: "Download PDF",
 
+  // Touch & Swipe Navigation
+  swipeToNavigate: "Swipe to navigate",
+  swipeToNavigateImages: "Swipe to navigate images",
+  swipeLeft: "Swipe left",
+  swipeRight: "Swipe right",
+  touchToNavigate: "Touch to navigate",
+  swipeGestures: "Swipe gestures",
+  touchSupported: "Touch supported",
+
 };
