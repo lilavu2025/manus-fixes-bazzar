@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetTrigger } from "@/components/ui/sheet";
 import { useAuth } from "@/contexts/useAuth";
 import { useLanguage } from "@/utils/languageContextUtils";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Home } from "lucide-react";
 import HeaderLogo from "./header/HeaderLogo";
 import SearchBar from "./header/SearchBar";
@@ -40,6 +41,23 @@ const Header: React.FC<HeaderProps> = memo(
     const [isScrolled, setIsScrolled] = React.useState(false);
     const { user } = useAuth();
     const { t } = useLanguage();
+    const navigate = useNavigate();
+    const location = useLocation();
+
+    // Handle search navigation
+    const handleSearchChange = (query: string) => {
+      onSearchChange(query);
+      
+      if (query.trim()) {
+        // Navigate to products page with search parameter
+        navigate(`/products?search=${encodeURIComponent(query.trim())}`, { replace: false });
+      } else if (location.pathname === '/products' && location.search.includes('search=')) {
+        // If on products page and search is cleared, remove search parameter
+        const params = new URLSearchParams(location.search);
+        params.delete('search');
+        navigate(`/products${params.toString() ? '?' + params.toString() : ''}`, { replace: true });
+      }
+    };
 
     React.useEffect(() => {
       const handleScroll = () => {
@@ -93,7 +111,7 @@ const Header: React.FC<HeaderProps> = memo(
             <div className="flex items-center justify-between py-1 gap-2 md:hidden">
               <SearchBar
                 searchQuery={searchQuery}
-                onSearchChange={onSearchChange}
+                onSearchChange={handleSearchChange}
                 showMobileSearch={mobileSearch}
                 setShowMobileSearch={setMobileSearch}
                 isMobileOnly={true}
@@ -132,7 +150,7 @@ const Header: React.FC<HeaderProps> = memo(
                 <div className={`hidden lg:flex flex-1 transition-all duration-300 ${isScrolled ? 'max-h-5' : 'max-h-12'} justify-end`}>
                   <SearchBar
                     searchQuery={searchQuery}
-                    onSearchChange={onSearchChange}
+                    onSearchChange={handleSearchChange}
                     showMobileSearch={mobileSearch}
                     setShowMobileSearch={setMobileSearch}
                     isScrolled={isScrolled}

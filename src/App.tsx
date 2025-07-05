@@ -413,6 +413,20 @@ function AppHeaderWrapper(props: {
   openCart: boolean;
 }) {
   const location = useLocation();
+  
+  // Sync search query with URL parameters
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const searchParam = params.get("search");
+    
+    if (searchParam && searchParam !== props.searchQuery) {
+      props.setSearchQuery(searchParam);
+    } else if (!searchParam && props.searchQuery && location.pathname !== '/') {
+      // Only clear search if not on home page
+      props.setSearchQuery("");
+    }
+  }, [location.search, location.pathname, props.searchQuery, props.setSearchQuery]);
+  
   if (location.pathname.startsWith("/admin") || location.pathname === "/auth")
     return null;
   return (

@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useCategoriesRealtime } from "@/hooks/useCategoriesRealtime";
 import { useLanguage } from "@/utils/languageContextUtils";
 import { getLocalizedName } from "@/utils/getLocalizedName";
@@ -15,8 +16,36 @@ const Categories: React.FC = () => {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const { primaryColor, secondaryColor } = config.visual;
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const { categories, loading, error, refetch } = useCategoriesRealtime();
+
+  // Handle URL search parameter
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const searchParam = params.get("search");
+    
+    if (searchParam && searchParam !== searchQuery) {
+      setSearchQuery(searchParam);
+    } else if (!searchParam && searchQuery) {
+      setSearchQuery("");
+    }
+  }, [location.search, searchQuery]);
+
+  // Handle search input changes and update URL
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newQuery = e.target.value;
+    setSearchQuery(newQuery);
+    
+    const params = new URLSearchParams(location.search);
+    if (newQuery.trim()) {
+      params.set("search", newQuery.trim());
+    } else {
+      params.delete("search");
+    }
+    navigate({ search: params.toString() }, { replace: true });
+  };
 
   console.log("Categories page - data:", categories);
   console.log("Categories page - loading:", loading);
@@ -109,8 +138,13 @@ const Categories: React.FC = () => {
               }`}
               placeholder={t("searchCategories")}
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onClear={() => setSearchQuery("")}
+              onChange={handleSearchChange}
+              onClear={() => {
+                setSearchQuery("");
+                const params = new URLSearchParams(location.search);
+                params.delete("search");
+                navigate({ search: params.toString() }, { replace: true });
+              }}
             />
           </div>
         </div>

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useOffersRealtime } from "@/hooks/useOffersRealtime";
 import { useLanguage } from "@/utils/languageContextUtils";
+import { useLocation, useNavigate } from "react-router-dom";
 import CartSidebar from "@/components/CartSidebar";
 import OfferCard from "@/components/OfferCard";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +16,8 @@ const Offers: React.FC = () => {
   const { t, isRTL } = useLanguage();
   const [searchQuery, setSearchQuery] = useState("");
   const [hideOffers, setHideOffers] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const { offers, loading: isLoading, error } = useOffersRealtime();
   const { primaryColor, secondaryColor } = config.visual;
@@ -24,6 +27,18 @@ const Offers: React.FC = () => {
       setHideOffers(val === "true")
     );
   }, []);
+
+  // Handle URL search parameter
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const searchParam = params.get("search");
+    
+    if (searchParam && searchParam !== searchQuery) {
+      setSearchQuery(searchParam);
+    } else if (!searchParam && searchQuery) {
+      setSearchQuery("");
+    }
+  }, [location.search, searchQuery]);
 
   const filteredOffers = offers.filter(
     (offer: Database["public"]["Tables"]["offers"]["Row"]) =>

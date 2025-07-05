@@ -61,8 +61,17 @@ const Products: React.FC = () => {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const cat = params.get("category");
+    const searchParam = params.get("search");
     const topOrderedParam = params.get("topOrdered");
     const featuredParam = params.get("featured");
+    
+    // Handle search parameter
+    if (searchParam && searchParam !== searchQuery) {
+      setSearchQuery(searchParam);
+    } else if (!searchParam && searchQuery) {
+      setSearchQuery("");
+    }
+    
     if (topOrderedParam === "1" || topOrderedParam === "true") {
       setShowTopOrdered(true);
     } else {
@@ -96,6 +105,20 @@ const Products: React.FC = () => {
         navigate({ search: params.toString() }, { replace: true });
       }
     }
+  };
+
+  // Handle search input changes and update URL
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newQuery = e.target.value;
+    setSearchQuery(newQuery);
+    
+    const params = new URLSearchParams(location.search);
+    if (newQuery.trim()) {
+      params.set("search", newQuery.trim());
+    } else {
+      params.delete("search");
+    }
+    navigate({ search: params.toString() }, { replace: true });
   };
 
   useEffect(() => {
