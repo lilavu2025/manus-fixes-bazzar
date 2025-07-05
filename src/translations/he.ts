@@ -180,6 +180,7 @@ export const heTranslations = {
   add: "הוסף",
   search: "חיפוש",
   searchProducts: "חפש מוצרים...",
+  searchOffers: "חפש מבצעים...",
   searchUsersPlaceholder: "חפש לפי שם, אימייל או טלפון...",
   searchByName: "חפש לפי שם",
   searchByNameProductPlaceholder: "הקלד שם מוצר...",

@@ -31,7 +31,6 @@ export interface ProductCardQuickViewProps {
   isFavorite: boolean;
   onQuantityChange: React.Dispatch<React.SetStateAction<number>>;
   onAddToCart: () => Promise<void>;
-  onBuyNow: () => Promise<void>;
   onFavorite: () => Promise<void>;
   onShare: () => Promise<void>;
 }
@@ -45,7 +44,6 @@ const ProductCardQuickView: React.FC<ProductCardQuickViewProps> = ({
   isFavorite,
   onQuantityChange,
   onAddToCart,
-  onBuyNow,
   onFavorite,
   onShare,
 }) => {
@@ -166,13 +164,6 @@ const ProductCardQuickView: React.FC<ProductCardQuickViewProps> = ({
                 {cartQuantity > 0
                   ? `${t("inCart")} (${cartQuantity})`
                   : t("addToCart")}
-              </Button>
-              <Button
-                onClick={onBuyNow}
-                disabled={!product.inStock}
-                variant="outline"
-              >
-                {t("buyNow")}
               </Button>
             </div>
 

@@ -3,8 +3,30 @@ import { Link } from 'react-router-dom';
 import { useLanguage } from '@/utils/languageContextUtils';
 import config from "@/configs/activeConfig";
 
-const HeaderLogo: React.FC = () => {
+interface HeaderLogoProps {
+  isMobile?: boolean;
+  isScrolled?: boolean;
+}
+
+const HeaderLogo: React.FC<HeaderLogoProps> = ({ isMobile = false, isScrolled = false }) => {
   const { t } = useLanguage();
+
+  if (isMobile) {
+    return (
+      <Link to="/" className="flex items-center gap-2 flex-shrink-0 group">
+        <img
+          src={config.visual.logo}
+          alt={t('storeName')}
+          className={`${isScrolled ? 'w-8 h-8' : 'w-12 h-12'} rounded-xl object-contain bg-white/90 shadow-md border border-primary/20 group-hover:scale-105 transition-all duration-200`}
+        />
+        <div className="flex flex-col justify-center min-w-0">
+          <h1 className={`${isScrolled ? 'text-sm' : 'text-base'} font-bold text-primary tracking-tight leading-tight truncate`}>
+            {t('storeName')}
+          </h1>
+        </div>
+      </Link>
+    );
+  }
 
   return (
     <Link to="/" className="flex items-center gap-3 flex-shrink-0 group">

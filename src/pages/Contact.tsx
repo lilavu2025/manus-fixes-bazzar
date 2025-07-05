@@ -71,7 +71,7 @@ const Contact: React.FC = () => {
     >
       {/* Animated Banner */}
       <div
-        className="rounded-xl p-8 text-white text-center mb-10"
+        className="rounded-xl p-1 text-white text-center mb-2"
         style={{
           backgroundImage: `linear-gradient(270deg, ${primaryColor}, ${secondaryColor}, ${primaryColor})`,
           backgroundSize: "300% 300%",

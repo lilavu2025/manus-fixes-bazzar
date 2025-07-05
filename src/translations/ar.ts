@@ -187,6 +187,7 @@ export const arTranslations = {
   add: "إضافة",
   search: "بحث",
   searchProducts: "البحث عن المنتجات...",
+  searchOffers: "البحث عن العروض...",
   searchUsersPlaceholder: "البحث بالاسم، الإيميل، أو الهاتف...",
   searchByName: "بحث بالاسم",
   searchByNameProductPlaceholder: "اكتب اسم المنتج...",

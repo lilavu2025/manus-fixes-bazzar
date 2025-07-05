@@ -51,11 +51,6 @@ const OfferCard: React.FC<OfferCardProps> = ({ offer }) => {
     };
   }
 
-  function handleBuyNow() {
-    addToCart(offerToProduct(offer), 1);
-    setIsCartOpen(true);
-  }
-
   function handleViewOffer() {
     setShowDetails(true);
   }

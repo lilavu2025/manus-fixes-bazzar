@@ -374,6 +374,273 @@ img {
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
+
+  /* Product Details Page Responsive Layout */
+  .product-details-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  
+  @media (min-width: 640px) {
+    .product-details-layout {
+      gap: 2rem;
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    .product-details-layout {
+      grid-template-columns: 1fr 1fr;
+      gap: 3rem;
+      align-items: start;
+    }
+  }
+  
+  @media (min-width: 1280px) {
+    .product-details-layout {
+      gap: 4rem;
+    }
+  }
+
+  /* Mobile-first approach for product details */
+  .product-image-section {
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto;
+  }
+  
+  .product-info-section {
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto;
+    text-align: center;
+  }
+  
+  @media (min-width: 1024px) {
+    .product-image-section {
+      max-width: none;
+      margin: 0;
+    }
+    
+    .product-info-section {
+      max-width: none;
+      margin: 0;
+      text-align: right;
+    }
+    
+    [dir="ltr"] .product-info-section {
+      text-align: left;
+    }
+  }
+
+  /* Enhanced responsive image gallery */
+  .responsive-product-image {
+    aspect-ratio: 1 / 1;
+    width: 100%;
+    max-height: 400px;
+  }
+  
+  @media (min-width: 640px) {
+    .responsive-product-image {
+      max-height: 450px;
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    .responsive-product-image {
+      aspect-ratio: 4 / 3;
+      max-height: 500px;
+    }
+  }
+
+  /* Product title responsive */
+  .responsive-product-title {
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+    text-align: center;
+  }
+  
+  @media (min-width: 640px) {
+    .responsive-product-title {
+      font-size: 1.5rem;
+      line-height: 2rem;
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    .responsive-product-title {
+      font-size: 1.875rem;
+      line-height: 2.25rem;
+      text-align: right;
+    }
+    
+    [dir="ltr"] .responsive-product-title {
+      text-align: left;
+    }
+  }
+
+  /* Product actions responsive */
+  .product-actions-responsive {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    align-items: center;
+  }
+  
+  @media (min-width: 1024px) {
+    .product-actions-responsive {
+      align-items: flex-start;
+    }
+    
+    [dir="rtl"] .product-actions-responsive {
+      align-items: flex-end;
+    }
+  }
+
+  /* Additional breakpoint-specific fixes */
+  @media (min-width: 640px) and (max-width: 1023px) {
+    /* تابلت - نص في المنتصف */
+    .responsive-product-title {
+      text-align: center;
+    }
+    
+    .product-info-section {
+      text-align: center;
+    }
+    
+    .product-actions-responsive {
+      align-items: center;
+    }
+  }
+  
+  /* Landscape tablet optimization */
+  @media (min-width: 768px) and (max-width: 1023px) and (orientation: landscape) {
+    .product-details-layout {
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+    }
+    
+    .responsive-product-title {
+      text-align: right;
+    }
+    
+    [dir="ltr"] .responsive-product-title {
+      text-align: left;
+    }
+    
+    .product-info-section {
+      text-align: right;
+    }
+    
+    [dir="ltr"] .product-info-section {
+      text-align: left;
+    }
+    
+    .product-actions-responsive {
+      align-items: flex-start;
+    }
+    
+    [dir="rtl"] .product-actions-responsive {
+      align-items: flex-end;
+    }
+  }
+  
+  /* Very small devices */
+  @media (max-width: 480px) {
+    .responsive-product-image {
+      max-height: 320px;
+    }
+    
+    .responsive-product-title {
+      font-size: 1.125rem;
+      line-height: 1.5rem;
+    }
+  }
+
+  /* Mobile Navigation Scroll Optimization */
+  .mobile-nav-header {
+    flex-shrink: 0;
+    max-height: 25vh; /* لا يأخذ أكثر من ربع الشاشة */
+  }
+  
+  .mobile-nav-content {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0; /* مهم للتمرير */
+    scrollbar-width: thin;
+    scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+  }
+  
+  .mobile-nav-content::-webkit-scrollbar {
+    width: 4px;
+  }
+  
+  .mobile-nav-content::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .mobile-nav-content::-webkit-scrollbar-thumb {
+    background-color: rgba(156, 163, 175, 0.5);
+    border-radius: 2px;
+  }
+  
+  .mobile-nav-footer {
+    flex-shrink: 0;
+    max-height: 40vh; /* لا يأخذ أكثر من نصف الشاشة */
+  }
+  
+  /* تحسين للشاشات القصيرة جداً */
+  @media (max-height: 600px) {
+    .mobile-nav-header {
+      max-height: 20vh;
+    }
+    
+    .mobile-nav-footer {
+      max-height: 35vh;
+    }
+    
+    .mobile-nav-header .w-24.h-24 {
+      width: 4rem !important;
+      height: 4rem !important;
+    }
+    
+    .mobile-nav-header h1 {
+      font-size: 1rem !important;
+    }
+    
+    .mobile-nav-header p {
+      font-size: 0.75rem !important;
+    }
+  }
+  
+  /* للشاشات القصيرة جداً (مثل الهواتف في الوضع الأفقي) */
+  @media (max-height: 480px) {
+    .mobile-nav-header {
+      max-height: 15vh;
+      padding: 1rem !important;
+    }
+    
+    .mobile-nav-footer {
+      max-height: 30vh;
+      padding: 1rem !important;
+    }
+    
+    .mobile-nav-content {
+      padding: 1rem !important;
+    }
+    
+    .mobile-nav-header .flex-col {
+      flex-direction: row !important;
+      align-items: center !important;
+      gap: 0.75rem !important;
+    }
+    
+    .mobile-nav-header .w-24.h-24 {
+      width: 3rem !important;
+      height: 3rem !important;
+      margin-bottom: 0 !important;
+    }
+  }
 }
 
 .cart-bounce {

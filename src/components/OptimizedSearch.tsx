@@ -2,7 +2,7 @@ import * as React from "react";
 import { useState, useCallback, useMemo } from "react";
 import { Search } from "lucide-react";
 import { ClearableInput } from "@/components/ui/ClearableInput";
-import { debounce } from "@/utils/performanceOptimizations";
+import { debounce } from "@/utils/performanceOptimization";
 import { useLanguage } from "@/utils/languageContextUtils";
 
 interface OptimizedSearchProps {
@@ -58,21 +58,6 @@ const OptimizedSearch: React.FC<OptimizedSearchProps> = ({
         dir={isRTL ? "rtl" : "ltr"}
         style={{ borderRadius: 0, boxShadow: "none", minWidth: 0 }}
       />
-      {/* زر الشراء دائماً داخل الكرت، حجمه ثابت، لا يختفي ولا يضغط على النص */}
-      {typeof className === "string" && className.includes("with-buy") && (
-        <button
-          className="absolute left-2 top-1/2 -translate-y-1/2 bg-primary text-white rounded-md px-2 py-1 text-xs sm:px-3 sm:py-1.5 sm:text-sm md:px-4 md:py-2 md:text-base font-bold shadow hover:bg-primary/90 transition-all"
-          style={{
-            maxWidth: "110px",
-            minWidth: "70px",
-            width: "auto",
-            whiteSpace: "nowrap",
-            zIndex: 11,
-          }}
-        >
-          {t("buyNow")}
-        </button>
-      )}
     </div>
   );
 };

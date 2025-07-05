@@ -450,62 +450,8 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
       const purchaseIntent = localStorage.getItem('purchase_intent');
       const checkoutIntent = localStorage.getItem('checkout_intent');
       
-      // إذا وُجد purchase_intent، له الأولوية ونلغي checkout_intent
-      if (purchaseIntent) {
-        try {
-          const intent = JSON.parse(purchaseIntent);
-          const isRecentIntent = Date.now() - intent.timestamp < 10 * 60 * 1000; // 10 دقائق
-          
-          if (isRecentIntent && intent.action === 'buyNow') {
-            console.log("Processing purchase intent after login:", intent);
-            
-            // مسح كلا الـ intents لتجنب التضارب
-            localStorage.removeItem('purchase_intent');
-            localStorage.removeItem('checkout_intent');
-            
-            // تنفيذ الشراء وانتظار الإنتهاء قبل التوجيه
-            const processPurchaseAndNavigate = async () => {
-              try {
-                console.log("Processing purchase intent with skipCart:", intent.skipCart);
-                
-                // التوجه لصفحة الدفع مع المنتج المحدد
-                navigate('/checkout', { 
-                  state: { 
-                    directBuy: true, 
-                    product: intent.product, 
-                    quantity: intent.quantity,
-                    skipCart: intent.skipCart || false
-                  } 
-                });
-                
-                console.log("Purchase intent processed successfully, navigating to checkout");
-              } catch (error) {
-                console.error("Error in purchase processing:", error);
-                // في حالة الخطأ، التوجه مع البيانات على الأقل
-                navigate('/checkout', { 
-                  state: { 
-                    directBuy: true, 
-                    product: intent.product, 
-                    quantity: intent.quantity,
-                    skipCart: intent.skipCart || false
-                  } 
-                });
-              }
-            };
-            
-            // تنفيذ العملية
-            processPurchaseAndNavigate();
-          } else {
-            // إزالة intent منتهي الصلاحية
-            localStorage.removeItem('purchase_intent');
-          }
-        } catch (error) {
-          console.error("Error processing purchase intent:", error);
-          localStorage.removeItem('purchase_intent');
-        }
-      }
-      // إذا لم يوجد purchase_intent، تحقق من checkout_intent
-      else if (checkoutIntent) {
+      // التحقق من checkout_intent للمنتجات من السلة
+      if (checkoutIntent) {
         try {
           const intent = JSON.parse(checkoutIntent);
           const isRecentIntent = Date.now() - intent.timestamp < 10 * 60 * 1000; // 10 دقائق
@@ -687,53 +633,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
     }
   }, [resetMigration, state.items, user, userId, hasMigrated, hasLoadedFromDB]);
 
-  // buyNow: الذهاب للشراء المباشر بدون تعديل السلة
-  const buyNow = async (product: Product, quantity = 1) => {
-    if (userId) {
-      // للمستخدمين المسجلين: التوجه مباشرة للدفع مع المنتج المحدد
-      try {
-        console.log("buyNow: Going to checkout with single product");
-        
-        // التوجه لصفحة الدفع مع المنتج المحدد فقط
-        navigate('/checkout', { 
-          state: { 
-            directBuy: true, 
-            product: product, 
-            quantity: quantity,
-            skipCart: true // إشارة لتجاهل السلة واستخدام المنتج المحدد فقط
-          } 
-        });
-        
-        console.log("buyNow completed successfully for user");
-      } catch (error) {
-        console.error("Error in buyNow:", error);
-        // في حالة الخطأ، التوجه مباشرة مع البيانات
-        navigate('/checkout', { 
-          state: { 
-            directBuy: true, 
-            product: product, 
-            quantity: quantity,
-            skipCart: true
-          } 
-        });
-      }
-    } else {
-      // للمستخدمين غير المسجلين: حفظ نية الشراء قبل التوجيه لتسجيل الدخول
-      const purchaseIntent = {
-        product,
-        quantity,
-        timestamp: Date.now(),
-        action: 'buyNow',
-        skipCart: true // إشارة لتجاهل السلة
-      };
-      
-      // حفظ في localStorage
-      localStorage.setItem('purchase_intent', JSON.stringify(purchaseIntent));
-      
-      // التوجه لصفحة تسجيل الدخول بدون تعديل السلة
-      navigate('/auth?redirect=checkout&skipCart=true');
-    }
-  };
+
 
   // دالة لحفظ السلة في الكوكيز للزوار (مُستخدمة في buyNow فقط)
   const saveCartToCookies = (cartItems: CartItem[]) => {
@@ -751,7 +651,6 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
     addToCart: typeof addItem;
     cartItems: typeof state.items;
     getTotalPrice: () => number;
-    buyNow: typeof buyNow;
     isLoading: boolean;
   } = {
     ...{
@@ -771,7 +670,6 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
     addToCart, // alias for backward compatibility
     cartItems,
     getTotalPrice,
-    buyNow,
     isLoading,
   };
 

@@ -195,11 +195,6 @@ const BannerCarousel: React.FC<BannerCarouselProps> = ({ banners }) => {
             />
           ))}
         </div>
-        {isMobile && banners.length > 1 && (
-          <div className="bg-black/50 text-white text-xs px-2 py-1 rounded-full opacity-80">
-            {t("swipeToNavigate")}
-          </div>
-        )}
       </div>
     </div>
   );

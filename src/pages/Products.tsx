@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Filter, X } from "lucide-react";
+import { Filter, X, Search } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { getLocalizedName } from "@/utils/getLocalizedName";
 import { mapProductFromDb } from "@/types/mapProductFromDb";
@@ -23,10 +23,33 @@ import { fetchTopOrderedProducts } from "@/integrations/supabase/dataSenders";
 import { ClearableInput } from "@/components/ui/ClearableInput";
 import config from "@/configs/activeConfig";
 
+// Hook لمراقبة حجم الشاشة
+const useWindowSize = () => {
+  const [windowSize, setWindowSize] = useState({
+    width: typeof window !== "undefined" ? window.innerWidth : 0,
+  });
+
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowSize({
+        width: window.innerWidth,
+      });
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  return windowSize;
+};
+
 const Products: React.FC = () => {
   // يمكنك تعديل الألوان حسب الحاجة أو جلبها من config إذا كانت متوفرة
   const { primaryColor, secondaryColor } = config.visual;
   const { t, isRTL, language } = useLanguage();
+  const { width } = useWindowSize();
+  const isMobile = width < 768; // 768px هو breakpoint للشاشات المحمولة
+  
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
@@ -254,7 +277,7 @@ const Products: React.FC = () => {
 
       {/* Animated Banner */}
       <div
-        className="rounded-xl p-8 text-white text-center mb-10"
+        className="rounded-xl p-1 text-white text-center mb-2"
         style={{
           backgroundImage: `linear-gradient(270deg, ${primaryColor}, ${secondaryColor}, ${primaryColor})`,
           backgroundSize: "300% 300%",
@@ -271,6 +294,30 @@ const Products: React.FC = () => {
           `}
         </style>
         <h1 className="text-3xl font-bold mb-2">{t("products")}</h1>
+      </div>
+
+      {/* Search Bar */}
+      <div className="container mx-auto px-2 sm:px-4">
+        <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 shadow-sm border border-gray-100">
+          <div className="max-w-2xl mx-auto">
+            <div className="relative">
+              <Search className={`absolute top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5 ${isRTL ? "right-3" : "left-3"}`} />
+              <ClearableInput
+                placeholder={t("searchProducts")}
+                value={searchQuery}
+                onChange={handleSearchChange}
+                onClear={() => {
+                  setSearchQuery("");
+                  const params = new URLSearchParams(location.search);
+                  params.delete("search");
+                  navigate({ search: params.toString() }, { replace: true });
+                }}
+                className={`${isRTL ? "pr-10 pl-4" : "pl-10 pr-4"} h-11 text-base rounded-full border-2 border-gray-200 focus:border-primary w-full`}
+                aria-label={t("searchInput")}
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="container mx-auto px-2 sm:px-4">
@@ -296,24 +343,26 @@ const Products: React.FC = () => {
         </div> */}
 
         {/* Page Header */}
-        <div className="flex flex-col sm:items-center sm:justify-between mb-4 gap-2">
-          <Button
-            variant="outline"
-            onClick={() => setShowFilters(!showFilters)}
-            className="gap-2"
-          >
-            <Filter className="h-4 w-4" />
-            {t("filters")}
-            {activeFiltersCount > 0 && (
-              <Badge variant="secondary" className="ml-1">
-                {activeFiltersCount}
-              </Badge>
-            )}
-          </Button>
-        </div>
+        {isMobile && (
+          <div className="flex flex-col sm:items-center sm:justify-between mb-4 gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowFilters(!showFilters)}
+              className="gap-2"
+            >
+              <Filter className="h-4 w-4" />
+              {t("filters")}
+              {activeFiltersCount > 0 && (
+                <Badge variant="secondary" className="ml-1">
+                  {activeFiltersCount}
+                </Badge>
+              )}
+            </Button>
+          </div>
+        )}
 
         {/* Filters */}
-        {showFilters && (
+        {(!isMobile || showFilters) && (
           <div className="bg-white rounded-lg p-4 sm:p-6 mb-6 shadow-sm">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
               {/* Category Filter */}

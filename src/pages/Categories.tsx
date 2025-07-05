@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useLocation, useNavigate } from "react-router-dom";
+import { Search } from "lucide-react";
 import { useCategoriesRealtime } from "@/hooks/useCategoriesRealtime";
 import { useLanguage } from "@/utils/languageContextUtils";
 import { getLocalizedName } from "@/utils/getLocalizedName";
@@ -108,7 +109,7 @@ const Categories: React.FC = () => {
     >
       {/* Animated Banner */}
       <div
-        className="rounded-xl p-8 text-white text-center mb-10"
+        className="rounded-xl p-1 text-white text-center mb-2"
         style={{
           backgroundImage: `linear-gradient(270deg, ${primaryColor}, ${secondaryColor}, ${primaryColor})`,
           backgroundSize: "300% 300%",
@@ -127,25 +128,40 @@ const Categories: React.FC = () => {
         <h1 className="text-3xl font-bold mb-2">{t("categories")}</h1>
       </div>
 
+      {/* Search Bar */}
+      <div className="container mx-auto px-2 sm:px-4 mb-6">
+        <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 shadow-sm border border-gray-100">
+          <div className="max-w-2xl mx-auto">
+            <div className="relative">
+              <Search className={`absolute top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5 ${isRTL ? "right-3" : "left-3"}`} />
+              <ClearableInput
+                placeholder={t("searchCategories")}
+                value={searchQuery}
+                onChange={handleSearchChange}
+                onClear={() => {
+                  setSearchQuery("");
+                  const params = new URLSearchParams(location.search);
+                  params.delete("search");
+                  navigate({ search: params.toString() }, { replace: true });
+                }}
+                className={`${isRTL ? "pr-10 pl-4" : "pl-10 pr-4"} h-11 text-base rounded-full border-2 border-gray-200 focus:border-primary w-full`}
+                aria-label={t("searchInput")}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="container mx-auto px-2 sm:px-4">
-        {/* Advanced Search Bar & Stats */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-          <div className="flex-1 flex items-center gap-2">
-            <ClearableInput
-              type="text"
-              className={`w-full rounded-md border border-gray-300 px-3 py-2 text-base focus:ring-2 focus:ring-primary focus:border-primary transition ${
-                isRTL ? "pr-8" : "pl-8"
-              }`}
-              placeholder={t("searchCategories")}
-              value={searchQuery}
-              onChange={handleSearchChange}
-              onClear={() => {
-                setSearchQuery("");
-                const params = new URLSearchParams(location.search);
-                params.delete("search");
-                navigate({ search: params.toString() }, { replace: true });
-              }}
-            />
+        {/* Stats */}
+        <div className="flex justify-center mb-4">
+          <div className="text-center">
+            <p className="text-gray-600">
+              {searchQuery ? 
+                `${filteredCategories.length} ${t("categoriesFound")}` :
+                `${filteredCategories.length} ${t("categories")}`
+              }
+            </p>
           </div>
         </div>
 

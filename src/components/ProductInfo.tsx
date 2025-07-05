@@ -18,17 +18,17 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
   const displayPrice = getDisplayPrice(product, profile?.user_type);
 
   return (
-    <div className={`space-y-4 sm:space-y-6 ${isRTL ? 'text-right' : 'text-left'}`}>
+    <div className={`space-y-4 sm:space-y-6 product-info-section`}>
       <div>
-        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold mb-2 text-center leading-tight">{getLocalizedName(product, language)}</h1>
+        <h1 className="responsive-product-title font-bold mb-3 leading-tight">{getLocalizedName(product, language)}</h1>
         {/* البادجز */}
-        <div className="flex justify-center mb-4">
+        <div className="flex justify-center lg:justify-start mb-4">
           <ProductCardBadges product={product} variant="belowName" />
         </div>
       </div>
       {/* السعر */}
-      <div className={`flex flex-col gap-2 w-full`}>
-        <div className={`flex items-center gap-2 sm:gap-4 w-full ${isRTL ? 'flex-row-reverse justify-end' : 'justify-start'}`}> 
+      <div className="flex flex-col gap-2 w-full">
+        <div className="flex items-center justify-center lg:justify-start gap-2 sm:gap-4 w-full"> 
           {product.originalPrice !== displayPrice && (
             <span className="text-sm sm:text-base md:text-lg text-gray-500 line-through">
               {product.originalPrice} {t('currency')}
@@ -40,9 +40,9 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
         </div>
       </div>
       {/* Description */}
-      <div className={isRTL ? 'text-right' : 'text-left'}>
-        <h3 className="font-semibold mb-2 text-sm sm:text-base">{t('productDescription')}</h3>
-        <p className="text-gray-600 leading-relaxed text-sm sm:text-base">{product.description}</p>
+      <div className="text-center lg:text-start">
+        <h3 className="font-semibold mb-3 text-sm sm:text-base">{t('productDescription')}</h3>
+        <p className="text-gray-600 leading-relaxed text-sm sm:text-base line-height-relaxed">{product.description}</p>
       </div>
     </div>
   );

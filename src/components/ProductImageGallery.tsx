@@ -99,7 +99,7 @@ const ProductImageGallery = ({ product }: ProductImageGalleryProps) => {
     <div className="space-y-4">
       {/* صورة المنتج الرئيسية مع إمكانية التكبير */}
       <div
-        className="relative overflow-hidden rounded-xl bg-white border group cursor-zoom-in aspect-[4/3] h-64 sm:h-72 md:h-80 lg:h-96 select-none"
+        className="responsive-product-image relative overflow-hidden rounded-xl bg-white border group cursor-zoom-in select-none"
         onClick={openModal}
         {...swipeHandlers}
         style={{ touchAction: 'pan-y pinch-zoom' }}
@@ -201,11 +201,6 @@ const ProductImageGallery = ({ product }: ProductImageGalleryProps) => {
                 />
               ))}
             </div>
-            {isMobile && (
-              <div className="bg-black/50 text-white text-xs px-2 py-1 rounded-full opacity-80">
-                {t("swipeToNavigate")}
-              </div>
-            )}
           </div>
         )}
 

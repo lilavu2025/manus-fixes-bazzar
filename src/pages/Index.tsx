@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
+import { Search } from "lucide-react";
 import ProductCard from "@/components/ProductCard";
 import BannerCarousel from "@/components/BannerCarousel";
 import CategoryCard from "@/components/CategoryCard";
 import CartSidebar from "@/components/CartSidebar";
 import WelcomeMessage from "@/components/WelcomeMessage";
 import { Button } from "@/components/ui/button";
+import { ClearableInput } from "@/components/ui/ClearableInput";
 import { useBanners } from "@/hooks/useSupabaseData";
 import { useCategoriesRealtime } from "@/hooks/useCategoriesRealtime";
 import { useProductsRealtime } from "@/hooks/useProductsRealtime";
@@ -19,15 +21,13 @@ import TopOrderedProducts from "@/components/TopOrderedProducts";
 import { fetchTopOrderedProducts } from "@/integrations/supabase/dataSenders";
 import config from "@/configs/activeConfig";
 
-interface IndexProps {
-  searchQuery: string;
-  setSearchQuery: (query: string) => void;
-}
+interface IndexProps {}
 
-const Index = ({ searchQuery, setSearchQuery }: IndexProps) => {
+const Index = () => {
   const { t, isRTL, language } = useLanguage();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [topOrdered, setTopOrdered] = useState<Product[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const { data: bannersData } = useBanners();
   const {
@@ -114,7 +114,25 @@ const Index = ({ searchQuery, setSearchQuery }: IndexProps) => {
       {/* Welcome Message - يظهر دائماً عندما لا يكون هناك بحث */}
       {!searchQuery && <WelcomeMessage />}
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Search Bar */}
+        <section className="mb-2">
+          <div className="bg-white/80 backdrop-blur-sm rounded-xl p-2 shadow-sm border border-gray-100">
+            <div className="max-w-2xl mx-auto">
+              <div className="relative">
+                <Search className={`absolute top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5 ${isRTL ? "right-3" : "left-3"}`} />
+                <ClearableInput
+                  placeholder={t("search")}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onClear={() => setSearchQuery("")}
+                  className={`${isRTL ? "pr-10 pl-4" : "pl-10 pr-4"} h-12 text-base rounded-full border-2 border-gray-200 focus:border-primary w-full`}
+                  aria-label={t("searchInput")}
+                />
+              </div>
+            </div>
+          </div>
+        </section>
         {/* Hero Banner */}
         {!searchQuery && banners.length > 0 && (
           <section className="mb-12">
@@ -162,16 +180,6 @@ const Index = ({ searchQuery, setSearchQuery }: IndexProps) => {
         {/* Categories */}
         {!searchQuery && (
           <section className="mb-12 bg-white/80 rounded-xl p-4 shadow-sm">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold">{t("categories")}</h2>
-              <Button
-                asChild
-                variant="outline"
-                className="font-bold py-2 px-4 rounded shadow-md transition-all duration-300 text-[hsl(var(--primary))] hover:text-[hsl(var(--secondary))] bg-white"
-              >
-                <Link to="/categories" aria-label={t("viewAllCategories")}>{t("viewAllCategories")}</Link>
-              </Button>
-            </div>
             {categoriesLoading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
                 {[...Array(5)].map((_, i) => (

@@ -17,7 +17,7 @@ const WelcomeMessage: React.FC = () => {
   };
 
   return (
-    <div className="w-full bg-gradient-to-r from-orange-100 to-orange-200 py-3 px-6 mb-6">
+    <div className="w-full bg-gradient-to-r from-orange-100 to-orange-200 px-6 mb-6 md:hidden">
       <div className="text-center">
         <p className="text-orange-800 font-medium text-lg">
           {getWelcomeMessage()}

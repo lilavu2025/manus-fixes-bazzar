@@ -182,6 +182,7 @@ export const enTranslations = {
   add: "Add",
   search: "Search",
   searchProducts: "Search products...",
+  searchOffers: "Search offers...",
   searchUsersPlaceholder: "Search by name, email, or phone...",
   searchByName: "Search by name",
   searchByNameProductPlaceholder: "Type product name...",

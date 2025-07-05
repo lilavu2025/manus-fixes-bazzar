@@ -40,51 +40,53 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
 
   return (
     <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-      <SheetContent side={isRTL ? "left" : "right"} className="w-80 p-0">
-        <div className="flex flex-col h-full">
-          <div className="p-6 border-b">
-            <Link
-              to="/"
-              className="flex items-center gap-3"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              <div className="w-24 h-24 bg-gradient-to-r [hsl(var(--primary))] to-[hsl(var(--secondary))] text-[hsl(var(--primary-foreground))] rounded-full flex items-center justify-center mx-auto mb-4">
-                <img
-                  src={config.visual.logo}
-                  alt={t('storeName')}
-                  className="w-24 h-24 sm:w-24 sm:h-24 rounded-lg object-contain bg-white shadow"
-                />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-gray-800">
-                  {t("storeName")}
-                </h1>
-                <p className="text-sm text-gray-500">{t("storeDescription")}</p>
-              </div>
-            </Link>
-          </div>
-
-          <nav className="flex-1 p-6">
-            <div className="space-y-2">
-              {navigationItems.map((item) => (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 ${
-                    isActive(item.path)
-                      ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] shadow-lg transform scale-105"
-                      : "text-gray-600 hover:bg-gray-100"
-                  }`}
-                >
-                  {item.icon && <item.icon className="h-5 w-5" />}
-                  <span className="font-medium">{item.label}</span>
-                </Link>
-              ))}
+      <SheetContent side={isRTL ? "left" : "right"} className="w-80 p-0 flex flex-col">
+        {/* Header - ثابت في الأعلى */}
+        <div className="mobile-nav-header flex-shrink-0 p-6 border-b">
+          <Link
+            to="/"
+            className="flex items-center gap-3"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            <div className="w-24 h-24 bg-gradient-to-r [hsl(var(--primary))] to-[hsl(var(--secondary))] text-[hsl(var(--primary-foreground))] rounded-full flex items-center justify-center mx-auto mb-4">
+              <img
+                src={config.visual.logo}
+                alt={t('storeName')}
+                className="w-24 h-24 sm:w-24 sm:h-24 rounded-lg object-contain bg-white shadow"
+              />
             </div>
-          </nav>
+            <div>
+              <h1 className="text-xl font-bold text-gray-800">
+                {t("storeName")}
+              </h1>
+              <p className="text-sm text-gray-500">{t("storeDescription")}</p>
+            </div>
+          </Link>
+        </div>
 
-          <div className="p-6 border-t bg-gray-50">
+        {/* Navigation - قابل للتمرير */}
+        <nav className="mobile-nav-content flex-1 overflow-y-auto p-6">
+          <div className="space-y-2">
+            {navigationItems.map((item) => (
+              <Link
+                key={item.path}
+                to={item.path}
+                onClick={() => setMobileMenuOpen(false)}
+                className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 ${
+                  isActive(item.path)
+                    ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] shadow-lg transform scale-105"
+                    : "text-gray-600 hover:bg-gray-100"
+                }`}
+              >
+                {item.icon && <item.icon className="h-5 w-5" />}
+                <span className="font-medium">{item.label}</span>
+              </Link>
+            ))}
+          </div>
+        </nav>
+
+        {/* Footer - ثابت في الأسفل */}
+        <div className="mobile-nav-footer flex-shrink-0 p-6 border-t bg-gray-50">
             {user ? (
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
@@ -157,7 +159,6 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
             <div className="mt-4 flex justify-center">
               <LanguageSwitcher />
             </div>
-          </div>
         </div>
       </SheetContent>
     </Sheet>

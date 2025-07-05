@@ -18,7 +18,6 @@ interface ProductCardContentProps {
   cartQuantity: number;
   onQuantityChange: (quantity: number) => void;
   onAddToCart: () => void;
-  onBuyNow: () => void;
   isLoading?: boolean;
   onProductClick?: () => void;
 }
@@ -29,7 +28,6 @@ const ProductCardContent: React.FC<ProductCardContentProps> = ({
   cartQuantity,
   onQuantityChange,
   onAddToCart,
-  onBuyNow,
   isLoading = false,
   onProductClick,
 }) => {
@@ -40,27 +38,29 @@ const ProductCardContent: React.FC<ProductCardContentProps> = ({
 
   return (
     <CardContent
-      className={`w-full p-3 sm:p-4 md:p-6 ${isRTL ? "text-right" : "text-left"}`}
+      className={`w-full p-2 sm:p-3 md:p-4 ${isRTL ? "text-right" : "text-left"} flex flex-col gap-2 flex-grow`}
     >
-      <Link
-        to={`/product/${product.id}`}
-        onClick={onProductClick}
-        className="block w-full"
-      >
-        <h3
-          className={`font-semibold text-sm sm:text-base md:text-lg lg:text-xl mb-2 line-clamp-2 group-hover:text-primary transition-colors ${isRTL ? "text-right" : "text-left"}`}
+      {/* المحتوى الأساسي */}
+      <div className="flex flex-col gap-2 flex-grow">
+        <Link
+          to={`/product/${product.id}`}
+          onClick={onProductClick}
+          className="block w-full"
         >
-          {getLocalizedName(product, language)}
-        </h3>
-      </Link>
-      
-      {/* البادجز تحت اسم المنتج */}
-      <div className="mb-3">
-        <ProductCardBadges product={product} variant="belowName" />
-      </div>
-      {/* السعر  */}
-      <div className={`flex flex-col gap-2 mb-4 w-full`}>
-        <div className={`flex flex-col gap-2 w-full`}>
+          <h3
+            className={`font-semibold text-sm sm:text-base md:text-lg lg:text-xl line-clamp-2 group-hover:text-primary transition-colors ${isRTL ? "text-right" : "text-left"}`}
+          >
+            {getLocalizedName(product, language)}
+          </h3>
+        </Link>
+        
+        {/* البادجز تحت اسم المنتج */}
+        <div>
+          <ProductCardBadges product={product} variant="belowName" />
+        </div>
+        
+        {/* السعر  */}
+        <div className={`flex flex-col gap-1`}>
           <div
             className={`flex items-center gap-4 w-full ${isRTL ? "flex-row-reverse justify-end" : "justify-start"}`}
           >
@@ -74,12 +74,19 @@ const ProductCardContent: React.FC<ProductCardContentProps> = ({
             </span>
           </div>
         </div>
-        <div className="flex flex-col w-full gap-1">
-          {!product.inStock && (
-            <div className="w-full text-center text-red-600 bg-red-50 border border-red-200 rounded p-2 mb-2 font-semibold text-xs sm:text-sm md:text-base lg:text-base leading-tight sm:leading-normal break-words">
-              {t("productOutOfStockMessage") || "هذا المنتج غير متوفر حالياً وسيعود قريباً!"}
-            </div>
-          )}
+
+        {/* رسالة نفاد المخزون */}
+        {!product.inStock && (
+          <div className="w-full text-center text-red-600 bg-red-50 border border-red-200 rounded p-2 font-semibold text-xs sm:text-sm md:text-base lg:text-base leading-tight sm:leading-normal break-words">
+            {t("productOutOfStockMessage") || "هذا المنتج غير متوفر حالياً وسيعود قريباً!"}
+          </div>
+        )}
+      </div>
+
+      {/* منطقة الأزرار في الأسفل */}
+      {product.inStock && (
+        <div className="flex flex-col gap-2 mt-auto">
+          {/* محدد الكمية */}
           <div className="flex items-center gap-4 w-full">
             <span className="text-sm sm:text-base text-gray-600 whitespace-nowrap">
               {t("quantity")}:
@@ -92,40 +99,27 @@ const ProductCardContent: React.FC<ProductCardContentProps> = ({
               disabled={!product.inStock || isLoading}
             />
           </div>
+
+          {/* أزرار الإجراءات */}
+          <div className={`flex flex-col gap-1.5 ${isRTL ? "justify-end" : "justify-start"}`}>
+            <Button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onAddToCart();
+              }}
+              disabled={!product.inStock || isLoading}
+              className="w-full gap-1 sm:gap-2 font-semibold text-xs sm:text-sm py-1.5 sm:py-2"
+              variant={cartQuantity > 0 ? "secondary" : "default"}
+            >
+              <ShoppingCart className="h-3 w-3 sm:h-4 sm:w-4" />
+              {cartQuantity > 0
+                ? `${t("inCart")} (${cartQuantity})`
+                : t("addToCart")}
+            </Button>
+          </div>
         </div>
-      </div>
-      {/* أزرار الإجراءات */}
-      <div
-        className={`flex flex-col gap-2 sm:gap-3 ${isRTL ? "justify-end" : "justify-start"}`}
-      >
-        <Button
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            onAddToCart();
-          }}
-          disabled={!product.inStock || isLoading}
-          className="w-full gap-1 sm:gap-2 font-semibold text-xs sm:text-sm py-2 sm:py-3"
-          variant={cartQuantity > 0 ? "secondary" : "default"}
-        >
-          <ShoppingCart className="h-3 w-3 sm:h-4 sm:w-4" />
-          {cartQuantity > 0
-            ? `${t("inCart")} (${cartQuantity})`
-            : t("addToCart")}
-        </Button>
-        <Button
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            onBuyNow();
-          }}
-          disabled={!product.inStock || isLoading}
-          variant="outline"
-          className="w-full px-2 sm:px-4 text-xs sm:text-sm py-2 sm:py-3"
-        >
-          {t("buyNow")}
-        </Button>
-      </div>
+      )}
     </CardContent>
   );
 };
