@@ -917,6 +917,7 @@ export const heTranslations = {
   noNewUsers: "אין משתמשים חדשים",
   noCompletedOrders: "אין הזמנות שהושלמו",
   noPendingOrders: "אין הזמנות ממתינות",
+  noProcessingOrders: "אין הזמנות בתהליך",
   noShippingOrders: "אין הזמנות במשלוח",
   noPaidOrders: "אין הזמנות ששולמו",
   noCancelledOrders: "אין הזמנות שבוטלו",

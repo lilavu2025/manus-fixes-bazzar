@@ -889,6 +889,7 @@ export const enTranslations = {
   noNewUsers: "No new users",
   noCompletedOrders: "No completed orders",
   noPendingOrders: "No pending orders",
+  noProcessingOrders: "No processing orders",
   noShippingOrders: "No shipping orders",
   noPaidOrders: "No paid orders",
   noCancelledOrders: "No cancelled orders",

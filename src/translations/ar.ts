@@ -896,6 +896,7 @@ export const arTranslations = {
   noNewUsers: "لا يوجد مستخدمون جدد",
   noCompletedOrders: "لا توجد طلبات مكتملة",
   noPendingOrders: "لا توجد طلبات قيد الانتظار",
+  noProcessingOrders: "لا توجد طلبات قيد المعالجة",
   noShippingOrders: "لا توجد طلبات قيد الشحن",
   noPaidOrders: "لا توجد طلبات مدفوعة",
   noCancelledOrders: "لا توجد طلبات ملغاة",
