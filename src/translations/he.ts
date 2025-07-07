@@ -1116,4 +1116,8 @@ export const heTranslations = {
   swipeGestures: "מחוות גרירה",
   touchSupported: "תמיכה במגע",
   noBestSellingProducts: "לא נמצאו מוצרים הכי נמכרים",
+  from: "מ",
+  noSearchResults: "לא נמצאו תוצאות לחיפוש",
+  tryDifferentSearch: "נסה חיפוש שונה",
+  clearSearch: "נקה חיפוש",
 };

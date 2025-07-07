@@ -1138,4 +1138,8 @@ export const enTranslations = {
   swipeGestures: "Swipe gestures",
   touchSupported: "Touch supported",
   noBestSellingProducts: "No best selling products available",
+  from: "From",
+  noSearchResults: "No search results found",
+  tryDifferentSearch: "Try a different search",
+  clearSearch: "Clear search",
 };
