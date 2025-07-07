@@ -35,9 +35,11 @@ export function loadEnvConfig(clientName: string): EnvConfig {
   // إذا لم تكن المتغيرات موجودة، نحاول الحصول على القيم من ملف .env الخاص بالعميل
   // هذا يحدث عادة في بيئة التطوير
   if (!envConfig.supabaseUrl || !envConfig.supabaseKey) {
-    console.warn(`⚠️  لم يتم العثور على متغيرات البيئة للعميل ${clientName}`);
-    console.warn(`💡 تأكد من وجود ملف .env يحتوي على المتغيرات المطلوبة`);
-    console.warn(`🔧 أو استخدم الأمر: npm run dev:client ${clientName}`);
+    if (import.meta.env.DEV) {
+      console.warn(`⚠️  لم يتم العثور على متغيرات البيئة للعميل ${clientName}`);
+      console.warn(`💡 تأكد من وجود ملف .env يحتوي على المتغيرات المطلوبة`);
+      console.warn(`🔧 أو استخدم الأمر: npm run dev:client ${clientName}`);
+    }
   }
   
   return envConfig;

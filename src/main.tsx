@@ -1,5 +1,13 @@
 import config from "@/configs/activeConfig";
 
+// تحميل فلتر Console في جميع البيئات
+import("@/utils/devConsoleFilter");
+
+// تحميل الحماية في بيئة الإنتاج فقط
+if (import.meta.env.PROD) {
+  import("@/utils/productionSecurity");
+}
+
 const faviconPath = config.visual?.logo || "/favicon.ico";
 const faviconElement = document.getElementById("dynamic-favicon") as HTMLLinkElement;
 if (faviconElement) {
