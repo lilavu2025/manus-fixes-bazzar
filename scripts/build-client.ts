@@ -11,7 +11,7 @@ import path from "path";
 import { pathToFileURL } from "url";
 import { register } from "ts-node";
 import { cleanupBackups } from "./cleanup-backups";
-
+import { config as dotenvConfig } from "dotenv";
 
 // ✅ فعّل ts-node لتشغيل ملفات TypeScript مباشرة
 register({
@@ -49,6 +49,19 @@ console.log(`🚀 بيبدأ البناء للعميل: ${client}`);
 log(`🚀 بدأ البناء للعميل: ${client}`);
 
 try {
+  // نسخ ملف البيئة الخاص بالعميل قبل البناء
+  const envSourcePath = path.join(process.cwd(), "envs", `${client}.env`);
+  const envTargetPath = path.join(process.cwd(), ".env");
+  
+  if (fs.existsSync(envSourcePath)) {
+    fs.copyFileSync(envSourcePath, envTargetPath);
+    log(`✅ تم نسخ ملف البيئة: envs/${client}.env → .env`);
+    
+    // تحميل متغيرات البيئة في Node.js
+    dotenvConfig({ path: envTargetPath });
+    log(`✅ تم تحميل متغيرات البيئة في Node.js`);
+  }
+  
   execSync(`cross-env VITE_CLIENT_KEY=${client} npm run build`, {
     stdio: "inherit",
   });
@@ -67,12 +80,13 @@ const configPath = pathToFileURL(path.resolve(`./src/configs/users-configs/${cli
 const configModule = await import(configPath);
 const config = configModule.default;
 
-const token = config.deploy?.netlifyToken;
-const siteId = config.deploy?.siteId;
+// قراءة القيم من متغيرات البيئة (التي تم نسخها للتو)
+const token = process.env.VITE_NETLIFY_TOKEN;
+const siteId = process.env.VITE_NETLIFY_SITE_ID;
 
 if (!token || !siteId) {
-  console.error("❌ مفقود التوكن أو siteId للعميل.");
-  log(`❌ فشل النشر: توكن أو Site ID غير موجود`);
+  console.error("❌ مفقود التوكن أو siteId للعميل في ملف البيئة.");
+  log(`❌ فشل النشر: توكن أو Site ID غير موجود في envs/${client}.env`);
   process.exit(1);
 }
 

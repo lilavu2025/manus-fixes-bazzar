@@ -11,12 +11,26 @@ export function loadEnvConfig(clientName: string): EnvConfig {
   // في بيئة المتصفح، نحتاج إلى استخدام متغيرات البيئة من Vite
   // Vite يحمل المتغيرات من ملف .env في جذر المشروع
   
-  const envConfig: EnvConfig = {
-    supabaseUrl: import.meta.env.VITE_SUPABASE_URL,
-    supabaseKey: import.meta.env.VITE_SUPABASE_KEY,
-    siteId: import.meta.env.VITE_NETLIFY_SITE_ID,
-    netlifyToken: import.meta.env.VITE_NETLIFY_TOKEN,
-  };
+  let envConfig: EnvConfig = {};
+  
+  // التحقق من البيئة - إذا كانت Node.js أو Vite
+  if (typeof process !== 'undefined' && process.env) {
+    // بيئة Node.js - استخدم process.env
+    envConfig = {
+      supabaseUrl: process.env.VITE_SUPABASE_URL,
+      supabaseKey: process.env.VITE_SUPABASE_KEY,
+      siteId: process.env.VITE_NETLIFY_SITE_ID,
+      netlifyToken: process.env.VITE_NETLIFY_TOKEN,
+    };
+  } else if (typeof import.meta !== 'undefined' && import.meta.env) {
+    // بيئة Vite - استخدم import.meta.env
+    envConfig = {
+      supabaseUrl: import.meta.env.VITE_SUPABASE_URL,
+      supabaseKey: import.meta.env.VITE_SUPABASE_KEY,
+      siteId: import.meta.env.VITE_NETLIFY_SITE_ID,
+      netlifyToken: import.meta.env.VITE_NETLIFY_TOKEN,
+    };
+  }
   
   // إذا لم تكن المتغيرات موجودة، نحاول الحصول على القيم من ملف .env الخاص بالعميل
   // هذا يحدث عادة في بيئة التطوير

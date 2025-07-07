@@ -8,7 +8,7 @@ import fsExtra from "fs-extra";
 import path from "path";
 import { register } from "ts-node";
 import { cleanupBackups } from "./cleanup-backups";
-
+import { config as dotenvConfig } from "dotenv";
 
 // ✅ فعّل ts-node لتشغيل TypeScript داخل هذا الملف
 register({
@@ -50,6 +50,19 @@ for (const client of clients) {
   log(`🚧 بناء عميل: ${client}`);
 
   try {
+    // نسخ ملف البيئة الخاص بالعميل قبل البناء
+    const envSourcePath = path.join(process.cwd(), "envs", `${client}.env`);
+    const envTargetPath = path.join(process.cwd(), ".env");
+    
+    if (fs.existsSync(envSourcePath)) {
+      fs.copyFileSync(envSourcePath, envTargetPath);
+      log(`✅ تم نسخ ملف البيئة: envs/${client}.env → .env`);
+      
+      // تحميل متغيرات البيئة في Node.js
+      dotenvConfig({ path: envTargetPath });
+      log(`✅ تم تحميل متغيرات البيئة في Node.js`);
+    }
+    
     execSync(`cross-env VITE_CLIENT_KEY=${client} npm run build`, {
       stdio: "inherit",
     });

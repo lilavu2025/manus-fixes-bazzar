@@ -8,6 +8,7 @@ import path from "path";
 import { pathToFileURL } from "url";
 import { register } from "ts-node";
 import configMap from "../src/configs/configMap";
+import { config as dotenvConfig } from "dotenv";
 
 // ✅ فعل ts-node لتشغيل TypeScript مباشرة
 register({
@@ -33,16 +34,26 @@ log("🚀--------- بدأ النشر لكل العملاء---------");
 
 for (const client of clients) {
   try {
-    const configPath = pathToFileURL(path.resolve(`./src/configs/users-configs/${client}-store.ts`)).href;
-    const configModule = await import(configPath);
-    const config = configModule.default;
-
-    const token = config.deploy?.netlifyToken;
-    const siteId = config.deploy?.siteId;
+    // نسخ ملف البيئة الخاص بالعميل قبل النشر
+    const envSourcePath = path.join(process.cwd(), "envs", `${client}.env`);
+    const envTargetPath = path.join(process.cwd(), ".env");
+    
+    if (fs.existsSync(envSourcePath)) {
+      fs.copyFileSync(envSourcePath, envTargetPath);
+      log(`✅ تم نسخ ملف البيئة: envs/${client}.env → .env`);
+      
+      // تحميل متغيرات البيئة في Node.js
+      dotenvConfig({ path: envTargetPath });
+      log(`✅ تم تحميل متغيرات البيئة في Node.js`);
+    }
+    
+    // قراءة القيم من متغيرات البيئة
+    const token = process.env.VITE_NETLIFY_TOKEN;
+    const siteId = process.env.VITE_NETLIFY_SITE_ID;
 
     if (!token || !siteId) {
-      console.warn(`⚠️ العميل ${client} ما عنده siteId أو token`);
-      log(`⚠️ تخطى العميل ${client} لعدم وجود بيانات النشر`);
+      console.warn(`⚠️ العميل ${client} ما عنده siteId أو token في ملف البيئة`);
+      log(`⚠️ تخطى العميل ${client} لعدم وجود بيانات النشر في envs/${client}.env`);
       continue;
     }
 
