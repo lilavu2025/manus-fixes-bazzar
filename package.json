@@ -5,7 +5,7 @@
   "type": "module",
   "description": "موقع تجارة إلكترونية متعدد اللغات مع دعم كامل للعربية والعبرية والإنجليزية",
   "scripts": {
-    "dev": "vite",
+    "dev": "tsx scripts/dev-default.ts",
     "dev:client": "tsx scripts/dev-client.ts",
     "build": "npx tsx scripts/build-default.ts",
     "build:dev": "vite build --mode development",
@@ -19,7 +19,11 @@
     "build:all-clients": "tsx scripts/build-all-clients.ts",
     "deploy:all-clients": "tsx scripts/deploy-all-clients.ts",
     "update-version": "node scripts/update-version.js",
-    "prebuild": "npm run update-version"
+    "prebuild": "npm run update-version",
+    "create-client": "node scripts/create-client.js",
+    "test-config": "node scripts/test-config.js",
+    "manage-env": "node scripts/manage-env.js",
+    "validate-project": "node scripts/validate-project.js"
   },
   "dependencies": {
     "@capacitor/android": "^7.2.0",

@@ -1,5 +1,6 @@
 // src/configs/createConfig.ts
 import defaultConfig from "./defaultConfig";
+import { loadEnvConfig } from "./loadEnvConfig";
 
 function deepMerge<T>(target: T, source: Partial<T>): T {
   const output = { ...target };
@@ -18,6 +19,25 @@ function deepMerge<T>(target: T, source: Partial<T>): T {
   return output;
 }
 
-export default function createConfig<T>(customConfig: Partial<T>): T {
-  return deepMerge(defaultConfig as T, customConfig);
+export default function createConfig<T>(customConfig: Partial<T>, clientName?: string): T {
+  let envConfig = {};
+  
+  // تحميل المتغيرات من ملف .env إذا كان اسم العميل متاحاً
+  if (clientName) {
+    const env = loadEnvConfig(clientName);
+    envConfig = {
+      supabaseUrl: env.supabaseUrl,
+      supabaseKey: env.supabaseKey,
+      deploy: {
+        siteId: env.siteId,
+        netlifyToken: env.netlifyToken,
+      }
+    };
+  }
+  
+  // دمج التكوين الافتراضي مع متغيرات البيئة ثم التكوين المخصص
+  let mergedConfig = deepMerge(defaultConfig as T, envConfig as Partial<T>);
+  mergedConfig = deepMerge(mergedConfig, customConfig);
+  
+  return mergedConfig;
 }
