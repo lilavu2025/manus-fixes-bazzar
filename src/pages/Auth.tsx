@@ -626,7 +626,6 @@ const Auth: React.FC = () => {
                         />
                       </div>
 
-                      // زر إنشاء حساب جديد
                       <Button
                         type="submit"
                         className="w-full"

@@ -517,7 +517,7 @@ const Products: React.FC = () => {
           topOrderedProducts.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-gray-500 text-lg">
-                لا يوجد منتجات أكثر مبيعاً حالياً
+                {t("noBestSellingProducts")}
               </p>
             </div>
           ) : (

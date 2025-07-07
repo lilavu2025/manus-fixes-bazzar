@@ -1137,5 +1137,5 @@ export const enTranslations = {
   touchToNavigate: "Touch to navigate",
   swipeGestures: "Swipe gestures",
   touchSupported: "Touch supported",
-
+  noBestSellingProducts: "No best selling products available",
 };

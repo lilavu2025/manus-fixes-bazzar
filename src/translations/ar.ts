@@ -1116,4 +1116,5 @@ export const arTranslations = {
   swipeGestures: "إيماءات السحب",
   touchSupported: "دعم اللمس متوفر",
 
+  noBestSellingProducts: "لا يوجد منتجات أكثر مبيعاً حالياً"
 };
