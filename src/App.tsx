@@ -25,6 +25,8 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import SEO from "@/components/SEO";
 import PerformanceMonitorComponent from "@/components/PerformanceMonitor";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import { NativeSplashScreen } from "@/components/splash";
+import { useSplash } from "@/hooks/useSplash";
 
 // Critical pages - Regular imports for initial load
 import Index from "./pages/Index";
@@ -175,11 +177,38 @@ const App = () => {
   }
   const queryClient = queryClientRef.current;
 
+  // استخدام هوك السبلاش
+  const { showSplash, isInitialized, handleSplashFinish, duration } = useSplash({
+    duration: 3500,
+    enableOnMobile: true,
+    enableOnDesktop: false
+  });
+
   const [hideOffers, setHideOffers] = useState(false);
   const [openMobileMenu, setOpenMobileMenu] = useState(false);
-  const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [openCart, setOpenCart] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+
+  // عرض صفحة السبلاش إذا كانت مطلوبة - داخل LanguageProvider
+  const SplashWrapper = () => {
+    if (showSplash) {
+      return (
+        <LanguageProvider>
+          <NativeSplashScreen onFinish={handleSplashFinish} duration={duration} />
+        </LanguageProvider>
+      );
+    }
+    return null;
+  };
+
+  // عرض السبلاش مع دعم الترجمة
+  if (showSplash) {
+    return <SplashWrapper />;
+  }
+
+  // انتظار التهيئة
+  if (!isInitialized) {
+    return <LoadingSpinner />;
+  }
 
   // useEffect(() => {
   //   getSetting('hide_offers_page').then(val => setHideOffers(val === 'true'));
@@ -205,13 +234,9 @@ const App = () => {
                       <ConnectionManager />
                       <RoutePreloader />
                       <AppHeaderWrapper
-                        searchQuery={searchQuery}
-                        setSearchQuery={setSearchQuery}
                         setOpenCart={setOpenCart}
                         setOpenMobileMenu={setOpenMobileMenu}
                         openMobileMenu={openMobileMenu}
-                        showMobileSearch={showMobileSearch}
-                        setShowMobileSearch={setShowMobileSearch}
                         openCart={openCart}
                       />
                       <CartSidebar
@@ -222,12 +247,7 @@ const App = () => {
                         <Routes>
                           <Route
                             path="/"
-                            element={
-                              <Index
-                                searchQuery={searchQuery}
-                                setSearchQuery={setSearchQuery}
-                              />
-                            }
+                            element={<Index />}
                           />
                           <Route path="/auth" element={<Auth />} />
                           <Route
@@ -338,22 +358,14 @@ const App = () => {
                         onMenuClick={() => {
                           setOpenMobileMenu(true);
                           setOpenCart(false);
-                          setShowMobileSearch(false);
-                        }}
-                        onSearchClick={() => {
-                          setShowMobileSearch(true);
-                          setOpenCart(false);
-                          setOpenMobileMenu(false);
                         }}
                         onCartClick={(open) => {
                           setOpenCart(open);
                           setOpenMobileMenu(false);
-                          setShowMobileSearch(false);
                         }}
                         onHomeClick={() => {
                           setOpenCart(false);
                           setOpenMobileMenu(false);
-                          setShowMobileSearch(false);
                           window.location.pathname = "/";
                         }}
                       />
@@ -372,28 +384,21 @@ const App = () => {
 export default App;
 
 function AppHeaderWrapper(props: {
-  searchQuery: string;
-  setSearchQuery: (q: string) => void;
   setOpenCart: (b: boolean) => void;
   setOpenMobileMenu: (b: boolean) => void;
   openMobileMenu: boolean;
-  showMobileSearch: boolean;
-  setShowMobileSearch: (b: boolean) => void;
   openCart: boolean;
 }) {
   const location = useLocation();
+  
   if (location.pathname.startsWith("/admin") || location.pathname === "/auth")
     return null;
   return (
     <Header
-      searchQuery={props.searchQuery}
-      onSearchChange={props.setSearchQuery}
       onCartClick={() => props.setOpenCart(true)}
       onMenuClick={() => props.setOpenMobileMenu(true)}
       mobileMenuOpen={props.openMobileMenu}
       setMobileMenuOpen={props.setOpenMobileMenu}
-      showMobileSearch={props.showMobileSearch}
-      setShowMobileSearch={props.setShowMobileSearch}
     />
   );
 }
@@ -401,7 +406,6 @@ function AppHeaderWrapper(props: {
 // MobileBottomNavBarWrapper لإخفاء البوتوم بار في صفحات لوحة الإدارة
 function MobileBottomNavBarWrapper(props: {
   onMenuClick: () => void;
-  onSearchClick: () => void;
   onCartClick: (open: boolean) => void;
   onHomeClick: () => void;
 }) {

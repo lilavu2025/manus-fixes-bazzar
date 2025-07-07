@@ -22,8 +22,6 @@ const ProductDetails = () => {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const { buyNow } = useCart();
-
   const { products, loading, error } = useProductsRealtime();
 
   // Map ProductRow[] to Product[]
@@ -91,22 +89,7 @@ const ProductDetails = () => {
         .slice(0, 4)
     : [];
 
-  const handleBuyNow = async () => {
-    if (!product.inStock) {
-      toast.error(t("productOutOfStock"));
-      return;
-    }
 
-    try {
-      await buyNow(product, 1);
-      setTimeout(() => {
-        navigate("/checkout");
-      }, 200);
-    } catch (error) {
-      console.error("Error in buy now:", error);
-      toast.error(t("errorBuyingNow"));
-    }
-  };
 
   return (
     <div
@@ -122,36 +105,42 @@ const ProductDetails = () => {
           />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 mb-8 sm:mb-12">
-          <ProductImageGallery
-            product={{
-              id: product.id,
-              name: getLocalizedName(product, language),
-              nameEn: product.nameEn,
-              nameHe: product.nameHe,
-              description: product.description,
-              descriptionEn: product.descriptionEn,
-              descriptionHe: product.descriptionHe,
-              image: product.image,
-              images: product.images,
-              discount: product.discount,
-              inStock: product.inStock,
-              price: product.price,
-              originalPrice: product.originalPrice,
-              created_at: product.created_at,
-              category: product.category,
-              rating: product.rating,
-              reviews: product.reviews,
-            }}
-          />
+        <div className="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 mb-8 sm:mb-12">
+          {/* صورة المنتج */}
+          <div className="order-1 lg:order-none">
+            <div className="w-full max-w-lg mx-auto lg:max-w-none">
+              <ProductImageGallery
+                product={{
+                  id: product.id,
+                  name: getLocalizedName(product, language),
+                  nameEn: product.nameEn,
+                  nameHe: product.nameHe,
+                  description: product.description,
+                  descriptionEn: product.descriptionEn,
+                  descriptionHe: product.descriptionHe,
+                  image: product.image,
+                  images: product.images,
+                  discount: product.discount,
+                  inStock: product.inStock,
+                  price: product.price,
+                  originalPrice: product.originalPrice,
+                  created_at: product.created_at,
+                  category: product.category,
+                  rating: product.rating,
+                  reviews: product.reviews,
+                }}
+              />
+            </div>
+          </div>
+          {/* معلومات المنتج */}
           <div
-            className={`space-y-4 sm:space-y-6 flex flex-col justify-start ${isRTL ? "items-end" : "items-start"}`}
+            className={`order-2 lg:order-none space-y-4 sm:space-y-6 flex flex-col justify-start ${isRTL ? "items-center lg:items-start" : "items-center lg:items-start"} px-4 lg:px-0`}
           >
-            <div className="w-full">
+            <div className="w-full max-w-lg lg:max-w-none">
               <ProductInfo product={product} />
             </div>
-            <div className="w-full">
-              <ProductActions product={product} onBuyNow={handleBuyNow} />
+            <div className="w-full max-w-lg lg:max-w-none">
+              <ProductActions product={product} />
             </div>
           </div>
         </div>

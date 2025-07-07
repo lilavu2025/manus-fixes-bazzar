@@ -1,31 +1,31 @@
 import React, { useState } from "react";
 import {
   Home,
-  Search,
-  Menu,
+  Settings,
   ShoppingCart,
   Package,
+  LogIn,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useCart } from "@/hooks/useCart";
 import { useLanguage } from "@/utils/languageContextUtils";
+import { useAuth } from "@/contexts/useAuth";
 import config from "@/configs/activeConfig";
 
 interface Props {
   onMenuClick: () => void;
-  onSearchClick: () => void;
-  onCartClick: (open: boolean) => void; // لاحظ: صار ياخد حالة
+  onCartClick: (open: boolean) => void;
 }
 
 const MobileBottomNavBar: React.FC<Props> = ({
   onMenuClick,
-  onSearchClick,
   onCartClick,
 }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { getTotalItems } = useCart();
   const { t } = useLanguage();
+  const { user } = useAuth();
   const { primaryColor } = config.visual;
 
   const [activeTab, setActiveTab] = useState("home");
@@ -79,15 +79,17 @@ const MobileBottomNavBar: React.FC<Props> = ({
         </button>
 
         <button
-          onClick={() => handleTabClick("search", onSearchClick)}
+          onClick={() =>
+            handleTabClick("products", () => navigate("/products"))
+          }
           className={`flex flex-col items-center justify-center flex-1 transition-all duration-200 ${
-            activeTab === "search"
+            location.pathname === "/products"
               ? "text-primary scale-110 font-bold"
               : "text-gray-500"
           }`}
         >
-          <Search className="h-5 w-5" />
-          <span className="text-[11px] mt-1">{t("search")}</span>
+          <Package className="h-5 w-5" />
+          <span className="text-[11px] mt-1">{t("products")}</span>
         </button>
 
         <div className="w-14" /> {/* مساحة السلة */}
@@ -107,15 +109,17 @@ const MobileBottomNavBar: React.FC<Props> = ({
         </button>
 
         <button
-          onClick={() => handleTabClick("menu", onMenuClick)}
+          onClick={() =>
+            handleTabClick("settings", () => navigate(user ? "/profile" : "/auth"))
+          }
           className={`flex flex-col items-center justify-center flex-1 transition-all duration-200 ${
-            activeTab === "menu"
+            (user && location.pathname === "/profile") || (!user && location.pathname === "/auth")
               ? "text-primary scale-110 font-bold"
               : "text-gray-500"
           }`}
         >
-          <Menu className="h-5 w-5" />
-          <span className="text-[11px] mt-1">{t("menu")}</span>
+          {user ? <Settings className="h-5 w-5" /> : <LogIn className="h-5 w-5" />}
+          <span className="text-[11px] mt-1">{user ? t("settings") : t("login")}</span>
         </button>
       </nav>
     </div>

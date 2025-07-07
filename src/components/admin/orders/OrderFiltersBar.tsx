@@ -59,8 +59,15 @@ const OrderFiltersBar: React.FC<OrderFiltersBarProps> = ({
             <div className="w-full sm:w-36 flex-shrink-0">
               <Input
                 type="date"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
+                value={dateFrom ? dateFrom.split('T')[0] : ''}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val) {
+                    setDateFrom(val + 'T00:00');
+                  } else {
+                    setDateFrom("");
+                  }
+                }}
                 className="w-full border border-gray-200 rounded-md h-9 text-xs sm:text-sm bg-gray-50 focus:border-blue-400 focus:ring-1 focus:ring-blue-200 placeholder:text-gray-400"
                 placeholder={t("fromDate") || "من تاريخ"}
               />
@@ -69,8 +76,16 @@ const OrderFiltersBar: React.FC<OrderFiltersBarProps> = ({
             <div className="w-full sm:w-36 flex-shrink-0">
               <Input
                 type="date"
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
+                value={dateTo ? dateTo.split('T')[0] : ''}
+                min={dateFrom ? dateFrom.split('T')[0] : undefined}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val) {
+                    setDateTo(val + 'T23:59');
+                  } else {
+                    setDateTo("");
+                  }
+                }}
                 className="w-full border border-gray-200 rounded-md h-9 text-xs sm:text-sm bg-gray-50 focus:border-blue-400 focus:ring-1 focus:ring-blue-200 placeholder:text-gray-400"
                 placeholder={t("toDate") || "إلى تاريخ"}
               />

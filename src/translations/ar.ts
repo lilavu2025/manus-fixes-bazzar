@@ -5,6 +5,8 @@ export const arTranslations = {
   // Store & Brand
   storeName: config.names.ar,
   storeDescription: config.descriptions.ar,
+  storeSubtitle: "تسوق بثقة وراحة",
+  readyText: "جاهز للاستخدام",
 
   // Navigation
   home: "الرئيسية",
@@ -18,6 +20,10 @@ export const arTranslations = {
   dashboard: "لوحة التحكم",
   checkout: "الدفع",
   notifications: "إشعارات",
+
+  // Welcome Messages
+  welcomeBack: "أهلاً وسهلاً بك في متجرنا",
+  welcomeUser: "أهلاً وسهلاً {name}",
 
   // Authentication
   login: "تسجيل الدخول",
@@ -181,6 +187,7 @@ export const arTranslations = {
   add: "إضافة",
   search: "بحث",
   searchProducts: "البحث عن المنتجات...",
+  searchOffers: "البحث عن العروض...",
   searchUsersPlaceholder: "البحث بالاسم، الإيميل، أو الهاتف...",
   searchByName: "بحث بالاسم",
   searchByNameProductPlaceholder: "اكتب اسم المنتج...",
@@ -216,7 +223,7 @@ export const arTranslations = {
   relatedProducts: "منتجات ذات صلة",
   productDetails: "تفاصيل المنتج",
   inStock: "متوفر",
-  outOfStock: "نفد المخزون",
+  outOfStock: "نفذ من المخزون",
   productOutOfStockMessage: "هذا المنتج غير متوفر حالياً وسيعود قريباً!",
 
   // User Management
@@ -1091,4 +1098,22 @@ export const arTranslations = {
   activeOnly: "نشط فقط",
   inactiveOnly: "غير نشط فقط",
   remove: "إزالة",
+
+  //order invoice
+  orderInvoice: "فاتورة الطلب",
+  printedAt: "تمت الطباعة في",
+  printedBy: "تمت الطباعة بواسطة",
+  orderPrint: "طباعة الطلبية",
+  downloadOrder: "تحميل الطلبية",
+  downloadPdf: "تحميل PDF",
+
+  // Touch & Swipe Navigation
+  swipeToNavigate: "اسحب للتنقل",
+  swipeToNavigateImages: "اسحب للتنقل بين الصور",
+  swipeLeft: "اسحب يساراً",
+  swipeRight: "اسحب يميناً",
+  touchToNavigate: "المس للتنقل",
+  swipeGestures: "إيماءات السحب",
+  touchSupported: "دعم اللمس متوفر",
+
 };

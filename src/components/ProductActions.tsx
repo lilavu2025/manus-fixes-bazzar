@@ -17,10 +17,9 @@ import {
 
 interface ProductActionsProps {
   product: Product;
-  onBuyNow: () => void;
 }
 
-const ProductActions = ({ product, onBuyNow }: ProductActionsProps) => {
+const ProductActions = ({ product }: ProductActionsProps) => {
   const { t } = useLanguage();
   const [quantity, setQuantity] = useState(1);
   const { addToCart, getItemQuantity } = useCart();
@@ -113,17 +112,15 @@ const ProductActions = ({ product, onBuyNow }: ProductActionsProps) => {
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-4 sm:space-y-6 product-actions-responsive">
       {/* Quantity & Add to Cart */}
-      <div className="space-y-3 sm:space-y-4">
+      <div className="space-y-3 sm:space-y-4 w-full">
         {!product.inStock && (
           <div className="w-full text-center text-red-600 bg-red-50 border border-red-200 rounded p-2 mb-2 font-semibold">
             {t("productOutOfStockMessage")}
           </div>
         )}
-        <div
-          className={`flex items-center gap-4 sm:gap-8 lg:gap-12 w-full ${isRTL ? "flex-row-reverse justify-end" : "justify-start"}`}
-        >
+        <div className="flex items-center justify-center lg:justify-start gap-4 sm:gap-8 lg:gap-12 w-full">
           <QuantitySelector
             quantity={quantity}
             onQuantityChange={setQuantity}
@@ -136,7 +133,7 @@ const ProductActions = ({ product, onBuyNow }: ProductActionsProps) => {
           </label>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full max-w-md mx-auto lg:mx-0">
           <Button
             onClick={handleAddToCart}
             className="flex-1 gap-2 text-sm sm:text-base py-2 sm:py-3"
@@ -151,21 +148,11 @@ const ProductActions = ({ product, onBuyNow }: ProductActionsProps) => {
               </Badge>
             )}
           </Button>
-
-          <Button
-            onClick={onBuyNow}
-            variant="secondary"
-            size="lg"
-            className="flex-1"
-            disabled={!product.inStock}
-          >
-            {t("buyNow")}
-          </Button>
         </div>
       </div>
 
       {/* Action Buttons */}
-      <div className="flex gap-3">
+      <div className="flex gap-3 justify-center lg:justify-start max-w-md mx-auto lg:mx-0">
         {/* <FavoriteButton
           productId={product.id}
           variant="outline"

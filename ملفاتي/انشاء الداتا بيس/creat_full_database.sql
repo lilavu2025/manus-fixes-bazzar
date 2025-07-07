@@ -273,3 +273,285 @@ on conflict do nothing;
 
 -- إدخال افتراضي لإعداد إخفاء صفحة العروض
 insert into public.settings (key, value) values ('hide_offers_page', 'false') on conflict (key) do nothing;
+
+
+
+----------------- تريجرات إضافية -----------------
+-- تريجر لتحديث حالة المنتج في المخزون بناءً على الكمية
+-- هذا التريجر يقوم بتحديث حالة المنتج في المخزون (in_stock) بناءً على الكمية المتاحة
+CREATE OR REPLACE FUNCTION update_in_stock_status()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.stock_quantity <= 0 THEN
+    NEW.in_stock := FALSE;
+  ELSE
+    NEW.in_stock := TRUE;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_update_in_stock ON products;
+
+CREATE TRIGGER trg_update_in_stock
+BEFORE INSERT OR UPDATE ON products
+FOR EACH ROW
+EXECUTE FUNCTION update_in_stock_status();
+
+
+----- تريجر لتحديث إحصائيات الطلبات في ملف المستخدم عند إضافة طلب جديد
+CREATE OR REPLACE FUNCTION public.update_profile_order_stats()
+RETURNS trigger AS $$
+BEGIN
+  UPDATE profiles
+  SET
+    last_order_date = NEW.created_at,
+    highest_order_value = GREATEST(
+      COALESCE(highest_order_value, 0),
+      COALESCE(NEW.total, 0)
+    )
+  WHERE id = NEW.user_id;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+
+-- حذف الـ Trigger إذا كان موجودًا
+DROP TRIGGER IF EXISTS trg_update_profile_order_stats ON public.orders;
+
+-- إنشاء الـ Trigger بعد الحذف
+CREATE TRIGGER trg_update_profile_order_stats
+AFTER INSERT ON public.orders
+FOR EACH ROW
+EXECUTE FUNCTION public.update_profile_order_stats();
+
+----- ربط اعمده forgn key في الجداول التي تحتاجها
+-- addresses.user_id → profiles.id
+ALTER TABLE addresses
+ADD CONSTRAINT fk_addresses_user_id
+FOREIGN KEY (user_id) REFERENCES profiles(id);
+
+-- cart.product_id → products.id
+ALTER TABLE cart
+ADD CONSTRAINT fk_cart_product_id
+FOREIGN KEY (product_id) REFERENCES products(id);
+
+-- cart.user_id → auth.users.id
+ALTER TABLE cart
+ADD CONSTRAINT fk_cart_user_id
+FOREIGN KEY (user_id) REFERENCES auth.users(id);
+
+-- favorites.product_id → products.id
+ALTER TABLE favorites
+ADD CONSTRAINT fk_favorites_product_id
+FOREIGN KEY (product_id) REFERENCES products(id);
+
+-- favorites.user_id → auth.users.id
+ALTER TABLE favorites
+ADD CONSTRAINT fk_favorites_user_id
+FOREIGN KEY (user_id) REFERENCES auth.users(id);
+
+-- order_items.order_id → orders.id
+ALTER TABLE order_items
+ADD CONSTRAINT fk_order_items_order_id
+FOREIGN KEY (order_id) REFERENCES orders(id);
+
+-- order_items.product_id → products.id
+ALTER TABLE order_items
+ADD CONSTRAINT fk_order_items_product_id
+FOREIGN KEY (product_id) REFERENCES products(id);
+
+-- orders.user_id → profiles.id
+ALTER TABLE orders
+ADD CONSTRAINT fk_orders_user_id
+FOREIGN KEY (user_id) REFERENCES profiles(id);
+
+-- products.category_id → categories.id
+ALTER TABLE products
+ADD CONSTRAINT fk_products_category_id
+FOREIGN KEY (category_id) REFERENCES categories(id);
+
+-- profiles.id → auth.users.id (هنا المفتاح الأساسي هو أيضًا مفتاح أجنبي)
+ALTER TABLE profiles
+ADD CONSTRAINT fk_profiles_id
+FOREIGN KEY (id) REFERENCES auth.users(id);
+
+-- user_activity_log.admin_id → auth.users.id
+ALTER TABLE user_activity_log
+ADD CONSTRAINT fk_user_activity_log_admin_id
+FOREIGN KEY (admin_id) REFERENCES auth.users(id);
+
+----- تريجر لإنشاء ملف تعريف جديد عند إنشاء مستخدم جديد في auth.users
+-- هذا التريجر يقوم بإنشاء سجل جديد في جدول profiles عند إنشاء مستخدم جديد
+CREATE FUNCTION public.handle_new_user()
+RETURNS trigger AS $$
+BEGIN
+  INSERT INTO public.profiles (id)
+  VALUES (NEW.id);
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER on_auth_user_created
+AFTER INSERT ON auth.users
+FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+
+-- 1. handle_new_user: ينشئ صف في profiles عند التسجيل
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger AS $$
+BEGIN
+  INSERT INTO public.profiles (id, full_name, email, created_at, updated_at)
+  VALUES (NEW.id, NEW.raw_user_meta_data->>'full_name', NEW.email, now(), now())
+  ON CONFLICT (id) DO NOTHING;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 2. set_email_confirmed_for_oauth: تأكيد الإيميل لو كان عبر OAuth
+CREATE OR REPLACE FUNCTION public.set_email_confirmed_for_oauth()
+RETURNS trigger AS $$
+BEGIN
+  UPDATE auth.users
+  SET email_confirmed_at = now()
+  WHERE id = NEW.id;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 3. sync_email_confirmed_to_profiles: مزامنة تأكيد الإيميل إلى جدول profiles
+CREATE OR REPLACE FUNCTION public.sync_email_confirmed_to_profiles()
+RETURNS trigger AS $$
+BEGIN
+  UPDATE public.profiles
+  SET email_confirmed_at = NEW.email_confirmed_at
+  WHERE id = NEW.id;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 4. update_last_sign_in: تحديث آخر دخول للمستخدم
+CREATE OR REPLACE FUNCTION public.update_last_sign_in()
+RETURNS trigger AS $$
+BEGIN
+  UPDATE public.profiles
+  SET last_sign_in_at = now()
+  WHERE id = NEW.id;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 5. update_profile_order_stats: تحديث بيانات المستخدم بناءً على الطلبات
+CREATE OR REPLACE FUNCTION public.update_profile_order_stats()
+RETURNS trigger AS $$
+BEGIN
+  UPDATE public.profiles
+  SET
+    last_order_date = GREATEST(COALESCE(last_order_date, 'epoch'::timestamp), NEW.created_at),
+    highest_order_value = GREATEST(COALESCE(highest_order_value, 0), COALESCE(NEW.total_amount, 0))
+  WHERE id = NEW.user_id;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 6. validate_phone: التحقق من رقم الجوال (بدأ بـ05 وطوله 10 أرقام)
+CREATE OR REPLACE FUNCTION public.validate_phone(phone TEXT)
+RETURNS boolean AS $$
+BEGIN
+  RETURN phone ~ '^05[0-9]{8}$';
+END;
+$$ LANGUAGE plpgsql;
+
+-- 7. update_in_stock_status: تحديث حالة التخزين بناءً على الكمية
+CREATE OR REPLACE FUNCTION public.update_in_stock_status()
+RETURNS trigger AS $$
+BEGIN
+  UPDATE public.products
+  SET in_stock = (NEW.stock_quantity > 0)
+  WHERE id = NEW.id;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 8. log_user_update_activity: تسجيل نشاط تحديث المستخدم
+CREATE OR REPLACE FUNCTION public.log_user_update_activity()
+RETURNS trigger AS $$
+DECLARE
+  _uid uuid;
+BEGIN
+  INSERT INTO public.user_activity_log (admin_id, user_id, action, created_at)
+  VALUES (current_setting('request.jwt.claim.sub')::uuid, NEW.id, 'update_profile', now())
+  RETURNING id INTO _uid;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 9. log_multiple_user_updates: تسجيل نشاط لعدة مستخدمين
+CREATE OR REPLACE FUNCTION public.log_multiple_user_updates(_user_ids uuid[], _action text)
+RETURNS uuid[] AS $$
+DECLARE
+  _result uuid[];
+BEGIN
+  INSERT INTO public.user_activity_log (admin_id, user_id, action, created_at)
+  SELECT current_setting('request.jwt.claim.sub')::uuid, u, _action, now()
+  FROM unnest(_user_ids) AS u
+  RETURNING id INTO _result;
+  RETURN _result;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+
+-- 🧼 حذف التريجرات إذا كانت موجودة مسبقًا
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+DROP TRIGGER IF EXISTS on_auth_oauth_signup ON auth.users;
+DROP TRIGGER IF EXISTS on_user_update_email ON auth.users;
+DROP TRIGGER IF EXISTS on_user_signed_in ON auth.users;
+DROP TRIGGER IF EXISTS on_order_created ON public.orders;
+DROP TRIGGER IF EXISTS on_product_stock_change ON public.products;
+DROP TRIGGER IF EXISTS on_profile_update ON public.profiles;
+
+-- ✅ إنشاء التريجرات من جديد
+
+-- عند تسجيل مستخدم جديد
+CREATE TRIGGER on_auth_user_created
+AFTER INSERT ON auth.users
+FOR EACH ROW
+EXECUTE FUNCTION public.handle_new_user();
+
+-- عند التسجيل عبر OAuth
+CREATE TRIGGER on_auth_oauth_signup
+AFTER INSERT ON auth.users
+FOR EACH ROW
+WHEN (NEW.raw_user_meta_data IS NOT NULL)
+EXECUTE FUNCTION public.set_email_confirmed_for_oauth();
+
+-- مزامنة تأكيد الإيميل إلى جدول profiles
+CREATE TRIGGER on_user_update_email
+AFTER UPDATE OF email_confirmed_at ON auth.users
+FOR EACH ROW
+EXECUTE FUNCTION public.sync_email_confirmed_to_profiles();
+
+-- تحديث وقت آخر تسجيل دخول
+CREATE TRIGGER on_user_signed_in
+AFTER UPDATE OF last_sign_in_at ON auth.users
+FOR EACH ROW
+EXECUTE FUNCTION public.update_last_sign_in();
+
+-- بعد إنشاء طلب جديد (orders)
+CREATE TRIGGER on_order_created
+AFTER INSERT ON public.orders
+FOR EACH ROW
+EXECUTE FUNCTION public.update_profile_order_stats();
+
+-- تحديث حالة التوفر بعد إدخال/تحديث كمية المنتج
+CREATE TRIGGER on_product_stock_change
+AFTER INSERT OR UPDATE OF stock_quantity ON public.products
+FOR EACH ROW
+EXECUTE FUNCTION public.update_in_stock_status();
+
+-- تسجيل النشاط عند تعديل ملف المستخدم
+CREATE TRIGGER on_profile_update
+AFTER UPDATE ON public.profiles
+FOR EACH ROW
+EXECUTE FUNCTION public.log_user_update_activity();

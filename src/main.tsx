@@ -1,3 +1,11 @@
+import config from "@/configs/activeConfig";
+
+const faviconPath = config.visual?.logo || "/favicon.ico";
+const faviconElement = document.getElementById("dynamic-favicon") as HTMLLinkElement;
+if (faviconElement) {
+  faviconElement.href = faviconPath;
+}
+
 // Polyfill for crypto.randomUUID if not available
 if (typeof crypto !== 'undefined' && typeof crypto.randomUUID !== 'function') {
   // @ts-expect-error: ignore template literal type mismatch

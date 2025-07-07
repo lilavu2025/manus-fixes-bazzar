@@ -22,7 +22,7 @@ const ProductCardImage: React.FC<ProductCardImageProps> = ({
 }) => {
   return (
     // إضافة class "group" لتمكين تأثير hover
-    <div className="relative group bg-white rounded-xl border border-gray-200 aspect-[4/3] h-40 sm:h-44 md:h-48 lg:h-52 mx-auto">
+    <div className="relative group bg-white rounded-t-xl border-b border-gray-200 aspect-[4/3] w-full flex-shrink-0 overflow-hidden">
       {/* الخلفية باستخدام background-image لعرض الصورة كاملة داخل الإطار */}
       <Link
         to={`/product/${product.id}`}

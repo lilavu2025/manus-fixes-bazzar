@@ -38,7 +38,8 @@ import { mapOrderFromDb } from "../../orders/order.helpers";
 import { initialOrderForm } from "../../orders/order.initialForm";
 import OrderAddDialog from "./orders/OrderAddDialog";
 import OrderEditDialog from "./orders/OrderEditDialog";
-import { generateWhatsappMessage } from "@/orders/order.whatsapp";
+import { orderPrint } from "@/orders/order.print";
+import { downloadInvoicePdf } from "@/orders/order.pdf";
 import VirtualScrollList from "../VirtualScrollList";
 
 // مكون إدارة الطلبات الرئيسي في لوحة تحكم الأدمن
@@ -410,6 +411,11 @@ const AdminOrders: React.FC = () => {
     [users],
   );
 
+  // توليد رسالة واتساب (تحميل الفاتورة)
+  const generateOrderPrint = async (order: any, t: any, currentLang: "ar" | "en" | "he") => {
+    await orderPrint(order, t, language, profile?.full_name || "-");
+  };
+
   // شاشة تحميل الطلبات
   if (ordersLoading) {
     return (
@@ -574,12 +580,10 @@ const AdminOrders: React.FC = () => {
                       } as Record<string, unknown>),
                     );
                   }}
-                  onShareWhatsapp={() => {
-                    const msg = encodeURIComponent(generateWhatsappMessage(order, t));
-                    window.open(`https://wa.me/?text=${msg}`, "_blank");
-                  }}
-                  onEdit={() => {
-                    setEditOrderId(latestOrder.id);
+                  onPrintOrder={(order) => orderPrint(order, t, language, profile?.full_name || "-")}
+                  onDownloadPdf={(order) => downloadInvoicePdf(order, t, language, profile?.full_name || "-")}
+                  onEdit={(order) => {
+                    setEditOrderId(order.id);
                     // معالجة order_items من قاعدة البيانات
                     const items = Array.isArray((latestOrder as any).order_items)
                       ? (latestOrder as any).order_items.map(item => ({
@@ -606,7 +610,7 @@ const AdminOrders: React.FC = () => {
                     setOriginalOrderForEdit(mapOrderFromDb({ ...latestOrder, items, shipping_address } as Record<string, unknown>));
                     setShowEditOrder(true);
                   }}
-                  onDelete={() => {
+                  onDelete={(order) => {
                     setOrderToDelete(order);
                     setShowDeleteDialog(true);
                   }}
@@ -633,7 +637,8 @@ const AdminOrders: React.FC = () => {
         order={selectedOrder}
         t={t}
         profile={profile}
-        generateWhatsappMessage={generateWhatsappMessage}
+        generateOrderPrint={generateOrderPrint}
+        onDownloadPdf={(order) => downloadInvoicePdf(order, t, language, profile?.full_name || "-")}
       />
       {/* Dialog تعديل الطلب */}
       <OrderEditDialog

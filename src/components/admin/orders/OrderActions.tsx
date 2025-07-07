@@ -15,7 +15,7 @@ interface OrderActionsProps {
   setOriginalOrderForEdit: (order: Order) => void;
   setShowEditOrder: (show: boolean) => void;
   safeDecompressNotes: (notes: string) => string;
-  generateWhatsappMessage: (order: Order) => string;
+  generateOrderPrint: (order: Order) => string;
   setOrderToDelete: (order: Order) => void;
   setShowDeleteDialog: (show: boolean) => void;
 }
@@ -31,7 +31,7 @@ const OrderActions: React.FC<OrderActionsProps> = ({
   setOriginalOrderForEdit,
   setShowEditOrder,
   safeDecompressNotes,
-  generateWhatsappMessage,
+  generateOrderPrint: generateOrderPrint,
   setOrderToDelete,
   setShowDeleteDialog,
 }) => {
@@ -85,7 +85,7 @@ const OrderActions: React.FC<OrderActionsProps> = ({
         className="font-bold flex items-center gap-1 px-3 py-2 border-green-500 text-green-700 hover:bg-green-50 min-w-[90px] flex-1 sm:flex-none"
         style={{ borderWidth: 2 }}
         onClick={() => {
-          const msg = encodeURIComponent(generateWhatsappMessage(order));
+          const msg = encodeURIComponent(generateOrderPrint(order));
           window.open(`https://wa.me/?text=${msg}`, "_blank");
         }}
       >

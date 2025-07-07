@@ -9,10 +9,11 @@ interface OrderDetailsDialogProps {
   order: any; // يمكن تحسين النوع لاحقًا
   t: any;
   profile?: any;
-  generateWhatsappMessage: (order: any, t: any) => string;
+  generateOrderPrint: (order: any, t: any, currentLang: "ar" | "en" | "he") => Promise<void>;
+  onDownloadPdf?: (order: any) => void;
 }
 
-const OrderDetailsDialog: React.FC<OrderDetailsDialogProps> = ({ open, onOpenChange, order, t, profile, generateWhatsappMessage }) => {
+const OrderDetailsDialog: React.FC<OrderDetailsDialogProps> = ({ open, onOpenChange, order, t, profile, generateOrderPrint: generateOrderPrint, onDownloadPdf }) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl w-full max-h-[90vh] overflow-y-auto p-0 sm:p-0">
@@ -27,7 +28,8 @@ const OrderDetailsDialog: React.FC<OrderDetailsDialogProps> = ({ open, onOpenCha
             order={order}
             t={t}
             profile={profile}
-            generateWhatsappMessage={generateWhatsappMessage}
+            generateOrderPrint={generateOrderPrint}
+            onDownloadPdf={onDownloadPdf}
           />
         )}
       </DialogContent>

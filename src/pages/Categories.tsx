@@ -1,17 +1,52 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { useLocation, useNavigate } from "react-router-dom";
+import { Search } from "lucide-react";
 import { useCategoriesRealtime } from "@/hooks/useCategoriesRealtime";
 import { useLanguage } from "@/utils/languageContextUtils";
 import { getLocalizedName } from "@/utils/getLocalizedName";
 import CategoryCard from "@/components/CategoryCard";
 import CartSidebar from "@/components/CartSidebar";
 import { ClearableInput } from "@/components/ui/ClearableInput";
+import config from "@/configs/activeConfig";
 
 const Categories: React.FC = () => {
+  // يمكنك تعديل الألوان حسب الحاجة أو جلبها من config إذا كانت متوفرة
+  
   const { t, isRTL, language } = useLanguage();
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const { primaryColor, secondaryColor } = config.visual;
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const { categories, loading, error, refetch } = useCategoriesRealtime();
+
+  // Handle URL search parameter
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const searchParam = params.get("search");
+    
+    if (searchParam && searchParam !== searchQuery) {
+      setSearchQuery(searchParam);
+    } else if (!searchParam && searchQuery) {
+      setSearchQuery("");
+    }
+  }, [location.search, searchQuery]);
+
+  // Handle search input changes and update URL
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newQuery = e.target.value;
+    setSearchQuery(newQuery);
+    
+    const params = new URLSearchParams(location.search);
+    if (newQuery.trim()) {
+      params.set("search", newQuery.trim());
+    } else {
+      params.delete("search");
+    }
+    navigate({ search: params.toString() }, { replace: true });
+  };
 
   console.log("Categories page - data:", categories);
   console.log("Categories page - loading:", loading);
@@ -70,39 +105,64 @@ const Categories: React.FC = () => {
     <div
       className={`min-h-screen bg-gray-50 ${isRTL ? "rtl" : "ltr"}`}
       dir={isRTL ? "rtl" : "ltr"}
+      style={{ paddingTop: '2rem', paddingBottom: '2rem', paddingLeft: '1rem', paddingRight: '1rem' }}
     >
-      <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-6">
-        {/* Advanced Search Bar & Stats */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-          <div className="flex-1 flex items-center gap-2">
-            <ClearableInput
-              type="text"
-              className={`w-full rounded-md border border-gray-300 px-3 py-2 text-base focus:ring-2 focus:ring-primary focus:border-primary transition ${
-                isRTL ? "pr-8" : "pl-8"
-              }`}
-              placeholder={t("searchCategories")}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onClear={() => setSearchQuery("")}
-            />
-          </div>
-          <div className="flex flex-wrap gap-2 justify-start sm:justify-end">
-            <span className="inline-flex items-center text-xs bg-primary/10 text-primary font-semibold rounded px-2 py-1">
-              {t("total")}: {categories.length}
-            </span>
-            <span className="inline-flex items-center text-xs bg-gray-200 text-gray-700 font-semibold rounded px-2 py-1">
-              {t("showing")}: {filteredCategories.length}
-            </span>
+      {/* Animated Banner */}
+      <div
+        className="rounded-xl p-1 text-white text-center mb-2"
+        style={{
+          backgroundImage: `linear-gradient(270deg, ${primaryColor}, ${secondaryColor}, ${primaryColor})`,
+          backgroundSize: "300% 300%",
+          animation: "gradientBG 6s ease infinite",
+        }}
+      >
+        <style>
+          {`
+            @keyframes gradientBG {
+              0% { background-position: 0% 50%; }
+              50% { background-position: 100% 50%; }
+              100% { background-position: 0% 50%; }
+            }
+          `}
+        </style>
+        <h1 className="text-3xl font-bold mb-2">{t("categories")}</h1>
+      </div>
+
+      {/* Search Bar */}
+      <div className="container mx-auto px-2 sm:px-4 mb-6">
+        <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 shadow-sm border border-gray-100">
+          <div className="max-w-2xl mx-auto">
+            <div className="relative">
+              <Search className={`absolute top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5 ${isRTL ? "right-3" : "left-3"}`} />
+              <ClearableInput
+                placeholder={t("searchCategories")}
+                value={searchQuery}
+                onChange={handleSearchChange}
+                onClear={() => {
+                  setSearchQuery("");
+                  const params = new URLSearchParams(location.search);
+                  params.delete("search");
+                  navigate({ search: params.toString() }, { replace: true });
+                }}
+                className={`${isRTL ? "pr-10 pl-4" : "pl-10 pr-4"} h-11 text-base rounded-full border-2 border-gray-200 focus:border-primary w-full`}
+                aria-label={t("searchInput")}
+              />
+            </div>
           </div>
         </div>
+      </div>
 
-        <div className="mb-6">
-          <h1 className="text-2xl sm:text-3xl font-bold mb-1 sm:mb-2 text-gray-900">
-            {t("categories")}
-          </h1>
-          <p className="text-gray-600 text-sm sm:text-base">
-            {t("browseProductCategories")}
-          </p>
+      <div className="container mx-auto px-2 sm:px-4">
+        {/* Stats */}
+        <div className="flex justify-center mb-4">
+          <div className="text-center">
+            <p className="text-gray-600">
+              {searchQuery ? 
+                `${filteredCategories.length} ${t("categoriesFound")}` :
+                `${filteredCategories.length} ${t("categories")}`
+              }
+            </p>
+          </div>
         </div>
 
         {filteredCategories.length === 0 ? (
@@ -114,11 +174,32 @@ const Categories: React.FC = () => {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+          <motion.div
+            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6"
+            initial="hidden"
+            animate="show"
+            variants={{
+              hidden: {},
+              show: {
+                transition: {
+                  staggerChildren: 0.1
+                }
+              }
+            }}
+          >
             {filteredCategories.map((category) => (
-              <CategoryCard key={category.id} category={category} />
+              <motion.div
+                key={category.id}
+                variants={{
+                  hidden: { opacity: 0, y: 20 },
+                  show: { opacity: 1, y: 0 }
+                }}
+                transition={{ duration: 0.4 }}
+              >
+                <CategoryCard category={category} />
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         )}
       </div>
 

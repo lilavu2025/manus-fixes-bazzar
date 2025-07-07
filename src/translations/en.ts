@@ -4,6 +4,8 @@ export const enTranslations = {
   // Store & Brand
   storeName: config.names.en,
   storeDescription: config.descriptions.en,
+  storeSubtitle: "Shop with confidence and comfort",
+  readyText: "Ready to use",
 
   // Navigation
   home: "Home",
@@ -16,6 +18,10 @@ export const enTranslations = {
   orders: "Orders",
   dashboard: "Admin Dashboard",
   checkout: "Checkout",
+
+  // Welcome Messages
+  welcomeBack: "Welcome to our store",
+  welcomeUser: "Welcome Back {name}",
 
   // Authentication
   login: "Login",
@@ -176,6 +182,7 @@ export const enTranslations = {
   add: "Add",
   search: "Search",
   searchProducts: "Search products...",
+  searchOffers: "Search offers...",
   searchUsersPlaceholder: "Search by name, email, or phone...",
   searchByName: "Search by name",
   searchByNameProductPlaceholder: "Type product name...",
@@ -1112,5 +1119,23 @@ export const enTranslations = {
 
   activeOnly: "Active Only",
   inactiveOnly: "Inactive Only",
-  remove: "Remove"
+  remove: "Remove",
+
+  //order invoice
+  orderInvoice: "Order Invoice",
+  printedAt: "Printed At",
+  printedBy: "Printed By",
+  orderPrint: "Order Print",
+  downloadOrder: "Download Order",
+  downloadPdf: "Download PDF",
+
+  // Touch & Swipe Navigation
+  swipeToNavigate: "Swipe to navigate",
+  swipeToNavigateImages: "Swipe to navigate images",
+  swipeLeft: "Swipe left",
+  swipeRight: "Swipe right",
+  touchToNavigate: "Touch to navigate",
+  swipeGestures: "Swipe gestures",
+  touchSupported: "Touch supported",
+
 };

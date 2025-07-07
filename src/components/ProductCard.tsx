@@ -31,7 +31,7 @@ interface ProductCardProps {
 const ProductCard: React.FC<ProductCardProps> = memo(
   ({ product, onQuickView }) => {
     // استخدام الخطافات للوصول للوظائف المختلفة
-    const { addItem, getItemQuantity, buyNow } = useCart();
+    const { addItem, getItemQuantity } = useCart();
     // const { toggleFavorite, isFavorites } = useFavorites();
     const { user } = useAuth();
     const { t } = useLanguage();
@@ -65,32 +65,7 @@ const ProductCard: React.FC<ProductCardProps> = memo(
       }
     }, [addItem, product, quantity, isLoading, t]);
 
-    // وظيفة الشراء المباشر - توجه إلى صفحة الدفع
-    const handleBuyNow = useCallback(async () => {
-      if (isLoading) return;
 
-      try {
-        setIsLoading(true);
-        await buyNow(product, quantity);
-        // استخدم replace بدلاً من push حتى لا يعود المستخدم للسلة الفارغة
-        navigate("/checkout", {
-          replace: true,
-          state: {
-            directBuy: true,
-            product: product,
-            quantity: quantity,
-          },
-        });
-      } catch (error) {
-        console.error(
-          t("errorProcessingOrderLog") || "خطأ في عملية الشراء المباشر:",
-          error,
-        );
-        toast.error(t("errorProcessingOrder"));
-      } finally {
-        setIsLoading(false);
-      }
-    }, [buyNow, product, quantity, isLoading, t, navigate]);
 
     // وظيفة فتح العرض السريع للمنتج
     const handleQuickView = useCallback(() => {
@@ -226,7 +201,7 @@ const ProductCard: React.FC<ProductCardProps> = memo(
       <div className="w-full flex justify-center">
         {/* كرت المنتج الرئيسي مع تأثيرات التفاعل */}
         <Card
-          className="product-card group relative overflow-hidden bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl transition-all duration-300 hover:shadow-xl hover:-translate-y-1 focus-within:ring-2 focus-within:ring-orange-500 focus-within:ring-offset-2 cursor-pointer mx-auto w-full min-w-[280px] max-w-sm"
+          className="product-card group relative overflow-hidden bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl transition-all duration-300 hover:shadow-xl hover:-translate-y-1 focus-within:ring-2 focus-within:ring-orange-500 focus-within:ring-offset-2 cursor-pointer mx-auto w-full min-w-[280px] max-w-sm h-full flex flex-col"
           onClick={handleCardClick}
         >
           {/* أزرار التفاعل على أقصى يسار الكرت */}
@@ -306,7 +281,6 @@ const ProductCard: React.FC<ProductCardProps> = memo(
             cartQuantity={cartQuantity}
             onQuantityChange={setQuantity}
             onAddToCart={handleAddToCart}
-            onBuyNow={handleBuyNow}
             isLoading={isLoading}
             onProductClick={handleCardClick}
           />
@@ -322,7 +296,6 @@ const ProductCard: React.FC<ProductCardProps> = memo(
           isFavorite={isFav}
           onQuantityChange={setQuantity}
           onAddToCart={handleAddToCart}
-          onBuyNow={handleBuyNow}
           //onFavorite={handleFavorite}
           onFavorite={null}
           onShare={async () => {

@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Banner } from "@/types";
 import LazyImage from "@/components/LazyImage";
 import { useLanguage } from "@/utils/languageContextUtils";
+import { useSimpleSwipe } from "@/hooks/use-touch-swipe";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface BannerCarouselProps {
   banners: Banner[];
@@ -12,7 +14,8 @@ interface BannerCarouselProps {
 
 const BannerCarousel: React.FC<BannerCarouselProps> = ({ banners }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -30,8 +33,54 @@ const BannerCarousel: React.FC<BannerCarouselProps> = ({ banners }) => {
     setCurrentSlide((prev) => (prev - 1 + banners.length) % banners.length);
   };
 
+  // إعداد السحب للبنرات
+  const swipeHandlers = useSimpleSwipe(
+    () => {
+      // السحب لليسار = البنر التالي (في اللغة العربية)
+      if (isRTL) {
+        nextSlide();
+      } else {
+        prevSlide();
+      }
+    },
+    () => {
+      // السحب لليمين = البنر السابق (في اللغة العربية)
+      if (isRTL) {
+        prevSlide();
+      } else {
+        nextSlide();
+      }
+    },
+    {
+      minSwipeDistance: 50,
+      preventDefaultDuringSwipe: true,
+    }
+  );
+
   return (
-    <div className="relative w-full h-48 sm:h-64 md:h-80 lg:h-96 rounded-xl overflow-hidden group">
+    <div 
+      className="relative w-full h-48 sm:h-64 md:h-80 lg:h-96 rounded-xl overflow-hidden group select-none"
+      {...swipeHandlers}
+      style={{ touchAction: 'pan-y pinch-zoom' }}
+    >
+      {/* تعريف الانيميشن داخل JSX */}
+      <style>{`
+        @keyframes fadeInSlideUp {
+          0% {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-fade-in {
+          animation: fadeInSlideUp 1s ease forwards;
+          animation-delay: 0.3s;
+        }
+      `}</style>
+
       {banners.map((banner, index) => (
         <div
           key={banner.id}
@@ -84,38 +133,68 @@ const BannerCarousel: React.FC<BannerCarouselProps> = ({ banners }) => {
         </div>
       ))}
 
-      {/* Navigation buttons */}
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={prevSlide}
-        className="absolute left-2 sm:left-4 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 sm:h-10 sm:w-10"
-      >
-        <ChevronLeft className="h-4 w-4 sm:h-6 sm:w-6" />
-      </Button>
+      {/* Navigation buttons - مخفية على الموبايل لأن السحب متوفر */}
+      {!isMobile && (
+        <>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={prevSlide}
+            className="absolute left-2 sm:left-4 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 sm:h-10 sm:w-10"
+          >
+            <ChevronLeft className="h-4 w-4 sm:h-6 sm:w-6" />
+          </Button>
 
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={nextSlide}
-        className="absolute right-2 sm:right-4 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 sm:h-10 sm:w-10"
-      >
-        <ChevronRight className="h-4 w-4 sm:h-6 sm:w-6" />
-      </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={nextSlide}
+            className="absolute right-2 sm:right-4 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 sm:h-10 sm:w-10"
+          >
+            <ChevronRight className="h-4 w-4 sm:h-6 sm:w-6" />
+          </Button>
+        </>
+      )}
 
-      {/* Indicators */}
-      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
-        {banners.map((_, index) => (
-          <button
-            key={index}
-            onClick={() => setCurrentSlide(index)}
-            className={`w-3 h-3 rounded-full transition-all ${
-              index === currentSlide
-                ? "bg-white"
-                : "bg-white/50 hover:bg-white/70"
-            }`}
-          />
-        ))}
+      {/* Navigation buttons للموبايل - تظهر دائماً */}
+      {isMobile && banners.length > 1 && (
+        <>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={prevSlide}
+            className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white transition-opacity h-8 w-8 z-10"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={nextSlide}
+            className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white transition-opacity h-8 w-8 z-10"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </>
+      )}
+
+      {/* Indicators مع نص توجيهي على الموبايل */}
+      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex flex-col items-center gap-2">
+        <div className="flex gap-2">
+          {banners.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => setCurrentSlide(index)}
+              className={`w-3 h-3 rounded-full transition-all ${
+                index === currentSlide
+                  ? "bg-white"
+                  : "bg-white/50 hover:bg-white/70"
+              }`}
+              aria-label={`Slide ${index + 1}`}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
