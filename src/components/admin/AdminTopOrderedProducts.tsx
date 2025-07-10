@@ -32,13 +32,13 @@ const AdminTopOrderedProducts = () => {
             {products.map((product, idx) => (
               <div
                 key={product.id}
-                className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2 border hover:shadow-sm transition-all"
+                className="flex items-start justify-between bg-gray-50 rounded-lg px-3 py-2 border hover:shadow-sm transition-all gap-3"
               >
-                <div className="flex items-center gap-3">
-                  <span className="font-bold text-lg text-orange-600 w-6 text-center">
+                <div className="flex items-start gap-3 flex-1 min-w-0">
+                  <span className="font-bold text-lg text-orange-600 w-6 text-center flex-shrink-0">
                     {idx + 1}
                   </span>
-                  <span className="font-medium text-gray-800 truncate max-w-[160px] md:max-w-xs">
+                  <span className="font-medium text-gray-800 product-name">
                     {language === "ar" 
                       ? product.name 
                       : language === "he" 
@@ -46,7 +46,7 @@ const AdminTopOrderedProducts = () => {
                       : product.nameEn}
                   </span>
                 </div>
-                <span className="text-sm text-gray-600 bg-orange-100 rounded px-2 py-1 font-semibold">
+                <span className="text-sm text-gray-600 bg-orange-100 rounded px-2 py-1 font-semibold flex-shrink-0 self-start">
                   {product.sales_count ?? product.salesCount ?? 0} {t('salesCount')}
                 </span>
               </div>

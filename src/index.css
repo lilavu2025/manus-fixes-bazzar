@@ -673,3 +673,17 @@ img {
     background-position: 200% 0;
   }
 }
+
+/* Enhanced word breaking for product names */
+.product-name {
+  word-break: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
+  line-height: 1.4;
+}
+
+/* Arabic text specific improvements */
+[dir="rtl"] .product-name {
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}

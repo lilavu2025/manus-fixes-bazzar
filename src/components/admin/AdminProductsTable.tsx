@@ -198,8 +198,10 @@ const AdminProductsTable: React.FC<AdminProductsTableProps> = ({
                     }}
                   />
                 </TableCell>
-                <TableCell className="font-medium max-w-[120px] truncate">
-                  {getProductName(product)}
+                <TableCell className="font-medium max-w-[200px]">
+                  <div className="product-name">
+                    {getProductName(product)}
+                  </div>
                 </TableCell>
                 <TableCell>{getCategoryName(product.category)}</TableCell>
                 <TableCell>
