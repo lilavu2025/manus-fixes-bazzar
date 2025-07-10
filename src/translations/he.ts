@@ -463,6 +463,7 @@ export const heTranslations = {
   noCategories: "אין קטגוריות עדיין",
   addYourFirstCategory: "הוסף את הקטגוריה הראשונה שלך כדי להתחיל",
   categoryImage: "תמונת קטגוריה",
+  categoryInfo: "מידע על קטגוריה",
   categoryName: "שם קטגוריה",
   categoryIcon: "אייקון קטגוריה",
   productCount: "מספר מוצרים",

@@ -474,6 +474,7 @@ export const enTranslations = {
   noCategories: "No categories yet",
   addYourFirstCategory: "Add your first category to get started",
   categoryImage: "Category Image",
+  categoryInfo: "Category Information",
   categoryName: "Category Name",
   categoryIcon: "Category Icon",
   productCount: "Product Count",

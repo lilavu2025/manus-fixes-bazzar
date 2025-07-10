@@ -146,6 +146,7 @@ export const arTranslations = {
   productCategory: "فئة المنتج",
   productImages: "صور المنتج",
   categoryImage: "صورة الفئة",
+  categoryInfo: "معلومات الفئة",
   uploadImages: "رفع الصور",
   mainImage: "الصورة الرئيسية",
   additionalImages: "صور إضافية",

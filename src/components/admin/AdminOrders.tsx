@@ -229,6 +229,7 @@ const AdminOrders: React.FC = () => {
             enhancedToast.adminSuccess('orderAdded');
             setShowAddOrder(false);
             setOrderForm(initialOrderForm);
+            setAllowCustomClient(false);
             refetchOrders();
             queryClient.invalidateQueries({ queryKey: ["admin-orders-stats"] }); // إعادة جلب إحصائيات لوحة التحكم
           },
@@ -495,7 +496,14 @@ const AdminOrders: React.FC = () => {
       {/* Dialog إضافة طلب جديد */}
       <OrderAddDialog
         open={showAddOrder}
-        onOpenChange={setShowAddOrder}
+        onOpenChange={(open) => {
+          setShowAddOrder(open);
+          if (!open) {
+            // إعادة تصفير النموذج عند إغلاق الحوار
+            setOrderForm(initialOrderForm);
+            setAllowCustomClient(false);
+          }
+        }}
         orderForm={orderForm}
         setOrderForm={setOrderForm}
         allowCustomClient={allowCustomClient}
