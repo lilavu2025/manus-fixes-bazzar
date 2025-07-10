@@ -53,7 +53,7 @@ const BannerCarousel: React.FC<BannerCarouselProps> = ({ banners }) => {
     },
     {
       minSwipeDistance: 50,
-      preventDefaultDuringSwipe: true,
+      preventDefaultDuringSwipe: false,
     }
   );
 
@@ -61,7 +61,7 @@ const BannerCarousel: React.FC<BannerCarouselProps> = ({ banners }) => {
     <div 
       className="relative w-full h-48 sm:h-64 md:h-80 lg:h-96 rounded-xl overflow-hidden group select-none"
       {...swipeHandlers}
-      style={{ touchAction: 'pan-y pinch-zoom' }}
+      style={{ touchAction: 'manipulation' }}
     >
       {/* تعريف الانيميشن داخل JSX */}
       <style>{`
@@ -96,8 +96,8 @@ const BannerCarousel: React.FC<BannerCarouselProps> = ({ banners }) => {
           />
           <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent" />
 
-          <div className="absolute inset-0 flex items-center justify-start p-4 sm:p-6 md:p-8">
-            <div className="text-white max-w-xs sm:max-w-md animate-fade-in">
+          <div className="absolute inset-0 flex items-center justify-start p-4 sm:p-6 md:p-8 pointer-events-none">
+            <div className="text-white max-w-xs sm:max-w-md animate-fade-in pointer-events-auto">
               <div className="bg-black/30 sm:bg-black/70 rounded-lg p-1 sm:p-4 max-w-full">
                 <h2 className="text-lg sm:text-xl md:text-2xl lg:text-4xl font-bold mb-2 sm:mb-4">
                   {banner.title}
