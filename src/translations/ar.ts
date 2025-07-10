@@ -1227,6 +1227,20 @@ export const arTranslations = {
   trackAdminActions: "تتبع إجراءات المدراء على المستخدمين",
   export: "تصدير",
   
+  // Date Filter for Dashboard
+  dateFilter: "فلتر التاريخ",
+  selectedPeriod: "الفترة المختارة",
+  fromDateFilter: "من",
+  toDateFilter: "إلى",
+  last7Days: "آخر 7 أيام",
+  last30Days: "آخر 30 يوم",
+  last90Days: "آخر 90 يوم",
+  thisYear: "هذا العام",
+  filteredStatistics: "الإحصائيات المفلترة",
+  newProducts: "منتجات جديدة",
+  newUsers: "مستخدمون جدد",
+  filterApplied: "فلتر مطبق",
+  
   // Pagination
   showingResults: "عرض",
   paginationOf: "من",

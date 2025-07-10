@@ -1224,6 +1224,20 @@ export const heTranslations = {
   trackAdminActions: "מעקב אחר פעולות מנהל על משתמשים",
   export: "יצוא",
   
+  // Date Filter for Dashboard
+  dateFilter: "פילטר תאריך",
+  selectedPeriod: "תקופה נבחרת",
+  fromDateFilter: "מ",
+  toDateFilter: "עד",
+  last7Days: "7 הימים האחרונים",
+  last30Days: "30 הימים האחרונים",
+  last90Days: "90 הימים האחרונים",
+  thisYear: "שנה זו",
+  filteredStatistics: "הסטטיסטיקות המפולטרות",
+  newProducts: "מוצרים חדשים",
+  newUsers: "משתמשים חדשים",
+  filterApplied: "פילטר חל",
+
   // Pagination
   showingResults: "מציג",
   paginationOf: "מתוך",

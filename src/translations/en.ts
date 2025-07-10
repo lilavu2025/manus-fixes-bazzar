@@ -1245,6 +1245,19 @@ export const enTranslations = {
   adminActivityLog: "Admin Activity Log",
   trackAdminActions: "Track admin actions on users",
   export: "Export",
+  // Date Filter for Dashboard
+  dateFilter: "Date Filter",
+  selectedPeriod: "Selected Period",
+  fromDateFilter: "From",
+  toDateFilter: "To",
+  last7Days: "Last 7 Days",
+  last30Days: "Last 30 Days",
+  last90Days: "Last 90 Days",
+  thisYear: "This Year",
+  filteredStatistics: "Filtered Statistics",
+  newProducts: "New Products",
+  newUsers: "New Users",
+  filterApplied: "Filter Applied",
   
   // Pagination
   showingResults: "Showing",
