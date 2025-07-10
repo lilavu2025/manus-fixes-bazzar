@@ -43,6 +43,7 @@ const EditProductDialog: React.FC<EditProductDialogProps> = ({
 }) => {
   const { isRTL, t, language } = useLanguage();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
   const [formData, setFormData] = useState<ProductFormData>({
     name_ar: "",
     name_en: "",
@@ -65,9 +66,9 @@ const EditProductDialog: React.FC<EditProductDialogProps> = ({
   });
   const { refetch } = useProductsRealtime();
 
-  // تهيئة البيانات عند تحميل المنتج والتصنيفات
+  // تهيئة البيانات فقط عند فتح الديالوج لأول مرة أو تغيير المنتج
   useEffect(() => {
-    if (product && categories.length > 0) {
+    if (product && categories.length > 0 && (!isInitialized || !open)) {
       const imgs = Array.isArray(product.images)
         ? product.images
         : [product.image].filter(Boolean);
@@ -75,17 +76,16 @@ const EditProductDialog: React.FC<EditProductDialogProps> = ({
         (c) => c.id === product.category_id || c.id === product.category,
       );
       setFormData({
-        ...formData,
-        name_ar: product.name_ar,
-        name_en: product.name_en,
-        name_he: product.name_he,
-        description_ar: product.description_ar,
-        description_en: product.description_en,
-        description_he: product.description_he,
-        price: product.price,
-        original_price: product.original_price,
-        wholesale_price: product.wholesale_price,
-        image: product.image,
+        name_ar: product.name_ar || "",
+        name_en: product.name_en || "",
+        name_he: product.name_he || "",
+        description_ar: product.description_ar || "",
+        description_en: product.description_en || "",
+        description_he: product.description_he || "",
+        price: product.price || 0,
+        original_price: product.original_price || 0,
+        wholesale_price: product.wholesale_price || 0,
+        image: product.image || "",
         images: imgs,
         category_id: matched?.id || "",
         in_stock: product.in_stock ?? true,
@@ -95,9 +95,16 @@ const EditProductDialog: React.FC<EditProductDialogProps> = ({
         tags: product.tags || [],
         stock_quantity: product.stock_quantity || 0,
       });
+      setIsInitialized(true);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [product, categories]);
+  }, [product?.id, categories.length, open]);
+
+  // إعادة تعيين حالة التهيئة عند إغلاق الديالوج
+  useEffect(() => {
+    if (!open) {
+      setIsInitialized(false);
+    }
+  }, [open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -107,7 +114,10 @@ const EditProductDialog: React.FC<EditProductDialogProps> = ({
       const imgs = formData.images.length
         ? formData.images
         : [formData.image].filter(Boolean);
-      const main = imgs[0] || formData.image;
+      
+      // إذا لم تكن هناك صور، اجعل الصورة الرئيسية فارغة أيضاً
+      const main = imgs.length > 0 ? imgs[0] : "";
+      
       const { data, error } = await supabase
         .from("products")
         .update({
@@ -183,13 +193,15 @@ const EditProductDialog: React.FC<EditProductDialogProps> = ({
           />
           <ImageUpload
             value={formData.images}
-            onChange={(imgs) =>
+            onChange={(imgs) => {
+              const imageArray = Array.isArray(imgs) ? imgs : [imgs].filter(Boolean);
               setFormData((prev) => ({
                 ...prev,
-                images: Array.isArray(imgs) ? imgs : [imgs],
-                image: (Array.isArray(imgs) ? imgs[0] : imgs) || prev.image,
-              }))
-            }
+                images: imageArray,
+                // إذا لم تكن هناك صور، امحي الصورة الرئيسية أيضاً
+                image: imageArray.length > 0 ? imageArray[0] : "",
+              }));
+            }}
             bucket="product-images"
             label={t("productImages")}
             multiple
