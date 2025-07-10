@@ -42,7 +42,11 @@ import {
   Filter,
   Search,
   RotateCcw,
-  Calendar
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight
 } from "lucide-react";
 
 const UserActivityLogTable: React.FC = () => {
@@ -99,46 +103,130 @@ const UserActivityLogTable: React.FC = () => {
   const [toDate, setToDate] = useState<string>("");
   const [actionFilter, setActionFilter] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState<string>("");
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [pageSize] = useState(10); // عدد العناصر في كل صفحة - تم تغييره من 20 إلى 10
+  const [initialLoad, setInitialLoad] = useState(true);
+  
+  // إحصائيات شاملة (من قاعدة البيانات بدون فلاتر)
+  const [totalStats, setTotalStats] = useState({
+    total: 0,
+    deletes: 0,
+    disables: 0,
+    enables: 0,
+    updates: 0,
+    uniqueAdmins: 0,
+    uniqueUsers: 0,
+  });
 
-  useEffect(() => {
-    const fetchLogsAndProfiles = async () => {
-      setLoading(true);
-      const { data: logsData, error } = await supabase
-        .from("user_activity_log")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(100);
-      if (error || !logsData) {
-        setLoading(false);
-        return;
-      }
+  // جلب الإحصائيات الشاملة من قاعدة البيانات
+  const fetchTotalStats = async () => {
+    const { data: statsData } = await supabase
+      .from("user_activity_log")
+      .select("action, admin_id, user_id");
+
+    if (statsData) {
+      const newStats = {
+        total: statsData.length,
+        deletes: statsData.filter(l => l.action === 'delete').length,
+        disables: statsData.filter(l => l.action === 'disable').length,
+        enables: statsData.filter(l => l.action === 'enable').length,
+        updates: statsData.filter(l => l.action === 'update').length,
+        uniqueAdmins: new Set(statsData.map(l => l.admin_id)).size,
+        uniqueUsers: new Set(statsData.map(l => l.user_id)).size,
+      };
+      setTotalStats(newStats);
+    }
+  };
+
+  // جلب البيانات مع دعم pagination والفلاتر
+  const fetchLogsAndProfiles = async (page: number = 1, resetData: boolean = false) => {
+    setLoading(true);
+    
+    // بناء الاستعلام مع الفلاتر
+    let query = supabase
+      .from("user_activity_log")
+      .select("*", { count: 'exact' });
+
+    // تطبيق فلاتر التاريخ
+    if (fromDate) {
+      const fromDateTime = new Date(fromDate);
+      fromDateTime.setHours(0, 0, 0, 0);
+      query = query.gte('created_at', fromDateTime.toISOString());
+    }
+
+    if (toDate) {
+      const toDateTime = new Date(toDate);
+      toDateTime.setHours(23, 59, 59, 999);
+      query = query.lte('created_at', toDateTime.toISOString());
+    }
+
+    // تطبيق فلتر نوع الإجراء
+    if (actionFilter && actionFilter !== "all") {
+      query = query.eq('action', actionFilter);
+    }
+
+    // تطبيق ترتيب وتقسيم الصفحات
+    const offset = (page - 1) * pageSize;
+    query = query
+      .order("created_at", { ascending: false })
+      .range(offset, offset + pageSize - 1);
+
+    const { data: logsData, error, count } = await query;
+    
+    if (error || !logsData) {
+      setLoading(false);
+      return;
+    }
+
+    // تحديث العدد الإجمالي
+    setTotalCount(count || 0);
+
+    // إذا كان resetData = true، استبدل البيانات. وإلا أضف إليها
+    if (resetData) {
       setLogs(logsData);
       setAllLogs(logsData);
-      // اجمع كل الـ id المطلوبة
-      const ids = Array.from(
-        new Set(logsData.flatMap((l) => [l.admin_id, l.user_id])),
-      );
-      if (ids.length === 0) {
-        setProfileMap({});
-        setLoading(false);
-        return;
-      }
+    } else {
+      setLogs(prev => [...prev, ...logsData]);
+      setAllLogs(prev => [...prev, ...logsData]);
+    }
+
+    // اجمع كل الـ id المطلوبة من البيانات الجديدة
+    const newIds = Array.from(
+      new Set(logsData.flatMap((l) => [l.admin_id, l.user_id]))
+    );
+    
+    if (newIds.length === 0) {
+      setLoading(false);
+      return;
+    }
+
+    // اجلب بيانات المستخدمين من profiles فقط للـ IDs الجديدة
+    const existingIds = Object.keys(profileMap);
+    const missingIds = newIds.filter(id => !existingIds.includes(id));
+    
+    if (missingIds.length > 0) {
       // اجلب بيانات المستخدمين من profiles
       const { data: profiles } = await supabase
         .from("profiles")
         .select("id,full_name,email,phone")
-        .in("id", ids);
-      const map: ProfileMap = {};
+        .in("id", missingIds);
+
+      const newProfileMap: ProfileMap = { ...profileMap };
       profiles?.forEach((p) => {
-        map[p.id] = { full_name: p.full_name, email: p.email, phone: p.phone };
+        newProfileMap[p.id] = { full_name: p.full_name, email: p.email, phone: p.phone };
       });
+
       // جلب بيانات المحذوفين إذا لم يوجدوا في profiles
-      const missingIds = ids.filter((id) => !map[id]);
-      if (missingIds.length > 0) {
+      const stillMissingIds = missingIds.filter((id) => !newProfileMap[id]);
+      if (stillMissingIds.length > 0) {
         const { data: deletedUsers } = await supabase
           .from("deleted_users")
           .select("user_id,full_name,email,phone")
-          .in("user_id", missingIds);
+          .in("user_id", stillMissingIds);
+
         (
           deletedUsers as
             | Array<{
@@ -149,18 +237,50 @@ const UserActivityLogTable: React.FC = () => {
               }>
             | undefined
         )?.forEach((u) => {
-          map[u.user_id] = {
+          newProfileMap[u.user_id] = {
             full_name: u.full_name || t("deletedUser"),
             email: u.email,
             phone: u.phone,
           };
         });
       }
-      setProfileMap(map);
-      setLoading(false);
-    };
-    fetchLogsAndProfiles();
+      
+      setProfileMap(newProfileMap);
+    }
+
+    setLoading(false);
+  };
+
+  // جلب البيانات عند تحميل المكون
+  useEffect(() => {
+    fetchTotalStats(); // جلب الإحصائيات الشاملة أولاً
+    fetchLogsAndProfiles(1, true);
+    setInitialLoad(false);
   }, [t]);
+
+  // إعادة تطبيق الفلاتر عند تغييرها (تجنب التشغيل في التحميل الأولي)
+  useEffect(() => {
+    if (!initialLoad) {
+      setCurrentPage(1);
+      fetchLogsAndProfiles(1, true);
+    }
+  }, [fromDate, toDate, actionFilter, initialLoad]);
+
+  // تطبيق البحث المحلي على البيانات الموجودة
+  const filteredLogs = logs.filter(log => {
+    if (!searchTerm) return true;
+    
+    const searchLower = searchTerm.toLowerCase();
+    const adminName = profileMap[log.admin_id]?.full_name?.toLowerCase() || "";
+    const userName = profileMap[log.user_id]?.full_name?.toLowerCase() || "";
+    const adminEmail = profileMap[log.admin_id]?.email?.toLowerCase() || "";
+    const userEmail = profileMap[log.user_id]?.email?.toLowerCase() || "";
+    
+    return adminName.includes(searchLower) || 
+           userName.includes(searchLower) ||
+           adminEmail.includes(searchLower) ||
+           userEmail.includes(searchLower);
+  });
 
   // جلب تفاصيل المستخدم عند الضغط
   const handleUserDetails = async (userId: string) => {
@@ -208,72 +328,50 @@ const UserActivityLogTable: React.FC = () => {
     setActivityDialogOpen(true);
   };
 
-  // فلترة البيانات
-  const applyFilters = () => {
-    let filteredLogs = [...allLogs];
-
-    // فلتر حسب التاريخ
-    if (fromDate) {
-      const fromDateTime = new Date(fromDate);
-      fromDateTime.setHours(0, 0, 0, 0);
-      filteredLogs = filteredLogs.filter(log => 
-        new Date(log.created_at) >= fromDateTime
-      );
-    }
-
-    if (toDate) {
-      const toDateTime = new Date(toDate);
-      toDateTime.setHours(23, 59, 59, 999);
-      filteredLogs = filteredLogs.filter(log => 
-        new Date(log.created_at) <= toDateTime
-      );
-    }
-
-    // فلتر حسب نوع الإجراء
-    if (actionFilter && actionFilter !== "all") {
-      filteredLogs = filteredLogs.filter(log => 
-        log.action === actionFilter
-      );
-    }
-
-    // فلتر حسب البحث في اسماء المستخدمين والمدراء
-    if (searchTerm) {
-      const searchLower = searchTerm.toLowerCase();
-      filteredLogs = filteredLogs.filter(log => {
-        const adminName = profileMap[log.admin_id]?.full_name?.toLowerCase() || "";
-        const userName = profileMap[log.user_id]?.full_name?.toLowerCase() || "";
-        const adminEmail = profileMap[log.admin_id]?.email?.toLowerCase() || "";
-        const userEmail = profileMap[log.user_id]?.email?.toLowerCase() || "";
-        
-        return adminName.includes(searchLower) || 
-               userName.includes(searchLower) ||
-               adminEmail.includes(searchLower) ||
-               userEmail.includes(searchLower);
-      });
-    }
-
-    setLogs(filteredLogs);
-  };
-
-  // تطبيق الفلاتر عند تغيير أي منها
-  useEffect(() => {
-    if (allLogs.length > 0) {
-      applyFilters();
-    }
-  }, [fromDate, toDate, actionFilter, searchTerm, allLogs, profileMap]);
-
   // إعادة تعيين الفلاتر
   const resetFilters = () => {
     setFromDate("");
     setToDate("");
     setActionFilter("all");
     setSearchTerm("");
+    setCurrentPage(1);
+  };
+
+  // دوال التحكم في pagination
+  const totalPages = Math.ceil(totalCount / pageSize);
+  const hasNextPage = currentPage < totalPages;
+  const hasPrevPage = currentPage > 1;
+
+  const goToFirstPage = () => {
+    setCurrentPage(1);
+    fetchLogsAndProfiles(1, true);
+  };
+
+  const goToPrevPage = () => {
+    if (hasPrevPage) {
+      const newPage = currentPage - 1;
+      setCurrentPage(newPage);
+      fetchLogsAndProfiles(newPage, true);
+    }
+  };
+
+  const goToNextPage = () => {
+    if (hasNextPage) {
+      const newPage = currentPage + 1;
+      setCurrentPage(newPage);
+      fetchLogsAndProfiles(newPage, true);
+    }
+  };
+
+  const goToLastPage = () => {
+    setCurrentPage(totalPages);
+    fetchLogsAndProfiles(totalPages, true);
   };
 
   // زر تصدير سجل النشاط إلى Excel
   const exportAdminActivityToExcel = () => {
     const ws = XLSX.utils.json_to_sheet(
-      logs.map((l) => {
+      filteredLogs.map((l) => {
         // بيانات الأدمن
         let adminName = profileMap[l.admin_id]?.full_name;
         let adminEmail = profileMap[l.admin_id]?.email;
@@ -339,16 +437,13 @@ const UserActivityLogTable: React.FC = () => {
     );
   };
 
-  // حساب إحصائيات سريعة
-  const stats = {
-    total: logs.length,
-    deletes: logs.filter(l => l.action === 'delete').length,
-    disables: logs.filter(l => l.action === 'disable').length,
-    enables: logs.filter(l => l.action === 'enable').length,
-    updates: logs.filter(l => l.action === 'update').length,
-    uniqueAdmins: new Set(logs.map(l => l.admin_id)).size,
-    uniqueUsers: new Set(logs.map(l => l.user_id)).size,
+  // حساب إحصائيات سريعة للبيانات المعروضة في الصفحة الحالية
+  const currentPageStats = {
+    displayed: filteredLogs.length,
   };
+
+  // استخدام الإحصائيات الشاملة للعرض
+  const displayStats = totalStats;
 
   const getActionIcon = (action: string) => {
     switch (action) {
@@ -408,7 +503,7 @@ const UserActivityLogTable: React.FC = () => {
             <div className="flex items-center justify-center mb-2">
               <Activity className="h-5 w-5 text-blue-600" />
             </div>
-            <div className="text-2xl font-bold text-blue-900">{stats.total}</div>
+            <div className="text-2xl font-bold text-blue-900">{totalStats.total}</div>
             <p className="text-xs text-blue-600">{t("totalActivities") || "إجمالي العمليات"}</p>
           </CardContent>
         </Card>
@@ -418,7 +513,7 @@ const UserActivityLogTable: React.FC = () => {
             <div className="flex items-center justify-center mb-2">
               <Trash2 className="h-5 w-5 text-red-600" />
             </div>
-            <div className="text-2xl font-bold text-red-900">{stats.deletes}</div>
+            <div className="text-2xl font-bold text-red-900">{totalStats.deletes}</div>
             <p className="text-xs text-red-600">{t("deletions") || "حذف"}</p>
           </CardContent>
         </Card>
@@ -428,7 +523,7 @@ const UserActivityLogTable: React.FC = () => {
             <div className="flex items-center justify-center mb-2">
               <UserX className="h-5 w-5 text-yellow-600" />
             </div>
-            <div className="text-2xl font-bold text-yellow-900">{stats.disables}</div>
+            <div className="text-2xl font-bold text-yellow-900">{totalStats.disables}</div>
             <p className="text-xs text-yellow-600">{t("disables") || "تعطيل"}</p>
           </CardContent>
         </Card>
@@ -438,7 +533,7 @@ const UserActivityLogTable: React.FC = () => {
             <div className="flex items-center justify-center mb-2">
               <UserCheck className="h-5 w-5 text-green-600" />
             </div>
-            <div className="text-2xl font-bold text-green-900">{stats.enables}</div>
+            <div className="text-2xl font-bold text-green-900">{totalStats.enables}</div>
             <p className="text-xs text-green-600">{t("enables") || "تفعيل"}</p>
           </CardContent>
         </Card>
@@ -448,7 +543,7 @@ const UserActivityLogTable: React.FC = () => {
             <div className="flex items-center justify-center mb-2">
               <Edit className="h-5 w-5 text-purple-600" />
             </div>
-            <div className="text-2xl font-bold text-purple-900">{stats.updates}</div>
+            <div className="text-2xl font-bold text-purple-900">{totalStats.updates}</div>
             <p className="text-xs text-purple-600">{t("updates") || "تحديث"}</p>
           </CardContent>
         </Card>
@@ -458,7 +553,7 @@ const UserActivityLogTable: React.FC = () => {
             <div className="flex items-center justify-center mb-2">
               <Shield className="h-5 w-5 text-indigo-600" />
             </div>
-            <div className="text-2xl font-bold text-indigo-900">{stats.uniqueAdmins}</div>
+            <div className="text-2xl font-bold text-indigo-900">{totalStats.uniqueAdmins}</div>
             <p className="text-xs text-indigo-600">{t("admins") || "مدراء"}</p>
           </CardContent>
         </Card>
@@ -468,7 +563,7 @@ const UserActivityLogTable: React.FC = () => {
             <div className="flex items-center justify-center mb-2">
               <User className="h-5 w-5 text-teal-600" />
             </div>
-            <div className="text-2xl font-bold text-teal-900">{stats.uniqueUsers}</div>
+            <div className="text-2xl font-bold text-teal-900">{totalStats.uniqueUsers}</div>
             <p className="text-xs text-teal-600">{t("affectedUsers") || "مستخدمين متأثرين"}</p>
           </CardContent>
         </Card>
@@ -582,7 +677,7 @@ const UserActivityLogTable: React.FC = () => {
               </p>
             </div>
           </div>
-        ) : logs.length === 0 ? (
+        ) : filteredLogs.length === 0 ? (
           <div className="text-center py-12">
             <div className="p-4 bg-gray-50 rounded-lg inline-block mb-4">
               <Activity className="h-12 w-12 text-gray-400 mx-auto" />
@@ -627,7 +722,7 @@ const UserActivityLogTable: React.FC = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {logs.map((log, index) => {
+                  {filteredLogs.map((log, index) => {
                     // استخراج بيانات المستخدم
                     const userProfile = profileMap[log.user_id];
                     let displayName = userProfile?.full_name;
@@ -788,6 +883,79 @@ const UserActivityLogTable: React.FC = () => {
                   })}
                 </TableBody>
               </Table>
+            </div>
+          </div>
+        )}
+
+        {/* Pagination Controls */}
+        {!loading && filteredLogs.length > 0 && totalPages > 1 && (
+          <div className="mt-6 border-t border-gray-200 pt-4">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              {/* معلومات الصفحة */}
+              <div className="text-sm text-gray-600">
+                {t("showingResults") || "عرض"} {((currentPage - 1) * pageSize) + 1} - {Math.min(currentPage * pageSize, totalCount)} {t("paginationOf") || "من"} {totalCount} {t("paginationResults") || "نتيجة"}
+              </div>
+
+              {/* أزرار التنقل */}
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={goToFirstPage}
+                  disabled={!hasPrevPage}
+                  className="flex items-center gap-1"
+                >
+                  <ChevronsLeft className="h-4 w-4" />
+                  <span className="hidden sm:inline">{t("first") || "الأول"}</span>
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={goToPrevPage}
+                  disabled={!hasPrevPage}
+                  className="flex items-center gap-1"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  <span className="hidden sm:inline">{t("previous") || "السابق"}</span>
+                </Button>
+
+                {/* معلومات الصفحة الحالية */}
+                <div className="flex items-center gap-2 px-3 py-1 bg-gray-50 rounded-md">
+                  <span className="text-sm font-medium text-gray-700">
+                    {t("page") || "صفحة"} {currentPage} {t("paginationOf") || "من"} {totalPages}
+                  </span>
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={goToNextPage}
+                  disabled={!hasNextPage}
+                  className="flex items-center gap-1"
+                >
+                  <span className="hidden sm:inline">{t("next") || "التالي"}</span>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={goToLastPage}
+                  disabled={!hasNextPage}
+                  className="flex items-center gap-1"
+                >
+                  <span className="hidden sm:inline">{t("last") || "الأخير"}</span>
+                  <ChevronsRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            {/* معلومات إضافية على الهواتف */}
+            <div className="mt-3 sm:hidden text-center">
+              <div className="text-xs text-gray-500">
+                {pageSize} {t("itemsPerPage") || "عنصر في كل صفحة"}
+              </div>
             </div>
           </div>
         )}

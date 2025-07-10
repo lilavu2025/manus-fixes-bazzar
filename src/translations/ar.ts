@@ -199,7 +199,7 @@ export const arTranslations = {
   search: "بحث",
   searchProducts: "البحث عن المنتجات...",
   searchOffers: "البحث عن العروض...",
-  searchUsersPlaceholder: "البحث بالاسم، الإيميل، أو الهاتف...",
+  searchUsersPlaceholder: "البحث بالاسم أو الإيميل...",
   searchByName: "بحث بالاسم",
   searchByNameProductPlaceholder: "اكتب اسم المنتج...",
   searchByNameOfferPlaceholder: "اكتب اسم العرض...",
@@ -1211,4 +1211,26 @@ export const arTranslations = {
   searchInLog: "البحث في السجل",
   resetLogFilters: "إعادة تعيين الفلاتر",
   showingLogResults: "عرض {{count}} من أصل {{total}} نتيجة",
+  
+  // User Management Filters
+  userFilters: "فلاتر المستخدمين",
+  selectUserType: "اختر نوع المستخدم",
+  selectStatus: "اختر الحالة",
+  selectSort: "اختر الترتيب",
+  filterResults: "نتائج الفلترة",
+  confirmedUsers: "مستخدمين مؤكدين",
+  disabledUsers: "مستخدمين معطلين",
+  showingUsers: "عرض {{count}} مستخدم",
+  desc: "تنازلي",
+  asc: "تصاعدي",
+  adminActivityLog: "سجل نشاط الأدمن",
+  trackAdminActions: "تتبع إجراءات المدراء على المستخدمين",
+  export: "تصدير",
+  
+  // Pagination
+  showingResults: "عرض",
+  paginationOf: "من",
+  paginationResults: "نتيجة",
+  first: "الأول",
+  last: "الأخير",
 };

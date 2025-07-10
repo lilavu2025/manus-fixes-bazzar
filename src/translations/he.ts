@@ -190,7 +190,7 @@ export const heTranslations = {
   search: "חיפוש",
   searchProducts: "חפש מוצרים...",
   searchOffers: "חפש מבצעים...",
-  searchUsersPlaceholder: "חפש לפי שם, אימייל או טלפון...",
+  searchUsersPlaceholder: "חפש לפי שם או אימייל...",
   searchByName: "חפש לפי שם",
   searchByNameProductPlaceholder: "הקלד שם מוצר...",
   searchByNameOfferPlaceholder: "הקלד שם מבצע...",
@@ -1208,4 +1208,26 @@ export const heTranslations = {
   showingLogResults: "מציג {{count}} מתוך {{total}} תוצאות",
   selectAction: "בחר פעולה",
   allActions: "כל הפעולות",
+  
+  // User Management Filters
+  userFilters: "מסנני משתמשים",
+  selectUserType: "בחר סוג משתמש",
+  selectStatus: "בחר מצב",
+  selectSort: "בחר מיון",
+  filterResults: "תוצאות סינון",
+  confirmedUsers: "משתמשים מאושרים",
+  disabledUsers: "משתמשים מושבתים",
+  showingUsers: "מציג {{count}} משתמשים",
+  desc: "יורד",
+  asc: "עולה",
+  adminActivityLog: "יומן פעילות מנהל",
+  trackAdminActions: "מעקב אחר פעולות מנהל על משתמשים",
+  export: "יצוא",
+  
+  // Pagination
+  showingResults: "מציג",
+  paginationOf: "מתוך",
+  paginationResults: "תוצאות",
+  first: "ראשון",
+  last: "אחרון",
 };

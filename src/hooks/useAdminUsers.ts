@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useAuth } from "@/contexts/useAuth";
 import type { UserProfile } from "@/types/profile";
 import { toast } from "sonner";
@@ -21,6 +21,10 @@ export const useAdminUsers = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("created_at");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize] = useState(10); // عدد المستخدمين في كل صفحة
 
   // جلب المستخدمين
   const { data: users = [], isLoading, error, refetch } = useAdminUsersQuery();
@@ -82,6 +86,33 @@ export const useAdminUsers = () => {
     return filtered;
   }, [users, searchQuery, userTypeFilter, statusFilter, sortBy, sortOrder]);
 
+  // تطبيق pagination على البيانات المفلترة
+  const paginatedUsers = useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    return filteredAndSortedUsers.slice(startIndex, endIndex);
+  }, [filteredAndSortedUsers, currentPage, pageSize]);
+
+  // معلومات pagination
+  const totalCount = filteredAndSortedUsers.length;
+  const totalPages = Math.ceil(totalCount / pageSize);
+  const hasNextPage = currentPage < totalPages;
+  const hasPrevPage = currentPage > 1;
+
+  // دوال التحكم في pagination
+  const goToFirstPage = () => setCurrentPage(1);
+  const goToPrevPage = () => setCurrentPage(prev => Math.max(1, prev - 1));
+  const goToNextPage = () => setCurrentPage(prev => Math.min(totalPages, prev + 1));
+  const goToLastPage = () => setCurrentPage(totalPages);
+
+  // إعادة تعيين الصفحة عند تغيير الفلاتر
+  const resetPage = () => setCurrentPage(1);
+
+  // إعادة تعيين الصفحة عند تغيير الفلاتر
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, userTypeFilter, statusFilter, sortBy, sortOrder]);
+
   // تعطيل/تفعيل مستخدم
   const disableUser = async (userId: string, disabled: boolean) => {
     const ok = await disableUserMutation.mutateAsync({ userId, disabled });
@@ -137,8 +168,9 @@ export const useAdminUsers = () => {
   const adminCount = users.filter((u) => u.user_type === "admin").length;
 
   return {
-    users: filteredAndSortedUsers,
+    users: paginatedUsers, // البيانات المقسمة للصفحة الحالية
     allUsers: users,
+    filteredUsers: filteredAndSortedUsers, // جميع البيانات المفلترة قبل التقسيم
     isLoading,
     error,
     searchQuery,
@@ -157,5 +189,17 @@ export const useAdminUsers = () => {
     wholesaleCount,
     retailCount,
     adminCount,
+    // pagination data
+    currentPage,
+    totalCount,
+    totalPages,
+    pageSize,
+    hasNextPage,
+    hasPrevPage,
+    goToFirstPage,
+    goToPrevPage,
+    goToNextPage,
+    goToLastPage,
+    resetPage,
   };
 };

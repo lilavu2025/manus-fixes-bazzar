@@ -192,7 +192,7 @@ export const enTranslations = {
   search: "Search",
   searchProducts: "Search products...",
   searchOffers: "Search offers...",
-  searchUsersPlaceholder: "Search by name, email, or phone...",
+  searchUsersPlaceholder: "Search by name or email...",
   searchByName: "Search by name",
   searchByNameProductPlaceholder: "Type product name...",
   searchByNameOfferPlaceholder: "Type offer name...",
@@ -1230,4 +1230,26 @@ export const enTranslations = {
   showingLogResults: "Showing {{count}} out of {{total}} results",
   selectAction: "Select Action",
   allActions: "All Actions",
+  
+  // User Management Filters
+  userFilters: "User Filters",
+  selectUserType: "Select User Type",
+  selectStatus: "Select Status",
+  selectSort: "Select Sort",
+  filterResults: "Filter Results",
+  confirmedUsers: "Confirmed Users",
+  disabledUsers: "Disabled Users",
+  showingUsers: "Showing {{count}} users",
+  desc: "Descending",
+  asc: "Ascending",
+  adminActivityLog: "Admin Activity Log",
+  trackAdminActions: "Track admin actions on users",
+  export: "Export",
+  
+  // Pagination
+  showingResults: "Showing",
+  paginationOf: "of",
+  paginationResults: "results",
+  first: "First",
+  last: "Last",
 };
