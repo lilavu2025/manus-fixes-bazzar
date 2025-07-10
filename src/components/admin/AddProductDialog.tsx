@@ -18,7 +18,9 @@ import { ProductFormData, Category } from "@/types/product";
 import type { Product } from "@/types/product";
 import pako from "pako";
 import { useInsertProduct } from "@/integrations/supabase/reactQueryHooks";
-import { productSchema, validateForm } from "@/lib/validation";
+import { createProductSchema, validateForm } from "@/lib/validation";
+import MultiLanguageField from "@/components/ui/MultiLanguageField";
+import { Language } from "@/types/language";
 
 interface AddProductDialogProps {
   open: boolean;
@@ -89,8 +91,9 @@ const AddProductDialog: React.FC<AddProductDialogProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    // تحقق من صحة البيانات قبل الإرسال
-    const validation = validateForm(productSchema, formData);
+    // تحقق من صحة البيانات قبل الإرسال باستخدام الـ schema الديناميكي
+    const dynamicProductSchema = createProductSchema();
+    const validation = validateForm(dynamicProductSchema, formData);
     if (!validation.success) {
       // عرض جميع رسائل الأخطاء بشكل واضح
       Object.values(validation.errors || {}).forEach((msg) => {
@@ -100,6 +103,20 @@ const AddProductDialog: React.FC<AddProductDialogProps> = ({
       return;
     }
     try {
+      // دمج الصورة الرئيسية مع الصور الإضافية (الصورة الرئيسية تكون الأولى)
+      const allImages = [];
+      if (formData.image) {
+        allImages.push(formData.image);
+      }
+      // إضافة الصور الإضافية (تجنب التكرار)
+      if (formData.images && formData.images.length > 0) {
+        formData.images.forEach(img => {
+          if (img && img !== formData.image) {
+            allImages.push(img);
+          }
+        });
+      }
+      
       const productData = {
         ...formData,
         description_ar: compressText(formData.description_ar),
@@ -109,10 +126,8 @@ const AddProductDialog: React.FC<AddProductDialogProps> = ({
         original_price: formData.original_price || null,
         wholesale_price: formData.wholesale_price || null,
         category_id: formData.category_id,
-        image:
-          formData.image ||
-          (formData.images.length > 0 ? formData.images[0] : ""),
-        images: formData.images,
+        image: formData.image || (allImages.length > 0 ? allImages[0] : ""),
+        images: allImages,
         in_stock: formData.in_stock,
         stock_quantity: formData.stock_quantity,
         featured: formData.featured,
@@ -183,311 +198,313 @@ const AddProductDialog: React.FC<AddProductDialogProps> = ({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className={`max-w-3xl max-h-[95vh] overflow-y-auto ${isRTL ? "text-right" : "text-left"} p-0`}
+        className={`max-w-5xl max-h-[95vh] overflow-y-auto ${isRTL ? "text-right" : "text-left"} p-0`}
         dir={isRTL ? "rtl" : "ltr"}
       >
-        <DialogHeader className="px-6 pt-6 pb-2 border-b">
-          <DialogTitle className="text-2xl font-bold mb-1 text-primary text-center">
+        <DialogHeader className="bg-gradient-to-r from-green-50 to-green-100 px-6 py-4 border-b">
+          <DialogTitle className="text-2xl font-bold text-primary text-center">
             {t("addProduct")}
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-8 px-6 py-6">
-          {/* بيانات المنتج */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4 text-primary">
-              {t("productInfo") || "بيانات المنتج"}
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <Label htmlFor="name_ar">
-                  اسم المنتج (عربي) <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="name_ar"
-                  value={formData.name_ar}
-                  onChange={(e) =>
+        
+        <form onSubmit={handleSubmit} className="px-6 py-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            {/* القسم الأيسر - المعلومات الأساسية */}
+            <div className="space-y-6">
+              
+              {/* بيانات المنتج الأساسية */}
+              <div className="bg-white dark:bg-gray-900 rounded-lg p-4 border">
+                <h3 className="text-lg font-semibold mb-4 text-primary border-b pb-2">
+                  {t("productInfo") || "بيانات المنتج"}
+                </h3>
+                <div className="space-y-4">
+                  <MultiLanguageField
+                    fieldName="name"
+                    label={t("productName") || "اسم المنتج"}
+                    values={{
+                      ar: formData.name_ar,
+                      en: formData.name_en,
+                      he: formData.name_he,
+                    }}
+                    onChange={(lang: Language, value: string) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        [`name_${lang}`]: value,
+                      }))
+                    }
+                    placeholder={{
+                      ar: "أدخل اسم المنتج بالعربية",
+                      en: "Enter product name in English",
+                      he: "הכנס שם מוצר בעברית",
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* الأوصاف */}
+              <div className="bg-white dark:bg-gray-900 rounded-lg p-4 border">
+                <h3 className="text-lg font-semibold mb-4 text-primary border-b pb-2">
+                  {t("descriptions") || "الأوصاف"}
+                </h3>
+                <MultiLanguageField
+                  fieldName="description"
+                  label={t("productDescription") || "وصف المنتج"}
+                  values={{
+                    ar: formData.description_ar,
+                    en: formData.description_en,
+                    he: formData.description_he,
+                  }}
+                  onChange={(lang: Language, value: string) =>
                     setFormData((prev) => ({
                       ...prev,
-                      name_ar: e.target.value,
+                      [`description_${lang}`]: value,
                     }))
                   }
-                  required
+                  placeholder={{
+                    ar: "أدخل وصف المنتج بالعربية",
+                    en: "Enter product description in English", 
+                    he: "הכנס תיאור מוצר בעברית",
+                  }}
+                  type="textarea"
                 />
               </div>
-              <div>
-                <Label htmlFor="name_en">
-                  Product Name (English) <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="name_en"
-                  value={formData.name_en}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      name_en: e.target.value,
-                    }))
-                  }
-                  required
-                />
+
+              {/* الفئة والعلامات */}
+              <div className="bg-white dark:bg-gray-900 rounded-lg p-4 border">
+                <h3 className="text-lg font-semibold mb-4 text-primary border-b pb-2">
+                  {t("categoryAndTags") || "الفئة والعلامات"}
+                </h3>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="category" className="mb-2 block">
+                      {t("category")} <span className="text-red-500">*</span>
+                    </Label>
+                    <ProductCategoryField
+                      formData={formData}
+                      setFormData={setFormData}
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="tags" className="mb-2 block">
+                      {t("tags")} ({t("optional")})
+                    </Label>
+                    <Input
+                      id="tags"
+                      value={formData.tags?.join(", ") || ""}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          tags: e.target.value.split(",").map((tag) => tag.trim()).filter(Boolean),
+                        }))
+                      }
+                      placeholder={t("tagsPlaceholder") || "علامة1, علامة2, علامة3"}
+                    />
+                  </div>
+                </div>
               </div>
-              <div>
-                <Label htmlFor="name_he">
-                  שם המוצר (עברית) <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="name_he"
-                  value={formData.name_he}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      name_he: e.target.value,
-                    }))
-                  }
-                  required
-                />
+            </div>
+
+            {/* القسم الأيمن - الأسعار والإعدادات */}
+            <div className="space-y-6">
+              
+              {/* الأسعار */}
+              <div className="bg-white dark:bg-gray-900 rounded-lg p-4 border">
+                <h3 className="text-lg font-semibold mb-4 text-primary border-b pb-2">
+                  {t("prices") || "الأسعار"}
+                </h3>
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                    <Label htmlFor="price" className="mb-2 block text-green-700 dark:text-green-300 font-medium">
+                      {t("price")} <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="price"
+                      type="number"
+                      step="0.01"
+                      value={formData.price}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          price: parseFloat(e.target.value) || 0,
+                        }))
+                      }
+                      required
+                      className="border-green-200 focus:border-green-400"
+                    />
+                  </div>
+                  
+                  <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                    <Label htmlFor="original_price" className="mb-2 block font-medium">
+                      {t("originalPrice") || "السعر الأصلي"} <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="original_price"
+                      type="number"
+                      step="0.01"
+                      value={formData.original_price}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          original_price: parseFloat(e.target.value) || 0,
+                        }))
+                      }
+                    />
+                  </div>
+                  
+                  <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                    <Label htmlFor="wholesale_price" className="mb-2 block text-blue-700 dark:text-blue-300 font-medium">
+                      {t("wholesalePrice") || "سعر الجملة"} <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="wholesale_price"
+                      type="number"
+                      step="0.01"
+                      value={formData.wholesale_price}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          wholesale_price: parseFloat(e.target.value) || 0,
+                        }))
+                      }
+                      className="border-blue-200 focus:border-blue-400"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* صور المنتج */}
+              <div className="bg-white dark:bg-gray-900 rounded-lg p-4 border">
+                <h3 className="text-lg font-semibold mb-4 text-primary border-b pb-2">
+                  {t("productImages") || "صور المنتج"}
+                </h3>
+                <div className="space-y-4">
+                  <div>
+                    <Label className="mb-2 block">
+                      {t("mainImage")}
+                    </Label>
+                    <ImageUpload
+                      value={formData.image}
+                      onChange={(url) => {
+                        const imageUrl = Array.isArray(url) ? url[0] || '' : url;
+                        setFormData(prev => ({ 
+                          ...prev, 
+                          image: imageUrl,
+                          // إزالة الصورة الجديدة من الصور الإضافية إذا كانت موجودة
+                          images: prev.images?.filter(img => img !== imageUrl) || []
+                        }));
+                      }}
+                      bucket="product-images"
+                      label={t("uploadMainImage") || "رفع الصورة الرئيسية"}
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label className="mb-2 block">
+                      {t("additionalImages")} ({t("optional")})
+                    </Label>
+                    <ImageUpload
+                      value={formData.images || []}
+                      onChange={(urls) => {
+                        const imageUrls = Array.isArray(urls) ? urls : [urls].filter(Boolean);
+                        // إزالة الصورة الرئيسية من الصور الإضافية لتجنب التكرار
+                        const filteredUrls = imageUrls.filter(url => url !== formData.image);
+                        setFormData(prev => ({ ...prev, images: filteredUrls }));
+                      }}
+                      bucket="product-images"
+                      multiple
+                      maxImages={5}
+                      label={t("uploadAdditionalImages") || "رفع صور إضافية"}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* المخزون والحالة */}
+              <div className="bg-white dark:bg-gray-900 rounded-lg p-4 border">
+                <h3 className="text-lg font-semibold mb-4 text-primary border-b pb-2">
+                  {t("stockAndStatus") || "المخزون والحالة"}
+                </h3>
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                    <Label htmlFor="stock_quantity" className="mb-2 block text-yellow-700 dark:text-yellow-300 font-medium">
+                      {t("stockQuantity")} <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="stock_quantity"
+                      type="number"
+                      min="0"
+                      value={formData.stock_quantity}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          stock_quantity: parseInt(e.target.value) || 0,
+                        }))
+                      }
+                      required
+                      className="border-yellow-200 focus:border-yellow-400"
+                    />
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex items-center space-x-2 rtl:space-x-reverse p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                      <Switch
+                        id="in_stock"
+                        checked={formData.in_stock}
+                        onCheckedChange={(checked) =>
+                          setFormData((prev) => ({ ...prev, in_stock: checked }))
+                        }
+                      />
+                      <Label htmlFor="in_stock" className="font-medium">{t("inStock")}</Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2 rtl:space-x-reverse p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                      <Switch
+                        id="featured"
+                        checked={formData.featured}
+                        onCheckedChange={(checked) =>
+                          setFormData((prev) => ({ ...prev, featured: checked }))
+                        }
+                      />
+                      <Label htmlFor="featured" className="font-medium">{t("featured")}</Label>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center space-x-2 rtl:space-x-reverse p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                    <Switch
+                      id="active"
+                      checked={formData.active}
+                      onCheckedChange={(checked) =>
+                        setFormData((prev) => ({ ...prev, active: checked }))
+                      }
+                    />
+                    <Label htmlFor="active" className="font-medium text-green-700 dark:text-green-300">{t("active")}</Label>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-          {/* الوصف */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4 text-primary">
-              {t("productDescription") || "الوصف"}
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <Label htmlFor="description_ar">الوصف (عربي)</Label>
-                <Textarea
-                  id="description_ar"
-                  value={formData.description_ar}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      description_ar: e.target.value,
-                    }))
-                  }
-                  rows={3}
-                />
-              </div>
-              <div>
-                <Label htmlFor="description_en">Description (English)</Label>
-                <Textarea
-                  id="description_en"
-                  value={formData.description_en}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      description_en: e.target.value,
-                    }))
-                  }
-                  rows={3}
-                />
-              </div>
-              <div>
-                <Label htmlFor="description_he">תיאור (עברית)</Label>
-                <Textarea
-                  id="description_he"
-                  value={formData.description_he}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      description_he: e.target.value,
-                    }))
-                  }
-                  rows={3}
-                />
-              </div>
+          
+          {/* Footer بالأزرار */}
+          <div className="mt-6 pt-4 border-t bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+            <div className="flex justify-end gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                className="min-w-[100px]"
+              >
+                {t("cancel")}
+              </Button>
+              <Button
+                type="submit"
+                disabled={loading}
+                className="min-w-[120px] bg-primary text-white font-bold text-base hover:bg-primary/90"
+              >
+                {loading ? t("loading") : t("add")}
+              </Button>
             </div>
-          </div>
-          {/* الأسعار */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4 text-primary">
-              {t("prices") || "الأسعار"}
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <Label htmlFor="price">
-                  {t("price")} <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="price"
-                  type="number"
-                  step="0.01"
-                  value={formData.price}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      price: parseFloat(e.target.value) || 0,
-                    }))
-                  }
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="original_price">
-                  {t("originalPrice") || "السعر الأصلي"}
-                </Label>
-                <Input
-                  id="original_price"
-                  type="number"
-                  step="0.01"
-                  value={formData.original_price}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      original_price: parseFloat(e.target.value) || 0,
-                    }))
-                  }
-                />
-              </div>
-              <div>
-                <Label htmlFor="wholesale_price">
-                  {t("wholesalePrice") || "سعر الجملة"}
-                </Label>
-                <Input
-                  id="wholesale_price"
-                  type="number"
-                  step="0.01"
-                  value={formData.wholesale_price}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      wholesale_price: parseFloat(e.target.value) || 0,
-                    }))
-                  }
-                />
-              </div>
-            </div>
-          </div>
-          {/* الفئة والمخزون */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <h3 className="text-lg font-semibold mb-2 text-primary">
-                {t("category")}
-              </h3>
-              <ProductCategoryField
-                formData={formData}
-                setFormData={setFormData}
-              />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold mb-2 text-primary">
-                {t("stock")}
-              </h3>
-              <Label htmlFor="stock_quantity">
-                {t("stockQuantity") || "كمية المخزون"}
-              </Label>
-              <Input
-                id="stock_quantity"
-                type="number"
-                value={formData.stock_quantity}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    stock_quantity: parseInt(e.target.value) || 0,
-                  }))
-                }
-              />
-            </div>
-          </div>
-          {/* الخصم والوسوم */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="discount">
-                {t("discount") || "نسبة الخصم"} (%)
-              </Label>
-              <Input
-                id="discount"
-                type="number"
-                step="0.01"
-                min="0"
-                max="100"
-                value={formData.discount}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    discount: parseFloat(e.target.value) || 0,
-                  }))
-                }
-              />
-            </div>
-          </div>
-          {/* الصور */}
-          <div>
-            <h3 className="text-lg font-semibold mb-2 text-primary">
-              {t("productImages")}
-            </h3>
-            <ImageUpload
-              value={formData.images}
-              onChange={(urls) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  images: Array.isArray(urls) ? urls : [urls].filter(Boolean),
-                  image:
-                    Array.isArray(urls) && urls.length > 0
-                      ? urls[0]
-                      : typeof urls === "string"
-                        ? urls
-                        : prev.image,
-                }))
-              }
-              label={t("productImages")}
-              placeholder={t("uploadImages")}
-              multiple={true}
-              maxImages={5}
-              bucket="product-images"
-            />
-          </div>
-          {/* التبديلات */}
-          <div className="flex flex-wrap gap-6 border-t pt-6 mt-2">
-            <div className="flex items-center gap-2">
-              <Switch
-                id="in_stock"
-                checked={formData.in_stock}
-                onCheckedChange={(checked) =>
-                  setFormData((prev) => ({ ...prev, in_stock: checked }))
-                }
-              />
-              <Label htmlFor="in_stock">{t("inStock")}</Label>
-            </div>
-            <div className="flex items-center gap-2">
-              <Switch
-                id="featured"
-                checked={formData.featured}
-                onCheckedChange={(checked) =>
-                  setFormData((prev) => ({ ...prev, featured: checked }))
-                }
-              />
-              <Label htmlFor="featured">
-                {t("featuredProduct") || "منتج مميز"}
-              </Label>
-            </div>
-            <div className="flex items-center gap-2">
-              <Switch
-                id="active"
-                checked={formData.active}
-                onCheckedChange={(checked) =>
-                  setFormData((prev) => ({ ...prev, active: checked }))
-                }
-              />
-              <Label htmlFor="active">{t("active")}</Label>
-            </div>
-          </div>
-          <div className="flex justify-end gap-2 pt-6">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              className="min-w-[100px]"
-            >
-              {t("cancel")}
-            </Button>
-            <Button
-              type="submit"
-              disabled={loading}
-              className="min-w-[120px] bg-primary text-white font-bold text-base hover:bg-primary/90"
-            >
-              {loading ? t("loading") : t("add")}
-            </Button>
           </div>
         </form>
       </DialogContent>

@@ -49,6 +49,7 @@ const config = createConfig({
   },
 
   defaultLanguage: "ar",
+  availableLanguages: ["ar", "en", "he"], // اللغات المتاحة - يمكن تعديلها حسب الحاجة
   rtl: true,
 
   // ✅ البيانات الحساسة (supabaseUrl, supabaseKey, siteId, netlifyToken) 

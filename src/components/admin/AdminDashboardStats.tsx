@@ -26,6 +26,8 @@ import type { UserProfile } from "@/types/profile";
 import type { Product } from "@/types/index";
 import { useCategoriesRealtime } from "@/hooks/useCategoriesRealtime";
 import { getOrderDisplayTotal } from "@/orders/order.displayTotal";
+import AdminDashboardDateFilter from "./AdminDashboardDateFilter";
+import { useFilteredAdminStats } from "@/hooks/useFilteredAdminStats";
 
 // Helper types
 interface UsersByType {
@@ -88,6 +90,9 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
   const [showOutOfStockDetails, setShowOutOfStockDetails] = useState(false);
   const [isTotalOrdersExpanded, setIsTotalOrdersExpanded] = useState(false);
   const [isProductsExpanded, setIsProductsExpanded] = useState(false);
+  // إضافة state للتاريخ
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
   // إحصائيات الطلبات
   const {
@@ -95,6 +100,24 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
     isLoading: ordersLoading,
     error: ordersError,
   } = useAdminOrdersStats(t);
+
+  // الإحصائيات المفلترة حسب التاريخ
+  const {
+    data: filteredStats,
+    isLoading: filteredStatsLoading,
+    error: filteredStatsError,
+  } = useFilteredAdminStats(dateFrom, dateTo);
+
+  // دالة لتحديث فلتر التاريخ
+  const handleDateFilterChange = (from: string, to: string) => {
+    setDateFrom(from);
+    setDateTo(to);
+  };
+
+  // استخدام الإحصائيات المفلترة إذا كان هناك فلتر تاريخ، وإلا استخدام الإحصائيات العادية
+  const shouldUseFilteredStats = dateFrom || dateTo;
+  const currentStats = shouldUseFilteredStats ? filteredStats : ordersStats;
+  const currentStatsLoading = shouldUseFilteredStats ? filteredStatsLoading : ordersLoading;
 
   const handleUserTypeClick = (userType: string) => {
     if (onFilterUsers) {
@@ -112,17 +135,30 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
 
   // Fetch monthly orders and revenue data
   const { data: monthlyData = [], isLoading: monthlyLoading } = useQuery({
-    queryKey: ["admin-monthly-data"],
+    queryKey: ["admin-monthly-data", dateFrom, dateTo],
     queryFn: async () => {
       // جلب جميع الحقول اللازمة لحساب الخصم
-      const { data, error } = await supabase
+      let query = supabase
         .from("orders")
-        .select("created_at, total, status, discount_type, discount_value, total_after_discount")
-        .gte(
+        .select("created_at, total, status, discount_type, discount_value, total_after_discount");
+      
+      // تطبيق فلتر التاريخ
+      if (dateFrom) {
+        query = query.gte("created_at", dateFrom + "T00:00:00.000Z");
+      }
+      if (dateTo) {
+        query = query.lte("created_at", dateTo + "T23:59:59.999Z");
+      }
+      
+      // إذا لم يتم تحديد تاريخ، استخدم السنة الحالية
+      if (!dateFrom && !dateTo) {
+        query = query.gte(
           "created_at",
           new Date(new Date().getFullYear(), 0, 1).toISOString(),
-        )
-        .order("created_at", { ascending: true });
+        );
+      }
+      
+      const { data, error } = await query.order("created_at", { ascending: true });
 
       if (error) throw error;
 
@@ -325,7 +361,7 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
   }
 
   // Show loading state
-  if (ordersLoading) {
+  if (currentStatsLoading) {
     return (
       <div className="space-y-6">
         <h1 className="text-3xl font-bold">{t("adminPanel")}</h1>
@@ -338,7 +374,7 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
   }
 
   // Show error state
-  if (ordersError) {
+  if (ordersError || (shouldUseFilteredStats && filteredStatsError)) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
@@ -359,7 +395,7 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
           </div>
           <p className="text-red-600 font-medium mb-2">{t("error")}</p>
           <p className="text-muted-foreground text-sm">
-            {ordersError?.message || t("unexpectedError")}
+            {ordersError?.message || filteredStatsError?.message || t("unexpectedError")}
           </p>
         </div>
       </div>
@@ -421,8 +457,8 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
   }
 
   // بيانات رسم توزيع الطلبات حسب الحالة
-  const ordersStatusData = Array.isArray(ordersStats?.statusStats)
-    ? ordersStats.statusStats.map((s) => ({
+  const ordersStatusData = Array.isArray(currentStats?.statusStats)
+    ? currentStats.statusStats.map((s) => ({
         name: s.label || s.status,
         value: s.value,
         color: s.color || "#8884d8",
@@ -431,6 +467,9 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
+      {/* Date Filter */}
+      <AdminDashboardDateFilter onDateFilterChange={handleDateFilterChange} />
+      
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 mt-2">
         {/* إجمالي الإيرادات */}
@@ -450,11 +489,15 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
                 <div
                   className="text-2xl md:text-3xl lg:text-4xl font-extrabold text-blue-900 text-center whitespace-nowrap overflow-hidden text-ellipsis max-w-full"
                   style={{wordBreak: 'normal'}}
-                  title={ordersStats && typeof ordersStats.totalRevenue === "number" ? ordersStats.totalRevenue.toLocaleString() : '0'}
+                  title={shouldUseFilteredStats && filteredStats 
+                    ? filteredStats.totalRevenue.toLocaleString() 
+                    : (ordersStats && typeof ordersStats.totalRevenue === "number" ? ordersStats.totalRevenue.toLocaleString() : '0')}
                 >
-                  {ordersStats && typeof ordersStats.totalRevenue === "number"
-                    ? formatNumberShort(ordersStats.totalRevenue)
-                    : 0}
+                  {shouldUseFilteredStats && filteredStats
+                    ? formatNumberShort(filteredStats.totalRevenue)
+                    : (ordersStats && typeof ordersStats.totalRevenue === "number"
+                      ? formatNumberShort(ordersStats.totalRevenue)
+                      : 0)}
                 </div>
                 <span className="text-lg font-bold text-blue-600 ml-1 self-end">{t("currency")}</span>
               </div>
@@ -463,7 +506,7 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
               </div>
             </div>
             {isRevenueExpanded &&
-              Array.isArray(ordersStats?.statusStats) && (
+              Array.isArray(currentStats?.statusStats) && (
                 <div className="w-full mt-4">
                   <table className="w-full text-sm border rounded-lg bg-white">
                     <thead>
@@ -474,7 +517,7 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
                     </thead>
                     <tbody>
                       {['pending', 'processing', 'shipped', 'delivered', 'cancelled'].map((statusKey) => {
-                        const stat = ordersStats.statusStats.find(s => s.status === statusKey);
+                        const stat = currentStats.statusStats.find(s => s.status === statusKey);
                         return (
                           <tr
                             key={statusKey}
@@ -517,12 +560,18 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
                 <div
                   className="text-2xl md:text-3xl lg:text-4xl font-extrabold text-green-900 text-center whitespace-nowrap overflow-hidden text-ellipsis max-w-full"
                   style={{wordBreak: 'normal'}}
-                  title={typeof totalUsers === "number" ? totalUsers.toLocaleString() : '0'}
+                  title={shouldUseFilteredStats && filteredStats 
+                    ? filteredStats.newUsers.toLocaleString() 
+                    : (typeof totalUsers === "number" ? totalUsers.toLocaleString() : '0')}
                 >
-                  {typeof totalUsers === "number" ? formatNumberShort(totalUsers) : 0}
+                  {shouldUseFilteredStats && filteredStats
+                    ? formatNumberShort(filteredStats.newUsers)
+                    : (typeof totalUsers === "number" ? formatNumberShort(totalUsers) : 0)}
                 </div>
               </div>
-              <div className="text-base font-semibold text-green-700 mt-1">{t("users")}</div>
+              <div className="text-base font-semibold text-green-700 mt-1">
+                {shouldUseFilteredStats && filteredStats ? t("newUsers") : t("users")}
+              </div>
             </div>
             {isUsersExpanded && (
               <div className="w-full mt-4">
@@ -564,12 +613,18 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
                 <div
                   className="text-2xl md:text-3xl lg:text-4xl font-extrabold text-purple-900 text-center whitespace-nowrap overflow-hidden text-ellipsis max-w-full"
                   style={{wordBreak: 'normal'}}
-                  title={typeof totalProducts === "number" ? totalProducts.toLocaleString() : '0'}
+                  title={shouldUseFilteredStats && filteredStats 
+                    ? filteredStats.totalProducts.toLocaleString() 
+                    : (typeof totalProducts === "number" ? totalProducts.toLocaleString() : '0')}
                 >
-                  {typeof totalProducts === "number" ? formatNumberShort(totalProducts) : 0}
+                  {shouldUseFilteredStats && filteredStats
+                    ? formatNumberShort(filteredStats.totalProducts)
+                    : (typeof totalProducts === "number" ? formatNumberShort(totalProducts) : 0)}
                 </div>
               </div>
-              <div className="text-base font-semibold text-purple-700 mt-1">{t("products")}</div>
+              <div className="text-base font-semibold text-purple-700 mt-1">
+                {shouldUseFilteredStats && filteredStats ? t("newProducts") : t("products")}
+              </div>
             </div>
             {/* تفاصيل المنتجات حسب الفئة */}
             {isProductsExpanded && categoriesStats.length > 0 && (
@@ -625,12 +680,18 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
                 <div
                   className="text-2xl md:text-3xl lg:text-4xl font-extrabold text-yellow-900 text-center whitespace-nowrap overflow-hidden text-ellipsis max-w-full"
                   style={{wordBreak: 'normal'}}
-                  title={typeof pendingOrders.length === "number" ? pendingOrders.length.toLocaleString() : '0'}
+                  title={shouldUseFilteredStats && filteredStats 
+                    ? filteredStats.totalOrders.toLocaleString() 
+                    : (typeof pendingOrders.length === "number" ? pendingOrders.length.toLocaleString() : '0')}
                 >
-                  {typeof pendingOrders.length === "number" ? formatNumberShort(pendingOrders.length) : 0}
+                  {shouldUseFilteredStats && filteredStats
+                    ? formatNumberShort(filteredStats.totalOrders)
+                    : (typeof pendingOrders.length === "number" ? formatNumberShort(pendingOrders.length) : 0)}
                 </div>
               </div>
-              <div className="text-base font-semibold text-yellow-700 mt-1">{t("newOrders")}</div>
+              <div className="text-base font-semibold text-yellow-700 mt-1">
+                {shouldUseFilteredStats && filteredStats ? t("orders") : t("newOrders")}
+              </div>
             </div>
             {showPendingOrdersDetails && pendingOrders.length > 0 && (
               <div className="w-full mt-4 max-h-64 overflow-y-auto">
@@ -792,13 +853,17 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
                 <div
                   className="text-2xl md:text-3xl lg:text-4xl font-extrabold text-orange-900 text-center whitespace-nowrap overflow-hidden text-ellipsis max-w-full"
                   style={{wordBreak: 'normal'}}
-                  title={typeof (ordersStats?.totalOrders) === "number"
-                    ? ordersStats.totalOrders.toLocaleString()
-                    : (ordersStats?.statusStats?.reduce((acc, s) => acc + (s.value || 0), 0) ?? 0).toLocaleString()}
+                  title={shouldUseFilteredStats && filteredStats 
+                    ? filteredStats.totalOrders.toLocaleString() 
+                    : (typeof (ordersStats?.totalOrders) === "number"
+                      ? ordersStats.totalOrders.toLocaleString()
+                      : (ordersStats?.statusStats?.reduce((acc, s) => acc + (s.value || 0), 0) ?? 0).toLocaleString())}
                 >
-                  {typeof (ordersStats?.totalOrders) === "number"
-                    ? formatNumberShort(ordersStats.totalOrders)
-                    : formatNumberShort(ordersStats?.statusStats?.reduce((acc, s) => acc + (s.value || 0), 0) ?? 0)}
+                  {shouldUseFilteredStats && filteredStats
+                    ? formatNumberShort(filteredStats.totalOrders)
+                    : (typeof (ordersStats?.totalOrders) === "number"
+                      ? formatNumberShort(ordersStats.totalOrders)
+                      : formatNumberShort(ordersStats?.statusStats?.reduce((acc, s) => acc + (s.value || 0), 0) ?? 0))}
                 </div>
               </div>
               <div className="text-base font-semibold text-orange-700 mt-1">{t("totalOrders")}</div>
@@ -809,7 +874,7 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
                   <tbody>
                     {(() => {
                       // استخدم statusStats إذا لم تتوفر القيم مباشرة
-                      const stats = ordersStats?.statusStats || [];
+                      const stats = currentStats?.statusStats || [];
                       const getCount = (status) => {
                         const found = stats.find(s => s.status === status);
                         return found ? found.value : 0;
@@ -830,7 +895,11 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
                           }}
                         >
                           <td className="p-2 font-medium">{row.label}</td>
-                          <td className={`p-2 text-right font-bold ${row.color}`}>{ordersStats?.[row.key] ?? getCount(row.status)}</td>
+                          <td className={`p-2 text-right font-bold ${row.color}`}>
+                            {shouldUseFilteredStats && filteredStats 
+                              ? (filteredStats as any)[row.key + 'Orders'] || getCount(row.status)
+                              : (ordersStats?.[row.key] ?? getCount(row.status))}
+                          </td>
                         </tr>
                       ));
                     })()}
@@ -1069,6 +1138,29 @@ const AdminDashboardStats: React.FC<AdminDashboardStatsProps> = ({
           </CardContent>
         </Card>
       </div>
+      
+      {/* معلومات الفلتر المطبق */}
+      {shouldUseFilteredStats && (dateFrom || dateTo) && (
+        <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center gap-2 text-blue-700">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="font-medium">
+              {t("filterApplied") || "فلتر مطبق"}:
+            </span>
+            <span>
+              {dateFrom && dateTo 
+                ? `${t("fromDateFilter") || "من"} ${new Date(dateFrom).toLocaleDateString('en-US')} ${t("toDateFilter") || "إلى"} ${new Date(dateTo).toLocaleDateString('en-US')}`
+                : dateFrom
+                  ? `${t("fromDateFilter") || "من"} ${new Date(dateFrom).toLocaleDateString('en-US')}`
+                  : dateTo
+                    ? `${t("toDateFilter") || "إلى"} ${new Date(dateTo).toLocaleDateString('en-US')}`
+                    : ""}
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

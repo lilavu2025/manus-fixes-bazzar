@@ -21,6 +21,7 @@
     "update-version": "node scripts/update-version.js",
     "prebuild": "npm run update-version",
     "create-client": "node scripts/create-client.js",
+    "update-client-languages": "node scripts/update-client-languages.js",
     "test-config": "node scripts/test-config.js",
     "manage-env": "node scripts/manage-env.js",
     "validate-project": "node scripts/validate-project.js"

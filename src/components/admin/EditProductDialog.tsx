@@ -15,6 +15,7 @@ import ProductNameFields from "./ProductNameFields";
 import ProductDescriptionFields from "./ProductDescriptionFields";
 import ProductPricingFields from "./ProductPricingFields";
 import ProductToggleFields from "./ProductToggleFields";
+import MultiLanguageField from "@/components/ui/MultiLanguageField";
 import {
   Product,
   ProductFormData,
@@ -23,6 +24,7 @@ import {
 } from "@/types/product";
 import { mapProductToFormData } from "./productMappingUtils";
 import { useProductsRealtime } from "@/hooks/useProductsRealtime";
+import { createProductSchema, validateForm } from "@/lib/validation";
 
 interface EditProductDialogProps {
   open: boolean;
@@ -69,9 +71,14 @@ const EditProductDialog: React.FC<EditProductDialogProps> = ({
   // تهيئة البيانات فقط عند فتح الديالوج لأول مرة أو تغيير المنتج
   useEffect(() => {
     if (product && categories.length > 0 && (!isInitialized || !open)) {
-      const imgs = Array.isArray(product.images)
+      // فصل الصورة الرئيسية عن الصور الإضافية
+      const allImages = Array.isArray(product.images)
         ? product.images
         : [product.image].filter(Boolean);
+      
+      const mainImage = product.image || (allImages.length > 0 ? allImages[0] : "");
+      const additionalImages = allImages.filter(img => img !== mainImage);
+      
       const matched = categories.find(
         (c) => c.id === product.category_id || c.id === product.category,
       );
@@ -85,8 +92,8 @@ const EditProductDialog: React.FC<EditProductDialogProps> = ({
         price: product.price || 0,
         original_price: product.original_price || 0,
         wholesale_price: product.wholesale_price || 0,
-        image: product.image || "",
-        images: imgs,
+        image: mainImage,
+        images: additionalImages,
         category_id: matched?.id || "",
         in_stock: product.in_stock ?? true,
         discount: product.discount ?? 0,
@@ -109,21 +116,45 @@ const EditProductDialog: React.FC<EditProductDialogProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    
     try {
-      // التأكد من أن الصورة الرئيسية هي أول صورة في المصفوفة
-      const imgs = formData.images.length
-        ? formData.images
-        : [formData.image].filter(Boolean);
+      // تحقق من صحة البيانات قبل الإرسال باستخدام الـ schema الديناميكي
+      const dynamicProductSchema = createProductSchema();
+      const validation = validateForm(dynamicProductSchema, formData);
       
-      // إذا لم تكن هناك صور، اجعل الصورة الرئيسية فارغة أيضاً
-      const main = imgs.length > 0 ? imgs[0] : "";
+      if (!validation.success) {
+        // عرض أخطاء التحقق
+        Object.entries(validation.errors || {}).forEach(([field, message]) => {
+          toast({
+            title: "خطأ في التحقق",
+            description: message,
+            variant: "destructive",
+          });
+        });
+        setIsSubmitting(false);
+        return;
+      }
+      
+      // دمج الصورة الرئيسية مع الصور الإضافية (الصورة الرئيسية تكون الأولى)
+      const allImages = [];
+      if (formData.image) {
+        allImages.push(formData.image);
+      }
+      // إضافة الصور الإضافية (تجنب التكرار)
+      if (formData.images && formData.images.length > 0) {
+        formData.images.forEach(img => {
+          if (img && img !== formData.image) {
+            allImages.push(img);
+          }
+        });
+      }
       
       const { data, error } = await supabase
         .from("products")
         .update({
           ...formData,
-          images: imgs,
-          image: main,
+          images: allImages,
+          image: formData.image || (allImages.length > 0 ? allImages[0] : ""),
           category_id: formData.category_id,
           updated_at: new Date().toISOString(),
         })
@@ -179,72 +210,218 @@ const EditProductDialog: React.FC<EditProductDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-bold mb-1 text-primary text-center">
+      <DialogContent
+        className={`max-w-5xl max-h-[95vh] overflow-y-auto ${isRTL ? "text-right" : "text-left"} p-0`}
+        dir={isRTL ? "rtl" : "ltr"}
+      >
+        <DialogHeader className="bg-gradient-to-r from-blue-50 to-blue-100 px-6 py-4 border-b">
+          <DialogTitle className="text-2xl font-bold text-primary text-center">
             {t("editProduct")}
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <ProductNameFields formData={formData} setFormData={setFormData} />
-          <ProductDescriptionFields
-            formData={formData}
-            setFormData={setFormData}
-          />
-          <ImageUpload
-            value={formData.images}
-            onChange={(imgs) => {
-              const imageArray = Array.isArray(imgs) ? imgs : [imgs].filter(Boolean);
-              setFormData((prev) => ({
-                ...prev,
-                images: imageArray,
-                // إذا لم تكن هناك صور، امحي الصورة الرئيسية أيضاً
-                image: imageArray.length > 0 ? imageArray[0] : "",
-              }));
-            }}
-            bucket="product-images"
-            label={t("productImages")}
-            multiple
-            maxImages={5}
-          />
+        
+        <form onSubmit={handleSubmit} className="px-6 py-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            {/* القسم الأيسر - المعلومات الأساسية */}
+            <div className="space-y-6">
+              
+              {/* بيانات المنتج الأساسية */}
+              <div className="bg-white dark:bg-gray-900 rounded-lg p-4 border">
+                <h3 className="text-lg font-semibold mb-4 text-primary border-b pb-2">
+                  {t("productInfo") || "بيانات المنتج"}
+                </h3>
+                <div className="space-y-4">
+                  <MultiLanguageField
+                    fieldName="name"
+                    label={t("productName") || "اسم المنتج"}
+                    values={{
+                      ar: formData.name_ar,
+                      en: formData.name_en,
+                      he: formData.name_he,
+                    }}
+                    onChange={(lang, value) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        [`name_${lang}`]: value,
+                      }))
+                    }
+                    placeholder={{
+                      ar: "أدخل اسم المنتج بالعربية",
+                      en: "Enter product name in English",
+                      he: "הכנס שם מוצר בעברית",
+                    }}
+                  />
+                </div>
+              </div>
 
-          {/* حقل اختيار الفئة */}
-          <div className="flex flex-col">
-            <label className="mb-2 font-medium">{t("category")}</label>
-            <select
-              value={formData.category_id}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  category_id: e.target.value,
-                }))
-              }
-              className="border p-2 rounded"
-            >
-              <option value="">{t("selectCategory")}</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {(language === 'en' && cat.nameEn) ? cat.nameEn : (language === 'he' && cat.nameHe) ? cat.nameHe : cat.name /* fallback للعربي */ || cat.nameEn || cat.nameHe || ''}
-                </option>
-              ))}
-            </select>
+              {/* الأوصاف */}
+              <div className="bg-white dark:bg-gray-900 rounded-lg p-4 border">
+                <h3 className="text-lg font-semibold mb-4 text-primary border-b pb-2">
+                  {t("descriptions") || "الأوصاف"}
+                </h3>
+                <MultiLanguageField
+                  fieldName="description"
+                  label={t("productDescription") || "وصف المنتج"}
+                  values={{
+                    ar: formData.description_ar,
+                    en: formData.description_en,
+                    he: formData.description_he,
+                  }}
+                  onChange={(lang, value) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      [`description_${lang}`]: value,
+                    }))
+                  }
+                  placeholder={{
+                    ar: "أدخل وصف المنتج بالعربية",
+                    en: "Enter product description in English", 
+                    he: "הכנס תיאור מוצר בעברית",
+                  }}
+                  type="textarea"
+                />
+              </div>
+
+              {/* الفئة والعلامات */}
+              <div className="bg-white dark:bg-gray-900 rounded-lg p-4 border">
+                <h3 className="text-lg font-semibold mb-4 text-primary border-b pb-2">
+                  {t("categoryAndTags") || "الفئة والعلامات"}
+                </h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="mb-2 block font-medium">
+                      {t("category")} <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={formData.category_id}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          category_id: e.target.value,
+                        }))
+                      }
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
+                      required
+                    >
+                      <option value="">{t("selectCategory")}</option>
+                      {categories.map((cat) => (
+                        <option key={cat.id} value={cat.id}>
+                          {(language === 'en' && cat.nameEn) ? cat.nameEn : (language === 'he' && cat.nameHe) ? cat.nameHe : cat.name || cat.nameEn || cat.nameHe || ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="mb-2 block font-medium">
+                      {t("tags")} ({t("optional")})
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.tags?.join(", ") || ""}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          tags: e.target.value.split(",").map((tag) => tag.trim()).filter(Boolean),
+                        }))
+                      }
+                      placeholder={t("tagsPlaceholder") || "علامة1, علامة2, علامة3"}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-primary focus:border-primary"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* القسم الأيمن - الأسعار والإعدادات */}
+            <div className="space-y-6">
+              
+              {/* الأسعار */}
+              <div className="bg-white dark:bg-gray-900 rounded-lg p-4 border">
+                <h3 className="text-lg font-semibold mb-4 text-primary border-b pb-2">
+                  {t("prices") || "الأسعار"}
+                </h3>
+                <ProductPricingFields formData={formData} setFormData={setFormData} />
+              </div>
+
+              {/* صور المنتج */}
+              <div className="bg-white dark:bg-gray-900 rounded-lg p-4 border">
+                <h3 className="text-lg font-semibold mb-4 text-primary border-b pb-2">
+                  {t("productImages") || "صور المنتج"}
+                </h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="mb-2 block font-medium">
+                      {t("mainImage")} <span className="text-red-500">*</span>
+                    </label>
+                    <ImageUpload
+                      value={formData.image}
+                      onChange={(url) => {
+                        const imageUrl = Array.isArray(url) ? url[0] || '' : url;
+                        setFormData(prev => ({ 
+                          ...prev, 
+                          image: imageUrl,
+                          // إزالة الصورة الجديدة من الصور الإضافية إذا كانت موجودة
+                          images: prev.images?.filter(img => img !== imageUrl) || []
+                        }));
+                      }}
+                      bucket="product-images"
+                      label={t("uploadMainImage") || "رفع الصورة الرئيسية"}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="mb-2 block font-medium">
+                      {t("additionalImages")} ({t("optional")})
+                    </label>
+                    <ImageUpload
+                      value={formData.images || []}
+                      onChange={(urls) => {
+                        const imageUrls = Array.isArray(urls) ? urls : [urls].filter(Boolean);
+                        // إزالة الصورة الرئيسية من الصور الإضافية لتجنب التكرار
+                        const filteredUrls = imageUrls.filter(url => url !== formData.image);
+                        setFormData(prev => ({ ...prev, images: filteredUrls }));
+                      }}
+                      bucket="product-images"
+                      multiple
+                      maxImages={5}
+                      label={t("uploadAdditionalImages") || "رفع صور إضافية"}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* المخزون والحالة */}
+              <div className="bg-white dark:bg-gray-900 rounded-lg p-4 border">
+                <h3 className="text-lg font-semibold mb-4 text-primary border-b pb-2">
+                  {t("stockAndStatus") || "المخزون والحالة"}
+                </h3>
+                <ProductToggleFields formData={formData} setFormData={setFormData} />
+              </div>
+            </div>
           </div>
-
-          <ProductPricingFields formData={formData} setFormData={setFormData} />
-          <ProductToggleFields formData={formData} setFormData={setFormData} />
-
-          <DialogFooter className="flex flex-row gap-2 justify-end pt-4 border-t mt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
-              {t("cancel")}
-            </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? t("updating") : t("updateProduct")}
-            </Button>
-          </DialogFooter>
+          
+          {/* Footer بالأزرار */}
+          <div className="mt-6 pt-4 border-t bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+            <div className="flex justify-end gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                className="min-w-[100px]"
+              >
+                {t("cancel")}
+              </Button>
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="min-w-[120px] bg-blue-600 text-white font-bold text-base hover:bg-blue-700"
+              >
+                {isSubmitting ? t("updating") : t("updateProduct")}
+              </Button>
+            </div>
+          </div>
         </form>
       </DialogContent>
     </Dialog>

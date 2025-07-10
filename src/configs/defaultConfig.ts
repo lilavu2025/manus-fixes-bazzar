@@ -31,7 +31,9 @@ const defaultConfig = {
   siteId: "default-site-id",
   netlifyToken: "default-netlify-token",
 
+  // إعدادات اللغة
   defaultLanguage: "ar",
+  availableLanguages: ["ar", "en", "he"], // جميع اللغات المتاحة افتراضياً
   rtl: false,
 };
 

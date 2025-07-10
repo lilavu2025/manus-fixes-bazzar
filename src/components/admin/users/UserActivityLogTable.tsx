@@ -9,15 +9,48 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useLanguage } from "@/utils/languageContextUtils";
 import UserDetailsDialog from "./UserDetailsDialog";
+import ActivityLogDialog from "./ActivityLogDialog";
 import ActivityChangeDisplay from "./ActivityChangeDisplay";
 import type { UserProfile } from "@/types/profile";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
+import { 
+  Download, 
+  Activity, 
+  User, 
+  Shield, 
+  Edit, 
+  Trash2, 
+  UserCheck, 
+  UserX,
+  Clock,
+  FileSpreadsheet,
+  Eye,
+  Filter,
+  Search,
+  RotateCcw,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight
+} from "lucide-react";
 
 const UserActivityLogTable: React.FC = () => {
-  const { t } = useLanguage();
+  const { t, language, isRTL: isRTLDirection } = useLanguage();
   const ACTION_LABELS: Record<string, string> = {
     disable: t("disableUser"),
     enable: t("enableUser"),
@@ -57,49 +90,143 @@ const UserActivityLogTable: React.FC = () => {
   }
 
   const [logs, setLogs] = useState<UserActivityLog[]>([]);
+  const [allLogs, setAllLogs] = useState<UserActivityLog[]>([]);
   const [profileMap, setProfileMap] = useState<ProfileMap>({});
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<string | null>(null);
   const [userDetails, setUserDetails] = useState<UserProfile | null>(null);
+  const [selectedActivityLog, setSelectedActivityLog] = useState<UserActivityLog | null>(null);
+  const [activityDialogOpen, setActivityDialogOpen] = useState(false);
+  
+  // Filters state
+  const [fromDate, setFromDate] = useState<string>("");
+  const [toDate, setToDate] = useState<string>("");
+  const [actionFilter, setActionFilter] = useState<string>("all");
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [pageSize] = useState(10); // عدد العناصر في كل صفحة - تم تغييره من 20 إلى 10
+  const [initialLoad, setInitialLoad] = useState(true);
+  
+  // إحصائيات شاملة (من قاعدة البيانات بدون فلاتر)
+  const [totalStats, setTotalStats] = useState({
+    total: 0,
+    deletes: 0,
+    disables: 0,
+    enables: 0,
+    updates: 0,
+    uniqueAdmins: 0,
+    uniqueUsers: 0,
+  });
 
-  useEffect(() => {
-    const fetchLogsAndProfiles = async () => {
-      setLoading(true);
-      const { data: logsData, error } = await supabase
-        .from("user_activity_log")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(100);
-      if (error || !logsData) {
-        setLoading(false);
-        return;
-      }
+  // جلب الإحصائيات الشاملة من قاعدة البيانات
+  const fetchTotalStats = async () => {
+    const { data: statsData } = await supabase
+      .from("user_activity_log")
+      .select("action, admin_id, user_id");
+
+    if (statsData) {
+      const newStats = {
+        total: statsData.length,
+        deletes: statsData.filter(l => l.action === 'delete').length,
+        disables: statsData.filter(l => l.action === 'disable').length,
+        enables: statsData.filter(l => l.action === 'enable').length,
+        updates: statsData.filter(l => l.action === 'update').length,
+        uniqueAdmins: new Set(statsData.map(l => l.admin_id)).size,
+        uniqueUsers: new Set(statsData.map(l => l.user_id)).size,
+      };
+      setTotalStats(newStats);
+    }
+  };
+
+  // جلب البيانات مع دعم pagination والفلاتر
+  const fetchLogsAndProfiles = async (page: number = 1, resetData: boolean = false) => {
+    setLoading(true);
+    
+    // بناء الاستعلام مع الفلاتر
+    let query = supabase
+      .from("user_activity_log")
+      .select("*", { count: 'exact' });
+
+    // تطبيق فلاتر التاريخ
+    if (fromDate) {
+      const fromDateTime = new Date(fromDate);
+      fromDateTime.setHours(0, 0, 0, 0);
+      query = query.gte('created_at', fromDateTime.toISOString());
+    }
+
+    if (toDate) {
+      const toDateTime = new Date(toDate);
+      toDateTime.setHours(23, 59, 59, 999);
+      query = query.lte('created_at', toDateTime.toISOString());
+    }
+
+    // تطبيق فلتر نوع الإجراء
+    if (actionFilter && actionFilter !== "all") {
+      query = query.eq('action', actionFilter);
+    }
+
+    // تطبيق ترتيب وتقسيم الصفحات
+    const offset = (page - 1) * pageSize;
+    query = query
+      .order("created_at", { ascending: false })
+      .range(offset, offset + pageSize - 1);
+
+    const { data: logsData, error, count } = await query;
+    
+    if (error || !logsData) {
+      setLoading(false);
+      return;
+    }
+
+    // تحديث العدد الإجمالي
+    setTotalCount(count || 0);
+
+    // إذا كان resetData = true، استبدل البيانات. وإلا أضف إليها
+    if (resetData) {
       setLogs(logsData);
-      // اجمع كل الـ id المطلوبة
-      const ids = Array.from(
-        new Set(logsData.flatMap((l) => [l.admin_id, l.user_id])),
-      );
-      if (ids.length === 0) {
-        setProfileMap({});
-        setLoading(false);
-        return;
-      }
+      setAllLogs(logsData);
+    } else {
+      setLogs(prev => [...prev, ...logsData]);
+      setAllLogs(prev => [...prev, ...logsData]);
+    }
+
+    // اجمع كل الـ id المطلوبة من البيانات الجديدة
+    const newIds = Array.from(
+      new Set(logsData.flatMap((l) => [l.admin_id, l.user_id]))
+    );
+    
+    if (newIds.length === 0) {
+      setLoading(false);
+      return;
+    }
+
+    // اجلب بيانات المستخدمين من profiles فقط للـ IDs الجديدة
+    const existingIds = Object.keys(profileMap);
+    const missingIds = newIds.filter(id => !existingIds.includes(id));
+    
+    if (missingIds.length > 0) {
       // اجلب بيانات المستخدمين من profiles
       const { data: profiles } = await supabase
         .from("profiles")
         .select("id,full_name,email,phone")
-        .in("id", ids);
-      const map: ProfileMap = {};
+        .in("id", missingIds);
+
+      const newProfileMap: ProfileMap = { ...profileMap };
       profiles?.forEach((p) => {
-        map[p.id] = { full_name: p.full_name, email: p.email, phone: p.phone };
+        newProfileMap[p.id] = { full_name: p.full_name, email: p.email, phone: p.phone };
       });
+
       // جلب بيانات المحذوفين إذا لم يوجدوا في profiles
-      const missingIds = ids.filter((id) => !map[id]);
-      if (missingIds.length > 0) {
+      const stillMissingIds = missingIds.filter((id) => !newProfileMap[id]);
+      if (stillMissingIds.length > 0) {
         const { data: deletedUsers } = await supabase
           .from("deleted_users")
           .select("user_id,full_name,email,phone")
-          .in("user_id", missingIds);
+          .in("user_id", stillMissingIds);
+
         (
           deletedUsers as
             | Array<{
@@ -110,18 +237,50 @@ const UserActivityLogTable: React.FC = () => {
               }>
             | undefined
         )?.forEach((u) => {
-          map[u.user_id] = {
+          newProfileMap[u.user_id] = {
             full_name: u.full_name || t("deletedUser"),
             email: u.email,
             phone: u.phone,
           };
         });
       }
-      setProfileMap(map);
-      setLoading(false);
-    };
-    fetchLogsAndProfiles();
+      
+      setProfileMap(newProfileMap);
+    }
+
+    setLoading(false);
+  };
+
+  // جلب البيانات عند تحميل المكون
+  useEffect(() => {
+    fetchTotalStats(); // جلب الإحصائيات الشاملة أولاً
+    fetchLogsAndProfiles(1, true);
+    setInitialLoad(false);
   }, [t]);
+
+  // إعادة تطبيق الفلاتر عند تغييرها (تجنب التشغيل في التحميل الأولي)
+  useEffect(() => {
+    if (!initialLoad) {
+      setCurrentPage(1);
+      fetchLogsAndProfiles(1, true);
+    }
+  }, [fromDate, toDate, actionFilter, initialLoad]);
+
+  // تطبيق البحث المحلي على البيانات الموجودة
+  const filteredLogs = logs.filter(log => {
+    if (!searchTerm) return true;
+    
+    const searchLower = searchTerm.toLowerCase();
+    const adminName = profileMap[log.admin_id]?.full_name?.toLowerCase() || "";
+    const userName = profileMap[log.user_id]?.full_name?.toLowerCase() || "";
+    const adminEmail = profileMap[log.admin_id]?.email?.toLowerCase() || "";
+    const userEmail = profileMap[log.user_id]?.email?.toLowerCase() || "";
+    
+    return adminName.includes(searchLower) || 
+           userName.includes(searchLower) ||
+           adminEmail.includes(searchLower) ||
+           userEmail.includes(searchLower);
+  });
 
   // جلب تفاصيل المستخدم عند الضغط
   const handleUserDetails = async (userId: string) => {
@@ -163,10 +322,56 @@ const UserActivityLogTable: React.FC = () => {
     setUserDetails(data);
   };
 
+  // فتح ديالوج تفاصيل النشاط
+  const handleActivityDetails = (log: UserActivityLog) => {
+    setSelectedActivityLog(log);
+    setActivityDialogOpen(true);
+  };
+
+  // إعادة تعيين الفلاتر
+  const resetFilters = () => {
+    setFromDate("");
+    setToDate("");
+    setActionFilter("all");
+    setSearchTerm("");
+    setCurrentPage(1);
+  };
+
+  // دوال التحكم في pagination
+  const totalPages = Math.ceil(totalCount / pageSize);
+  const hasNextPage = currentPage < totalPages;
+  const hasPrevPage = currentPage > 1;
+
+  const goToFirstPage = () => {
+    setCurrentPage(1);
+    fetchLogsAndProfiles(1, true);
+  };
+
+  const goToPrevPage = () => {
+    if (hasPrevPage) {
+      const newPage = currentPage - 1;
+      setCurrentPage(newPage);
+      fetchLogsAndProfiles(newPage, true);
+    }
+  };
+
+  const goToNextPage = () => {
+    if (hasNextPage) {
+      const newPage = currentPage + 1;
+      setCurrentPage(newPage);
+      fetchLogsAndProfiles(newPage, true);
+    }
+  };
+
+  const goToLastPage = () => {
+    setCurrentPage(totalPages);
+    fetchLogsAndProfiles(totalPages, true);
+  };
+
   // زر تصدير سجل النشاط إلى Excel
   const exportAdminActivityToExcel = () => {
     const ws = XLSX.utils.json_to_sheet(
-      logs.map((l) => {
+      filteredLogs.map((l) => {
         // بيانات الأدمن
         let adminName = profileMap[l.admin_id]?.full_name;
         let adminEmail = profileMap[l.admin_id]?.email;
@@ -232,57 +437,298 @@ const UserActivityLogTable: React.FC = () => {
     );
   };
 
+  // حساب إحصائيات سريعة للبيانات المعروضة في الصفحة الحالية
+  const currentPageStats = {
+    displayed: filteredLogs.length,
+  };
+
+  // استخدام الإحصائيات الشاملة للعرض
+  const displayStats = totalStats;
+
+  const getActionIcon = (action: string) => {
+    switch (action) {
+      case 'delete': return <Trash2 className="h-4 w-4" />;
+      case 'disable': return <UserX className="h-4 w-4" />;
+      case 'enable': return <UserCheck className="h-4 w-4" />;
+      case 'update': return <Edit className="h-4 w-4" />;
+      default: return <Activity className="h-4 w-4" />;
+    }
+  };
+
+  const getActionColor = (action: string) => {
+    switch (action) {
+      case 'delete': return 'destructive';
+      case 'disable': return 'warning';
+      case 'enable': return 'success';
+      case 'update': return 'info';
+      default: return 'secondary';
+    }
+  };
+
   return (
-    <Card className="mt-8">
-      <CardHeader>
-        <CardTitle>{t("activityLog") || "سجل نشاط الأدمن"}</CardTitle>
-        <button
-          onClick={exportAdminActivityToExcel}
-          className="bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--secondary))] text-white px-4 py-2 rounded font-bold hover:bg-blue-700 mt-2"
-          style={{ float: "left" }}
-        >
-          {t("exportExcel") || "تصدير Excel"}
-        </button>
-      </CardHeader>
-      <CardContent>
+    <div className="space-y-6 mt-8">
+      {/* Header Section */}
+      <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-500">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Shield className="h-6 w-6 text-blue-600" />
+              </div>
+              <div>
+                <CardTitle className="text-xl text-blue-900">
+                  {t("activityLog") || "سجل نشاط الأدمن"}
+                </CardTitle>
+                <p className="text-sm text-blue-600 mt-1">
+                  {t("adminActivityDescription") || "سجل جميع عمليات الأدمن على النظام"}
+                </p>
+              </div>
+            </div>
+            <Button
+              onClick={exportAdminActivityToExcel}
+              variant="outline"
+              className="flex items-center gap-2 hover:bg-blue-50"
+            >
+              <FileSpreadsheet className="h-4 w-4" />
+              {t("exportExcel") || "تصدير Excel"}
+            </Button>
+          </div>
+        </CardHeader>
+      </Card>
+
+      {/* Quick Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+        <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+          <CardContent className="p-4 text-center">
+            <div className="flex items-center justify-center mb-2">
+              <Activity className="h-5 w-5 text-blue-600" />
+            </div>
+            <div className="text-2xl font-bold text-blue-900">{totalStats.total}</div>
+            <p className="text-xs text-blue-600">{t("totalActivities") || "إجمالي العمليات"}</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-red-50 to-red-100 border-red-200">
+          <CardContent className="p-4 text-center">
+            <div className="flex items-center justify-center mb-2">
+              <Trash2 className="h-5 w-5 text-red-600" />
+            </div>
+            <div className="text-2xl font-bold text-red-900">{totalStats.deletes}</div>
+            <p className="text-xs text-red-600">{t("deletions") || "حذف"}</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-yellow-50 to-yellow-100 border-yellow-200">
+          <CardContent className="p-4 text-center">
+            <div className="flex items-center justify-center mb-2">
+              <UserX className="h-5 w-5 text-yellow-600" />
+            </div>
+            <div className="text-2xl font-bold text-yellow-900">{totalStats.disables}</div>
+            <p className="text-xs text-yellow-600">{t("disables") || "تعطيل"}</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+          <CardContent className="p-4 text-center">
+            <div className="flex items-center justify-center mb-2">
+              <UserCheck className="h-5 w-5 text-green-600" />
+            </div>
+            <div className="text-2xl font-bold text-green-900">{totalStats.enables}</div>
+            <p className="text-xs text-green-600">{t("enables") || "تفعيل"}</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+          <CardContent className="p-4 text-center">
+            <div className="flex items-center justify-center mb-2">
+              <Edit className="h-5 w-5 text-purple-600" />
+            </div>
+            <div className="text-2xl font-bold text-purple-900">{totalStats.updates}</div>
+            <p className="text-xs text-purple-600">{t("updates") || "تحديث"}</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-indigo-50 to-indigo-100 border-indigo-200">
+          <CardContent className="p-4 text-center">
+            <div className="flex items-center justify-center mb-2">
+              <Shield className="h-5 w-5 text-indigo-600" />
+            </div>
+            <div className="text-2xl font-bold text-indigo-900">{totalStats.uniqueAdmins}</div>
+            <p className="text-xs text-indigo-600">{t("admins") || "مدراء"}</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-teal-50 to-teal-100 border-teal-200">
+          <CardContent className="p-4 text-center">
+            <div className="flex items-center justify-center mb-2">
+              <User className="h-5 w-5 text-teal-600" />
+            </div>
+            <div className="text-2xl font-bold text-teal-900">{totalStats.uniqueUsers}</div>
+            <p className="text-xs text-teal-600">{t("affectedUsers") || "مستخدمين متأثرين"}</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filters Section */}
+      <Card className="bg-gray-50 border-gray-200">
+        <CardHeader className="pb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-gray-100 rounded-lg">
+              <Filter className="h-5 w-5 text-gray-600" />
+            </div>
+            <CardTitle className="text-lg text-gray-900">
+              {t("logFilters") || "فلاتر السجل"}
+            </CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* فلتر التاريخ من */}
+            <div className="space-y-2">
+              <Label htmlFor="fromDate" className="text-sm font-medium text-gray-700">
+                <Calendar className="h-4 w-4 inline mr-2" />
+                {t("fromDate") || "من تاريخ"}
+              </Label>
+              <Input
+                id="fromDate"
+                type="date"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+                className="w-full"
+              />
+            </div>
+
+            {/* فلتر التاريخ إلى */}
+            <div className="space-y-2">
+              <Label htmlFor="toDate" className="text-sm font-medium text-gray-700">
+                <Calendar className="h-4 w-4 inline mr-2" />
+                {t("toDate") || "إلى تاريخ"}
+              </Label>
+              <Input
+                id="toDate"
+                type="date"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+                className="w-full"
+              />
+            </div>
+
+            {/* فلتر نوع الإجراء */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-gray-700">
+                <Activity className="h-4 w-4 inline mr-2" />
+                {t("actionType") || "نوع الإجراء"}
+              </Label>
+              <Select value={actionFilter} onValueChange={setActionFilter}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder={t("selectAction") || "اختر الإجراء"} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t("allActions") || "جميع الإجراءات"}</SelectItem>
+                  <SelectItem value="delete">{t("deleteUser") || "حذف مستخدم"}</SelectItem>
+                  <SelectItem value="disable">{t("disableUser") || "تعطيل مستخدم"}</SelectItem>
+                  <SelectItem value="enable">{t("enableUser") || "تفعيل مستخدم"}</SelectItem>
+                  <SelectItem value="update">{t("updateUser") || "تحديث مستخدم"}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* بحث */}
+            <div className="space-y-2">
+              <Label htmlFor="search" className="text-sm font-medium text-gray-700">
+                <Search className="h-4 w-4 inline mr-2" />
+                {t("search") || "بحث"}
+              </Label>
+              <Input
+                id="search"
+                type="text"
+                placeholder={t("searchInLog") || "البحث في السجل"}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full"
+              />
+            </div>
+          </div>
+
+          {/* أزرار التحكم */}
+          <div className="flex items-center gap-3 pt-2">
+            <div className="flex-1"></div>
+            <Button
+              variant="outline"
+              onClick={resetFilters}
+              className="flex items-center gap-2"
+            >
+              <RotateCcw className="h-4 w-4" />
+              {t("resetLogFilters") || "إعادة تعيين الفلاتر"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Main Content */}
+      <Card className="border-gray-200 shadow-sm">
+        <CardContent className="p-6">
         {loading ? (
           <div className="space-y-6">
             <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto animate-spin rounded-full border-primary"></div>
-              <p className="mt-4 text-gray-600">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto border-primary"></div>
+              <p className="mt-4 text-muted-foreground">
                 {t("loadingData") || "جاري التحميل..."}
               </p>
             </div>
           </div>
-        ) : logs.length === 0 ? (
-          <div className="text-center py-8 text-lg text-gray-500">
-            {t("noResults") || "لا يوجد نشاط"}
+        ) : filteredLogs.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="p-4 bg-gray-50 rounded-lg inline-block mb-4">
+              <Activity className="h-12 w-12 text-gray-400 mx-auto" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              {t("noActivities") || "لا توجد عمليات"}
+            </h3>
+            <p className="text-gray-500">
+              {t("noActivitiesDescription") || "لم يتم تسجيل أي نشاط للأدمن بعد"}
+            </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <div className="max-h-[268px] overflow-y-auto">
+          <div className="overflow-hidden rounded-lg border border-gray-200">
+            <div className="max-h-[400px] overflow-y-auto">
               <Table>
-                <TableHeader className="text-center">
+                <TableHeader className="bg-gray-50/80 sticky top-0 z-10">
                   <TableRow>
-                    <TableHead className="text-center">{t("admin")}</TableHead>
-                    <TableHead className="text-center">{t("user")}</TableHead>
-                    <TableHead className="text-center">
-                      {t("actions")}
+                    <TableHead className={`w-1/4 font-semibold ${isRTLDirection ? 'text-right' : 'text-left'}`}>
+                      <div className="flex items-center gap-2">
+                        <Shield className="h-4 w-4" />
+                        {t("admin")}
+                      </div>
                     </TableHead>
-                    <TableHead className="text-center">
-                      {t("changesDetails")}
+                    <TableHead className={`w-1/4 font-semibold ${isRTLDirection ? 'text-right' : 'text-left'}`}>
+                      <div className="flex items-center gap-2">
+                        <User className="h-4 w-4" />
+                        {t("user")}
+                      </div>
                     </TableHead>
-                    <TableHead className="text-center">{t("date")}</TableHead>
+                    <TableHead className={`w-1/6 text-center font-semibold ${isRTLDirection ? 'text-right' : 'text-left'}`}>
+                      <div className="flex items-center gap-2 justify-center">
+                        <Activity className="h-4 w-4" />
+                        {t("actions")}
+                      </div>
+                    </TableHead>
+                    <TableHead className={`w-1/3 text-center font-semibold ${isRTLDirection ? 'text-right' : 'text-left'}`}>
+                      <div className="flex items-center gap-2 justify-center">
+                        <Clock className="h-4 w-4" />
+                        {t("dateAndDetails")}
+                      </div>
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {logs.map((log) => {
-                    // استخراج بيانات المستخدم (الاسم والبريد) من profileMap أو details أو fallback
+                  {filteredLogs.map((log, index) => {
+                    // استخراج بيانات المستخدم
                     const userProfile = profileMap[log.user_id];
                     let displayName = userProfile?.full_name;
                     let displayEmail = userProfile?.email;
                     let displayPhone = userProfile?.phone;
-                    // إذا لم يوجد في profileMap، جرب details
+                    
                     if (
                       (!displayName || !displayEmail) &&
                       log.details &&
@@ -297,110 +743,140 @@ const UserActivityLogTable: React.FC = () => {
                       displayEmail = displayEmail || detailsObj.email;
                       displayPhone = displayPhone || detailsObj.phone;
                     }
-                    // fallback نهائي
-                    if (!displayName) displayName = t("userUnavailable");
+                    
+                    if (!displayName) displayName = t("userUnavailable") || "مستخدم غير متوفر";
                     if (!displayEmail) displayEmail = "";
                     if (!displayPhone) displayPhone = null;
-                    // زر التفاصيل فقط إذا كان هناك اسم
-                    const canShowDetails =
-                      !!displayName && displayName !== "مستخدم غير متوفر";
+                    
+                    const canShowDetails = !!displayName && displayName !== "مستخدم غير متوفر";
+                    const adminProfile = profileMap[log.admin_id];
+                    
                     return (
-                      <TableRow key={log.id}>
+                      <TableRow 
+                        key={log.id} 
+                        className={`hover:bg-gray-50/50 transition-colors ${
+                          index % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'
+                        }`}
+                      >
                         {/* عمود الأدمن */}
-                        <TableCell className="font-mono text-xs">
-                          <span className="font-bold text-blue-700">
-                            {profileMap[log.admin_id]?.full_name ||
-                              log.admin_id}
-                          </span>
-                          {profileMap[log.admin_id]?.email && (
-                            <div className="text-gray-400 text-[10px]">
-                              {profileMap[log.admin_id]?.email}
+                        <TableCell className="p-3">
+                          <div className="flex items-center gap-2">
+                            <div className="p-1.5 bg-blue-100 rounded-full">
+                              <Shield className="h-3 w-3 text-blue-600" />
                             </div>
-                          )}
-                          {profileMap[log.admin_id]?.phone && (
-                            <div className="text-gray-400 text-[10px]">
-                              {profileMap[log.admin_id]?.phone}
+                            <div className="min-w-0 flex-1">
+                              <div className="font-medium text-blue-900 text-sm truncate">
+                                {adminProfile?.full_name || log.admin_id}
+                              </div>
+                              {adminProfile?.email && (
+                                <div className="text-xs text-blue-600 truncate">
+                                  {adminProfile.email}
+                                </div>
+                              )}
                             </div>
-                          )}
-                        </TableCell>
-                        {/* عمود المستخدم */}
-                        <TableCell className="font-mono text-xs">
-                          {canShowDetails ? (
-                            <button
-                              className="text-blue-700 underline hover:text-blue-900 font-bold"
-                              onClick={async () => {
-                                if (userProfile) {
-                                  await handleUserDetails(log.user_id);
-                                } else {
-                                  setUserDetails({
-                                    id: log.user_id,
-                                    full_name: displayName,
-                                    phone: null,
-                                    user_type: "retail",
-                                    created_at: "",
-                                    updated_at: "", // إضافة الحقل المطلوب
-                                    email: displayEmail,
-                                    disabled: true,
-                                  });
-                                  setSelectedUser(log.user_id);
-                                }
-                              }}
-                            >
-                              {displayName}
-                            </button>
-                          ) : (
-                            <span className="text-gray-400 italic">
-                              {displayName}
-                            </span>
-                          )}
-                          {displayEmail && (
-                            <div className="text-gray-400 text-[10px]">
-                              {displayEmail}
-                            </div>
-                          )}
-                          {displayPhone && (
-                            <div className="text-gray-400 text-[10px]">
-                              {displayPhone}
-                            </div>
-                          )}
-                        </TableCell>
-                        {/* عمود الإجراء */}
-                        <TableCell>
-                          <span
-                            className={`px-2 py-1 rounded text-xs font-semibold ${
-                              log.action === "delete"
-                                ? "bg-red-100 text-red-700"
-                                : log.action === "disable"
-                                  ? "bg-yellow-100 text-yellow-700"
-                                  : log.action === "enable"
-                                    ? "bg-green-100 text-green-700"
-                                    : log.action === "update"
-                                      ? "bg-blue-100 text-blue-700"
-                                      : "bg-gray-100 text-gray-700"
-                            }`}
-                          >
-                            {ACTION_LABELS[log.action] || log.action}
-                          </span>
-                        </TableCell>
-
-                        {/* عمود التفاصيل */}
-                        <TableCell className="text-xs max-w-xs">
-                          <div className="max-w-xs overflow-hidden">
-                            <ActivityChangeDisplay 
-                              change={{
-                                action: log.action,
-                                target_field: log.target_field,
-                                old_value: log.old_value,
-                                new_value: log.new_value,
-                                details: log.details
-                              }}
-                            />
                           </div>
                         </TableCell>
 
-                        {/* عمود التاريخ */}
-                        <TableCell className="text-right text-xs">
-                          {new Date(log.created_at).toLocaleString('en-US', { calendar: 'gregory' })}
+                        {/* عمود المستخدم */}
+                        <TableCell className="p-3">
+                          <div className="flex items-center gap-2">
+                            <div className="p-1.5 bg-gray-100 rounded-full">
+                              <User className="h-3 w-3 text-gray-600" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              {canShowDetails ? (
+                                <Button
+                                  variant="link"
+                                  className="p-0 h-auto font-medium text-sm text-gray-900 hover:text-blue-600 truncate"
+                                  onClick={async () => {
+                                    if (userProfile) {
+                                      await handleUserDetails(log.user_id);
+                                    } else {
+                                      setUserDetails({
+                                        id: log.user_id,
+                                        full_name: displayName,
+                                        phone: null,
+                                        user_type: "retail",
+                                        created_at: "",
+                                        updated_at: "",
+                                        email: displayEmail,
+                                        disabled: true,
+                                      });
+                                      setSelectedUser(log.user_id);
+                                    }
+                                  }}
+                                >
+                                  {displayName}
+                                </Button>
+                              ) : (
+                                <span className="text-sm text-gray-500 italic truncate">
+                                  {displayName}
+                                </span>
+                              )}
+                              {displayEmail && (
+                                <div className="text-xs text-gray-500 truncate">
+                                  {displayEmail}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </TableCell>
+
+                        {/* عمود الإجراء */}
+                        <TableCell className="p-3">
+                          <div className="flex justify-center">
+                            <Badge 
+                              variant={getActionColor(log.action) as any}
+                              className="flex items-center gap-1 px-2 py-1"
+                            >
+                              {getActionIcon(log.action)}
+                              <span className="text-xs font-medium">
+                                {ACTION_LABELS[log.action] || log.action}
+                              </span>
+                            </Badge>
+                          </div>
+                        </TableCell>
+
+                        {/* عمود التاريخ والتفاصيل */}
+                        <TableCell className="p-3">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-3 w-3 text-gray-400" />
+                              <div className="text-xs text-gray-600">
+                                <div className="font-medium">
+                                  {new Date(log.created_at).toLocaleDateString(
+                                    'en-US',
+                                    { 
+                                      year: 'numeric',
+                                      month: 'short',
+                                      day: 'numeric',
+                                      calendar: 'gregory'
+                                    }
+                                  )}
+                                </div>
+                                <div className="text-gray-400">
+                                  {new Date(log.created_at).toLocaleTimeString(
+                                    'en-US',
+                                    { 
+                                      hour: '2-digit',
+                                      minute: '2-digit',
+                                      hour12: true,
+                                      calendar: 'gregory'
+                                    }
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleActivityDetails(log)}
+                              className="flex items-center gap-1 hover:bg-blue-50 hover:border-blue-300 text-xs px-2 py-1 h-7"
+                            >
+                              <Eye className="h-3 w-3" />
+                              {t("details") || "تفاصيل"}
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
@@ -410,6 +886,81 @@ const UserActivityLogTable: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* Pagination Controls */}
+        {!loading && filteredLogs.length > 0 && totalPages > 1 && (
+          <div className="mt-6 border-t border-gray-200 pt-4">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              {/* معلومات الصفحة */}
+              <div className="text-sm text-gray-600">
+                {t("showingResults") || "عرض"} {((currentPage - 1) * pageSize) + 1} - {Math.min(currentPage * pageSize, totalCount)} {t("paginationOf") || "من"} {totalCount} {t("paginationResults") || "نتيجة"}
+              </div>
+
+              {/* أزرار التنقل */}
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={goToFirstPage}
+                  disabled={!hasPrevPage}
+                  className="flex items-center gap-1"
+                >
+                  <ChevronsLeft className="h-4 w-4" />
+                  <span className="hidden sm:inline">{t("first") || "الأول"}</span>
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={goToPrevPage}
+                  disabled={!hasPrevPage}
+                  className="flex items-center gap-1"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  <span className="hidden sm:inline">{t("previous") || "السابق"}</span>
+                </Button>
+
+                {/* معلومات الصفحة الحالية */}
+                <div className="flex items-center gap-2 px-3 py-1 bg-gray-50 rounded-md">
+                  <span className="text-sm font-medium text-gray-700">
+                    {t("page") || "صفحة"} {currentPage} {t("paginationOf") || "من"} {totalPages}
+                  </span>
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={goToNextPage}
+                  disabled={!hasNextPage}
+                  className="flex items-center gap-1"
+                >
+                  <span className="hidden sm:inline">{t("next") || "التالي"}</span>
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={goToLastPage}
+                  disabled={!hasNextPage}
+                  className="flex items-center gap-1"
+                >
+                  <span className="hidden sm:inline">{t("last") || "الأخير"}</span>
+                  <ChevronsRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            {/* معلومات إضافية على الهواتف */}
+            <div className="mt-3 sm:hidden text-center">
+              <div className="text-xs text-gray-500">
+                {pageSize} {t("itemsPerPage") || "عنصر في كل صفحة"}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* User Details Dialog */}
         {userDetails && (
           <UserDetailsDialog
             user={userDetails}
@@ -420,8 +971,18 @@ const UserActivityLogTable: React.FC = () => {
             }}
           />
         )}
-      </CardContent>
-    </Card>
+
+        {/* Activity Log Dialog */}
+        <ActivityLogDialog
+          log={selectedActivityLog}
+          adminProfile={selectedActivityLog ? profileMap[selectedActivityLog.admin_id] : undefined}
+          userProfile={selectedActivityLog ? profileMap[selectedActivityLog.user_id] : undefined}
+          open={activityDialogOpen}
+          onOpenChange={setActivityDialogOpen}
+        />
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 
