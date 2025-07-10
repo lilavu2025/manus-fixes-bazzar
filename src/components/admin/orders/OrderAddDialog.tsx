@@ -124,7 +124,7 @@ const OrderAddDialog: React.FC<OrderAddDialogProps> = ({
           {/* اختيار العميل */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div>
-              <Label htmlFor="user_id">
+              <Label htmlFor="user_id" className="mb-2">
                 {t("customer") || "العميل"} <span className="text-red-500"></span>
               </Label>
               <Select
@@ -163,7 +163,7 @@ const OrderAddDialog: React.FC<OrderAddDialogProps> = ({
               </Select>
             </div>
             <div>
-              <Label htmlFor="payment_method">
+              <Label htmlFor="payment_method" className="mb-2">
                 {t("paymentMethod") || "طريقة الدفع"} <span className="text-red-500">*</span>
               </Label>
               <Select
@@ -220,7 +220,7 @@ const OrderAddDialog: React.FC<OrderAddDialogProps> = ({
             />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
-                <Label htmlFor="full_name">
+                <Label htmlFor="full_name" className="mb-2">
                   {t("fullName") || "الاسم الكامل"} <span className="text-red-500">*</span>
                 </Label>
                 <Input
@@ -241,7 +241,7 @@ const OrderAddDialog: React.FC<OrderAddDialogProps> = ({
                 />
               </div>
               <div>
-                <Label htmlFor="phone">
+                <Label htmlFor="phone" className="mb-2">
                   {t("phone") || "رقم الهاتف"} <span className="text-red-500">*</span>
                 </Label>
                 <Input
@@ -262,7 +262,7 @@ const OrderAddDialog: React.FC<OrderAddDialogProps> = ({
                 />
               </div>
               <div>
-                <Label htmlFor="city">{t("city") || "المدينة"}</Label>
+                <Label htmlFor="city" className="mb-2">{t("city") || "المدينة"}</Label>
                 <Input
                   id="city"
                   value={orderForm.shipping_address.city}
@@ -279,7 +279,7 @@ const OrderAddDialog: React.FC<OrderAddDialogProps> = ({
                 />
               </div>
               <div>
-                <Label htmlFor="area">{t("area") || "المنطقة"}</Label>
+                <Label htmlFor="area" className="mb-2">{t("area") || "المنطقة"}</Label>
                 <Input
                   id="area"
                   value={orderForm.shipping_address.area}
@@ -296,7 +296,7 @@ const OrderAddDialog: React.FC<OrderAddDialogProps> = ({
                 />
               </div>
               <div>
-                <Label htmlFor="street">{t("street") || "الشارع"}</Label>
+                <Label htmlFor="street" className="mb-2">{t("street") || "الشارع"}</Label>
                 <Input
                   id="street"
                   value={orderForm.shipping_address.street}
@@ -313,7 +313,7 @@ const OrderAddDialog: React.FC<OrderAddDialogProps> = ({
                 />
               </div>
               <div>
-                <Label htmlFor="building">{t("building") || "رقم المبنى"}</Label>
+                <Label htmlFor="building" className="mb-2">{t("building") || "رقم المبنى"}</Label>
                 <Input
                   id="building"
                   value={orderForm.shipping_address.building}
@@ -330,7 +330,7 @@ const OrderAddDialog: React.FC<OrderAddDialogProps> = ({
                 />
               </div>
               <div>
-                <Label htmlFor="floor">{t("floor") || "الطابق"}</Label>
+                <Label htmlFor="floor" className="mb-2">{t("floor") || "الطابق"}</Label>
                 <Input
                   id="floor"
                   value={orderForm.shipping_address.floor}
@@ -347,7 +347,7 @@ const OrderAddDialog: React.FC<OrderAddDialogProps> = ({
                 />
               </div>
               <div>
-                <Label htmlFor="apartment">{t("apartment") || "رقم الشقة"}</Label>
+                <Label htmlFor="apartment" className="mb-2">{t("apartment") || "رقم الشقة"}</Label>
                 <Input
                   id="apartment"
                   value={orderForm.shipping_address.apartment}
@@ -391,7 +391,7 @@ const OrderAddDialog: React.FC<OrderAddDialogProps> = ({
                   className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end p-3 border rounded-lg bg-white shadow-sm"
                 >
                   <div className="col-span-1">
-                    <Label>
+                    <Label className="mb-2">
                       {t("product") || "المنتج"} <span className="text-primary font-bold">{orderForm.items.length > 1 ? (index + 1) : null}</span> <span className="text-red-500">*</span>
                     </Label>
                     <Autocomplete
@@ -425,7 +425,7 @@ const OrderAddDialog: React.FC<OrderAddDialogProps> = ({
                     />
                   </div>
                   <div className="col-span-1">
-                    <Label>
+                    <Label className="mb-2">
                       {t("quantity") || "الكمية"} <span className="text-red-500">*</span>
                     </Label>
                     <Input
@@ -440,7 +440,7 @@ const OrderAddDialog: React.FC<OrderAddDialogProps> = ({
                     />
                   </div>
                   <div className="col-span-1">
-                    <Label>
+                    <Label className="mb-2">
                       {t("price") || "السعر"} <span className="text-red-500">*</span>
                     </Label>
                     <Input
@@ -486,7 +486,7 @@ const OrderAddDialog: React.FC<OrderAddDialogProps> = ({
           {/* ملاحظات + تمييز منشئ الطلب */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div>
-              <Label htmlFor="notes">{t("notes") || "ملاحظات"}</Label>
+              <Label htmlFor="notes" className="mb-2">{t("notes") || "ملاحظات"}</Label>
               <Textarea
                 id="notes"
                 value={orderForm.notes}
@@ -495,7 +495,7 @@ const OrderAddDialog: React.FC<OrderAddDialogProps> = ({
               />
             </div>
             <div className="flex flex-col gap-2 mt-2">
-              <Label>{t("orderCreator") || "منشئ الطلبية"}</Label>
+              <Label className="mb-2">{t("orderCreator") || "منشئ الطلبية"}</Label>
               <div className="flex items-center gap-2">
                 <Badge className="bg-blue-100 text-blue-800 border-blue-200">
                   {t("admin") || "أدمن"}

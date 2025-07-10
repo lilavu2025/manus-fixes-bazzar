@@ -27,6 +27,7 @@ descriptions: {
   },
 
   defaultLanguage: "ar",
+  availableLanguages: ["ar","he"], // جميع اللغات متاحة (يمكن تعديلها حسب الحاجة)
   rtl: true,
 
   // ✅ البيانات الحساسة (supabaseUrl, supabaseKey, siteId, netlifyToken) 

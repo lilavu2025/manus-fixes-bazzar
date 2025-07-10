@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { getAvailableLanguages, isLanguageFieldRequired } from '@/utils/fieldVisibilityUtils';
 
 // Common validation schemas
 export const emailSchema = z.string().email('Invalid email address');
@@ -30,32 +31,75 @@ export const addressSchema = z.object({
   is_default: z.boolean().default(false),
 });
 
-// Product validation schemas
-export const productSchema = z.object({
-  name_ar: z.string().min(2, 'Arabic name is required'),
-  name_en: z.string().min(2, 'English name is required'),
-  name_he: z.string().min(2, 'Hebrew name is required'),
-  description_ar: z.string().min(0, 'Arabic description must be at least 0 characters'),
-  description_en: z.string().min(0, 'English description must be at least 0 characters'),
-  description_he: z.string().min(0, 'Hebrew description must be at least 0 characters'),
-  price: z.number().positive('Price must be positive'),
-  original_price: z.number().positive('Original price must be positive').optional(),
-  wholesale_price: z.number().positive('Wholesale price must be positive').optional(),
-  discount: z.number().min(0).max(100).optional(),
-  category_id: z.string().uuid('Invalid category'),
-  in_stock: z.boolean(),
-  featured: z.boolean(),
-  active: z.boolean(),
-});
+// Dynamic validation functions based on available languages
+export const createProductSchema = () => {
+  const availableLanguages = getAvailableLanguages();
+  
+  const schemaFields: any = {
+    price: z.number().positive('Price must be positive'),
+    original_price: z.number().positive('Original price must be positive').optional(),
+    wholesale_price: z.number().positive('Wholesale price must be positive').optional(),
+    discount: z.number().min(0).max(100).optional(),
+    category_id: z.string().uuid('Invalid category'),
+    in_stock: z.boolean(),
+    featured: z.boolean(),
+    active: z.boolean(),
+  };
 
-// Category validation schemas
-export const categorySchema = z.object({
-  name_ar: z.string().min(2, 'Arabic name is required'),
-  name_en: z.string().min(2, 'English name is required'),
-  name_he: z.string().min(2, 'Hebrew name is required'),
-  image: z.string().url('Invalid image URL').optional(),
-  icon: z.string().optional(),
-});
+  // Add language fields based on availability
+  if (availableLanguages.includes('ar')) {
+    schemaFields.name_ar = isLanguageFieldRequired('ar') 
+      ? z.string().min(2, 'Arabic name is required')
+      : z.string().optional();
+    schemaFields.description_ar = z.string().optional();
+  }
+  
+  if (availableLanguages.includes('en')) {
+    schemaFields.name_en = isLanguageFieldRequired('en')
+      ? z.string().min(2, 'English name is required')  
+      : z.string().optional();
+    schemaFields.description_en = z.string().optional();
+  }
+  
+  if (availableLanguages.includes('he')) {
+    schemaFields.name_he = isLanguageFieldRequired('he')
+      ? z.string().min(2, 'Hebrew name is required')
+      : z.string().optional();
+    schemaFields.description_he = z.string().optional();
+  }
+
+  return z.object(schemaFields);
+};
+
+export const createCategorySchema = () => {
+  const availableLanguages = getAvailableLanguages();
+  
+  const schemaFields: any = {
+    image: z.string().url('Invalid image URL').optional(),
+    icon: z.string().optional(),
+  };
+
+  // Add language fields based on availability
+  if (availableLanguages.includes('ar')) {
+    schemaFields.name_ar = isLanguageFieldRequired('ar')
+      ? z.string().min(2, 'Arabic name is required')
+      : z.string().optional();
+  }
+  
+  if (availableLanguages.includes('en')) {
+    schemaFields.name_en = isLanguageFieldRequired('en')
+      ? z.string().min(2, 'English name is required')
+      : z.string().optional();
+  }
+  
+  if (availableLanguages.includes('he')) {
+    schemaFields.name_he = isLanguageFieldRequired('he')
+      ? z.string().min(2, 'Hebrew name is required')
+      : z.string().optional();
+  }
+
+  return z.object(schemaFields);
+};
 
 // Order validation schemas
 export const orderSchema = z.object({

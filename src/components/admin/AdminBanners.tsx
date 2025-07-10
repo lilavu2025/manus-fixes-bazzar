@@ -39,6 +39,7 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import MultiLanguageField from "@/components/ui/MultiLanguageField";
 import {
   useBannersQuery,
   useAddBanner,
@@ -333,228 +334,213 @@ const BannerForm = ({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="space-y-4">
-          <div>
-            <Label className="text-sm font-medium text-gray-700 mb-2">
-              {t("titleArabic") || "العنوان بالعربية"} *
-            </Label>
-            <Input
-              type="text"
-              value={formData.title_ar}
-              onChange={(e) => handleInputChange("title_ar", e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-              placeholder={t("enterTitleArabic") || "أدخل عنوان البانر بالعربية"}
-              dir="rtl"
-            />
-          </div>
-
-          <div>
-            <Label className="text-sm font-medium text-gray-700 mb-2">
-              {t("descriptionArabic") || "الوصف بالعربية"}
-            </Label>
-            <Textarea
-              value={formData.subtitle_ar}
-              onChange={(e) => handleInputChange("subtitle_ar", e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-              rows={3}
-              placeholder={t("enterDescriptionArabic") || "أدخل وصف البانر بالعربية"}
-              dir="rtl"
-            />
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <div>
-            <Label className="text-sm font-medium text-gray-700 mb-2">
-              {t("titleEnglish") || "العنوان بالإنجليزية"}
-            </Label>
-            <Input
-              type="text"
-              value={formData.title_en}
-              onChange={(e) => handleInputChange("title_en", e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-              placeholder="Enter banner title in English"
-            />
-          </div>
-
-          <div>
-            <Label className="text-sm font-medium text-gray-700 mb-2">
-              {t("descriptionEnglish") || "الوصف بالإنجليزية"}
-            </Label>
-            <Textarea
-              value={formData.subtitle_en}
-              onChange={(e) => handleInputChange("subtitle_en", e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-              rows={3}
-              placeholder="Enter banner description in English"
-            />
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <div>
-            <Label className="text-sm font-medium text-gray-700 mb-2">
-              {t("titleHebrew") || "العنوان بالعبرية"}
-            </Label>
-            <Input
-              type="text"
-              value={formData.title_he}
-              onChange={(e) => handleInputChange("title_he", e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-              placeholder="הכנס כותרת באנר בעברית"
-              dir="rtl"
-            />
-          </div>
-
-          <div>
-            <Label className="text-sm font-medium text-gray-700 mb-2">
-              {t("descriptionHebrew") || "الوصف بالعبرية"}
-            </Label>
-            <Textarea
-              value={formData.subtitle_he}
-              onChange={(e) => handleInputChange("subtitle_he", e.target.value)}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-              rows={3}
-              placeholder="הכנס תיאור באנר בעברית"
-              dir="rtl"
-            />
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <Label className="text-sm font-medium text-gray-700 mb-2">
-            {t("bannerLink") || "رابط البانر"}
-          </Label>
-          <Input
-            type="text"
-            value={formData.link}
-            onChange={(e) => handleInputChange("link", e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-            placeholder="https://example.com"
-          />
-        </div>
-
-        <div>
-          <Label className="text-sm font-medium text-gray-700 mb-2">
-            {t("sortOrder") || "ترتيب العرض"}
-          </Label>
-          <Input
-            type="number"
-            value={formData.sort_order}
-            onChange={(e) => handleInputChange("sort_order", parseInt(e.target.value) || 0)}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
-            min="0"
-          />
-        </div>
-      </div>
-
-      <div>
-        <Label className="text-sm font-medium text-gray-700 mb-2">
-          {t("bannerImage") || "صورة البانر"}
-        </Label>
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors relative">
-          {formData.image ? (
-            <div className="space-y-4">
-              <img
-                src={formData.image}
-                alt={t("bannerPreview") || "معاينة البانر"}
-                className="max-h-48 mx-auto rounded-lg shadow-sm"
-              />
-              <div className="flex justify-center space-x-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleInputChange("image", "")}
-                >
-                  <X className="h-4 w-4 mr-1" />
-                  {t("remove") || "إزالة"}
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <Upload className="h-12 w-12 text-gray-400 mx-auto" />
-              <div>
-                <label
-                  htmlFor="banner-upload"
-                  className="text-blue-600 font-medium cursor-pointer hover:underline"
-                >
-                  {t("clickToUpload") || "اضغط لرفع صورة"}
-                </label>
-                <p className="text-sm text-gray-500">{t("imageFormat") || "PNG, JPG, GIF حتى 10 ميجا"}</p>
-              </div>
-              <input
-                id="banner-upload"
-                type="file"
-                accept="image/*"
-                onChange={async (e) => {
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    try {
-                      // استخدام دالة رفع الصورة إلى Supabase Storage
-                      const { uploadBannerImage } = await import("@/integrations/supabase/dataSenders");
-                      const publicUrl = await uploadBannerImage(file);
-                      handleInputChange("image", publicUrl);
-                      toast.success(t("imageUploadedSuccessfully") || "تم رفع الصورة بنجاح");
-                    } catch (error) {
-                      console.error("Error uploading banner image:", error);
-                      toast.error(t("imageUploadFailed") || "فشل في رفع الصورة");
-                    }
-                  }
-                }}
-                className="hidden"
-              />
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-lg">
-        <Switch
-          checked={formData.active}
-          onCheckedChange={(checked) => handleInputChange("active", checked)}
-        />
-        <div>
-          <p className="font-medium text-gray-900">{t("activeBanner") || "البانر نشط"}</p>
-          <p className="text-sm text-gray-600">
-            {formData.active 
-              ? (t("bannerVisible") || "البانر مرئي للمستخدمين")
-              : (t("bannerHidden") || "البانر مخفي عن المستخدمين")
+      {/* قسم المحتوى متعدد اللغات */}
+      <Card className="border-l-4 border-l-green-500 bg-green-50/50">
+        <CardHeader>
+          <CardTitle className="text-lg font-bold text-green-800 flex items-center gap-2">
+            <ImageIcon className="h-5 w-5" />
+            {t("bannerContent") || "محتوى البانر"}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <MultiLanguageField
+            fieldName="bannerTitle"
+            label={t("bannerTitle") || "عنوان البانر"}
+            values={{
+              ar: formData.title_ar,
+              en: formData.title_en,
+              he: formData.title_he,
+            }}
+            onChange={(lang, value) => 
+              handleInputChange(`title_${lang}`, value)
             }
-          </p>
-        </div>
-      </div>
+            placeholder={{
+              ar: "أدخل عنوان البانر",
+              en: "Enter banner title",
+              he: "הכנס כותרת באנר"
+            }}
+          />
+          
+          <MultiLanguageField
+            fieldName="bannerSubtitle"
+            label={t("bannerSubtitle") || "وصف البانر"}
+            type="textarea"
+            values={{
+              ar: formData.subtitle_ar,
+              en: formData.subtitle_en,
+              he: formData.subtitle_he,
+            }}
+            onChange={(lang, value) => 
+              handleInputChange(`subtitle_${lang}`, value)
+            }
+            placeholder={{
+              ar: "أدخل وصف البانر",
+              en: "Enter banner description",
+              he: "הכנס תיאור באנר"
+            }}
+            rows={3}
+          />
+        </CardContent>
+      </Card>
 
-      <DialogFooter className="flex justify-end space-x-3 pt-6 border-t">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onCancel}
-          disabled={isLoading}
-        >
-          {t("cancel") || "إلغاء"}
-        </Button>
-        <Button
-          type="submit"
-          disabled={isLoading}
-          className="bg-primary hover:bg-primary/90"
-        >
-          {isLoading ? (
-            <>
-              <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-              {t("saving") || "جاري الحفظ..."}
-            </>
-          ) : (
-            <>
-              {banner ? (t("updateBanner") || "تحديث البانر") : (t("createBanner") || "إنشاء البانر")}
-            </>
-          )}
-        </Button>
-      </DialogFooter>
+      {/* قسم الإعدادات */}
+      <Card className="border-l-4 border-l-purple-500 bg-purple-50/50">
+        <CardHeader>
+          <CardTitle className="text-lg font-bold text-purple-800 flex items-center gap-2">
+            <Link2 className="h-5 w-5" />
+            {t("bannerSettings") || "إعدادات البانر"}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <Label className="text-sm font-medium text-purple-700 mb-2 block">
+                {t("bannerLink") || "رابط البانر"}
+              </Label>
+              <Input
+                type="text"
+                value={formData.link}
+                onChange={(e) => handleInputChange("link", e.target.value)}
+                className="border-purple-200 focus:border-purple-500"
+                placeholder="https://example.com"
+              />
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium text-purple-700 mb-2 block">
+                {t("sortOrder") || "ترتيب العرض"}
+              </Label>
+              <Input
+                type="number"
+                value={formData.sort_order}
+                onChange={(e) => handleInputChange("sort_order", parseInt(e.target.value) || 0)}
+                className="border-purple-200 focus:border-purple-500"
+                min="0"
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* قسم الصورة والحالة */}
+      <Card className="border-l-4 border-l-orange-500 bg-orange-50/50">
+        <CardHeader>
+          <CardTitle className="text-lg font-bold text-orange-800 flex items-center gap-2">
+            <Upload className="h-5 w-5" />
+            {t("imageAndStatus") || "الصورة والحالة"}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div>
+            <Label className="text-sm font-medium text-orange-700 mb-2 block">
+              {t("bannerImage") || "صورة البانر"}
+            </Label>
+            <div className="border-2 border-dashed border-orange-300 rounded-lg p-6 text-center hover:border-orange-400 transition-colors relative">
+              {formData.image ? (
+                <div className="space-y-4">
+                  <img
+                    src={formData.image}
+                    alt={t("bannerPreview") || "معاينة البانر"}
+                    className="max-h-48 mx-auto rounded-lg shadow-sm"
+                  />
+                  <div className="flex justify-center space-x-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleInputChange("image", "")}
+                      className="border-orange-300 text-orange-700 hover:bg-orange-100"
+                    >
+                      <X className="h-4 w-4 mr-1" />
+                      {t("remove") || "إزالة"}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Upload className="h-12 w-12 text-orange-400 mx-auto" />
+                  <div>
+                    <label
+                      htmlFor="banner-upload"
+                      className="text-orange-600 font-medium cursor-pointer hover:underline"
+                    >
+                      {t("clickToUpload") || "اضغط لرفع صورة"}
+                    </label>
+                    <p className="text-sm text-orange-500">{t("imageFormat") || "PNG, JPG, GIF حتى 10 ميجا"}</p>
+                  </div>
+                  <input
+                    id="banner-upload"
+                    type="file"
+                    accept="image/*"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        try {
+                          // استخدام دالة رفع الصورة إلى Supabase Storage
+                          const { uploadBannerImage } = await import("@/integrations/supabase/dataSenders");
+                          const publicUrl = await uploadBannerImage(file);
+                          handleInputChange("image", publicUrl);
+                          toast.success(t("imageUploadedSuccessfully") || "تم رفع الصورة بنجاح");
+                        } catch (error) {
+                          console.error("Error uploading banner image:", error);
+                          toast.error(t("imageUploadFailed") || "فشل في رفع الصورة");
+                        }
+                      }
+                    }}
+                    className="hidden"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-3 p-4 bg-orange-100 rounded-lg border border-orange-200">
+            <Switch
+              checked={formData.active}
+              onCheckedChange={(checked) => handleInputChange("active", checked)}
+            />
+            <div>
+              <p className="font-medium text-orange-800">{t("activeBanner") || "البانر نشط"}</p>
+              <p className="text-sm text-orange-600">
+                {formData.active 
+                  ? (t("bannerVisible") || "البانر مرئي للمستخدمين")
+                  : (t("bannerHidden") || "البانر مخفي عن المستخدمين")
+                }
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="bg-gray-50 -m-6 mt-6 p-6 border-t border-gray-200">
+        <DialogFooter className="flex justify-end space-x-3">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            disabled={isLoading}
+            className="flex-1"
+          >
+            {t("cancel") || "إلغاء"}
+          </Button>
+          <Button
+            type="submit"
+            disabled={isLoading}
+            className="bg-primary hover:bg-primary/90 flex-1"
+          >
+            {isLoading ? (
+              <>
+                <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                {t("saving") || "جاري الحفظ..."}
+              </>
+            ) : (
+              <>
+                {banner ? (t("updateBanner") || "تحديث البانر") : (t("createBanner") || "إنشاء البانر")}
+              </>
+            )}
+          </Button>
+        </DialogFooter>
+      </div>
     </form>
   );
 };
@@ -869,9 +855,14 @@ const AdminBanners: React.FC = () => {
       {/* Add Banner Modal */}
       <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold mb-1 text-primary text-center">{t("addNewBanner") || "إضافة بانر جديد"}</DialogTitle>
-          </DialogHeader>
+          <div className="bg-gradient-to-r from-blue-50 to-blue-100 -m-6 mb-6 p-6 border-b border-blue-200">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold text-center text-blue-800 flex items-center justify-center gap-2">
+                <Plus className="h-6 w-6" />
+                {t("addNewBanner") || "إضافة بانر جديد"}
+              </DialogTitle>
+            </DialogHeader>
+          </div>
           <BannerForm
             onSave={handleAddBanner}
             onCancel={() => setShowAddModal(false)}
@@ -885,9 +876,14 @@ const AdminBanners: React.FC = () => {
       {/* Edit Banner Modal */}
       <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold mb-1 text-primary text-center">{t("editBanner") || "تعديل البانر"}</DialogTitle>
-          </DialogHeader>
+          <div className="bg-gradient-to-r from-blue-50 to-blue-100 -m-6 mb-6 p-6 border-b border-blue-200">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold text-center text-blue-800 flex items-center justify-center gap-2">
+                <Edit className="h-6 w-6" />
+                {t("editBanner") || "تعديل البانر"}
+              </DialogTitle>
+            </DialogHeader>
+          </div>
           {selectedBanner && (
             <BannerForm
               banner={selectedBanner}
@@ -924,13 +920,6 @@ const AdminBanners: React.FC = () => {
             )}
           </div>
           <DialogFooter>
-            <Button 
-              variant="outline" 
-              onClick={() => setShowDeleteDialog(false)}
-              disabled={deleteBannerMutation.isPending}
-            >
-              {t("cancel") || "إلغاء"}
-            </Button>
             <Button
               variant="destructive"
               onClick={confirmDeleteBanner}
@@ -947,6 +936,13 @@ const AdminBanners: React.FC = () => {
                   {t("deleteConfirm") || "حذف نهائياً"}
                 </>
               )}
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowDeleteDialog(false)}
+              disabled={deleteBannerMutation.isPending}
+            >
+              {t("cancel") || "إلغاء"}
             </Button>
           </DialogFooter>
         </DialogContent>

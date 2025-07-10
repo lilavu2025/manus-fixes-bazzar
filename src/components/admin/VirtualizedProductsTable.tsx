@@ -192,7 +192,6 @@ const PaginatedProductsTable: React.FC<PaginatedProductsTableProps> = ({
                       </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter className="flex justify-center gap-4 mt-4">
-                      <AlertDialogCancel className="rounded-lg px-4 py-2 bg-gray-100 text-gray-700 font-bold hover:bg-gray-200">{t("cancel")}</AlertDialogCancel>
                       <AlertDialogAction
                         className="rounded-lg px-4 py-2 bg-red-600 text-white font-bold hover:bg-red-700"
                         onClick={() => {
@@ -205,6 +204,7 @@ const PaginatedProductsTable: React.FC<PaginatedProductsTableProps> = ({
                       >
                         {t("delete")}
                       </AlertDialogAction>
+                      <AlertDialogCancel className="rounded-lg px-4 py-2 bg-gray-100 text-gray-700 font-bold hover:bg-gray-200">{t("cancel")}</AlertDialogCancel>
                     </AlertDialogFooter>
                   </AlertDialogContent>
                 </AlertDialog>

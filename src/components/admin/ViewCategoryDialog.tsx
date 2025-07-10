@@ -18,6 +18,8 @@ import {
   TooltipProvider,
 } from "@/components/ui/tooltip";
 import { Copy, Image as ImageIcon, Info } from "lucide-react";
+import { shouldShowLanguageField, getLanguageName } from "@/utils/fieldVisibilityUtils";
+import { Language } from "@/types/language";
 
 interface ViewCategoryDialogProps {
   open: boolean;
@@ -117,24 +119,30 @@ const ViewCategoryDialog: React.FC<ViewCategoryDialogProps> = ({
                 {t("categoryNames")}
               </h3>
               <div className="space-y-1 text-sm">
-                <p>
-                  <strong>{t("arabic")}:</strong>{" "}
-                  {category.name || (
-                    <span className="text-gray-400">{t("notProvided")}</span>
-                  )}
-                </p>
-                <p>
-                  <strong>{t("english")}:</strong>{" "}
-                  {category.nameEn || (
-                    <span className="text-gray-400">{t("notProvided")}</span>
-                  )}
-                </p>
-                <p>
-                  <strong>{t("hebrew")}:</strong>{" "}
-                  {category.nameHe || (
-                    <span className="text-gray-400">{t("notProvided")}</span>
-                  )}
-                </p>
+                {shouldShowLanguageField('ar' as Language) && (
+                  <p>
+                    <strong>{getLanguageName('ar' as Language, language as Language)}:</strong>{" "}
+                    {category.name || (
+                      <span className="text-gray-400">{t("notProvided")}</span>
+                    )}
+                  </p>
+                )}
+                {shouldShowLanguageField('en' as Language) && (
+                  <p>
+                    <strong>{getLanguageName('en' as Language, language as Language)}:</strong>{" "}
+                    {category.nameEn || (
+                      <span className="text-gray-400">{t("notProvided")}</span>
+                    )}
+                  </p>
+                )}
+                {shouldShowLanguageField('he' as Language) && (
+                  <p>
+                    <strong>{getLanguageName('he' as Language, language as Language)}:</strong>{" "}
+                    {category.nameHe || (
+                      <span className="text-gray-400">{t("notProvided")}</span>
+                    )}
+                  </p>
+                )}
               </div>
             </div>
             <div>

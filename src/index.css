@@ -388,7 +388,7 @@ img {
     align-content: stretch !important;
   }
 
-  .grid > * {
+  .grid > *:not(.dialog-close-exception) {
     height: 100% !important;
     display: flex !important;
     flex-direction: column !important;

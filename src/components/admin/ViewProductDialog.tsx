@@ -12,6 +12,8 @@ import {
 import { AdminProductForm } from "@/types/product";
 import { useCategoriesRealtime } from "@/hooks/useCategoriesRealtime";
 import ProductImageGallery from "@/components/ProductImageGallery";
+import { shouldShowLanguageField, getLanguageName } from "@/utils/fieldVisibilityUtils";
+import { Language } from "@/types/language";
 
 interface ViewProductDialogProps {
   open: boolean;
@@ -45,194 +47,229 @@ const ViewProductDialog: React.FC<ViewProductDialogProps> = ({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="max-w-3xl max-h-[95vh] overflow-y-auto p-0 sm:p-0 rounded-2xl"
+        className="max-w-4xl max-h-[95vh] overflow-y-auto p-0 sm:p-0"
         dir={isRTL ? "rtl" : "ltr"}
         style={{ direction: isRTL ? "rtl" : "ltr" }}
       >
-        <DialogHeader className="px-4 pt-4 sm:px-6 sm:pt-6">
-          <DialogTitle className="text-2xl font-bold mb-1 text-primary text-center">
+        {/* Header */}
+        <DialogHeader className="bg-gradient-to-r from-blue-50 to-blue-100 px-6 py-4 border-b">
+          <DialogTitle className="text-2xl font-bold text-primary text-center">
             {t("viewProduct")}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex flex-col-reverse md:flex-row gap-6 md:gap-8 px-4 sm:px-6 pb-6">
-          {/* معلومات المنتج */}
-          <div className="flex-1 w-full space-y-6 border-t md:border-t-0 md:border-l border-gray-100 dark:border-gray-800 pt-4 md:pt-0 md:pl-8">
-            <div className="flex flex-col gap-2">
-              <div className="flex flex-wrap gap-2 items-center justify-between">
-                <span className="text-xs text-gray-400">ID: {product.id}</span>
-                <Badge variant={product.active ? "default" : "destructive"}>
-                  {product.active ? t("active") : t("inactive")}
-                </Badge>
-              </div>
-              <div className="flex flex-wrap gap-2 items-center">
-                <Badge variant={product.in_stock ? "default" : "destructive"}>
-                  {product.in_stock ? t("inStock") : t("outOfStock")}
-                </Badge>
-                {product.featured && (
-                  <Badge variant="secondary">{t("featured")}</Badge>
-                )}
-                {typeof product.stock_quantity === "number" && (
-                  <Badge variant="outline">
-                    {t("stockQuantity")}: {product.stock_quantity}
+        <div className="px-6 py-6">
+          {/* Product Info Cards */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            {/* Product Images */}
+            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+              <h3 className="text-lg font-semibold mb-4 text-center">{t("productImages")}</h3>
+              <ProductImageGallery
+                product={{
+                  id: product.id || '',
+                  name: product.name_ar || product.name_en || "",
+                  nameEn: product.name_en || "",
+                  nameHe: product.name_he || "",
+                  description: product.description_ar || "",
+                  descriptionEn: product.description_en || "",
+                  descriptionHe: product.description_he || "",
+                  price: product.price || 0,
+                  originalPrice: product.original_price,
+                  wholesalePrice: product.wholesale_price,
+                  image: product.image || '',
+                  images: product.images || [],
+                  category: product.category_id || product.category || '',
+                  inStock: product.in_stock || false,
+                  rating: 0,
+                  reviews: 0,
+                  discount: product.discount,
+                  featured: product.featured || false,
+                  tags: product.tags,
+                  active: product.active,
+                  created_at: product.created_at,
+                }}
+              />
+            </div>
+
+            {/* Basic Info */}
+            <div className="space-y-4">
+              {/* Status Badges */}
+              <div className="bg-white dark:bg-gray-900 rounded-lg p-4 border">
+                <h3 className="text-lg font-semibold mb-3">{t("status")}</h3>
+                <div className="flex flex-wrap gap-2">
+                  <Badge variant={product.active ? "default" : "destructive"} className="px-3 py-1">
+                    {product.active ? t("active") : t("inactive")}
                   </Badge>
-                )}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <div>
-                <h3 className="text-lg font-semibold mb-1">
-                  {t("productNames")}
-                </h3>
-                <p>
-                  <strong>{t("arabic")}:</strong> {product.name_ar}
-                </p>
-                <p>
-                  <strong>{t("english")}:</strong> {product.name_en}
-                </p>
-                <p>
-                  <strong>{t("hebrew")}:</strong> {product.name_he}
-                </p>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold mb-1">{t("category")}</h3>
-                <p className={language === "he" ? "text-right" : "text-left"}>
-                  {categoryName}
-                </p>
-              </div>
-            </div>
-
-            {product.tags && product.tags.length > 0 && (
-              <div>
-                <h3 className="text-lg font-semibold mb-1">{t("tags")}</h3>
-                <div className="flex flex-wrap gap-2 overflow-x-auto max-w-full pb-1">
-                  {product.tags.map((tag, idx) => (
-                    <Badge key={idx} variant="outline">
-                      {tag}
+                  <Badge variant={product.in_stock ? "default" : "destructive"} className="px-3 py-1">
+                    {product.in_stock ? t("inStock") : t("outOfStock")}
+                  </Badge>
+                  {product.featured && (
+                    <Badge variant="secondary" className="px-3 py-1">{t("featured")}</Badge>
+                  )}
+                  {typeof product.stock_quantity === "number" && (
+                    <Badge variant="outline" className="px-3 py-1">
+                      {t("stockQuantity")}: {product.stock_quantity}
                     </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="border-t border-gray-100 dark:border-gray-800 pt-4 mt-2">
-              <h3 className="text-lg font-semibold mb-2">
-                {t("descriptions")}
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <strong>{t("arabic")}:</strong>
-                  <p className="text-gray-600 whitespace-pre-line break-words">
-                    {product.description_ar}
-                  </p>
-                </div>
-                <div>
-                  <strong>{t("english")}:</strong>
-                  <p className="text-gray-600 whitespace-pre-line break-words">
-                    {product.description_en}
-                  </p>
-                </div>
-                <div>
-                  <strong>{t("hebrew")}:</strong>
-                  <p className="text-gray-600 whitespace-pre-line break-words">
-                    {product.description_he}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="border-t border-gray-100 dark:border-gray-800 pt-4 mt-2">
-              <h3 className="text-lg font-semibold mb-2">{t("pricing")}</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div>
-                  <strong>{t("price")}:</strong>
-                  <p>
-                    {product.price || 0} {t("currency")}
-                  </p>
-                </div>
-                {product.original_price && (
-                  <div>
-                    <strong>{t("originalPrice")}:</strong>
-                    <p>
-                      {product.original_price} {t("currency")}
-                    </p>
-                  </div>
-                )}
-                {product.wholesale_price && (
-                  <div>
-                    <strong>{t("wholesalePrice")}:</strong>
-                    <p>
-                      {product.wholesale_price} {t("currency")}
-                    </p>
-                  </div>
-                )}
-                {typeof product.discount !== "undefined" &&
-                  product.discount !== null && (
-                    <div>
-                      <strong>{t("discount")}:</strong>
-                      <p>{product.discount}%</p>
-                    </div>
                   )}
+                </div>
+                <div className="mt-3 text-sm text-gray-500">
+                  ID: {product.id}
+                </div>
               </div>
-            </div>
 
-            {product.created_at && (
-              <div className="border-t border-gray-100 dark:border-gray-800 pt-4 mt-2">
-                <h3 className="text-lg font-semibold mb-1">
-                  {t("createdAt") || "تاريخ الإضافة"}
-                </h3>
-                <p className="text-gray-700">
-                  {new Date(product.created_at).toLocaleString(
-                    "en-US",
-                    { 
-                      calendar: 'gregory',
-                      year: 'numeric',
-                      month: 'short',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    }
-                  )}
-                </p>
+              {/* Category */}
+              <div className="bg-white dark:bg-gray-900 rounded-lg p-4 border">
+                <h3 className="text-lg font-semibold mb-3">{t("category")}</h3>
+                <p className="text-gray-700 font-medium">{categoryName}</p>
               </div>
-            )}
+
+              {/* Tags */}
+              {product.tags && product.tags.length > 0 && (
+                <div className="bg-white dark:bg-gray-900 rounded-lg p-4 border">
+                  <h3 className="text-lg font-semibold mb-3">{t("tags")}</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {product.tags.map((tag, idx) => (
+                      <Badge key={idx} variant="outline" className="px-2 py-1">
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* معرض صور احترافية */}
-          <div className="w-full md:w-1/2 flex flex-col items-center md:items-start">
-            <ProductImageGallery
-              product={{
-                id: product.id || '',
-                name: product.name_ar || product.name_en || "",
-                nameEn: product.name_en || "",
-                nameHe: product.name_he || "",
-                description: product.description_ar || "",
-                descriptionEn: product.description_en || "",
-                descriptionHe: product.description_he || "",
-                price: product.price || 0,
-                originalPrice: product.original_price,
-                wholesalePrice: product.wholesale_price,
-                image: product.image || '',
-                images: product.images || [],
-                category: product.category_id || product.category || '',
-                inStock: product.in_stock || false,
-                rating: 0,
-                reviews: 0,
-                discount: product.discount,
-                featured: product.featured || false,
-                tags: product.tags,
-                active: product.active,
-                created_at: product.created_at,
-              }}
-            />
+          {/* Product Names */}
+          <div className="mt-6 bg-white dark:bg-gray-900 rounded-lg p-4 border">
+            <h3 className="text-lg font-semibold mb-4">{t("productNames")}</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {shouldShowLanguageField('ar' as Language) && (
+                <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <div className="font-medium text-blue-600 mb-1">
+                    {getLanguageName('ar' as Language, language as Language)}
+                  </div>
+                  <p className="text-gray-800 dark:text-gray-200">{product.name_ar || "غير محدد"}</p>
+                </div>
+              )}
+              {shouldShowLanguageField('en' as Language) && (
+                <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <div className="font-medium text-blue-600 mb-1">
+                    {getLanguageName('en' as Language, language as Language)}
+                  </div>
+                  <p className="text-gray-800 dark:text-gray-200">{product.name_en || "Not specified"}</p>
+                </div>
+              )}
+              {shouldShowLanguageField('he' as Language) && (
+                <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <div className="font-medium text-blue-600 mb-1">
+                    {getLanguageName('he' as Language, language as Language)}
+                  </div>
+                  <p className="text-gray-800 dark:text-gray-200">{product.name_he || "לא צוין"}</p>
+                </div>
+              )}
+            </div>
           </div>
+
+          {/* Descriptions */}
+          <div className="mt-6 bg-white dark:bg-gray-900 rounded-lg p-4 border">
+            <h3 className="text-lg font-semibold mb-4">{t("descriptions")}</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {shouldShowLanguageField('ar' as Language) && (
+                <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <div className="font-medium text-blue-600 mb-2">
+                    {getLanguageName('ar' as Language, language as Language)}
+                  </div>
+                  <p className="text-gray-700 dark:text-gray-300 text-sm whitespace-pre-line">
+                    {product.description_ar || "لا يوجد وصف"}
+                  </p>
+                </div>
+              )}
+              {shouldShowLanguageField('en' as Language) && (
+                <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <div className="font-medium text-blue-600 mb-2">
+                    {getLanguageName('en' as Language, language as Language)}
+                  </div>
+                  <p className="text-gray-700 dark:text-gray-300 text-sm whitespace-pre-line">
+                    {product.description_en || "No description"}
+                  </p>
+                </div>
+              )}
+              {shouldShowLanguageField('he' as Language) && (
+                <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <div className="font-medium text-blue-600 mb-2">
+                    {getLanguageName('he' as Language, language as Language)}
+                  </div>
+                  <p className="text-gray-700 dark:text-gray-300 text-sm whitespace-pre-line">
+                    {product.description_he || "אין תיאור"}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Pricing */}
+          <div className="mt-6 bg-white dark:bg-gray-900 rounded-lg p-4 border">
+            <h3 className="text-lg font-semibold mb-4">{t("pricing")}</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg text-center">
+                <div className="text-sm text-green-600 dark:text-green-400 font-medium">{t("price")}</div>
+                <div className="text-lg font-bold text-green-700 dark:text-green-300">
+                  {product.price || 0} {t("currency")}
+                </div>
+              </div>
+              {product.original_price && (
+                <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg text-center">
+                  <div className="text-sm text-gray-600 dark:text-gray-400 font-medium">{t("originalPrice")}</div>
+                  <div className="text-lg font-bold text-gray-700 dark:text-gray-300">
+                    {product.original_price} {t("currency")}
+                  </div>
+                </div>
+              )}
+              {product.wholesale_price && (
+                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-center">
+                  <div className="text-sm text-blue-600 dark:text-blue-400 font-medium">{t("wholesalePrice")}</div>
+                  <div className="text-lg font-bold text-blue-700 dark:text-blue-300">
+                    {product.wholesale_price} {t("currency")}
+                  </div>
+                </div>
+              )}
+              {typeof product.discount !== "undefined" && product.discount !== null && (
+                <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg text-center">
+                  <div className="text-sm text-red-600 dark:text-red-400 font-medium">{t("discount")}</div>
+                  <div className="text-lg font-bold text-red-700 dark:text-red-300">
+                    {product.discount}%
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Creation Date */}
+          {product.created_at && (
+            <div className="mt-6 bg-white dark:bg-gray-900 rounded-lg p-4 border">
+              <h3 className="text-lg font-semibold mb-3">{t("createdAt") || "تاريخ الإضافة"}</h3>
+              <p className="text-gray-700 dark:text-gray-300 font-medium">
+                {new Date(product.created_at).toLocaleString(
+                  "en-US",
+                  { 
+                    calendar: 'gregory',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  }
+                )}
+              </p>
+            </div>
+          )}
         </div>
 
-        <DialogFooter className="px-4 sm:px-6 pb-4 sm:pb-6 sticky bottom-0 bg-white dark:bg-gray-900 z-10">
+        <DialogFooter className="px-6 py-4 bg-gray-50 dark:bg-gray-800 border-t">
           <Button
             onClick={() => onOpenChange(false)}
-            className="w-full sm:w-auto"
+            className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-white font-medium px-8"
           >
             {t("close")}
           </Button>

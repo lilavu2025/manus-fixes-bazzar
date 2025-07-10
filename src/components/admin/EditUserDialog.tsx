@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Edit } from "lucide-react";
 import { toast } from "sonner";
 import EditUserDialogHeader from "./edit-user/EditUserDialogHeader";
@@ -125,19 +126,47 @@ const EditUserDialog: React.FC<EditUserDialogProps> = ({ user }) => {
         </Button>
       </DialogTrigger>
       <DialogContent
-        className={`max-w-md lg:max-w-lg ${isRTL ? "text-right" : "text-left"} border-0 shadow-2xl max-h-[90vh] overflow-y-auto`}
+        className={`max-w-2xl ${isRTL ? "text-right" : "text-left"} border-0 shadow-2xl max-h-[90vh] overflow-y-auto`}
         dir={isRTL ? "rtl" : "ltr"}
       >
-        <EditUserDialogHeader />
-        <UserInfoDisplay user={user} isRTL={isRTL} />
-        <EditUserForm
-          formData={formData}
-          setFormData={setFormData}
-          onSubmit={handleSubmit}
-          onCancel={() => setOpen(false)}
-          loading={loading}
-          isRTL={isRTL}
-        />
+        <div className="bg-gradient-to-r from-blue-50 to-blue-100 -m-6 mb-6 p-6 border-b border-blue-200">
+          <EditUserDialogHeader />
+        </div>
+
+        <div className="space-y-6">
+          {/* معلومات المستخدم */}
+          <Card className="border-l-4 border-l-green-500 bg-green-50/50">
+            <CardHeader>
+              <h3 className="text-lg font-bold text-green-800 flex items-center gap-2">
+                <Edit className="h-5 w-5" />
+                {t("userInformation") || "معلومات المستخدم"}
+              </h3>
+            </CardHeader>
+            <CardContent>
+              <UserInfoDisplay user={user} isRTL={isRTL} />
+            </CardContent>
+          </Card>
+
+          {/* نموذج التعديل */}
+          <Card className="border-l-4 border-l-purple-500 bg-purple-50/50">
+            <CardHeader>
+              <h3 className="text-lg font-bold text-purple-800 flex items-center gap-2">
+                <Edit className="h-5 w-5" />
+                {t("editUser") || "تعديل المستخدم"}
+              </h3>
+            </CardHeader>
+            <CardContent>
+              <EditUserForm
+                formData={formData}
+                setFormData={setFormData}
+                onSubmit={handleSubmit}
+                onCancel={() => setOpen(false)}
+                loading={loading}
+                isRTL={isRTL}
+              />
+            </CardContent>
+          </Card>
+        </div>
       </DialogContent>
     </Dialog>
   );

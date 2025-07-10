@@ -7,6 +7,7 @@ export const initialOrderForm: NewOrderForm = {
   notes: "",
   items: [],
   shipping_address: {
+    id: "",
     fullName: "",
     phone: "",
     city: "",
@@ -16,4 +17,7 @@ export const initialOrderForm: NewOrderForm = {
     floor: "",
     apartment: "",
   },
+  discountEnabled: false,
+  discountType: "amount",
+  discountValue: 0,
 };
