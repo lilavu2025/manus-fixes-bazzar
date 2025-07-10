@@ -1,7 +1,14 @@
 import configMap from "./configMap";
 import defaultConfig from "./defaultConfig";
 
-const clientKey = import.meta.env.VITE_CLIENT_KEY;
+// Check for client from URL parameters first
+let clientKey = import.meta.env.VITE_CLIENT_KEY;
+
+// If no environment variable, check URL parameters
+if (!clientKey && typeof window !== 'undefined') {
+  const urlParams = new URLSearchParams(window.location.search);
+  clientKey = urlParams.get('client');
+}
 
 let config;
 if (clientKey && configMap[clientKey]) {
@@ -11,7 +18,7 @@ if (clientKey && configMap[clientKey]) {
   config = defaultConfig;
   console.log(`🔄 استخدام التكوين الافتراضي`);
   if (!clientKey) {
-    console.log(`💡 لتحديد عميل معين: npm run dev:client <client-name>`);
+    console.log(`💡 لتحديد عميل معين: npm run dev:client <client-name> أو إضافة ?client=<name> للرابط`);
   }
 }
 

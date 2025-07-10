@@ -9,17 +9,28 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Globe } from "lucide-react";
+import config from "@/configs/activeConfig";
 
 const LanguageSwitcher: React.FC = () => {
   const { language, setLanguage } = useLanguage();
 
-  const languages: { code: Language; name: string; flag: string }[] = [
+  const allLanguages: { code: Language; name: string; flag: string }[] = [
     { code: "ar", name: "العربية", flag: "🇸🇦" },
     { code: "en", name: "English", flag: "🇺🇸" },
     { code: "he", name: "עברית", flag: "🇮🇱" },
   ];
 
-  const currentLanguage = languages.find((lang) => lang.code === language);
+  // فلترة اللغات المتاحة بناءً على تكوين العميل
+  const availableLanguages = allLanguages.filter((lang) =>
+    config.availableLanguages?.includes(lang.code) ?? true
+  );
+
+  const currentLanguage = availableLanguages.find((lang) => lang.code === language);
+
+  // إخفاء السويتشر إذا كان هناك لغة واحدة فقط
+  if (availableLanguages.length <= 1) {
+    return null;
+  }
 
   return (
     <DropdownMenu>
@@ -36,7 +47,7 @@ const LanguageSwitcher: React.FC = () => {
         className={`bg-white z-50 ${isRTL(language) ? "rtl" : "ltr"}`}
         style={{ direction: isRTL(language) ? "rtl" : "ltr" }}
       >
-        {languages.map((lang) => (
+        {availableLanguages.map((lang) => (
           <DropdownMenuItem
             key={lang.code}
             onClick={() => setLanguage(lang.code)}

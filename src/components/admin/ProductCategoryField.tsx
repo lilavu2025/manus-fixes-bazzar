@@ -53,7 +53,7 @@ const ProductCategoryField: React.FC<ProductCategoryFieldProps> = ({
 
   return (
     <div>
-      <Label htmlFor="category">{t('category')}</Label>
+      <Label htmlFor="category">{t('category')}</Label> <span className="text-red-500">*</span>
       <Select value={formData.category_id} onValueChange={(value) => setFormData({ ...formData, category_id: value })}>
         <SelectTrigger>
           <SelectValue placeholder={t('selectCategory')} />

@@ -31,8 +31,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import ImageUpload from "@/components/ImageUpload";
+import MultiLanguageField from "@/components/ui/MultiLanguageField";
 import { useOffersRealtime } from "@/hooks/useOffersRealtime";
 import { getSetting, setSetting } from "@/services/settingsService";
+import { getAvailableLanguages, isLanguageFieldRequired } from "@/utils/fieldVisibilityUtils";
 import type { Database } from "@/integrations/supabase/types";
 import {
   useAddOffer,
@@ -93,8 +95,22 @@ const AdminOffers: React.FC = () => {
 
   // حذف عرض
   const handleDelete = async (id: string) => {
-    if (!id) return;
-    deleteOfferMutation.mutate(id);
+    if (!id) {
+      console.error('لا يوجد معرف للحذف');
+      return;
+    }
+    console.log('محاولة حذف العرض بالمعرف:', id);
+    try {
+      await deleteOfferMutation.mutateAsync(id);
+      console.log('تم حذف العرض بنجاح');
+      toast.success(t("offerDeletedSuccessfully") || "تم حذف العرض بنجاح");
+      setShowDelete(false);
+      setSelectedOffer(null);
+      refetch();
+    } catch (error) {
+      console.error("خطأ في حذف العرض:", error);
+      toast.error(t("errorDeletingOffer") || "خطأ في حذف العرض");
+    }
   };
 
   // معالجة تغيير المدخلات
@@ -114,9 +130,37 @@ const AdminOffers: React.FC = () => {
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // التحقق من صحة البيانات
-    if (!form.title_en || !form.title_ar || !form.discount_percent) {
+    // التحقق من صحة البيانات باستخدام اللغات المتاحة
+    const availableLanguages = getAvailableLanguages();
+    
+    // التحقق من وجود عنوان في اللغات المطلوبة
+    const hasRequiredTitles = availableLanguages.every(lang => {
+      if (isLanguageFieldRequired(lang)) {
+        const titleField = `title_${lang}` as keyof typeof form;
+        return form[titleField] && String(form[titleField]).trim().length > 0;
+      }
+      return true;
+    });
+
+    if (!hasRequiredTitles || !form.discount_percent) {
       toast.error(t("pleaseCompleteRequiredFields"));
+      return;
+    }
+
+    // التحقق من وجود صورة
+    if (!form.image_url || form.image_url.trim().length === 0) {
+      toast.error(t("imageRequired") || "يجب إضافة صورة للعرض");
+      return;
+    }
+
+    // التحقق من التواريخ المطلوبة
+    if (!form.start_date || form.start_date.trim().length === 0) {
+      toast.error(t("startDateRequired") || "يجب تحديد تاريخ البداية");
+      return;
+    }
+
+    if (!form.end_date || form.end_date.trim().length === 0) {
+      toast.error(t("endDateRequired") || "يجب تحديد تاريخ النهاية");
       return;
     }
 
@@ -137,24 +181,46 @@ const AdminOffers: React.FC = () => {
       return;
     }
 
-    const offerData = {
-      title_en: form.title_en,
-      title_ar: form.title_ar,
-      title_he: form.title_he || form.title_en,
-      description_en: form.description_en,
-      description_ar: form.description_ar,
-      description_he: form.description_he || form.description_en,
+    // إعداد بيانات العرض بناءً على اللغات المتاحة
+    const availableLangs = getAvailableLanguages();
+    
+    // تنسيق التواريخ بشكل صحيح
+    const startDate = form.start_date ? new Date(form.start_date).toISOString() : null;
+    const endDate = form.end_date ? new Date(form.end_date).toISOString() : null;
+    
+    const offerData: any = {
       discount_percent: Number(form.discount_percent),
-      image_url: form.image_url || null,
-      start_date: form.start_date || new Date().toISOString(),
-      end_date:
-        form.end_date ||
-        new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      image_url: form.image_url,
+      start_date: startDate,
+      end_date: endDate,
       active: form.active,
-    } as Database["public"]["Tables"]["offers"]["Insert"];
+    };
+
+    // إضافة حقول اللغات المتاحة فقط
+    availableLangs.forEach(lang => {
+      const titleField = `title_${lang}` as keyof typeof form;
+      const descField = `description_${lang}` as keyof typeof form;
+      
+      offerData[titleField] = form[titleField] || '';
+      offerData[descField] = form[descField] || '';
+    });
+    
+    // إضافة قيم فارغة للغات غير المتاحة (للتوافق مع قاعدة البيانات)
+    const allLanguages = ['ar', 'en', 'he'];
+    allLanguages.forEach(lang => {
+      if (!availableLangs.includes(lang as any)) {
+        offerData[`title_${lang}`] = '';
+        offerData[`description_${lang}`] = '';
+      }
+    });
+
+    console.log('إضافة عرض - البيانات المُرسلة:', offerData);
+    console.log('إضافة عرض - اللغات المتاحة:', availableLangs);
+    console.log('إضافة عرض - النموذج الأصلي:', form);
 
     addOfferMutation.mutate(offerData, {
-      onSuccess: () => {
+      onSuccess: (data) => {
+        console.log('تم إضافة العرض بنجاح - البيانات المُستلمة:', data);
         toast.success(t("offerAddedSuccessfully"));
         setShowAdd(false);
         setForm(initialForm);
@@ -162,6 +228,7 @@ const AdminOffers: React.FC = () => {
       },
       onError: (error: unknown) => {
         console.error("خطأ في إضافة العرض:", error);
+        console.error("تفاصيل الخطأ:", JSON.stringify(error, null, 2));
         toast.error(t("errorAddingOffer"));
       },
     });
@@ -174,10 +241,41 @@ const AdminOffers: React.FC = () => {
       toast.error(t("noOfferSelected"));
       return;
     }
-    if (!form.title_en || !form.title_ar || !form.discount_percent) {
+    
+    // التحقق من صحة البيانات باستخدام اللغات المتاحة
+    const availableLanguages = getAvailableLanguages();
+    
+    // التحقق من وجود عنوان في اللغات المطلوبة
+    const hasRequiredTitles = availableLanguages.every(lang => {
+      if (isLanguageFieldRequired(lang)) {
+        const titleField = `title_${lang}` as keyof typeof form;
+        return form[titleField] && String(form[titleField]).trim().length > 0;
+      }
+      return true;
+    });
+
+    if (!hasRequiredTitles || !form.discount_percent) {
       toast.error(t("pleaseCompleteRequiredFields"));
       return;
     }
+    
+    // التحقق من وجود صورة
+    if (!form.image_url || form.image_url.trim().length === 0) {
+      toast.error(t("imageRequired") || "يجب إضافة صورة للعرض");
+      return;
+    }
+    
+    // التحقق من التواريخ المطلوبة
+    if (!form.start_date || form.start_date.trim().length === 0) {
+      toast.error(t("startDateRequired") || "يجب تحديد تاريخ البداية");
+      return;
+    }
+
+    if (!form.end_date || form.end_date.trim().length === 0) {
+      toast.error(t("endDateRequired") || "يجب تحديد تاريخ النهاية");
+      return;
+    }
+    
     if (
       Number(form.discount_percent) <= 0 ||
       Number(form.discount_percent) > 100
@@ -193,19 +291,24 @@ const AdminOffers: React.FC = () => {
       toast.error(t("endDateMustBeAfterStartDate"));
       return;
     }
-    const updateData = {
-      title_en: form.title_en,
-      title_ar: form.title_ar,
-      title_he: form.title_he || form.title_en,
-      description_en: form.description_en,
-      description_ar: form.description_ar,
-      description_he: form.description_he || form.description_en,
+    // إعداد بيانات التحديث بناءً على اللغات المتاحة
+    const availableLangs = getAvailableLanguages();
+    const updateData: any = {
       discount_percent: Number(form.discount_percent),
       image_url: form.image_url || null,
       start_date: form.start_date,
       end_date: form.end_date,
       active: form.active,
     };
+
+    // إضافة حقول اللغات المتاحة فقط
+    availableLangs.forEach(lang => {
+      const titleField = `title_${lang}` as keyof typeof form;
+      const descField = `description_${lang}` as keyof typeof form;
+      
+      updateData[titleField] = form[titleField] || '';
+      updateData[descField] = form[descField] || '';
+    });
     updateOfferMutation.mutate(
       { id: selectedOffer.id, updateData },
       {
@@ -329,188 +432,6 @@ const AdminOffers: React.FC = () => {
                   <XCircle className="h-4 w-4" />
                   <span>{t("resetFilters") || "مسح الفلاتر"}</span>
                 </button>
-                {/* زر إضافة عرض داخل Dialog */}
-                <Dialog open={showAdd} onOpenChange={setShowAdd}>
-                  <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                    <DialogHeader>
-                      <DialogTitle className="text-2xl font-bold mb-1 text-primary text-center">
-                        {t("addOffer")}
-                      </DialogTitle>
-                      <DialogDescription>
-                        {t("addOfferDesc") || "أدخل بيانات العرض الجديد"}
-                      </DialogDescription>
-                    </DialogHeader>
-                    <form onSubmit={handleAdd} className="space-y-6">
-                      {/* العناوين متعددة اللغات */}
-                      <div className="space-y-4">
-                        <h3 className="text-lg font-semibold">{t("titles")}</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <Label className="text-sm font-medium">
-                              {t("titleEnglish")} <span className="text-red-500">*</span>
-                            </Label>
-                            <Input
-                              name="title_en"
-                              value={form.title_en}
-                              onChange={handleInput}
-                              placeholder="Enter English title"
-                              required
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-sm font-medium">
-                              {t("titleArabic")} <span className="text-red-500">*</span>
-                            </Label>
-                            <Input
-                              name="title_ar"
-                              value={form.title_ar}
-                              onChange={handleInput}
-                              placeholder={t("enterArabicTitlePlaceholder")}
-                              required
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-sm font-medium">
-                              {t("titleHebrew")}
-                            </Label>
-                            <Input
-                              name="title_he"
-                              value={form.title_he}
-                              onChange={handleInput}
-                              placeholder="הכנס כותרת בעברית"
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* الأوصاف متعددة اللغات */}
-                      <div className="space-y-4">
-                        <h3 className="text-lg font-semibold">{t("descriptions")}</h3>
-                        <div className="space-y-4">
-                          <div>
-                            <Label className="text-sm font-medium">
-                              {t("descriptionEnglish")}
-                            </Label>
-                            <Textarea
-                              name="description_en"
-                              value={form.description_en}
-                              onChange={handleInput}
-                              placeholder="Enter English description"
-                              rows={3}
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-sm font-medium">
-                              {t("descriptionArabic")}
-                            </Label>
-                            <Textarea
-                              name="description_ar"
-                              value={form.description_ar}
-                              onChange={handleInput}
-                              placeholder={t("enterArabicDescriptionPlaceholder")}
-                              rows={3}
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-sm font-medium">
-                              {t("descriptionHebrew")}
-                            </Label>
-                            <Textarea
-                              name="description_he"
-                              value={form.description_he}
-                              onChange={handleInput}
-                              placeholder="הכנס תיאור בעברית"
-                              rows={3}
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* تفاصيل العرض */}
-                      <div className="space-y-4">
-                        <h3 className="text-lg font-semibold">{t("offerDetails")}</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <Label className="text-sm font-medium">
-                              {t("discountPercent")}{" "}
-                              <span className="text-red-500">*</span>
-                            </Label>
-                            <Input
-                              name="discount_percent"
-                              type="number"
-                              min="1"
-                              max="100"
-                              value={form.discount_percent}
-                              onChange={handleInput}
-                              placeholder="0"
-                              required
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-sm font-medium">{t("image")}</Label>
-                            <ImageUpload
-                              value={form.image_url}
-                              onChange={(url) =>
-                                setForm((prev) => ({ ...prev, image_url: url as string }))
-                              }
-                              label={t("image")}
-                              placeholder={t("uploadImage")}
-                              bucket="product-images"
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* التواريخ والحالة */}
-                      <div className="space-y-4">
-                        <h3 className="text-lg font-semibold">{t("dateAndStatus")}</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <Label className="text-sm font-medium">
-                              {t("startDate")}
-                            </Label>
-                            <Input
-                              name="start_date"
-                              type="date"
-                              value={form.start_date}
-                              onChange={handleInput}
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-sm font-medium">{t("endDate")}</Label>
-                            <Input
-                              name="end_date"
-                              type="date"
-                              value={form.end_date}
-                              onChange={handleInput}
-                            />
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Switch
-                            checked={form.active}
-                            onCheckedChange={handleSwitchChange}
-                          />
-                          <Label className="text-sm font-medium">
-                            {t("activeOffer")}
-                          </Label>
-                        </div>
-                      </div>
-
-                      <DialogFooter className="gap-2">
-                        <DialogClose asChild>
-                          <Button type="button" variant="outline">
-                            {t("cancel")}
-                          </Button>
-                        </DialogClose>
-                        <Button type="submit" className="bg-primary hover:bg-primary/90">
-                          <Plus className="h-4 w-4 mr-2" />
-                          {t("add")}
-                        </Button>
-                      </DialogFooter>
-                    </form>
-                  </DialogContent>
-                </Dialog>
               </div>
             </div>
           </div>
@@ -639,6 +560,7 @@ const AdminOffers: React.FC = () => {
                         size="sm"
                         variant="destructive"
                         onClick={() => {
+                          console.log('تم النقر على زر الحذف للعرض:', offer);
                           setSelectedOffer(offer);
                           setShowDelete(true);
                         }}
@@ -676,364 +598,352 @@ const AdminOffers: React.FC = () => {
 
       {/* نافذة إضافة عرض جديد */}
       <Dialog open={showAdd} onOpenChange={setShowAdd}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold mb-1 text-primary text-center">
-              {t("addOffer")}
-            </DialogTitle>
-            <DialogDescription className={isRTL ? "text-right" : "text-left"}>
-              {t("addOfferDesc") || "أدخل بيانات العرض الجديد"}
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-gradient-to-r from-blue-50 to-blue-100 -m-6 mb-6 p-6 border-b border-blue-200">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold text-center text-blue-800 flex items-center justify-center gap-2">
+                <Plus className="h-6 w-6" />
+                {t("addOffer") || "إضافة عرض"}
+              </DialogTitle>
+              <DialogDescription className="text-center text-blue-600 mt-2">
+                {t("addOfferDesc") || "أدخل بيانات العرض الجديد"}
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+
           <form onSubmit={handleAdd} className="space-y-6">
-            {/* العناوين متعددة اللغات */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">{t("titles")}</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm font-medium">
-                    {t("titleEnglish")} <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    name="title_en"
-                    value={form.title_en}
-                    onChange={handleInput}
-                    placeholder="Enter English title"
-                    required
-                  />
-                </div>
-                <div>
-                  <Label className="text-sm font-medium">
-                    {t("titleArabic")} <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    name="title_ar"
-                    value={form.title_ar}
-                    onChange={handleInput}
-                    placeholder={t("enterArabicTitlePlaceholder")}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label className="text-sm font-medium">
-                    {t("titleHebrew")}
-                  </Label>
-                  <Input
-                    name="title_he"
-                    value={form.title_he}
-                    onChange={handleInput}
-                    placeholder="הכנס כותרת בעברית"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* الأوصاف متعددة اللغات */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">{t("descriptions")}</h3>
-              <div className="space-y-4">
-                <div>
-                  <Label className="text-sm font-medium">
-                    {t("descriptionEnglish")}
-                  </Label>
-                  <Textarea
-                    name="description_en"
-                    value={form.description_en}
-                    onChange={handleInput}
-                    placeholder="Enter English description"
-                    rows={3}
-                  />
-                </div>
-                <div>
-                  <Label className="text-sm font-medium">
-                    {t("descriptionArabic")}
-                  </Label>
-                  <Textarea
-                    name="description_ar"
-                    value={form.description_ar}
-                    onChange={handleInput}
-                    placeholder={t("enterArabicDescriptionPlaceholder")}
-                    rows={3}
-                  />
-                </div>
-                <div>
-                  <Label className="text-sm font-medium">
-                    {t("descriptionHebrew")}
-                  </Label>
-                  <Textarea
-                    name="description_he"
-                    value={form.description_he}
-                    onChange={handleInput}
-                    placeholder="הכנס תיאור בעברית"
-                    rows={3}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* تفاصيل العرض */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">{t("offerDetails")}</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm font-medium">
-                    {t("discountPercent")}{" "}
-                    <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    name="discount_percent"
-                    type="number"
-                    min="1"
-                    max="100"
-                    value={form.discount_percent}
-                    onChange={handleInput}
-                    placeholder="0"
-                    required
-                  />
-                </div>
-                <div>
-                  <ImageUpload
-                    value={form.image_url}
-                    onChange={(url) =>
-                      setForm((prev) => ({ ...prev, image_url: url as string }))
-                    }
-                    label={t("image")}
-                    placeholder={t("uploadImage")}
-                    bucket="product-images"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* التواريخ والحالة */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">{t("dateAndStatus")}</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm font-medium">
-                    {t("startDate")}
-                  </Label>
-                  <Input
-                    name="start_date"
-                    type="date"
-                    value={form.start_date}
-                    onChange={handleInput}
-                  />
-                </div>
-                <div>
-                  <Label className="text-sm font-medium">{t("endDate")}</Label>
-                  <Input
-                    name="end_date"
-                    type="date"
-                    value={form.end_date}
-                    onChange={handleInput}
-                  />
-                </div>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Switch
-                  checked={form.active}
-                  onCheckedChange={handleSwitchChange}
+            {/* قسم المحتوى متعدد اللغات */}
+            <Card className="border-l-4 border-l-green-500 bg-green-50/50">
+              <CardHeader>
+                <CardTitle className="text-lg font-bold text-green-800 flex items-center gap-2">
+                  <ImageIcon className="h-5 w-5" />
+                  {t("offerContent") || "محتوى العرض"}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* العناوين متعددة اللغات */}
+                <MultiLanguageField
+                  fieldName="offerTitle"
+                  label={t("offerTitle") || "عنوان العرض"}
+                  values={{
+                    ar: form.title_ar,
+                    en: form.title_en,
+                    he: form.title_he,
+                  }}
+                  onChange={(lang, value) => 
+                    handleInput({ target: { name: `title_${lang}`, value } } as any)
+                  }
+                  placeholder={{
+                    ar: "أدخل عنوان العرض",
+                    en: "Enter offer title",
+                    he: "הכנס כותרת הצעה"
+                  }}
                 />
-                <Label className="text-sm font-medium">
-                  {t("activeOffer")}
-                </Label>
-              </div>
-            </div>
 
-            <DialogFooter className="gap-2">
-              <DialogClose asChild>
-                <Button type="button" variant="outline">
-                  {t("cancel")}
+                {/* الأوصاف متعددة اللغات */}
+                <MultiLanguageField
+                  fieldName="offerDescription"
+                  label={t("offerDescription") || "وصف العرض"}
+                  type="textarea"
+                  values={{
+                    ar: form.description_ar,
+                    en: form.description_en,
+                    he: form.description_he,
+                  }}
+                  onChange={(lang, value) => 
+                    handleInput({ target: { name: `description_${lang}`, value } } as any)
+                  }
+                  placeholder={{
+                    ar: "أدخل وصف العرض",
+                    en: "Enter offer description",
+                    he: "הכנס תיאור הצעה"
+                  }}
+                  rows={3}
+                />
+              </CardContent>
+            </Card>
+
+            {/* قسم تفاصيل العرض */}
+            <Card className="border-l-4 border-l-purple-500 bg-purple-50/50">
+              <CardHeader>
+                <CardTitle className="text-lg font-bold text-purple-800 flex items-center gap-2">
+                  <Percent className="h-5 w-5" />
+                  {t("offerDetails") || "تفاصيل العرض"}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <Label className="text-sm font-medium text-purple-700 mb-2 block">
+                      {t("discountPercent") || "نسبة الخصم"} <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      name="discount_percent"
+                      type="number"
+                      min="1"
+                      max="100"
+                      value={form.discount_percent}
+                      onChange={handleInput}
+                      placeholder="0"
+                      required
+                      className="border-purple-200 focus:border-purple-500"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-purple-700 mb-2 block">
+                      {t("image") || "الصورة"} <span className="text-red-500">*</span>
+                    </Label>
+                    <ImageUpload
+                      value={form.image_url}
+                      onChange={(url) =>
+                        setForm((prev) => ({ ...prev, image_url: url as string }))
+                      }
+                      label={t("image")}
+                      placeholder={t("uploadImage")}
+                      bucket="product-images"
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* قسم التواريخ والحالة */}
+            <Card className="border-l-4 border-l-orange-500 bg-orange-50/50">
+              <CardHeader>
+                <CardTitle className="text-lg font-bold text-orange-800 flex items-center gap-2">
+                  <Calendar className="h-5 w-5" />
+                  {t("dateAndStatus") || "التاريخ والحالة"}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <Label className="text-sm font-medium text-orange-700 mb-2 block">
+                      {t("startDate") || "تاريخ البداية"} <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      name="start_date"
+                      type="date"
+                      value={form.start_date}
+                      onChange={handleInput}
+                      required
+                      className="border-orange-200 focus:border-orange-500"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-orange-700 mb-2 block">
+                      {t("endDate") || "تاريخ النهاية"} <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      name="end_date"
+                      type="date"
+                      value={form.end_date}
+                      onChange={handleInput}
+                      required
+                      className="border-orange-200 focus:border-orange-500"
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center space-x-3 p-4 bg-orange-100 rounded-lg border border-orange-200">
+                  <Switch
+                    checked={form.active}
+                    onCheckedChange={handleSwitchChange}
+                  />
+                  <Label className="text-sm font-medium text-orange-800">
+                    {t("activeOffer") || "العرض نشط"}
+                  </Label>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="bg-gray-50 -m-6 mt-6 p-6 border-t border-gray-200">
+              <DialogFooter className="gap-3">
+                <DialogClose asChild>
+                  <Button type="button" variant="outline" className="flex-1">
+                    {t("cancel") || "إلغاء"}
+                  </Button>
+                </DialogClose>
+                <Button type="submit" className="bg-primary hover:bg-primary/90 flex-1">
+                  <Plus className="h-4 w-4 mr-2" />
+                  {t("add") || "إضافة"}
                 </Button>
-              </DialogClose>
-              <Button type="submit" className="bg-primary hover:bg-primary/90">
-                <Plus className="h-4 w-4 mr-2" />
-                {t("add")}
-              </Button>
-            </DialogFooter>
+              </DialogFooter>
+            </div>
           </form>
         </DialogContent>
       </Dialog>
 
       {/* نافذة تعديل العرض */}
       <Dialog open={showEdit} onOpenChange={setShowEdit}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold mb-1 text-primary text-center">
-              {t("editOffer")}
-            </DialogTitle>
-            <DialogDescription className={isRTL ? "text-right" : "text-left"}>
-              {t("editOfferDesc") || "تعديل بيانات العرض"}
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <div className="bg-gradient-to-r from-blue-50 to-blue-100 -m-6 mb-6 p-6 border-b border-blue-200">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold text-center text-blue-800 flex items-center justify-center gap-2">
+                <Edit className="h-6 w-6" />
+                {t("editOffer") || "تعديل العرض"}
+              </DialogTitle>
+              <DialogDescription className="text-center text-blue-600 mt-2">
+                {t("editOfferDesc") || "تعديل بيانات العرض"}
+              </DialogDescription>
+            </DialogHeader>
+          </div>
+
           <form onSubmit={handleEdit} className="space-y-6">
-            {/* العناوين متعددة اللغات */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">{t("titles")}</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm font-medium">
-                    {t("titleArabic")} <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    name="title_ar"
-                    value={form.title_ar}
-                    onChange={handleInput}
-                    placeholder={t("enterArabicTitlePlaceholder")}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label className="text-sm font-medium">
-                    {t("titleEnglish")} <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    name="title_en"
-                    value={form.title_en}
-                    onChange={handleInput}
-                    placeholder="Enter English title"
-                  />
-                </div>
-                <div>
-                  <Label className="text-sm font-medium">
-                    {t("titleHebrew")}
-                  </Label>
-                  <Input
-                    name="title_he"
-                    value={form.title_he}
-                    onChange={handleInput}
-                    placeholder="הכנס כותרת בעברית"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* الأوصاف متعددة اللغات */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">{t("descriptions")}</h3>
-              <div className="space-y-4">
-                <div>
-                  <Label className="text-sm font-medium">
-                    {t("descriptionArabic")}
-                  </Label>
-                  <Textarea
-                    name="description_ar"
-                    value={form.description_ar}
-                    onChange={handleInput}
-                    placeholder={t("enterArabicDescriptionPlaceholder")}
-                    rows={1}
-                  />
-                </div>
-                <div>
-                  <Label className="text-sm font-medium">
-                    {t("descriptionEnglish")}
-                  </Label>
-                  <Textarea
-                    name="description_en"
-                    value={form.description_en}
-                    onChange={handleInput}
-                    placeholder="Enter English description"
-                    rows={2}
-                  />
-                </div>
-                <div>
-                  <Label className="text-sm font-medium">
-                    {t("descriptionHebrew")}
-                  </Label>
-                  <Textarea
-                    name="description_he"
-                    value={form.description_he}
-                    onChange={handleInput}
-                    placeholder="הכנס תיאור בעברית"
-                    rows={3}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* تفاصيل العرض */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">{t("offerDetails")}</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm font-medium">
-                    {t("discountPercent")}{" "}
-                    <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    name="discount_percent"
-                    type="number"
-                    min="1"
-                    max="100"
-                    value={form.discount_percent}
-                    onChange={handleInput}
-                    placeholder="0"
-                    required
-                  />
-                </div>
-                <div>
-                  <Label className="text-sm font-medium">{t("image")}</Label>
-                  <ImageUpload
-                    value={form.image_url}
-                    onChange={(url) =>
-                      setForm((prev) => ({ ...prev, image_url: url as string }))
-                    }
-                    label={t("image")}
-                    placeholder={t("uploadImage")}
-                    bucket="product-images"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* التواريخ والحالة */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">{t("dateAndStatus")}</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-sm font-medium">
-                    {t("startDate")}
-                  </Label>
-                  <Input
-                    name="start_date"
-                    type="date"
-                    value={form.start_date}
-                    onChange={handleInput}
-                  />
-                </div>
-                <div>
-                  <Label className="text-sm font-medium">{t("endDate")}</Label>
-                  <Input
-                    name="end_date"
-                    type="date"
-                    value={form.end_date}
-                    onChange={handleInput}
-                  />
-                </div>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Switch
-                  checked={form.active}
-                  onCheckedChange={handleSwitchChange}
+            {/* قسم المحتوى متعدد اللغات */}
+            <Card className="border-l-4 border-l-green-500 bg-green-50/50">
+              <CardHeader>
+                <CardTitle className="text-lg font-bold text-green-800 flex items-center gap-2">
+                  <ImageIcon className="h-5 w-5" />
+                  {t("offerContent") || "محتوى العرض"}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* العناوين متعددة اللغات */}
+                <MultiLanguageField
+                  fieldName="offerTitle"
+                  label={t("offerTitle") || "عنوان العرض"}
+                  values={{
+                    ar: form.title_ar,
+                    en: form.title_en,
+                    he: form.title_he,
+                  }}
+                  onChange={(lang, value) => 
+                    handleInput({ target: { name: `title_${lang}`, value } } as any)
+                  }
+                  placeholder={{
+                    ar: "أدخل عنوان العرض",
+                    en: "Enter offer title",
+                    he: "הכנס כותרת הצעה"
+                  }}
                 />
-                <Label className="text-sm font-medium">
-                  {t("activeOffer")}
-                </Label>
-              </div>
-            </div>
 
-            <DialogFooter className="gap-2">
-              <DialogClose asChild>
-                <Button type="button" variant="outline">
-                  {t("cancel")}
+                {/* الأوصاف متعددة اللغات */}
+                <MultiLanguageField
+                  fieldName="offerDescription"
+                  label={t("offerDescription") || "وصف العرض"}
+                  type="textarea"
+                  values={{
+                    ar: form.description_ar,
+                    en: form.description_en,
+                    he: form.description_he,
+                  }}
+                  onChange={(lang, value) => 
+                    handleInput({ target: { name: `description_${lang}`, value } } as any)
+                  }
+                  placeholder={{
+                    ar: "أدخل وصف العرض",
+                    en: "Enter offer description",
+                    he: "הכנס תיאור הצעה"
+                  }}
+                  rows={3}
+                />
+              </CardContent>
+            </Card>
+
+            {/* قسم تفاصيل العرض */}
+            <Card className="border-l-4 border-l-purple-500 bg-purple-50/50">
+              <CardHeader>
+                <CardTitle className="text-lg font-bold text-purple-800 flex items-center gap-2">
+                  <Percent className="h-5 w-5" />
+                  {t("offerDetails") || "تفاصيل العرض"}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <Label className="text-sm font-medium text-purple-700 mb-2 block">
+                      {t("discountPercent") || "نسبة الخصم"} <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      name="discount_percent"
+                      type="number"
+                      min="1"
+                      max="100"
+                      value={form.discount_percent}
+                      onChange={handleInput}
+                      placeholder="0"
+                      required
+                      className="border-purple-200 focus:border-purple-500"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-purple-700 mb-2 block">
+                      {t("image") || "الصورة"}
+                    </Label>
+                    <ImageUpload
+                      value={form.image_url}
+                      onChange={(url) =>
+                        setForm((prev) => ({ ...prev, image_url: url as string }))
+                      }
+                      label={t("image")}
+                      placeholder={t("uploadImage")}
+                      bucket="product-images"
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* قسم التواريخ والحالة */}
+            <Card className="border-l-4 border-l-orange-500 bg-orange-50/50">
+              <CardHeader>
+                <CardTitle className="text-lg font-bold text-orange-800 flex items-center gap-2">
+                  <Calendar className="h-5 w-5" />
+                  {t("dateAndStatus") || "التاريخ والحالة"}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <Label className="text-sm font-medium text-orange-700 mb-2 block">
+                      {t("startDate") || "تاريخ البداية"}
+                    </Label>
+                    <Input
+                      name="start_date"
+                      type="date"
+                      value={form.start_date}
+                      onChange={handleInput}
+                      className="border-orange-200 focus:border-orange-500"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium text-orange-700 mb-2 block">
+                      {t("endDate") || "تاريخ النهاية"}
+                    </Label>
+                    <Input
+                      name="end_date"
+                      type="date"
+                      value={form.end_date}
+                      onChange={handleInput}
+                      className="border-orange-200 focus:border-orange-500"
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center space-x-3 p-4 bg-orange-100 rounded-lg border border-orange-200">
+                  <Switch
+                    checked={form.active}
+                    onCheckedChange={handleSwitchChange}
+                  />
+                  <Label className="text-sm font-medium text-orange-800">
+                    {t("activeOffer") || "العرض نشط"}
+                  </Label>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="bg-gray-50 -m-6 mt-6 p-6 border-t border-gray-200">
+              <DialogFooter className="gap-3">
+                <DialogClose asChild>
+                  <Button type="button" variant="outline" className="flex-1">
+                    {t("cancel") || "إلغاء"}
+                  </Button>
+                </DialogClose>
+                <Button type="submit" className="bg-primary hover:bg-primary/90 flex-1">
+                  <Edit className="h-4 w-4 mr-2" />
+                  {t("save") || "حفظ"}
                 </Button>
-              </DialogClose>
-              <Button type="submit" className="bg-primary hover:bg-primary/90">
-                <Edit className="h-4 w-4 mr-2" />
-                {t("save")}
-              </Button>
-            </DialogFooter>
+              </DialogFooter>
+            </div>
           </form>
         </DialogContent>
       </Dialog>
@@ -1054,19 +964,30 @@ const AdminOffers: React.FC = () => {
               )}
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="gap-2">
-            <DialogClose asChild>
-              <Button type="button" variant="outline">
-                {t("cancel")}
-              </Button>
-            </DialogClose>
+          <DialogFooter className="gap-2 flex-col">
             <Button
               variant="destructive"
               onClick={() => selectedOffer && handleDelete(selectedOffer.id)}
+              className="w-full"
+              disabled={deleteOfferMutation.isPending}
             >
-              <Trash2 className="h-4 w-4 mr-2" />
-              {t("delete")}
+              {deleteOfferMutation.isPending ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                  {t("deleting")}
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  {t("delete")}
+                </>
+              )}
             </Button>
+            <DialogClose asChild>
+              <Button type="button" variant="outline" className="w-full">
+                {t("cancel")}
+              </Button>
+            </DialogClose>
           </DialogFooter>
         </DialogContent>
       </Dialog>

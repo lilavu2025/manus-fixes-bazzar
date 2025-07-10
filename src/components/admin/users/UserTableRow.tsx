@@ -225,7 +225,6 @@ const UserTableRow: React.FC<UserTableRowProps> = ({
               "هل أنت متأكد أنك تريد حذف هذا المستخدم؟ لا يمكن التراجع عن هذه العملية."}
           </div>
           <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel>{t("cancel") || "إلغاء"}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteUser}
               className="bg-red-600 hover:bg-red-700 text-white"
@@ -234,6 +233,7 @@ const UserTableRow: React.FC<UserTableRowProps> = ({
                 ? t("loading")
                 : t("confirmDelete") || "تأكيد الحذف"}
             </AlertDialogAction>
+            <AlertDialogCancel>{t("cancel") || "إلغاء"}</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

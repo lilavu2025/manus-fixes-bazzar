@@ -570,9 +570,6 @@ const AdminCategories: React.FC = () => {
                                           </AlertDialogDescription>
                                         </AlertDialogHeader>
                                         <AlertDialogFooter className="gap-2">
-                                          <AlertDialogCancel>
-                                            {t("cancel")}
-                                          </AlertDialogCancel>
                                           <AlertDialogAction
                                             onClick={() =>
                                               handleDeleteCategory(
@@ -606,6 +603,9 @@ const AdminCategories: React.FC = () => {
                                           >
                                             {t("delete")}
                                           </AlertDialogAction>
+                                          <AlertDialogCancel>
+                                            {t("cancel")}
+                                          </AlertDialogCancel>
                                         </AlertDialogFooter>
                                       </AlertDialogContent>
                                     </AlertDialog>

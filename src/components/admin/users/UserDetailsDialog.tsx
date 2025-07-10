@@ -1,8 +1,8 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
-import { Calendar, CheckCircle, XCircle, Mail, Phone, User, Shield } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Calendar, CheckCircle, XCircle, Mail, Phone, User, Shield, Activity, ShoppingBag } from 'lucide-react';
 import { format } from 'date-fns';
 import { useLanguage } from '@/utils/languageContextUtils';
 import type { UserProfile } from '@/types/profile';
@@ -52,26 +52,35 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({ user, open, onOpe
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={`max-w-2xl ${isRTL ? 'text-right' : 'text-left'}`} dir={isRTL ? 'rtl' : 'ltr'}>
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-bold mb-1 text-primary text-center">
-            {t('userDetails')}
-          </DialogTitle>
-        </DialogHeader>
+      <DialogContent className={`max-w-4xl max-h-[90vh] overflow-y-auto ${isRTL ? 'text-right' : 'text-left'}`} dir={isRTL ? 'rtl' : 'ltr'}>
+        <div className="bg-gradient-to-r from-blue-50 to-blue-100 -m-6 mb-6 p-6 border-b border-blue-200">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-center text-blue-800 flex items-center justify-center gap-2">
+              <User className="h-6 w-6" />
+              {t('userDetails') || 'تفاصيل المستخدم'}
+            </DialogTitle>
+          </DialogHeader>
+        </div>
         
         <div className="space-y-6">
-          {/* User Profile Card */}
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-16 h-16 bg-gradient-to-r from-[hsl(var(--primary))] to-[hsl(var(--secondary))] rounded-full flex items-center justify-center">
+          {/* قسم المعلومات الشخصية */}
+          <Card className="border-l-4 border-l-green-500 bg-green-50/50">
+            <CardHeader>
+              <CardTitle className="text-lg font-bold text-green-800 flex items-center gap-2">
+                <User className="h-5 w-5" />
+                {t('personalInformation') || 'المعلومات الشخصية'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center shadow-lg">
                   <span className="text-white font-bold text-xl">
                     {user.full_name?.charAt(0) || 'U'}
                   </span>
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold">{user.full_name}</h3>
-                  <Badge className={`${getUserTypeColor(user.user_type)} mt-1`}>
+                  <h3 className="text-xl font-semibold text-green-900">{user.full_name}</h3>
+                  <Badge className={`${getUserTypeColor(user.user_type)} mt-2`}>
                     <span className="ml-1">{getUserTypeIcon(user.user_type)}</span>
                     {t(user.user_type)}
                   </Badge>
@@ -79,105 +88,126 @@ const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({ user, open, onOpe
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex items-center gap-2">
-                  <User className="h-4 w-4 text-gray-400" />
-                  <span className="text-sm text-gray-600">{t('id')}:</span>
-                  <span className="text-sm font-mono bg-gray-100 px-2 py-1 rounded">
-                    {user.id.slice(0, 8)}...
-                  </span>
+                <div className="flex items-center gap-3 p-3 bg-green-100 rounded-lg">
+                  <User className="h-4 w-4 text-green-600" />
+                  <div>
+                    <span className="text-sm text-green-700 font-medium">{t('id') || 'المعرف'}:</span>
+                    <span className="text-sm font-mono bg-green-200 px-2 py-1 rounded ml-2">
+                      {user.id.slice(0, 8)}...
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-gray-400" />
-                  <span className="text-sm text-gray-600">{t('email')}:</span>
-                  <span className="text-sm">{user.email || t('notProvided')}</span>
+                <div className="flex items-center gap-3 p-3 bg-green-100 rounded-lg">
+                  <Mail className="h-4 w-4 text-green-600" />
+                  <div>
+                    <span className="text-sm text-green-700 font-medium">{t('email') || 'البريد الإلكتروني'}:</span>
+                    <span className="text-sm ml-2">{user.email || t('notProvided')}</span>
+                  </div>
                 </div>
                 {user.phone && (
-                  <div className="flex items-center gap-2">
-                    <Phone className="h-4 w-4 text-gray-400" />
-                    <span className="text-sm text-gray-600">{t('phone')}:</span>
-                    <span className="text-sm">{user.phone}</span>
+                  <div className="flex items-center gap-3 p-3 bg-green-100 rounded-lg">
+                    <Phone className="h-4 w-4 text-green-600" />
+                    <div>
+                      <span className="text-sm text-green-700 font-medium">{t('phone') || 'الهاتف'}:</span>
+                      <span className="text-sm ml-2">{user.phone}</span>
+                    </div>
                   </div>
                 )}
               </div>
             </CardContent>
           </Card>
 
-          {/* Account Status and Dates */}
-          <Card>
-            <CardContent className="p-6">
-              <h4 className="font-semibold mb-4 flex items-center gap-2">
-                <Shield className="h-4 w-4" />
-                {t('accountStatusAndDates')}
-              </h4>
+          {/* قسم حالة الحساب */}
+          <Card className="border-l-4 border-l-purple-500 bg-purple-50/50">
+            <CardHeader>
+              <CardTitle className="text-lg font-bold text-purple-800 flex items-center gap-2">
+                <Shield className="h-5 w-5" />
+                {t('accountStatusAndDates') || 'حالة الحساب والتواريخ'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* حالة الحساب */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3 p-3 bg-purple-100 rounded-lg">
                   {user.disabled ? (
                     <>
-                      <XCircle className="h-4 w-4 text-red-500" />
-                      <span className="text-sm text-red-600">{t('accountDisabled')}</span>
+                      <XCircle className="h-5 w-5 text-red-500" />
+                      <span className="text-sm text-red-600 font-medium">{t('accountDisabled') || 'الحساب معطل'}</span>
                     </>
                   ) : (
                     <>
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                      <span className="text-sm text-green-600">{t('accountActive')}</span>
+                      <CheckCircle className="h-5 w-5 text-green-500" />
+                      <span className="text-sm text-green-600 font-medium">{t('accountActive') || 'الحساب نشط'}</span>
                     </>
                   )}
                 </div>
                 {/* حالة الإيميل */}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3 p-3 bg-purple-100 rounded-lg">
                   {user.email_confirmed_at ? (
                     <>
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                      <span className="text-sm text-green-600">{t('emailConfirmed')}</span>
+                      <CheckCircle className="h-5 w-5 text-green-500" />
+                      <span className="text-sm text-green-600 font-medium">{t('emailConfirmed') || 'البريد مؤكد'}</span>
                     </>
                   ) : (
                     <>
-                      <XCircle className="h-4 w-4 text-orange-500" />
-                      <span className="text-sm text-orange-600">{t('emailNotConfirmedAdmin')}</span>
+                      <XCircle className="h-5 w-5 text-orange-500" />
+                      <span className="text-sm text-orange-600 font-medium">{t('emailNotConfirmedAdmin') || 'البريد غير مؤكد'}</span>
                     </>
                   )}
                 </div>
                 {/* تاريخ التسجيل */}
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-gray-400" />
-                  <span className="text-sm text-gray-600">{t('registrationDate')}:</span>
-                  <span className="text-sm">{safeDate(user.created_at)}</span>
+                <div className="flex items-center gap-3 p-3 bg-purple-100 rounded-lg">
+                  <Calendar className="h-4 w-4 text-purple-600" />
+                  <div>
+                    <span className="text-sm text-purple-700 font-medium">{t('registrationDate') || 'تاريخ التسجيل'}:</span>
+                    <span className="text-sm ml-2">{safeDate(user.created_at)}</span>
+                  </div>
                 </div>
                 {/* تاريخ آخر تعديل */}
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-gray-400" />
-                  <span className="text-sm text-gray-600">{t('lastAccountUpdate')}:</span>
-                  <span className="text-sm">{safeDate(user.updated_at)}</span>
+                <div className="flex items-center gap-3 p-3 bg-purple-100 rounded-lg">
+                  <Calendar className="h-4 w-4 text-purple-600" />
+                  <div>
+                    <span className="text-sm text-purple-700 font-medium">{t('lastAccountUpdate') || 'آخر تحديث'}:</span>
+                    <span className="text-sm ml-2">{safeDate(user.updated_at)}</span>
+                  </div>
                 </div>
                 {/* آخر دخول */}
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-gray-400" />
-                  <span className="text-sm text-gray-600">{t('lastLogin')}:</span>
-                  <span className="text-sm">{safeDate(user.last_sign_in_at)}</span>
+                <div className="flex items-center gap-3 p-3 bg-purple-100 rounded-lg md:col-span-2">
+                  <Activity className="h-4 w-4 text-purple-600" />
+                  <div>
+                    <span className="text-sm text-purple-700 font-medium">{t('lastLogin') || 'آخر دخول'}:</span>
+                    <span className="text-sm ml-2">{safeDate(user.last_sign_in_at)}</span>
+                  </div>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* كرت منفصل لإحصائيات الطلبيات */}
-          <Card>
-            <CardContent className="p-6">
-              <h4 className="font-semibold mb-4 flex items-center gap-2">
-                <span className="text-lg">📦</span>
-                {t('orderStats')}
-              </h4>
+          {/* قسم إحصائيات الطلبات */}
+          <Card className="border-l-4 border-l-orange-500 bg-orange-50/50">
+            <CardHeader>
+              <CardTitle className="text-lg font-bold text-orange-800 flex items-center gap-2">
+                <ShoppingBag className="h-5 w-5" />
+                {t('orderStats') || 'إحصائيات الطلبات'}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* آخر طلبية */}
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-gray-400" />
-                  <span className="text-sm text-gray-600">{t('lastOrder')}:</span>
-                  <span className="text-sm">{safeDate(user.last_order_date)}</span>
+                <div className="flex items-center gap-3 p-3 bg-orange-100 rounded-lg">
+                  <Calendar className="h-4 w-4 text-orange-600" />
+                  <div>
+                    <span className="text-sm text-orange-700 font-medium">{t('lastOrder') || 'آخر طلبية'}:</span>
+                    <span className="text-sm ml-2">{safeDate(user.last_order_date)}</span>
+                  </div>
                 </div>
                 {/* أكبر طلبية */}
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-600">{t('highestOrder')}:</span>
-                  <span className="text-sm">{safeNumber(user.highest_order_value)}</span>
+                <div className="flex items-center gap-3 p-3 bg-orange-100 rounded-lg">
+                  <ShoppingBag className="h-4 w-4 text-orange-600" />
+                  <div>
+                    <span className="text-sm text-orange-700 font-medium">{t('highestOrder') || 'أكبر طلبية'}:</span>
+                    <span className="text-sm ml-2">{safeNumber(user.highest_order_value)}</span>
+                  </div>
                 </div>
               </div>
             </CardContent>

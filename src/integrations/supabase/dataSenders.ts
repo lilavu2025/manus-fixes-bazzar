@@ -417,7 +417,7 @@ export async function deleteOffer(id: string): Promise<boolean> {
     return true;
   } catch (error) {
     console.error("Error deleting offer:", error);
-    return false;
+    throw error;
   }
 }
 
