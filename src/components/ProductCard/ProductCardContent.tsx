@@ -40,14 +40,14 @@ const ProductCardContent: React.FC<ProductCardContentProps> = ({
 
   return (
     <CardContent
-      className={`w-full p-2 sm:p-3 md:p-4 ${isRTL ? "text-right" : "text-left"} flex flex-col gap-2 flex-grow`}
+      className={`product-card-content w-full p-2 sm:p-3 md:p-4 ${isRTL ? "text-right" : "text-left"} flex flex-col flex-grow h-full min-h-0`}
     >
       {/* المحتوى الأساسي */}
-      <div className="flex flex-col gap-2 flex-grow">
+      <div className="flex flex-col gap-2 flex-grow min-h-0 justify-start">
         <Link
           to={`/product/${product.id}`}
           onClick={onProductClick}
-          className="block w-full"
+          className="block w-full flex-shrink-0"
         >
           <h3
             className={`product-name-wrapper font-semibold text-sm sm:text-base md:text-lg lg:text-xl group-hover:text-primary transition-colors break-words leading-tight ${isRTL ? "text-right" : "text-left"}`}
@@ -58,13 +58,13 @@ const ProductCardContent: React.FC<ProductCardContentProps> = ({
         </Link>
         
         {/* البادجز تحت اسم المنتج */}
-        <div>
+        <div className="flex-shrink-0">
           <ProductCardBadges product={product} variant="belowName" />
         </div>
 
         {/* وصف المنتج */}
         {description && (
-          <div className={`text-xs sm:text-sm text-gray-600 leading-relaxed ${isRTL ? "text-right" : "text-left"}`}>
+          <div className={`text-xs sm:text-sm text-gray-600 leading-relaxed flex-shrink-0 ${isRTL ? "text-right" : "text-left"}`}>
             <p 
               className={showFullDescription ? "break-words leading-relaxed" : "product-description"}
               style={{ wordBreak: 'break-word', hyphens: 'auto' }}
@@ -96,8 +96,11 @@ const ProductCardContent: React.FC<ProductCardContentProps> = ({
           </div>
         )}
         
+        {/* مساحة قابلة للتمدد لدفع السعر والأزرار للأسفل */}
+        <div className="flex-grow"></div>
+        
         {/* السعر  */}
-        <div className={`flex flex-col gap-1`}>
+        <div className={`flex flex-col gap-1 flex-shrink-0`}>
           <div
             className={`flex items-center gap-4 w-full ${isRTL ? "flex-row-reverse justify-end" : "justify-start"}`}
           >
@@ -122,7 +125,7 @@ const ProductCardContent: React.FC<ProductCardContentProps> = ({
 
       {/* منطقة الأزرار في الأسفل */}
       {product.inStock && (
-        <div className="flex flex-col gap-2 mt-auto">
+        <div className="flex flex-col gap-2 mt-auto flex-shrink-0">
           {/* محدد الكمية */}
           <div className="flex items-center gap-4 w-full">
             <span className="text-sm sm:text-base text-gray-600 whitespace-nowrap">

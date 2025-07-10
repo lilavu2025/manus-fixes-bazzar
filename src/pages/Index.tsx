@@ -20,14 +20,20 @@ import type { Banner as AppBanner, Product } from "@/types/index";
 import TopOrderedProducts from "@/components/TopOrderedProducts";
 import { fetchTopOrderedProducts } from "@/integrations/supabase/dataSenders";
 import config from "@/configs/activeConfig";
+import { useEqualHeight } from "@/hooks/useEqualHeight";
 
 interface IndexProps {}
 
-const Index = () => {
+const Index: React.FC = () => {
   const { t, isRTL, language } = useLanguage();
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [topOrdered, setTopOrdered] = useState<Product[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Hook لضمان تساوي ارتفاع الكروت
+  const gridRef = useEqualHeight();
+  const gridRef2 = useEqualHeight();
 
   const { data: bannersData } = useBanners();
   const {
@@ -273,6 +279,7 @@ const Index = () => {
             ) : (
               <>
                 <motion.div
+                  ref={gridRef}
                   className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6"
                   initial="hidden"
                   animate="show"
@@ -336,6 +343,7 @@ const Index = () => {
             ) : (
               <>
                 <motion.div
+                  ref={gridRef2}
                   className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6"
                   initial="hidden"
                   animate="show"
