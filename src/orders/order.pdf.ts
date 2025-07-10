@@ -94,6 +94,22 @@ export async function downloadInvoicePdf(
             color: #777;
             text-align: center;
           }
+          .notes {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 5px;
+            border-left: 3px solid #007bff;
+            font-style: italic;
+            word-wrap: break-word;
+            word-break: break-word;
+            white-space: pre-wrap;
+            max-width: 100%;
+            overflow-wrap: break-word;
+            page-break-inside: avoid;
+            font-size: 14px;
+            line-height: 1.4;
+          }
         </style>
       </head>
       <body>
@@ -109,6 +125,7 @@ export async function downloadInvoicePdf(
             <div>${t("date")}: ${new Date(order.created_at).toLocaleDateString("en-GB")}</div>
             <div>${t("customer")}: ${profile.full_name || "-"}</div>
             <div>${t("phone")}: ${profile.phone || "-"}</div>
+            ${order.notes ? `<div><strong>${t("notes") || "ملاحظات"}:</strong><div class="notes">${order.notes}</div></div>` : ""}
           </div>
 
           <table>
