@@ -4,11 +4,11 @@ import { Button } from "@/components/ui/button";
 import { useCart } from "@/hooks/useCart";
 import { useLanguage } from "@/utils/languageContextUtils";
 import { toast } from "sonner";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import CartSidebar from "@/components/CartSidebar";
 import ProductImageGallery from "@/components/ProductImageGallery";
 import ProductInfo from "@/components/ProductInfo";
 import ProductActions from "@/components/ProductActions";
-import ProductBreadcrumb from "@/components/ProductBreadcrumb";
 import RelatedProducts from "@/components/RelatedProducts";
 import { getLocalizedName } from "@/utils/getLocalizedName";
 import type { Product } from "@/types/index";
@@ -99,10 +99,27 @@ const ProductDetails = () => {
       {/* <Header onSearchChange={setSearchQuery} onCartClick={() => setIsCartOpen(true)} onMenuClick={() => {}} /> */}
 
       <main className="container mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
-        <div className={`mb-3 sm:mb-4 ${isRTL ? "text-right" : "text-left"}`}>
+        {/* <div className={`mb-3 sm:mb-4 ${isRTL ? "text-right" : "text-left"}`}>
           <ProductBreadcrumb
             productName={getLocalizedName(product, language)}
-          />
+          /> */}
+        {/* زر الرجوع للهواتف فقط */}
+        <div className="mb-4 lg:hidden">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => navigate("/products")}
+            className={`flex items-center gap-2 p-2 hover:bg-gray-100 ${
+              isRTL ? "flex-row-reverse" : ""
+            }`}
+          >
+            {isRTL ? (
+              <ChevronRight className="h-4 w-4" />
+            ) : (
+              <ChevronLeft className="h-4 w-4" />
+            )}
+            <span className="text-sm font-medium">{t("back")}</span>
+          </Button>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 mb-8 sm:mb-12">
