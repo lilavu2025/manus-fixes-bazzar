@@ -214,6 +214,8 @@ export const enTranslations = {
   price: "Price",
   total: "Total",
   emptyCart: "Cart is empty",
+  showMore: "Show More",
+  showLess: "Show Less",
 
   // Product
   newProduct: "New Product",

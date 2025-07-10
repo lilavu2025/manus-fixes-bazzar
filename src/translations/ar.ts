@@ -217,6 +217,8 @@ export const arTranslations = {
   price: "السعر",
   total: "المجموع الكلي",
   emptyCart: "السلة فارغة",
+  showMore: "عرض المزيد",
+  showLess: "عرض أقل",
 
   // Product
   newProduct: "منتج جديد",

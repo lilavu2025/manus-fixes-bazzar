@@ -212,6 +212,8 @@ export const heTranslations = {
   price: "מחיר",
   total: 'סה"כ',
   emptyCart: "העגלה ריקה",
+  showMore: "הצג עוד",
+  showLess: "הצג פחות",
 
   // Product
   newProduct: "מוצר חדש",
