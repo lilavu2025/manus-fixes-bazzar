@@ -749,3 +749,22 @@ img {
   width: 100%;
   height: 100%;
 }
+
+/* Quick View Product Image Thumbnails */
+.thumbnail-image {
+  aspect-ratio: 1 / 1;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.thumbnail-image:hover {
+  transform: scale(1.05);
+}
+
+.thumbnail-active {
+  border-color: hsl(var(--primary)) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
