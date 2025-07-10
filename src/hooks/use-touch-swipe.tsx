@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState, TouchEvent } from 'react';
+import { useCallback, useRef, useState, useEffect, TouchEvent } from 'react';
 
 interface TouchSwipeOptions {
   minSwipeDistance?: number;
@@ -51,8 +51,13 @@ export function useSwipeable(
     if (touch) {
       currentPosRef.current = { x: touch.clientX, y: touch.clientY };
       
-      if (preventDefaultDuringSwipe) {
-        event.preventDefault();
+      // تحقق من إمكانية استخدام preventDefault
+      if (preventDefaultDuringSwipe && event.cancelable) {
+        try {
+          event.preventDefault();
+        } catch (error) {
+          // تجاهل خطأ preventDefault في passive listeners
+        }
       }
     }
   }, [preventDefaultDuringSwipe]);
@@ -160,7 +165,7 @@ export function useSimpleSwipe(
     },
     {
       minSwipeDistance: 30,
-      preventDefaultDuringSwipe: true,
+      preventDefaultDuringSwipe: false, // تغيير إلى false لتجنب مشاكل passive events
       trackMouse: false,
       ...options,
     }

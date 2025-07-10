@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { isRTL, useLanguage } from "../../utils/languageContextUtils";
+import { useLanguage } from "../../utils/languageContextUtils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -41,7 +41,7 @@ const PaginatedProductsTable: React.FC<PaginatedProductsTableProps> = ({
   onDeleteProduct,
   categories = [],
 }) => {
-  const { t, language } = useLanguage();
+  const { t, language, isRTL } = useLanguage();
   const [currentPage, setCurrentPage] = useState(1);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
@@ -126,12 +126,19 @@ const PaginatedProductsTable: React.FC<PaginatedProductsTableProps> = ({
 
               {/* Product Info */}
               <div className="flex-1 min-w-0 flex flex-col justify-center">
+                {/* Product Name - Full line without truncation */}
+                <div className="mb-2">
+                  <h3 className={`font-bold text-lg text-gray-800 product-name ${isRTL ? "text-right" : "text-left"}`}>{getProductName(product)}</h3>
+                </div>
+                
+                {/* Product Labels/Badges */}
                 <div className="flex flex-wrap items-center gap-2 mb-1">
-                  <span className="font-bold text-lg text-gray-800 truncate max-w-[180px]">{getProductName(product)}</span>
                   <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">{getCategoryName(product.category || "")}</Badge>
                   <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">{formatPrice(product.price)}</Badge>
                   <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">{t("salesCount")}: {product.sales_count ?? 0}</Badge>
                 </div>
+                
+                {/* Stock and Status Info */}
                 <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
                   <span>{t("stockQuantity")}: <span className="font-semibold text-gray-700">{product.stock_quantity ?? 0}</span></span>
                   <span>{t("status")}: <span className={product.active ? "text-green-600 font-bold" : "text-red-600 font-bold"}>{product.active ? t("active") : t("inactive")}</span></span>

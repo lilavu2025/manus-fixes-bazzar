@@ -50,6 +50,21 @@ const ProductCardQuickView: React.FC<ProductCardQuickViewProps> = ({
   const { t, isRTL } = useLanguage();
   const { profile } = useAuth();
   const [shareOpen, setShareOpen] = React.useState(false);
+  const [selectedImageIndex, setSelectedImageIndex] = React.useState(0);
+  
+  // إعادة تعيين الصورة المحددة عند فتح النافذة
+  React.useEffect(() => {
+    if (isOpen) {
+      setSelectedImageIndex(0);
+    }
+  }, [isOpen]);
+  
+  // تحسين عرض الصور - إعطاء الأولوية للصور المتعددة ثم الصورة الرئيسية
+  const images =
+    product.images && Array.isArray(product.images) && product.images.length > 0
+      ? product.images.filter((img) => img && img.trim() !== "")
+      : [product.image].filter((img) => img && img.trim() !== "");
+      
   const productUrl = `${window.location.origin}/product/${product.id}`;
   const shareText = encodeURIComponent(
     `${product.name}\n${product.description}\n${productUrl}`,
@@ -119,12 +134,36 @@ const ProductCardQuickView: React.FC<ProductCardQuickViewProps> = ({
           <DialogTitle>{product.name}</DialogTitle>
         </DialogHeader> */}
         <div className="grid md:grid-cols-2 gap-6">
-          <div>
-            <img
-              src={product.image}
-              alt={product.name}
-              className="w-full h-96 object-cover rounded-lg"
-            />
+          <div className="space-y-4">
+            {/* الصورة الرئيسية */}
+            <div className="product-image-container responsive-product-image relative">
+              <div
+                className="product-image-bg"
+                style={{ backgroundImage: `url(${images[selectedImageIndex] || product.image})` }}
+              />
+            </div>
+            
+            {/* الصور المصغرة */}
+            {images.length > 1 && (
+              <div className="flex gap-2 overflow-x-auto py-2 scrollbar-thin scrollbar-thumb-gray-300">
+                {images.map((image, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setSelectedImageIndex(index)}
+                    className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
+                      selectedImageIndex === index
+                        ? "thumbnail-active border-primary"
+                        : "border-gray-200 hover:border-gray-300"
+                    }`}
+                  >
+                    <div
+                      className="thumbnail-image w-full h-full"
+                      style={{ backgroundImage: `url(${image})` }}
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           <div className="space-y-4">
             <div className="w-full">

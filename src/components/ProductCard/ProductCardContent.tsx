@@ -1,5 +1,5 @@
 import React from "react";
-import { Star, ShoppingCart } from "lucide-react";
+import { Star, ShoppingCart, ChevronDown, ChevronUp } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { CardContent } from "@/components/ui/card";
@@ -8,7 +8,7 @@ import { useAuth } from "@/contexts/useAuth";
 import type { Product as ProductFull } from "@/types/product";
 import { Product } from "@/types";
 import QuantitySelector from "@/components/QuantitySelector";
-import { getLocalizedName } from "@/utils/getLocalizedName";
+import { getLocalizedName, getLocalizedDescription } from "@/utils/getLocalizedName";
 import { getDisplayPrice } from "@/utils/priceUtils";
 import ProductCardBadges from "./ProductCardBadges";
 
@@ -33,34 +33,74 @@ const ProductCardContent: React.FC<ProductCardContentProps> = ({
 }) => {
   const { t, isRTL, language } = useLanguage();
   const { profile } = useAuth();
+  const [showFullDescription, setShowFullDescription] = React.useState(false);
 
   const displayPrice = getDisplayPrice(product, profile?.user_type);
+  const description = getLocalizedDescription(product, language);
 
   return (
     <CardContent
-      className={`w-full p-2 sm:p-3 md:p-4 ${isRTL ? "text-right" : "text-left"} flex flex-col gap-2 flex-grow`}
+      className={`product-card-content w-full p-2 sm:p-3 md:p-4 ${isRTL ? "text-right" : "text-left"} flex flex-col flex-grow h-full min-h-0`}
     >
       {/* المحتوى الأساسي */}
-      <div className="flex flex-col gap-2 flex-grow">
+      <div className="flex flex-col gap-2 flex-grow min-h-0 justify-start">
         <Link
           to={`/product/${product.id}`}
           onClick={onProductClick}
-          className="block w-full"
+          className="block w-full flex-shrink-0"
         >
           <h3
-            className={`font-semibold text-sm sm:text-base md:text-lg lg:text-xl line-clamp-2 group-hover:text-primary transition-colors ${isRTL ? "text-right" : "text-left"}`}
+            className={`product-name-wrapper font-semibold text-sm sm:text-base md:text-lg lg:text-xl group-hover:text-primary transition-colors break-words leading-tight ${isRTL ? "text-right" : "text-left"}`}
+            style={{ wordBreak: 'break-word', hyphens: 'auto' }}
           >
             {getLocalizedName(product, language)}
           </h3>
         </Link>
         
         {/* البادجز تحت اسم المنتج */}
-        <div>
+        <div className="flex-shrink-0">
           <ProductCardBadges product={product} variant="belowName" />
         </div>
+
+        {/* وصف المنتج */}
+        {description && (
+          <div className={`text-xs sm:text-sm text-gray-600 leading-relaxed flex-shrink-0 ${isRTL ? "text-right" : "text-left"}`}>
+            <p 
+              className={showFullDescription ? "break-words leading-relaxed" : "product-description"}
+              style={{ wordBreak: 'break-word', hyphens: 'auto' }}
+            >
+              {description}
+            </p>
+            {description.length > 100 && (
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowFullDescription(!showFullDescription);
+                }}
+                className={`show-more-btn text-primary hover:text-primary/80 text-xs font-medium mt-1 transition-colors inline-flex items-center gap-1 ${isRTL ? "text-right" : "text-left"}`}
+              >
+                {showFullDescription ? (
+                  <>
+                    {t("showLess") || "عرض أقل"}
+                    <ChevronUp className="h-3 w-3" />
+                  </>
+                ) : (
+                  <>
+                    {t("showMore") || "عرض المزيد"}
+                    <ChevronDown className="h-3 w-3" />
+                  </>
+                )}
+              </button>
+            )}
+          </div>
+        )}
+        
+        {/* مساحة قابلة للتمدد لدفع السعر والأزرار للأسفل */}
+        <div className="flex-grow"></div>
         
         {/* السعر  */}
-        <div className={`flex flex-col gap-1`}>
+        <div className={`flex flex-col gap-1 flex-shrink-0`}>
           <div
             className={`flex items-center gap-4 w-full ${isRTL ? "flex-row-reverse justify-end" : "justify-start"}`}
           >
@@ -85,7 +125,7 @@ const ProductCardContent: React.FC<ProductCardContentProps> = ({
 
       {/* منطقة الأزرار في الأسفل */}
       {product.inStock && (
-        <div className="flex flex-col gap-2 mt-auto">
+        <div className="flex flex-col gap-2 mt-auto flex-shrink-0">
           {/* محدد الكمية */}
           <div className="flex items-center gap-4 w-full">
             <span className="text-sm sm:text-base text-gray-600 whitespace-nowrap">

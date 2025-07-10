@@ -2,7 +2,7 @@ import * as React from 'react';
 import { Star } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '@/utils/languageContextUtils';
-import { getLocalizedName } from '@/utils/getLocalizedName';
+import { getLocalizedName, getLocalizedDescription } from '@/utils/getLocalizedName';
 import { useAuth } from '@/contexts/useAuth';
 import { getDisplayPrice } from '@/utils/priceUtils';
 import ProductCardBadges from '@/components/ProductCard/ProductCardBadges';
@@ -42,7 +42,7 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
       {/* Description */}
       <div className="text-center lg:text-start">
         <h3 className="font-semibold mb-3 text-sm sm:text-base">{t('productDescription')}</h3>
-        <p className="text-gray-600 leading-relaxed text-sm sm:text-base line-height-relaxed">{product.description}</p>
+        <p className="text-gray-600 leading-relaxed text-sm sm:text-base line-height-relaxed">{getLocalizedDescription(product, language)}</p>
       </div>
     </div>
   );

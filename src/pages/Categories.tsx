@@ -153,18 +153,6 @@ const Categories: React.FC = () => {
       </div>
 
       <div className="container mx-auto px-2 sm:px-4">
-        {/* Stats */}
-        <div className="flex justify-center mb-4">
-          <div className="text-center">
-            <p className="text-gray-600">
-              {searchQuery ? 
-                `${filteredCategories.length} ${t("categoriesFound")}` :
-                `${filteredCategories.length} ${t("categories")}`
-              }
-            </p>
-          </div>
-        </div>
-
         {filteredCategories.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-gray-500 text-lg">

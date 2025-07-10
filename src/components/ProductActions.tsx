@@ -121,6 +121,9 @@ const ProductActions = ({ product }: ProductActionsProps) => {
           </div>
         )}
         <div className="flex items-center justify-center lg:justify-start gap-4 sm:gap-8 lg:gap-12 w-full">
+          <label className="block text-xs sm:text-sm font-semibold">
+            {t("quantity")}
+          </label>
           <QuantitySelector
             quantity={quantity}
             onQuantityChange={setQuantity}
@@ -128,9 +131,6 @@ const ProductActions = ({ product }: ProductActionsProps) => {
             min={1}
             disabled={!product.inStock}
           />
-          <label className="block text-xs sm:text-sm font-semibold">
-            {t("quantity")}
-          </label>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full max-w-md mx-auto lg:mx-0">

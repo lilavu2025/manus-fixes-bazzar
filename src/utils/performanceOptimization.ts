@@ -2,6 +2,8 @@
  * Application Performance Optimization Utilities
  */
 
+import { logger } from './logger';
+
 // Debounce function for search and input optimization
 export function debounce<T extends (...args: any[]) => any>(
   func: T,
@@ -244,14 +246,14 @@ export const getOptimizedImageUrl = (
 // Bundle analyzer helper
 export const analyzeBundleSize = (): void => {
   if (process.env.NODE_ENV === 'development') {
-    console.log('Bundle analysis is only available in production builds');
+    logger.log('Bundle analysis is only available in production builds');
     return;
   }
 
   import('rollup-plugin-visualizer').then(({ visualizer }) => {
-    console.log('Bundle analysis complete');
+    logger.log('Bundle analysis complete');
   }).catch(error => {
-    console.warn('Bundle analyzer not available:', error);
+    logger.warn('Bundle analyzer not available:', error);
   });
 };
 

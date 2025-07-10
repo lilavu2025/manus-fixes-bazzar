@@ -198,10 +198,9 @@ const ProductCard: React.FC<ProductCardProps> = memo(
     const isFav = false; // isFavorite(product.id);
 
     return (
-      <div className="w-full flex justify-center">
-        {/* كرت المنتج الرئيسي مع تأثيرات التفاعل */}
+      <>
         <Card
-          className="product-card group relative overflow-hidden bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl transition-all duration-300 hover:shadow-xl hover:-translate-y-1 focus-within:ring-2 focus-within:ring-orange-500 focus-within:ring-offset-2 cursor-pointer mx-auto w-full min-w-[280px] max-w-sm h-full flex flex-col"
+          className="product-card group relative overflow-hidden bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl transition-all duration-300 hover:shadow-xl hover:-translate-y-1 focus-within:ring-2 focus-within:ring-orange-500 focus-within:ring-offset-2 cursor-pointer w-full h-full flex flex-col"
           onClick={handleCardClick}
         >
           {/* أزرار التفاعل على أقصى يسار الكرت */}
@@ -282,27 +281,26 @@ const ProductCard: React.FC<ProductCardProps> = memo(
             onQuantityChange={setQuantity}
             onAddToCart={handleAddToCart}
             isLoading={isLoading}
-            onProductClick={handleCardClick}
-          />
-        </Card>
+            onProductClick={handleCardClick}        />
+      </Card>
 
-        {/* مودال العرض السريع للمنتج */}
-        <ProductCardQuickView
-          product={product}
-          isOpen={showQuickView}
-          onClose={() => setShowQuickView(false)}
-          quantity={quantity}
-          cartQuantity={cartQuantity}
-          isFavorite={isFav}
-          onQuantityChange={setQuantity}
-          onAddToCart={handleAddToCart}
-          //onFavorite={handleFavorite}
-          onFavorite={null}
-          onShare={async () => {
-            setShareOpen((v) => !v);
-          }}
-        />
-      </div>
+      {/* مودال العرض السريع للمنتج */}
+      <ProductCardQuickView
+        product={product}
+        isOpen={showQuickView}
+        onClose={() => setShowQuickView(false)}
+        quantity={quantity}
+        cartQuantity={cartQuantity}
+        isFavorite={isFav}
+        onQuantityChange={setQuantity}
+        onAddToCart={handleAddToCart}
+        //onFavorite={handleFavorite}
+        onFavorite={null}
+        onShare={async () => {
+          setShareOpen((v) => !v);
+        }}
+      />
+      </>
     );
   },
 );

@@ -99,14 +99,14 @@ const ProductImageGallery = ({ product }: ProductImageGalleryProps) => {
     <div className="space-y-4">
       {/* صورة المنتج الرئيسية مع إمكانية التكبير */}
       <div
-        className="responsive-product-image relative overflow-hidden rounded-xl bg-white border group cursor-zoom-in select-none"
+        className="product-image-container responsive-product-image relative group cursor-zoom-in select-none"
         onClick={openModal}
         {...swipeHandlers}
         style={{ touchAction: 'pan-y pinch-zoom' }}
       >
         {images.length > 0 && (
           <div
-            className="w-full h-full bg-center bg-contain bg-no-repeat transition-transform duration-300 group-hover:scale-105"
+            className="product-image-bg transition-transform duration-300 group-hover:scale-105"
             style={{ backgroundImage: `url(${images[selectedImage] || product.image})` }}
           />
         )}

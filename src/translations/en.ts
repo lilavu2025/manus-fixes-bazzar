@@ -214,6 +214,8 @@ export const enTranslations = {
   price: "Price",
   total: "Total",
   emptyCart: "Cart is empty",
+  showMore: "Show More",
+  showLess: "Show Less",
 
   // Product
   newProduct: "New Product",
@@ -889,6 +891,7 @@ export const enTranslations = {
   noNewUsers: "No new users",
   noCompletedOrders: "No completed orders",
   noPendingOrders: "No pending orders",
+  noProcessingOrders: "No processing orders",
   noShippingOrders: "No shipping orders",
   noPaidOrders: "No paid orders",
   noCancelledOrders: "No cancelled orders",
@@ -1137,5 +1140,9 @@ export const enTranslations = {
   touchToNavigate: "Touch to navigate",
   swipeGestures: "Swipe gestures",
   touchSupported: "Touch supported",
-
+  noBestSellingProducts: "No best selling products available",
+  from: "From",
+  noSearchResults: "No search results found",
+  tryDifferentSearch: "Try a different search",
+  clearSearch: "Clear search",
 };

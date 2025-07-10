@@ -212,6 +212,8 @@ export const heTranslations = {
   price: "מחיר",
   total: 'סה"כ',
   emptyCart: "העגלה ריקה",
+  showMore: "הצג עוד",
+  showLess: "הצג פחות",
 
   // Product
   newProduct: "מוצר חדש",
@@ -917,6 +919,7 @@ export const heTranslations = {
   noNewUsers: "אין משתמשים חדשים",
   noCompletedOrders: "אין הזמנות שהושלמו",
   noPendingOrders: "אין הזמנות ממתינות",
+  noProcessingOrders: "אין הזמנות בתהליך",
   noShippingOrders: "אין הזמנות במשלוח",
   noPaidOrders: "אין הזמנות ששולמו",
   noCancelledOrders: "אין הזמנות שבוטלו",
@@ -1115,5 +1118,9 @@ export const heTranslations = {
   touchToNavigate: "לגעת כדי לנווט",
   swipeGestures: "מחוות גרירה",
   touchSupported: "תמיכה במגע",
-
+  noBestSellingProducts: "לא נמצאו מוצרים הכי נמכרים",
+  from: "מ",
+  noSearchResults: "לא נמצאו תוצאות לחיפוש",
+  tryDifferentSearch: "נסה חיפוש שונה",
+  clearSearch: "נקה חיפוש",
 };

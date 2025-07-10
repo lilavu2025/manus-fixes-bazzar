@@ -22,6 +22,7 @@ import { mapProductFromDb } from "@/types/mapProductFromDb";
 import { fetchTopOrderedProducts } from "@/integrations/supabase/dataSenders";
 import { ClearableInput } from "@/components/ui/ClearableInput";
 import config from "@/configs/activeConfig";
+import { useEqualHeight } from "@/hooks/useEqualHeight";
 
 // Hook لمراقبة حجم الشاشة
 const useWindowSize = () => {
@@ -49,6 +50,9 @@ const Products: React.FC = () => {
   const { t, isRTL, language } = useLanguage();
   const { width } = useWindowSize();
   const isMobile = width < 768; // 768px هو breakpoint للشاشات المحمولة
+  
+  // Hook لضمان تساوي ارتفاع الكروت
+  const gridRef = useEqualHeight();
   
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -517,11 +521,11 @@ const Products: React.FC = () => {
           topOrderedProducts.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-gray-500 text-lg">
-                لا يوجد منتجات أكثر مبيعاً حالياً
+                {t("noBestSellingProducts")}
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+            <div ref={gridRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
               {topOrderedProducts.filter((product) => product.active !== false).map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
@@ -533,6 +537,7 @@ const Products: React.FC = () => {
           </div>
         ) : (
           <motion.div
+            ref={gridRef}
             className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6"
             initial="hidden"
             animate="show"

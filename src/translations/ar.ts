@@ -217,6 +217,8 @@ export const arTranslations = {
   price: "السعر",
   total: "المجموع الكلي",
   emptyCart: "السلة فارغة",
+  showMore: "عرض المزيد",
+  showLess: "عرض أقل",
 
   // Product
   newProduct: "منتج جديد",
@@ -896,6 +898,7 @@ export const arTranslations = {
   noNewUsers: "لا يوجد مستخدمون جدد",
   noCompletedOrders: "لا توجد طلبات مكتملة",
   noPendingOrders: "لا توجد طلبات قيد الانتظار",
+  noProcessingOrders: "لا توجد طلبات قيد المعالجة",
   noShippingOrders: "لا توجد طلبات قيد الشحن",
   noPaidOrders: "لا توجد طلبات مدفوعة",
   noCancelledOrders: "لا توجد طلبات ملغاة",
@@ -1116,4 +1119,9 @@ export const arTranslations = {
   swipeGestures: "إيماءات السحب",
   touchSupported: "دعم اللمس متوفر",
 
+  noBestSellingProducts: "لا يوجد منتجات أكثر مبيعاً حالياً",
+  from: "من",
+  noSearchResults: "لا توجد نتائج للبحث",
+  tryDifferentSearch: "جرب بحثاً مختلفاً",
+  clearSearch: "مسح البحث",
 };

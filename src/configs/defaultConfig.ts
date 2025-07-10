@@ -26,6 +26,10 @@ const defaultConfig = {
   
   supabaseUrl: "https://gcjqjcuwsofzrgohwleg.supabase.co",
   supabaseKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdjanFqY3V3c29menJnb2h3bGVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgyMTU5NDYsImV4cCI6MjA2Mzc5MTk0Nn0.LXduYXTaCHMEf0RTr-rAcfIrYsp2R7NhgM_voHpc7dw",
+  
+  // قيم افتراضية للنشر والتطوير
+  siteId: "default-site-id",
+  netlifyToken: "default-netlify-token",
 
   defaultLanguage: "ar",
   rtl: false,

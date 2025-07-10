@@ -179,17 +179,6 @@ const Offers: React.FC = () => {
                   aria-label={t("searchInput")}
                 />
               </div>
-              {searchQuery && (
-                <p className="text-sm text-gray-600 mt-2 text-center">
-                  {debouncedSearchQuery === searchQuery ? (
-                    <>
-                      {filteredOffers.length} {t("results")} {t("from")} {offers.length} {t("offers")}
-                    </>
-                  ) : (
-                    <span className="text-blue-500">{t("searching")}...</span>
-                  )}
-                </p>
-              )}
             </div>
           </div>
         </div>

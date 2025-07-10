@@ -491,14 +491,19 @@ const BannerForm = ({
                 id="banner-upload"
                 type="file"
                 accept="image/*"
-                onChange={(e) => {
+                onChange={async (e) => {
                   const file = e.target.files?.[0];
                   if (file) {
-                    const reader = new FileReader();
-                    reader.onloadend = () => {
-                      handleInputChange("image", reader.result as string);
-                    };
-                    reader.readAsDataURL(file);
+                    try {
+                      // استخدام دالة رفع الصورة إلى Supabase Storage
+                      const { uploadBannerImage } = await import("@/integrations/supabase/dataSenders");
+                      const publicUrl = await uploadBannerImage(file);
+                      handleInputChange("image", publicUrl);
+                      toast.success(t("imageUploadedSuccessfully") || "تم رفع الصورة بنجاح");
+                    } catch (error) {
+                      console.error("Error uploading banner image:", error);
+                      toast.error(t("imageUploadFailed") || "فشل في رفع الصورة");
+                    }
                   }
                 }}
                 className="hidden"

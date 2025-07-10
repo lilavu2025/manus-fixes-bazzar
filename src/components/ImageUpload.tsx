@@ -192,7 +192,12 @@ const ImageUpload = ({
     }
   };
 
-  const removeImage = (indexOrUrl: number | string) => {
+  const removeImage = (indexOrUrl: number | string, event?: React.MouseEvent) => {
+    // منع انتشار الحدث لتجنب فتح نافذة اختيار الملف
+    if (event) {
+      event.stopPropagation();
+    }
+    
     if (multiple && Array.isArray(value)) {
       const newUrls =
         typeof indexOrUrl === "number"
@@ -236,7 +241,7 @@ const ImageUpload = ({
                 variant="destructive"
                 size="icon"
                 className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={() => removeImage(index)}
+                onClick={(e) => removeImage(index, e)}
                 aria-label={t("removeImage")}
               >
                 <X className="h-3 w-3" />
@@ -268,7 +273,7 @@ const ImageUpload = ({
             variant="destructive"
             size="icon"
             className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-            onClick={() => removeImage(value)}
+            onClick={(e) => removeImage(value, e)}
             aria-label={t("removeImage")}
           >
             <X className="h-3 w-3" />

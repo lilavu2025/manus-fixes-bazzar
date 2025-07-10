@@ -4,6 +4,11 @@ const DYNAMIC_CACHE = 'dynamic-v1';
 const IMAGE_CACHE = 'images-v1';
 const API_CACHE = 'api-v1';
 
+// Helper function for development logging
+const isDevelopment = self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1';
+const log = isDevelopment ? console.log : () => {};
+const logError = isDevelopment ? console.error : () => {};
+
 // Assets to cache immediately
 const STATIC_ASSETS = [
   '/',
@@ -23,27 +28,27 @@ const API_ENDPOINTS = [
 
 // Install event - cache static assets
 self.addEventListener('install', (event) => {
-  console.log('Service Worker: Installing...');
+  log('Service Worker: Installing...');
   
   event.waitUntil(
     caches.open(STATIC_CACHE)
       .then((cache) => {
-        console.log('Service Worker: Caching static assets');
+        log('Service Worker: Caching static assets');
         return cache.addAll(STATIC_ASSETS);
       })
       .then(() => {
-        console.log('Service Worker: Static assets cached');
+        log('Service Worker: Static assets cached');
         return self.skipWaiting();
       })
       .catch((error) => {
-        console.error('Service Worker: Error caching static assets:', error);
+        logError('Service Worker: Error caching static assets:', error);
       })
   );
 });
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('Service Worker: Activating...');
+  log('Service Worker: Activating...');
   
   event.waitUntil(
     caches.keys()
@@ -54,14 +59,14 @@ self.addEventListener('activate', (event) => {
                 cacheName !== DYNAMIC_CACHE && 
                 cacheName !== IMAGE_CACHE && 
                 cacheName !== API_CACHE) {
-              console.log('Service Worker: Deleting old cache:', cacheName);
+              log('Service Worker: Deleting old cache:', cacheName);
               return caches.delete(cacheName);
             }
           })
         );
       })
       .then(() => {
-        console.log('Service Worker: Activated');
+        log('Service Worker: Activated');
         return self.clients.claim();
       })
   );
@@ -99,7 +104,7 @@ async function handleApiRequest(request) {
     // Always fetch from network, never cache
     return await fetch(request);
   } catch (error) {
-    console.log('Service Worker: Network failed for API request');
+    log('Service Worker: Network failed for API request');
     return new Response('API unavailable', { status: 503 });
   }
 }
@@ -124,7 +129,7 @@ async function handleImageRequest(request) {
     
     return networkResponse;
   } catch (error) {
-    console.log('Service Worker: Failed to load image:', error);
+    log('Service Worker: Failed to load image:', error);
     // Return placeholder image or error response
     return new Response('Image not available', { status: 404 });
   }
@@ -150,7 +155,7 @@ async function handleStaticAssets(request) {
     
     return networkResponse;
   } catch (error) {
-    console.log('Service Worker: Failed to load static asset:', error);
+    log('Service Worker: Failed to load static asset:', error);
     return new Response('Asset not available', { status: 404 });
   }
 }
@@ -172,7 +177,7 @@ async function handlePageRequest(request) {
     return await getCachedResponse(request, DYNAMIC_CACHE) || 
            await getCachedResponse(new Request('/'), STATIC_CACHE);
   } catch (error) {
-    console.log('Service Worker: Network failed, trying cache for page request');
+    log('Service Worker: Network failed, trying cache for page request');
     // Try to return cached version or fallback to index.html
     return await getCachedResponse(request, DYNAMIC_CACHE) || 
            await getCachedResponse(new Request('/'), STATIC_CACHE) ||
@@ -191,7 +196,7 @@ async function getCachedResponse(request, cacheName) {
 
 // Background sync for offline actions
 self.addEventListener('sync', (event) => {
-  console.log('Service Worker: Background sync triggered');
+  log('Service Worker: Background sync triggered');
   
   if (event.tag === 'background-sync') {
     event.waitUntil(doBackgroundSync());
@@ -203,15 +208,15 @@ async function doBackgroundSync() {
   try {
     // Implement background sync logic here
     // For example, sync offline cart actions, favorites, etc.
-    console.log('Service Worker: Performing background sync');
+    log('Service Worker: Performing background sync');
   } catch (error) {
-    console.error('Service Worker: Background sync failed:', error);
+    logError('Service Worker: Background sync failed:', error);
   }
 }
 
 // Push notification handling
 self.addEventListener('push', (event) => {
-  console.log('Service Worker: Push notification received');
+  log('Service Worker: Push notification received');
   
   const options = {
     body: event.data ? event.data.text() : 'New notification from Modern Bazaar',
@@ -243,7 +248,7 @@ self.addEventListener('push', (event) => {
 
 // Handle notification clicks
 self.addEventListener('notificationclick', (event) => {
-  console.log('Service Worker: Notification clicked');
+  log('Service Worker: Notification clicked');
   
   event.notification.close();
   
@@ -276,7 +281,7 @@ setInterval(async () => {
   try {
     await cleanupCaches();
   } catch (error) {
-    console.error('Service Worker: Cache cleanup failed:', error);
+    logError('Service Worker: Cache cleanup failed:', error);
   }
 }, 24 * 60 * 60 * 1000); // Run daily
 
@@ -298,11 +303,11 @@ async function cleanupCaches() {
         const cacheDate = new Date(dateHeader).getTime();
         if (now - cacheDate > maxAge) {
           await cache.delete(request);
-          console.log('Service Worker: Deleted old cache entry:', request.url);
+          log('Service Worker: Deleted old cache entry:', request.url);
         }
       }
     }
   }
 }
 
-console.log('Service Worker: Loaded and ready');
+log('Service Worker: Loaded and ready');
