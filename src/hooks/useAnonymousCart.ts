@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Product, CartItem } from '@/types';
 import { setCookie, getCookie } from '@/utils/commonUtils';
+import { getDisplayPrice } from '@/utils/priceUtils';
 
 const ANONYMOUS_CART_KEY = 'anonymous_cart';
 
-export const useAnonymousCart = () => {
+export const useAnonymousCart = (userType?: string) => {
   // حالة حفظ عناصر العربة (الكارت) في الذاكرة المحلية (localStorage)
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
 
@@ -103,7 +104,7 @@ export const useAnonymousCart = () => {
   // حساب السعر الإجمالي لكل العناصر في الكارت
   const getTotalPrice = () => {
     const totalPrice = cartItems.reduce((total, item) => {
-      const price = item.product?.price || 0;
+      const price = getDisplayPrice(item.product, userType);
       const quantity = item.quantity || 0;
       return total + (price * quantity);
     }, 0);
