@@ -10,6 +10,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/useAuth";
 import { useEnhancedToast } from "@/hooks/useEnhancedToast";
 import { getLocalizedName } from "@/utils/getLocalizedName";
+import { getDisplayPrice } from "@/utils/priceUtils";
 import type { Product as ProductFull } from '@/types/product';
 
 interface CartSidebarProps {
@@ -18,10 +19,10 @@ interface CartSidebarProps {
 }
 
 const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
-  const { state, updateQuantity, removeItem, getTotalItems } = useCart();
+  const { state, updateQuantity, removeItem, getTotalItems, getTotalPrice } = useCart();
   const cartItems = state.items;
   const { t, isRTL, language } = useLanguage();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const enhancedToast = useEnhancedToast();
   const navigate = useNavigate();
 
@@ -126,7 +127,7 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
                             {getLocalizedName(item.product, language)}
                           </h4>
                           <p className="text-primary font-bold text-sm sm:text-base">
-                            {item.product.price} {t("currency")}
+                            {getDisplayPrice(item.product, profile?.user_type)} {t("currency")}
                           </p>
                         </div>
 
@@ -187,7 +188,7 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
                 <div className="flex justify-between items-center">
                   <span className="text-lg font-semibold">{t("total")}:</span>
                   <span className="text-2xl font-bold text-primary">
-                    {state.total.toFixed(2)} {t("currency")}
+                    {getTotalPrice?.()?.toFixed(2) || state.total.toFixed(2)} {t("currency")}
                   </span>
                 </div>
 
