@@ -99,11 +99,29 @@ const AdminTopOrderedReport = () => {
                           )}
                         </td>
                         <td className="font-medium text-gray-800">
-                          {language === "ar" 
-                            ? product.name 
-                            : language === "he" 
-                            ? product.nameHe 
-                            : product.nameEn}
+                          <div>
+                            <div className="font-medium">
+                              {language === "ar" 
+                                ? product.name 
+                                : language === "he" 
+                                ? product.nameHe 
+                                : product.nameEn}
+                            </div>
+                            <div className="text-sm text-gray-500 mt-1">
+                              {(() => {
+                                const description = language === "ar" 
+                                  ? product.description 
+                                  : language === "he" 
+                                  ? product.descriptionHe 
+                                  : product.descriptionEn;
+                                
+                                // تحديد طول الوصف إلى 100 حرف
+                                return description.length > 100 
+                                  ? `${description.substring(0, 100)}...` 
+                                  : description;
+                              })()}
+                            </div>
+                          </div>
                         </td>
                         <td>{product.stock_quantity}</td>
                         <td>{product.inStock ? t("inStock") : t("outOfStock")}</td>
