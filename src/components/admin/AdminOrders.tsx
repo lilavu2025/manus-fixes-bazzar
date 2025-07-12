@@ -414,7 +414,7 @@ const AdminOrders: React.FC = () => {
 
   // توليد رسالة واتساب (تحميل الفاتورة)
   const generateOrderPrint = async (order: any, t: any, currentLang: "ar" | "en" | "he") => {
-    await orderPrint(order, t, language, profile?.full_name || "-");
+    await orderPrint(order, t, language, profile?.full_name || "-", products);
   };
 
   // شاشة تحميل الطلبات
@@ -588,8 +588,8 @@ const AdminOrders: React.FC = () => {
                       } as Record<string, unknown>),
                     );
                   }}
-                  onPrintOrder={(order) => orderPrint(order, t, language, profile?.full_name || "-")}
-                  onDownloadPdf={(order) => downloadInvoicePdf(order, t, language, profile?.full_name || "-")}
+                  onPrintOrder={(order) => orderPrint(order, t, language, profile?.full_name || "-", products)}
+                  onDownloadPdf={(order) => downloadInvoicePdf(order, t, language, profile?.full_name || "-", products)}
                   onEdit={(order) => {
                     setEditOrderId(order.id);
                     // معالجة order_items من قاعدة البيانات
@@ -646,7 +646,7 @@ const AdminOrders: React.FC = () => {
         t={t}
         profile={profile}
         generateOrderPrint={generateOrderPrint}
-        onDownloadPdf={(order) => downloadInvoicePdf(order, t, language, profile?.full_name || "-")}
+        onDownloadPdf={(order) => downloadInvoicePdf(order, t, language, profile?.full_name || "-", products)}
       />
       {/* Dialog تعديل الطلب */}
       <OrderEditDialog
