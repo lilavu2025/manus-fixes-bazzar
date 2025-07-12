@@ -134,7 +134,6 @@ const ProductCardContent: React.FC<ProductCardContentProps> = ({
             <QuantitySelector
               quantity={quantity}
               onQuantityChange={onQuantityChange}
-              max={99}
               min={1}
               disabled={!product.inStock || isLoading}
             />

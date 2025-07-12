@@ -184,7 +184,6 @@ const ProductCardQuickView: React.FC<ProductCardQuickViewProps> = ({
               <QuantitySelector
                 quantity={quantity}
                 onQuantityChange={onQuantityChange}
-                max={99}
                 min={1}
               />
               <span className="text-sm sm:text-base text-gray-600 whitespace-nowrap">

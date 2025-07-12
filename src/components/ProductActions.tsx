@@ -127,7 +127,6 @@ const ProductActions = ({ product }: ProductActionsProps) => {
           <QuantitySelector
             quantity={quantity}
             onQuantityChange={setQuantity}
-            max={99}
             min={1}
             disabled={!product.inStock}
           />
