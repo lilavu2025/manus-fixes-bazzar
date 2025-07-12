@@ -126,7 +126,14 @@ const ProductActions = ({ product }: ProductActionsProps) => {
           </label>
           <QuantitySelector
             quantity={quantity}
-            onQuantityChange={setQuantity}
+            onQuantityChange={(newQuantity) => {
+              if (newQuantity > product.stock_quantity) {
+                toast.error(t("exceededStockQuantity"));
+              } else {
+                setQuantity(newQuantity);
+              }
+            }}
+            max={product.stock_quantity}
             min={1}
             disabled={!product.inStock}
           />

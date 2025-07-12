@@ -183,8 +183,16 @@ const ProductCardQuickView: React.FC<ProductCardQuickViewProps> = ({
             >
               <QuantitySelector
                 quantity={quantity}
-                onQuantityChange={onQuantityChange}
+                onQuantityChange={(newQuantity) => {
+                  if (newQuantity > product.stock_quantity) {
+                    toast.error(t("exceededStockQuantity"));
+                  } else {
+                    onQuantityChange(newQuantity);
+                  }
+                }}
+                max={product.stock_quantity}
                 min={1}
+                disabled={!product.inStock}
               />
               <span className="text-sm sm:text-base text-gray-600 whitespace-nowrap">
                 {t("quantity")}:

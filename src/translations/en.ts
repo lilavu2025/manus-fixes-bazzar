@@ -6,6 +6,9 @@ export const enTranslations = {
   storeDescription: config.descriptions.en,
   storeSubtitle: "Shop with confidence and comfort",
   readyText: "Ready to use",
+  
+  // Product Messages
+  exceededStockQuantity: "Exceeded stock quantity",
 
   // Navigation
   home: "Home",

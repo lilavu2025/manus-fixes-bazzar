@@ -11,6 +11,7 @@ import QuantitySelector from "@/components/QuantitySelector";
 import { getLocalizedName, getLocalizedDescription } from "@/utils/getLocalizedName";
 import { getDisplayPrice } from "@/utils/priceUtils";
 import ProductCardBadges from "./ProductCardBadges";
+import { toast } from "react-toastify";
 
 interface ProductCardContentProps {
   product: ProductFull;
@@ -133,7 +134,14 @@ const ProductCardContent: React.FC<ProductCardContentProps> = ({
             </span>
             <QuantitySelector
               quantity={quantity}
-              onQuantityChange={onQuantityChange}
+              onQuantityChange={(newQuantity) => {
+                if (newQuantity > product.stock_quantity) {
+                  toast.error(t("exceededStockQuantity"));
+                } else {
+                  onQuantityChange(newQuantity);
+                }
+              }}
+              max={product.stock_quantity}
               min={1}
               disabled={!product.inStock || isLoading}
             />
