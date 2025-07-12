@@ -35,33 +35,50 @@ const Autocomplete: React.FC<AutocompleteProps> = ({
   );
 
   return (
-    <div className="relative">
-      <ClearableInput
-        ref={inputRef}
-        type="text"
-        className={`border-2 border-gray-200 rounded-lg py-2 h-10 text-xs sm:text-sm w-full bg-gray-50 focus:border-blue-500 focus:ring-1 focus:ring-blue-300 transition-colors placeholder:text-gray-400 ${isRTL ? 'pr-8 pl-3' : 'pl-8 pr-3'}`}
-        value={inputValue}
-        onChange={e => {
-          setInputValue(e.target.value);
-          onInputChange(e.target.value);
+    <div className="relative inline-block w-full">
+      <div 
+        className={`border-2 border-gray-200 rounded-lg py-2 min-h-10 text-xs sm:text-sm w-full bg-gray-50 focus:border-blue-500 focus:ring-1 focus:ring-blue-300 transition-colors placeholder:text-gray-400 cursor-text overflow-hidden resize-none outline-none relative empty:before:content-[attr(data-placeholder)] empty:before:text-gray-400 empty:before:pointer-events-none ${isRTL ? 'pr-8 pl-3' : 'pl-8 pr-3'}`}
+        contentEditable
+        suppressContentEditableWarning={true}
+        data-placeholder={!inputValue ? placeholder : ''}
+        onInput={(e) => {
+          const text = e.currentTarget.textContent || '';
+          setInputValue(text);
+          onInputChange(text);
           setShowOptions(true);
-        }}
-        onClear={() => {
-          setInputValue("");
-          onInputChange("");
         }}
         onFocus={() => setShowOptions(true)}
         onBlur={() => setTimeout(() => setShowOptions(false), 150)}
-        placeholder={placeholder}
-        required={required}
-        autoComplete="off"
+        style={{
+          whiteSpace: 'pre-wrap',
+          wordBreak: 'break-word'
+        }}
+        role="textbox"
+        aria-label={placeholder}
+        dangerouslySetInnerHTML={{ __html: inputValue || '' }}
       />
+      {inputValue && (
+        <button
+          type="button"
+          tabIndex={-1}
+          className={`absolute top-2 ${isRTL ? 'left-2' : 'right-2'} text-gray-400 hover:text-gray-600 focus:outline-none`}
+          onClick={() => {
+            setInputValue("");
+            onInputChange("");
+            // Clear the contentEditable div
+            const editableDiv = document.querySelector('[contenteditable]') as HTMLDivElement;
+            if (editableDiv) editableDiv.innerHTML = '';
+          }}
+        >
+          <span className="text-sm">✕</span>
+        </button>
+      )}
       {showOptions && filteredOptions.length > 0 && (
-        <ul className="absolute z-10 bg-white border w-full mt-1 rounded-lg shadow max-h-60 overflow-y-auto">
+        <ul className="absolute z-50 bg-white border mt-1 rounded-lg shadow-lg max-h-60 overflow-y-auto min-w-full w-max max-w-lg">
           {filteredOptions.map((option, idx) => (
             <li
               key={option + idx}
-              className="px-3 py-2 cursor-pointer hover:bg-gray-100"
+              className="px-3 py-2 cursor-pointer hover:bg-gray-100 whitespace-nowrap text-sm"
               onMouseDown={() => {
                 setInputValue(option);
                 onInputChange(option);
@@ -69,7 +86,9 @@ const Autocomplete: React.FC<AutocompleteProps> = ({
                 inputRef.current?.blur();
               }}
             >
-              {renderOption ? renderOption(option) : option}
+              <div title={option}>
+                {renderOption ? renderOption(option) : option}
+              </div>
             </li>
           ))}
         </ul>

@@ -384,15 +384,15 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
               </div>
               <div className="space-y-3">
                 {editOrderForm.items.map((item, index) => (
-                  <div
-                    key={item.id}
-                    className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end p-3 border rounded-lg bg-white shadow-sm"
-                  >
-                    <div className="col-span-1">
-                      <Label>
+                  <div key={item.id} className="p-4 border rounded-lg bg-white shadow-sm">
+                    <div className="mb-3">
+                      <Label className="text-sm font-semibold">
                         {t("product") || "المنتج"} <span className="text-primary font-bold">{editOrderForm.items.length > 1 ? (index + 1) : null}</span> <span className="text-red-500">*</span>
                       </Label>
-                      <Autocomplete
+                    </div>
+                    <div className="flex flex-wrap items-end gap-3">
+                      <div className="flex-1 min-w-[250px]">
+                        <Autocomplete
                         value={
                           products.find(p => p.id === item.product_id)?.[`name_${language}`] ||
                           products.find(p => p.id === item.product_id)?.name_ar ||
@@ -459,58 +459,56 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
                         }}
                         options={products.map(p => p[`name_${language}`] || p.name_ar || p.id)}
                         placeholder={t("searchOrSelectProduct") || "ابحث أو اكتب اسم المنتج"}
-                        required
-                      />
-                    </div>
-                    <div className="col-span-1">
-                      <Label>
-                        {t("quantity") || "الكمية"} <span className="text-red-500">*</span>
-                      </Label>
-                      <Input
-                        type="number"
-                        min="1"
-                        value={item.quantity === 0 ? "" : item.quantity}
-                        onChange={e =>
-                          setEditOrderForm(f => {
-                            if (!f) return f;
-                            const val = e.target.value === "" ? 0 : parseInt(e.target.value) || 1;
-                            const updatedItems = f.items.map((itm, idx) =>
-                              idx === index ? { ...itm, quantity: val } : itm
-                            );
-                            return { ...f, items: updatedItems };
-                          })
-                        }
-                        required
-                      />
-                    </div>
-                    <div className="col-span-1">
-                      <Label>
-                        {t("price") || "السعر"} <span className="text-red-500">*</span>
-                      </Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        value={item.price === 0 ? "" : item.price}
-                        onChange={e =>
-                          setEditOrderForm(f => {
-                            if (!f) return f;
-                            const val = e.target.value === "" ? 0 : parseFloat(e.target.value) || 0;
-                            const updatedItems = f.items.map((itm, idx) =>
-                              idx === index ? { ...itm, price: val } : itm
-                            );
-                            return { ...f, items: updatedItems };
-                          })
-                        }
-                        required
-                      />
-                    </div>
-                    <div className="col-span-1 flex justify-end">
+                        required                        />
+                      </div>
+                      <div className="w-24">
+                        <Label className="text-xs text-gray-600 mb-1 block">
+                          {t("quantity") || "الكمية"} <span className="text-red-500">*</span>
+                        </Label>
+                        <Input
+                          type="number"
+                          min="1"
+                          value={item.quantity === 0 ? "" : item.quantity}
+                          onChange={e =>
+                            setEditOrderForm(f => {
+                              if (!f) return f;
+                              const val = e.target.value === "" ? 0 : parseInt(e.target.value) || 1;
+                              const updatedItems = f.items.map((itm, idx) =>
+                                idx === index ? { ...itm, quantity: val } : itm
+                              );
+                              return { ...f, items: updatedItems };
+                            })
+                          }
+                          required
+                        />
+                      </div>
+                      <div className="w-28">
+                        <Label className="text-xs text-gray-600 mb-1 block">
+                          {t("price") || "السعر"} <span className="text-red-500">*</span>
+                        </Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={item.price === 0 ? "" : item.price}
+                          onChange={e =>
+                            setEditOrderForm(f => {
+                              if (!f) return f;
+                              const val = e.target.value === "" ? 0 : parseFloat(e.target.value) || 0;
+                              const updatedItems = f.items.map((itm, idx) =>
+                                idx === index ? { ...itm, price: val } : itm
+                              );
+                              return { ...f, items: updatedItems };
+                            })
+                          }
+                          required
+                        />
+                      </div>
                       <Button
                         type="button"
                         onClick={() => removeOrderItem(item.id)}
                         variant="destructive"
                         size="sm"
-                        className="self-end"
+                        className="h-10"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
