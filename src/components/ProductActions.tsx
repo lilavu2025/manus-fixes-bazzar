@@ -141,7 +141,14 @@ const ProductActions = ({ product }: ProductActionsProps) => {
 
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full max-w-md mx-auto lg:mx-0">
           <Button
-            onClick={handleAddToCart}
+            onClick={() => {
+              const totalQuantityInCart = cartQuantity + quantity;
+              if (totalQuantityInCart > product.stock_quantity) {
+                toast.error(t("exceededStockQuantity"));
+              } else {
+                handleAddToCart();
+              }
+            }}
             className="flex-1 gap-2 text-sm sm:text-base py-2 sm:py-3"
             size="lg"
             disabled={!product.inStock}

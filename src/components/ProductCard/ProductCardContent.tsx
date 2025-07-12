@@ -11,7 +11,7 @@ import QuantitySelector from "@/components/QuantitySelector";
 import { getLocalizedName, getLocalizedDescription } from "@/utils/getLocalizedName";
 import { getDisplayPrice } from "@/utils/priceUtils";
 import ProductCardBadges from "./ProductCardBadges";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
 
 interface ProductCardContentProps {
   product: ProductFull;
@@ -153,7 +153,12 @@ const ProductCardContent: React.FC<ProductCardContentProps> = ({
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                onAddToCart();
+                const totalQuantityInCart = cartQuantity + quantity;
+                if (totalQuantityInCart > product.stock_quantity) {
+                  toast.error(t("exceededStockQuantity"));
+                } else {
+                  onAddToCart();
+                }
               }}
               disabled={!product.inStock || isLoading}
               className="w-full gap-1 sm:gap-2 font-semibold text-xs sm:text-sm py-1.5 sm:py-2"

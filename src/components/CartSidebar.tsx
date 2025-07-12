@@ -145,7 +145,11 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
                               <QuantitySelector 
                                 quantity={item.quantity}
                                 onQuantityChange={(newQuantity) => {
-                                  if (newQuantity > item.product.stock_quantity) {
+                                  const totalQuantityInCart = cartItems.reduce((acc, cartItem) => {
+                                    return cartItem.id === item.id ? acc + newQuantity : acc + cartItem.quantity;
+                                  }, 0);
+
+                                  if (totalQuantityInCart > item.product.stock_quantity) {
                                     enhancedToast.error(t("exceededStockQuantity"));
                                   } else {
                                     updateQuantity(item.id, newQuantity, item.product.id);
