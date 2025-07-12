@@ -400,13 +400,26 @@ const OrderAddDialog: React.FC<OrderAddDialogProps> = ({
                         products.find(p => p.id === item.product_id)?.name_ar ||
                         ""
                       }
+                      renderOption={(option) => {
+                        const product = products.find(
+                          p => p[`name_${language}`] === option || p.name_ar === option || p.name_en === option || p.name_he === option
+                        );
+                        if (!product) return option;
+                        const description = product[`description_${language}`] || product.description_ar || product.description_en || product.description_he;
+                        return (
+                          <div className="py-1">
+                            <div className="font-semibold">{option}</div>
+                            {description && (
+                              <div className="text-sm text-gray-500 mt-1">{description}</div>
+                            )}
+                          </div>
+                        );
+                      }}
                       onInputChange={val => {
                         const matched = products.find(
                           p => p[`name_${language}`] === val || p.name_ar === val || p.name_en === val || p.name_he === val
                         );
-                        updateOrderItem(item.id, "product_id", matched ? matched.id : item.product_id);
-                        updateOrderItem(item.id, "product_name", val);
-                        // تحديد السعر المناسب تلقائياً حسب نوع المستخدم
+                        // تحديث السطر الحالي كالمعتاد
                         let selectedUser = users.find(u => u.id === orderForm.user_id);
                         let userType = selectedUser?.user_type || (allowCustomClient ? 'retail' : undefined);
                         let price = 0;
@@ -417,6 +430,8 @@ const OrderAddDialog: React.FC<OrderAddDialogProps> = ({
                             price = matched.price;
                           }
                         }
+                        updateOrderItem(item.id, "product_id", matched ? matched.id : item.product_id);
+                        updateOrderItem(item.id, "product_name", val);
                         updateOrderItem(item.id, "price", price);
                       }}
                       options={products.map(p => p[`name_${language}`] || p.name_ar || p.id)}

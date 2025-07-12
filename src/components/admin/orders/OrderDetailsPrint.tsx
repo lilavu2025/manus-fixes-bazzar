@@ -133,10 +133,10 @@ const OrderDetailsPrint: React.FC<OrderDetailsPrintProps> = ({ order, t, profile
             <thead>
               <tr className="bg-gray-100 print:bg-gray-200">
                 <th className="p-2 font-bold">#</th>
-                <th className="p-2 font-bold">{t("product") || "المنتج"}</th>
-                <th className="p-2 font-bold">{t("quantity") || "الكمية"}</th>
-                <th className="p-2 font-bold">{t("price") || "السعر"}</th>
-                <th className="p-2 font-bold">{t("total") || "المجموع"}</th>
+                <th className="p-2 font-bold text-right">{t("product") || "المنتج"}</th>
+                <th className="p-2 font-bold text-center">{t("quantity") || "الكمية"}</th>
+                <th className="p-2 font-bold text-center">{t("price") || "السعر"}</th>
+                <th className="p-2 font-bold text-center">{t("total") || "المجموع"}</th>
               </tr>
             </thead>
             <tbody>
@@ -145,8 +145,10 @@ const OrderDetailsPrint: React.FC<OrderDetailsPrintProps> = ({ order, t, profile
                   const product = products.find((p) => p.id === item.product_id);
                   // اسم المنتج حسب اللغة، fallback للعربي إذا غير موجود
                   let productName = '';
+                  let productDescription = '';
                   if (product) {
                     productName = product[`name_${language}`] || product.name_ar || product.name_en || product.name_he || '';
+                    productDescription = product[`description_${language}`] || product.description_ar || product.description_en || product.description_he || '';
                   } else {
                     productName = item[`product_name_${language}`] || item.product_name || '';
                   }
@@ -154,7 +156,16 @@ const OrderDetailsPrint: React.FC<OrderDetailsPrintProps> = ({ order, t, profile
                   return (
                     <tr key={item.id} className="border-b hover:bg-gray-50 print:hover:bg-transparent">
                       <td className="p-2 text-center">{idx + 1}</td>
-                      <td className="p-2">{productName}</td>
+                      <td className="p-2 text-right">
+                        <div className="flex flex-col">
+                          <span className="font-bold text-gray-900">{productName}</span>
+                          {productDescription && (
+                            <span className="text-xs text-gray-600 mt-1 print:text-sm print:leading-tight">
+                              {productDescription}
+                            </span>
+                          )}
+                        </div>
+                      </td>
                       <td className="p-2 text-center">{item.quantity}</td>
                       <td className="p-2 text-center">{getDisplayPrice(([] as Product[]).find((p) => p.id === item.product_id) as Product, profile?.user_type) || item.price} ₪</td>
                       <td className="p-2 text-center font-semibold">{(item.price * item.quantity).toFixed(2)} ₪</td>

@@ -398,11 +398,26 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
                           products.find(p => p.id === item.product_id)?.name_ar ||
                           ""
                         }
+                        renderOption={(option) => {
+                          const product = products.find(
+                            p => p[`name_${language}`] === option || p.name_ar === option || p.name_en === option || p.name_he === option
+                          );
+                          if (!product) return option;
+                          const description = product[`description_${language}`] || product.description_ar || product.description_en || product.description_he;
+                          return (
+                            <div className="py-1">
+                              <div className="font-semibold">{option}</div>
+                              {description && (
+                                <div className="text-sm text-gray-500 mt-1">{description}</div>
+                              )}
+                            </div>
+                          );
+                        }}
                         onInputChange={val => {
                           const matched = products.find(
                             p => p[`name_${language}`] === val || p.name_ar === val || p.name_en === val || p.name_he === val
                           );
-                          // إذا المنتج موجود مسبقًا في القائمة (عدا السطر الحالي)، زد الكمية فقط واحذف السطر الحالي
+                          // تحديث السطر الحالي
                           setEditOrderForm(f => {
                             if (!f) return f;
                             if (matched) {

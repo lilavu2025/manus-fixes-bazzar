@@ -8,6 +8,7 @@ interface AutocompleteProps {
   options: string[];
   placeholder?: string;
   required?: boolean;
+  renderOption?: (option: string) => React.ReactNode;
 }
 
 const Autocomplete: React.FC<AutocompleteProps> = ({
@@ -16,6 +17,7 @@ const Autocomplete: React.FC<AutocompleteProps> = ({
   options,
   placeholder,
   required,
+  renderOption,
 }) => {
   const [showOptions, setShowOptions] = React.useState(false);
   const [inputValue, setInputValue] = React.useState(value || "");
@@ -44,7 +46,10 @@ const Autocomplete: React.FC<AutocompleteProps> = ({
           onInputChange(e.target.value);
           setShowOptions(true);
         }}
-        onClear={() => setInputValue("")}
+        onClear={() => {
+          setInputValue("");
+          onInputChange("");
+        }}
         onFocus={() => setShowOptions(true)}
         onBlur={() => setTimeout(() => setShowOptions(false), 150)}
         placeholder={placeholder}
@@ -52,7 +57,7 @@ const Autocomplete: React.FC<AutocompleteProps> = ({
         autoComplete="off"
       />
       {showOptions && filteredOptions.length > 0 && (
-        <ul className="absolute z-10 bg-white border w-full mt-1 rounded shadow max-h-40 overflow-y-auto">
+        <ul className="absolute z-10 bg-white border w-full mt-1 rounded-lg shadow max-h-60 overflow-y-auto">
           {filteredOptions.map((option, idx) => (
             <li
               key={option + idx}
@@ -64,7 +69,7 @@ const Autocomplete: React.FC<AutocompleteProps> = ({
                 inputRef.current?.blur();
               }}
             >
-              {option}
+              {renderOption ? renderOption(option) : option}
             </li>
           ))}
         </ul>

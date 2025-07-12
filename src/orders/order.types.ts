@@ -9,6 +9,17 @@ export interface Change {
   newValue: string;
 }
 
+export interface Product {
+  id: string;
+  name_ar: string;
+  name_en: string;
+  name_he: string;
+  description_ar: string;
+  description_en: string;
+  description_he: string;
+  price: number;
+}
+
 export interface Order {
   id: string;
   order_number?: number;
@@ -43,6 +54,7 @@ export interface OrderItem {
   quantity: number;
   price: number;
   product_name: string;
+  products?: Product;
 }
 
 export interface NewOrderForm {

@@ -126,6 +126,10 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
                           <h4 className="font-semibold text-sm sm:text-base mb-1 line-clamp-2">
                             {getLocalizedName(item.product, language)}
                           </h4>
+                          {/* Product description */}
+                          <p className={`text-gray-500 text-xs sm:text-sm mb-1 line-clamp-2 ${isRTL ? "text-right" : "text-left"}`}>
+                            {item.product.description || item.product.descriptionEn || item.product.descriptionHe}
+                          </p>
                           <p className="text-primary font-bold text-sm sm:text-base">
                             {getDisplayPrice(item.product, profile?.user_type)} {t("currency")}
                           </p>

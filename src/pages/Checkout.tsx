@@ -600,20 +600,24 @@ const Checkout: React.FC = () => {
                         <h4 className="font-medium text-sm truncate">
                           {item.product.name}
                         </h4>
-                        <p className="text-xs text-gray-600">
-                          {item.quantity} ×{" "}
-                          {getDisplayPrice(productForPrice, profile?.user_type)}{" "}
-                          {t("currency")}
+                        {/* Product description */}
+                        <p className="text-gray-500 text-xs truncate mt-0.5">
+                          {item.product.description || item.product.descriptionEn || item.product.descriptionHe}
                         </p>
+                        <div className="flex items-center justify-between mt-1">
+                          <span className="text-sm text-gray-600">
+                            {item.quantity} × {getDisplayPrice(productForPrice, profile?.user_type)}
+                          </span>
+                          <p className="font-medium text-sm">
+                            {item.quantity *
+                              getDisplayPrice(
+                                productForPrice,
+                                profile?.user_type,
+                              )}{" "}
+                            {t("currency")}
+                          </p>
+                        </div>
                       </div>
-                      <p className="font-medium text-sm">
-                        {item.quantity *
-                          getDisplayPrice(
-                            productForPrice,
-                            profile?.user_type,
-                          )}{" "}
-                        {t("currency")}
-                      </p>
                     </div>
                   );
                 })}
