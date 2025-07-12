@@ -240,6 +240,7 @@ export async function fetchUserOrdersWithDetails(userId: string): Promise<Orders
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
     if (error) throw error;
+
     return (data || []).map((order: OrderRow & { admin_created?: boolean; admin_creator_name?: string; order_number?: number; total_after_discount?: number | null; discount_type?: string | null; discount_value?: number | null }) => ({
       id: order.id,
       order_number: order.order_number,
@@ -259,6 +260,7 @@ export async function fetchUserOrdersWithDetails(userId: string): Promise<Orders
             order_id: item.order_id,
             quantity: item.quantity,
             price: item.price,
+            product_name: item.products?.name_ar || item.products?.name_en || item.products?.name_he || item.product_id,
             products: item.products ? {
               id: item.products.id,
               name_ar: item.products.name_ar,
@@ -319,6 +321,7 @@ export interface OrdersWithDetails {
     order_id: string;
     quantity: number;
     price: number;
+    product_name?: string;
     products?: {
       id: string;
       name_ar: string;

@@ -126,9 +126,15 @@ const PaginatedProductsTable: React.FC<PaginatedProductsTableProps> = ({
 
               {/* Product Info */}
               <div className="flex-1 min-w-0 flex flex-col justify-center">
-                {/* Product Name - Full line without truncation */}
+                {/* Product Name and Description */}
                 <div className="mb-2">
                   <h3 className={`font-bold text-lg text-gray-800 product-name ${isRTL ? "text-right" : "text-left"}`}>{getProductName(product)}</h3>
+                  <p className={`text-sm text-gray-600 mt-1 ${isRTL ? "text-right" : "text-left"}`}>
+                    {language === "ar" ? product.description :
+                     language === "en" ? product.descriptionEn :
+                     language === "he" ? product.descriptionHe :
+                     product.description}
+                  </p>
                 </div>
                 
                 {/* Product Labels/Badges */}

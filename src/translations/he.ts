@@ -6,6 +6,9 @@ export const heTranslations = {
   storeDescription: config.descriptions.he,
   storeSubtitle: "קנה בביטחון ובנוחות",
   readyText: "מוכן לשימוש",
+  
+  // Product Messages
+  exceededStockQuantity: "כמות המלאי חורגת מהמותר",
 
   // Navigation
   home: "בית",

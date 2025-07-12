@@ -78,6 +78,7 @@ type OrderItemDB = {
   product_id: string;
   quantity: number;
   created_at: string;
+  product_name?: string; // Adding this field as optional
   products?: ProductDB;
 };
 
@@ -535,24 +536,35 @@ const Orders: React.FC = () => {
                                 key={item.id}
                                 className="border-b hover:bg-gray-50"
                               >
-                                <td className="p-2 flex items-center gap-2">
-                                  <img
-                                    src={item.products?.image}
-                                    alt={
-                                      item.products?.name_ar ||
-                                      item.products?.name_en ||
-                                      item.products?.name_he ||
-                                      ""
-                                    }
-                                    className="w-10 h-10 object-cover rounded"
-                                  />
-                                  <span className="truncate">
-                                    {language === "ar"
-                                      ? item.products?.name_ar
-                                      : language === "he"
-                                      ? item.products?.name_he
-                                      : item.products?.name_en}
-                                  </span>
+                                <td className="p-2">
+                                  <div className="flex items-center gap-2">
+                                    <img
+                                      src={item.products?.image}
+                                      alt={
+                                        item.products?.name_ar ||
+                                        item.products?.name_en ||
+                                        item.products?.name_he ||
+                                        ""
+                                      }
+                                      className="w-10 h-10 object-cover rounded"
+                                    />
+                                    <div className="flex flex-col">
+                                      <span className="font-medium">
+                                        {language === "ar"
+                                          ? item.products?.name_ar
+                                          : language === "he"
+                                          ? item.products?.name_he
+                                          : item.products?.name_en || item.product_name}
+                                      </span>
+                                      <span className="text-xs text-gray-500 mt-0.5">
+                                        {language === "ar"
+                                          ? item.products?.description_ar
+                                          : language === "he"
+                                          ? item.products?.description_he
+                                          : item.products?.description_en}
+                                      </span>
+                                    </div>
+                                  </div>
                                 </td>
                                 <td className="p-2 text-center">
                                   {item.quantity}

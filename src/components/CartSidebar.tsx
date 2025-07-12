@@ -12,6 +12,7 @@ import { useEnhancedToast } from "@/hooks/useEnhancedToast";
 import { getLocalizedName } from "@/utils/getLocalizedName";
 import { getDisplayPrice } from "@/utils/priceUtils";
 import type { Product as ProductFull } from '@/types/product';
+import QuantitySelector from "@/components/QuantitySelector";
 
 interface CartSidebarProps {
   isOpen: boolean;
@@ -126,6 +127,10 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
                           <h4 className="font-semibold text-sm sm:text-base mb-1 line-clamp-2">
                             {getLocalizedName(item.product, language)}
                           </h4>
+                          {/* Product description */}
+                          <p className={`text-gray-500 text-xs sm:text-sm mb-1 line-clamp-2 ${isRTL ? "text-right" : "text-left"}`}>
+                            {item.product.description || item.product.descriptionEn || item.product.descriptionHe}
+                          </p>
                           <p className="text-primary font-bold text-sm sm:text-base">
                             {getDisplayPrice(item.product, profile?.user_type)} {t("currency")}
                           </p>
@@ -133,39 +138,28 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
 
                         <div className={`flex items-center justify-between mt-2 ${isRTL ? "flex-row-reverse" : "flex-row"}`}>
                           <div className={`flex items-center gap-2 ${isRTL ? "flex-row-reverse" : "flex-row"}`}>
-                            <Button
-                              size="icon"
-                              variant="outline"
-                              className="h-8 w-8"
-                              onClick={() =>
-                                updateQuantity(
-                                  item.id,
-                                  item.quantity - 1,
-                                  item.product.id,
-                                )
-                              }
-                            >
-                              <Minus className="h-4 w-4" />
-                            </Button>
+                            <div className={`flex items-center justify-center lg:justify-start gap-4 sm:gap-8 lg:gap-12 w-full ${isRTL ? "flex-row-reverse" : "flex-row"}`}>
+                              <label className={`block text-xs sm:text-sm font-semibold ${isRTL ? "flex-row-reverse" : "flex-row"}`}>
+                                {t("quantity")}
+                              </label>
+                              <QuantitySelector 
+                                quantity={item.quantity}
+                                onQuantityChange={(newQuantity) => {
+                                  const totalQuantityInCart = cartItems.reduce((acc, cartItem) => {
+                                    return cartItem.id === item.id ? acc + newQuantity : acc + cartItem.quantity;
+                                  }, 0);
 
-                            <span className="w-8 text-center font-semibold">
-                              {item.quantity}
-                            </span>
-
-                            <Button
-                              size="icon"
-                              variant="outline"
-                              className="h-8 w-8"
-                              onClick={() =>
-                                updateQuantity(
-                                  item.id,
-                                  item.quantity + 1,
-                                  item.product.id,
-                                )
-                              }
-                            >
-                              <Plus className="h-4 w-4" />
-                            </Button>
+                                  if (totalQuantityInCart > item.product.stock_quantity) {
+                                    enhancedToast.error(t("exceededStockQuantity"));
+                                  } else {
+                                    updateQuantity(item.id, newQuantity, item.product.id);
+                                  }
+                                }}
+                                max={item.product.stock_quantity}
+                                min={1}
+                                disabled={!item.product.inStock}
+                              />
+                            </div>
                           </div>
                         </div>
 

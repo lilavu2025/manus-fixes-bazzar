@@ -8,6 +8,9 @@ export const arTranslations = {
   storeSubtitle: "تسوق بثقة وراحة",
   readyText: "جاهز للاستخدام",
 
+  // Product Messages
+  exceededStockQuantity: "لا يمكن إضافة كمية أكثر من المخزون المتاح",
+
   // Navigation
   home: "الرئيسية",
   product: "المنتج",

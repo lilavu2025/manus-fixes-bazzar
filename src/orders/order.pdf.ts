@@ -7,7 +7,8 @@ export async function downloadInvoicePdf(
   order: Order,
   t: (key: string) => string,
   currentLang: "ar" | "en" | "he",
-  adminName?: string // اسم الأدمن الحالي
+  adminName?: string, // اسم الأدمن الحالي
+  products?: any[] // المنتجات للحصول على الوصف
 ) {
   const storeName = config.names[currentLang];
   const logo = `${window.location.origin}${config.visual.logo}`;
@@ -17,17 +18,30 @@ export async function downloadInvoicePdf(
   const align = direction === "rtl" ? "right" : "left";
   const productsRows = order.items
     ?.map((item) => {
-      let productName = "-";
-      if ((item as any)[`product_name_${currentLang}`]) {
-        productName = (item as any)[`product_name_${currentLang}`];
-      } else if ((item as any).product_name_ar) {
-        productName = (item as any).product_name_ar;
-      } else if (item.product_name) {
-        productName = item.product_name;
-      }
-      return `
+        let productName = "-";
+        if ((item as any)[`product_name_${currentLang}`]) {
+          productName = (item as any)[`product_name_${currentLang}`];
+        } else if ((item as any).product_name_ar) {
+          productName = (item as any).product_name_ar;
+        } else if (item.product_name) {
+          productName = item.product_name;
+        }
+        
+        // الحصول على وصف المنتج من قائمة المنتجات
+        let productDescription = "";
+        const product = products?.find((p) => p.id === item.product_id);
+        if (product) {
+          productDescription = product[`description_${currentLang}`] || product.description_ar || product.description_en || product.description_he || '';
+        }
+        
+        return `
       <tr>
-        <td>${productName}</td>
+        <td>
+          <div style="margin-bottom: 4px;">
+            <strong>${productName}</strong>
+          </div>
+          ${productDescription ? `<div style="font-size: 12px; color: #666; line-height: 1.3;">${productDescription}</div>` : ''}
+        </td>
         <td>${item.quantity}</td>
         <td>${item.price.toFixed(2)} ₪</td>
         <td>${(item.quantity * item.price).toFixed(2)} ₪</td>
@@ -84,6 +98,10 @@ export async function downloadInvoicePdf(
             border: 1px solid #ccc;
             padding: 10px;
             text-align: center;
+          }
+          td:first-child {
+            text-align: ${align};
+            padding: 12px 10px;
           }
           th {
             background-color: #f0f0f0;
