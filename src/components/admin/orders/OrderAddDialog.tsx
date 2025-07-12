@@ -400,6 +400,13 @@ const OrderAddDialog: React.FC<OrderAddDialogProps> = ({
                         products.find(p => p.id === item.product_id)?.name_ar ||
                         ""
                       }
+                      onClear={() => {
+                        // مسح جميع بيانات المنتج عند الضغط على X
+                        updateOrderItem(item.id, "product_id", "");
+                        updateOrderItem(item.id, "product_name", "");
+                        updateOrderItem(item.id, "price", 0);
+                        updateOrderItem(item.id, "quantity", 1);
+                      }}
                       renderOption={(option) => {
                         const product = products.find(
                           p => p[`name_${language}`] === option || p.name_ar === option || p.name_en === option || p.name_he === option
@@ -416,6 +423,11 @@ const OrderAddDialog: React.FC<OrderAddDialogProps> = ({
                         );
                       }}
                       onInputChange={val => {
+                        // إذا كان النص فارغاً، لا تفعل شيئاً (سيتم التعامل معه في onClear)
+                        if (!val || val.trim() === "") {
+                          return;
+                        }
+                        
                         const matched = products.find(
                           p => p[`name_${language}`] === val || p.name_ar === val || p.name_en === val || p.name_he === val
                         );
@@ -430,9 +442,9 @@ const OrderAddDialog: React.FC<OrderAddDialogProps> = ({
                             price = matched.price;
                           }
                         }
-                        updateOrderItem(item.id, "product_id", matched ? matched.id : item.product_id);
+                        updateOrderItem(item.id, "product_id", matched ? matched.id : "");
                         updateOrderItem(item.id, "product_name", val);
-                        updateOrderItem(item.id, "price", price);
+                        updateOrderItem(item.id, "price", matched ? price : 0);
                       }}
                       options={products.map(p => p[`name_${language}`] || p.name_ar || p.id)}
                       placeholder={t("searchOrSelectProduct") || "ابحث أو اكتب اسم المنتج"}

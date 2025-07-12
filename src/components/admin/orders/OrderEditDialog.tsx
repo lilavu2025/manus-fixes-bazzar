@@ -398,6 +398,24 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
                           products.find(p => p.id === item.product_id)?.name_ar ||
                           ""
                         }
+                        onClear={() => {
+                          // مسح جميع بيانات المنتج عند الضغط على X
+                          setEditOrderForm(f => {
+                            if (!f) return f;
+                            const updatedItems = f.items.map((itm, idx) =>
+                              idx === index
+                                ? {
+                                    ...itm,
+                                    product_id: "",
+                                    product_name: "",
+                                    price: 0,
+                                    quantity: 1,
+                                  }
+                                : itm
+                            );
+                            return { ...f, items: updatedItems };
+                          });
+                        }}
                         renderOption={(option) => {
                           const product = products.find(
                             p => p[`name_${language}`] === option || p.name_ar === option || p.name_en === option || p.name_he === option
@@ -414,6 +432,11 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
                           );
                         }}
                         onInputChange={val => {
+                          // إذا كان النص فارغاً، لا تفعل شيئاً (سيتم التعامل معه في onClear)
+                          if (!val || val.trim() === "") {
+                            return;
+                          }
+                          
                           const matched = products.find(
                             p => p[`name_${language}`] === val || p.name_ar === val || p.name_en === val || p.name_he === val
                           );
@@ -448,9 +471,9 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
                               idx === index
                                 ? {
                                     ...itm,
-                                    product_id: matched ? matched.id : itm.product_id,
+                                    product_id: matched ? matched.id : "",
                                     product_name: val,
-                                    price,
+                                    price: matched ? price : 0,
                                   }
                                 : itm
                             );

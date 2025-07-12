@@ -5,6 +5,7 @@ import { isRTL } from "@/utils/languageContextUtils";
 interface AutocompleteProps {
   value: string;
   onInputChange: (value: string) => void;
+  onClear?: () => void; // إضافة callback عند الضغط على X
   options: string[];
   placeholder?: string;
   required?: boolean;
@@ -14,6 +15,7 @@ interface AutocompleteProps {
 const Autocomplete: React.FC<AutocompleteProps> = ({
   value,
   onInputChange,
+  onClear,
   options,
   placeholder,
   required,
@@ -22,6 +24,7 @@ const Autocomplete: React.FC<AutocompleteProps> = ({
   const [showOptions, setShowOptions] = React.useState(false);
   const [inputValue, setInputValue] = React.useState(value || "");
   const inputRef = React.useRef<HTMLInputElement>(null);
+  const editableDivRef = React.useRef<HTMLDivElement>(null); // إضافة ref للعنصر contentEditable
 
   React.useEffect(() => {
     setInputValue(value || "");
@@ -37,6 +40,7 @@ const Autocomplete: React.FC<AutocompleteProps> = ({
   return (
     <div className="relative inline-block w-full">
       <div 
+        ref={editableDivRef}
         className={`border-2 border-gray-200 rounded-lg py-2 min-h-10 text-xs sm:text-sm w-full bg-gray-50 focus:border-blue-500 focus:ring-1 focus:ring-blue-300 transition-colors placeholder:text-gray-400 cursor-text overflow-hidden resize-none outline-none relative empty:before:content-[attr(data-placeholder)] empty:before:text-gray-400 empty:before:pointer-events-none ${isRTL ? 'pr-8 pl-3' : 'pl-8 pr-3'}`}
         contentEditable
         suppressContentEditableWarning={true}
@@ -65,9 +69,13 @@ const Autocomplete: React.FC<AutocompleteProps> = ({
           onClick={() => {
             setInputValue("");
             onInputChange("");
-            // Clear the contentEditable div
-            const editableDiv = document.querySelector('[contenteditable]') as HTMLDivElement;
-            if (editableDiv) editableDiv.innerHTML = '';
+            if (onClear) {
+              onClear(); // استدعاء callback الخاص بالمسح
+            }
+            // Clear the specific contentEditable div using ref
+            if (editableDivRef.current) {
+              editableDivRef.current.innerHTML = '';
+            }
           }}
         >
           <span className="text-sm">✕</span>
