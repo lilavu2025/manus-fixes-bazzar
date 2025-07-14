@@ -1027,6 +1027,7 @@ export const heTranslations = {
   defaultAddress: "כתובת לא צוינה",
   errorLoadingData: "שגיאה בטעינת נתונים",
   noCategoriesAvailable: "אין קטגוריות זמינות",
+  noItemsAvailable: "אין פריטים זמינים",
   tracking: "מעקב",
   searchByCustomerOrOrder: "חפש לפי לקוח או הזמנה",
   fillAllRequiredFieldsCarefully: "אנא מלא את כל השדות הנדרשים בקפידה",

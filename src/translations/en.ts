@@ -667,6 +667,7 @@ export const enTranslations = {
   sortByProductCount: "Sort by Product Count",
   searchCategories: "Search categories...",
   noCategoriesAvailable: "No categories available",
+  noItemsAvailable: "No items available",
   updateCategory: "Update Category",
   fillCategoryDetails: "Please fill category details",
   preview: "Preview",
