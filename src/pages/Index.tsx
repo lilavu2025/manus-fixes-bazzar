@@ -12,6 +12,7 @@ import { ClearableInput } from "@/components/ui/ClearableInput";
 import { useBanners } from "@/hooks/useSupabaseData";
 import { useCategoriesRealtime } from "@/hooks/useCategoriesRealtime";
 import { useProductsRealtime } from "@/hooks/useProductsRealtime";
+import { useOffersRealtime } from "@/hooks/useOffersRealtime";
 import { useLanguage } from "@/utils/languageContextUtils";
 import { getLocalizedName } from "@/utils/getLocalizedName";
 import { mapProductFromDb } from "@/types/mapProductFromDb";
@@ -21,6 +22,7 @@ import TopOrderedProducts from "@/components/TopOrderedProducts";
 import { fetchTopOrderedProducts } from "@/integrations/supabase/dataSenders";
 import config from "@/configs/activeConfig";
 import { useEqualHeight } from "@/hooks/useEqualHeight";
+import OfferCard from "@/components/OfferCard";
 
 interface IndexProps {}
 
@@ -47,6 +49,8 @@ const Index: React.FC = () => {
     error: productsError,
     refetch: refetchProducts,
   } = useProductsRealtime();
+  const { offers, loading: offersLoading, error: offersError } = useOffersRealtime();
+
   const banners: AppBanner[] = (bannersData ?? []).map(
     (b: SupabaseBanner): AppBanner => ({
       id: b.id,
@@ -146,6 +150,53 @@ const Index: React.FC = () => {
           </section>
         )}
 
+        {/* Offers Section */}
+        {!searchQuery && offers.length > 0 && (
+          <section className="bg-white/80 rounded-xl p-4 shadow-sm mb-12">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold">{t("specialOffers")}</h2>
+              <div className="hidden md:block">
+                <Button
+                  asChild
+                  variant="outline"
+                  className="font-bold py-2 px-4 rounded shadow-md transition-all duration-300 text-[hsl(var(--primary))] hover:text-[hsl(var(--secondary))] bg-white"
+                >
+                  <Link to="/offers" aria-label={t("viewAllOffers")}>{t("viewAll")}</Link>
+                </Button>
+              </div>
+            </div>
+            <motion.div
+              ref={gridRef}
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6"
+              initial="hidden"
+              animate="show"
+              variants={{
+                hidden: {},
+                show: {
+                  transition: {
+                    staggerChildren: 0.1,
+                  },
+                },
+              }}
+            >
+              {offers.map((offer) => (
+                <motion.div
+                  key={offer.id}
+                  variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}
+                  transition={{ duration: 0.4 }}
+                >
+                  <OfferCard
+                    offer={offer}
+                    showFullTitle
+                    showDescriptionWithReadMore
+                    equalHeight
+                  />
+                </motion.div>
+              ))}
+            </motion.div>
+          </section>
+        )}
+
         {/* Search Results */}
         {searchQuery && (
           <section className="mb-8 bg-white/80 rounded-xl p-4 shadow-sm">
@@ -186,6 +237,18 @@ const Index: React.FC = () => {
         {/* Categories */}
         {!searchQuery && (
           <section className="mb-12 bg-white/80 rounded-xl p-4 shadow-sm">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold">{t("categories")}</h2>
+              <div className="hidden md:block">
+                <Button
+                  asChild
+                  variant="outline"
+                  className="font-bold py-2 px-4 rounded shadow-md transition-all duration-300 text-[hsl(var(--primary))] hover:text-[hsl(var(--secondary))] bg-white"
+                >
+                  <Link to="/categories" aria-label={t("viewAllCategories")}>{t("viewAll")}</Link>
+                </Button>
+              </div>
+            </div>
             {categoriesLoading ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
                 {[...Array(5)].map((_, i) => (

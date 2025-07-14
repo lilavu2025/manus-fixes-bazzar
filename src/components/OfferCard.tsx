@@ -16,13 +16,22 @@ import type { Product } from "@/types";
 
 interface OfferCardProps {
   offer: Database["public"]["Tables"]["offers"]["Row"];
+  showFullTitle?: boolean;
+  showDescriptionWithReadMore?: boolean;
+  equalHeight?: boolean;
 }
 
-const OfferCard: React.FC<OfferCardProps> = ({ offer }) => {
+const OfferCard: React.FC<OfferCardProps> = ({
+  offer,
+  showFullTitle,
+  showDescriptionWithReadMore,
+  equalHeight,
+}) => {
   const { t } = useLanguage();
   const { addToCart } = useCart();
   const [showDetails, setShowDetails] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [showMore, setShowMore] = useState(false);
 
   // تحويل بيانات العرض إلى منتج متوافق مع السلة
   function offerToProduct(
@@ -57,17 +66,37 @@ const OfferCard: React.FC<OfferCardProps> = ({ offer }) => {
 
   return (
     <>
-      <div className="bg-white rounded-xl shadow-md p-4 flex flex-col items-center transition hover:shadow-lg group relative">
+      <div
+        className={`bg-white rounded-xl shadow-md p-4 flex flex-col items-center transition hover:shadow-lg group relative ${
+          equalHeight ? "h-full" : ""
+        }`}
+      >
         <LazyImage
           src={offer.image_url}
           alt={offer.title_ar || offer.title_en || t("specialOffer")}
           className="w-full h-40 object-cover rounded mb-4 group-hover:scale-105 transition-transform duration-200"
         />
-        <h3 className="text-xl font-bold mb-2 text-center w-full truncate">
+        <h3
+          className={`text-xl font-bold mb-2 text-center w-full ${
+            showFullTitle ? "" : "truncate"
+          }`}
+        >
           {offer.title_ar || offer.title_en}
         </h3>
-        <p className="text-gray-600 mb-2 text-center w-full line-clamp-2">
+        <p
+          className={`text-gray-600 mb-2 text-center w-full ${
+            showDescriptionWithReadMore ? "" : "line-clamp-2"
+          }`}
+        >
           {offer.description_ar || offer.description_en}
+          {showDescriptionWithReadMore && offer.description_ar?.length > 100 && (
+            <span
+              className="text-primary cursor-pointer ml-2"
+              onClick={() => setShowMore(!showMore)}
+            >
+              {showMore ? t("showLess") : t("readMore")}
+            </span>
+          )}
         </p>
         <div className="flex items-center gap-2 mb-2">
           <span className="text-lg font-bold text-primary">
@@ -76,7 +105,9 @@ const OfferCard: React.FC<OfferCardProps> = ({ offer }) => {
         </div>
         <div className="text-sm text-gray-500 mb-4">
           {t("validUntil")}:{" "}
-          {new Date(offer.end_date).toLocaleDateString('en-US', { calendar: 'gregory' })}
+          {new Date(offer.end_date).toLocaleDateString("en-US", {
+            calendar: "gregory",
+          })}
         </div>
         <button
           onClick={(e) => {
@@ -127,13 +158,19 @@ const OfferCard: React.FC<OfferCardProps> = ({ offer }) => {
                 {offer.start_date && (
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4" />
-                    <span>{t("startDate")}: {new Date(offer.start_date).toLocaleDateString()}</span>
+                    <span>
+                      {t("startDate")}:{" "}
+                      {new Date(offer.start_date).toLocaleDateString()}
+                    </span>
                   </div>
                 )}
                 {offer.end_date && (
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4" />
-                    <span>{t("validUntil")}: {new Date(offer.end_date).toLocaleDateString()}</span>
+                    <span>
+                      {t("validUntil")}:{" "}
+                      {new Date(offer.end_date).toLocaleDateString()}
+                    </span>
                   </div>
                 )}
               </div>
