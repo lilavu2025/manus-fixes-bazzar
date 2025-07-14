@@ -280,6 +280,7 @@ const EditProductDialog: React.FC<EditProductDialogProps> = ({
                     he: "הכנס תיאור מוצר בעברית",
                   }}
                   type="textarea"
+                  required={false}
                 />
               </div>
 

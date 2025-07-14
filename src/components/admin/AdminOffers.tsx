@@ -189,12 +189,15 @@ const AdminOffers: React.FC = () => {
     const endDate = form.end_date ? new Date(form.end_date).toISOString() : null;
     
     const offerData: any = {
-      discount_percent: Number(form.discount_percent),
+      discount_percentage: Number(form.discount_percent),
       image_url: form.image_url,
       start_date: startDate,
       end_date: endDate,
       active: form.active,
     };
+
+    console.log('إضافة عرض - البيانات المُرسلة:', offerData);
+    console.log('إضافة عرض - اللغات المتاحة:', availableLangs);
 
     // إضافة حقول اللغات المتاحة فقط
     availableLangs.forEach(lang => {
@@ -202,21 +205,23 @@ const AdminOffers: React.FC = () => {
       const descField = `description_${lang}` as keyof typeof form;
       
       offerData[titleField] = form[titleField] || '';
-      offerData[descField] = form[descField] || '';
+      // للوصف: إرسال null إذا كان فارغ، وإلا إرسال النص
+      const descValue = form[descField] as string;
+      offerData[descField] = descValue && descValue.trim() ? descValue : null;
     });
     
-    // إضافة قيم فارغة للغات غير المتاحة (للتوافق مع قاعدة البيانات)
+    // إضافة قيم للغات غير المتاحة (للتوافق مع قاعدة البيانات)
     const allLanguages = ['ar', 'en', 'he'];
     allLanguages.forEach(lang => {
       if (!availableLangs.includes(lang as any)) {
         offerData[`title_${lang}`] = '';
-        offerData[`description_${lang}`] = '';
+        offerData[`description_${lang}`] = null;
       }
     });
 
     console.log('إضافة عرض - البيانات المُرسلة:', offerData);
-    console.log('إضافة عرض - اللغات المتاحة:', availableLangs);
-    console.log('إضافة عرض - النموذج الأصلي:', form);
+    console.log('🔍 Object keys:', Object.keys(offerData));
+    console.log('🔍 Object values:', Object.values(offerData));
 
     addOfferMutation.mutate(offerData, {
       onSuccess: (data) => {
@@ -294,7 +299,7 @@ const AdminOffers: React.FC = () => {
     // إعداد بيانات التحديث بناءً على اللغات المتاحة
     const availableLangs = getAvailableLanguages();
     const updateData: any = {
-      discount_percent: Number(form.discount_percent),
+      discount_percentage: Number(form.discount_percent),
       image_url: form.image_url || null,
       start_date: form.start_date,
       end_date: form.end_date,
@@ -307,7 +312,9 @@ const AdminOffers: React.FC = () => {
       const descField = `description_${lang}` as keyof typeof form;
       
       updateData[titleField] = form[titleField] || '';
-      updateData[descField] = form[descField] || '';
+      // للوصف: إرسال null إذا كان فارغ، وإلا إرسال النص
+      const descValue = form[descField] as string;
+      updateData[descField] = descValue && descValue.trim() ? descValue : null;
     });
     updateOfferMutation.mutate(
       { id: selectedOffer.id, updateData },
@@ -337,7 +344,7 @@ const AdminOffers: React.FC = () => {
         description_en: selectedOffer.description_en || "",
         description_ar: selectedOffer.description_ar || "",
         description_he: selectedOffer.description_he || "",
-        discount_percent: String(selectedOffer.discount_percent || ""),
+        discount_percent: String(selectedOffer.discount_percentage || ""),
         image_url: selectedOffer.image_url || "",
         start_date: selectedOffer.start_date
           ? selectedOffer.start_date.split("T")[0]
@@ -517,7 +524,7 @@ const AdminOffers: React.FC = () => {
                       <div className="flex items-center space-x-2">
                         <Percent className="h-4 w-4 text-primary" />
                         <span className="text-lg font-bold text-primary">
-                          {offer.discount_percent} {t("discount")}
+                          {offer.discount_percentage} {t("discount")}
                         </span>
                       </div>
                     </div>
@@ -638,6 +645,7 @@ const AdminOffers: React.FC = () => {
                     en: "Enter offer title",
                     he: "הכנס כותרת הצעה"
                   }}
+                  required={true}
                 />
 
                 {/* الأوصاف متعددة اللغات */}
@@ -659,6 +667,7 @@ const AdminOffers: React.FC = () => {
                     he: "הכנס תיאור הצעה"
                   }}
                   rows={3}
+                  required={false}
                 />
               </CardContent>
             </Card>
@@ -815,6 +824,7 @@ const AdminOffers: React.FC = () => {
                     en: "Enter offer title",
                     he: "הכנס כותרת הצעה"
                   }}
+                  required={true}
                 />
 
                 {/* الأوصاف متعددة اللغات */}
@@ -836,6 +846,7 @@ const AdminOffers: React.FC = () => {
                     he: "הכנס תיאור הצעה"
                   }}
                   rows={3}
+                  required={false}
                 />
               </CardContent>
             </Card>

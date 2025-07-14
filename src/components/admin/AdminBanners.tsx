@@ -359,6 +359,7 @@ const BannerForm = ({
               en: "Enter banner title",
               he: "הכנס כותרת באנר"
             }}
+            required={false}
           />
           
           <MultiLanguageField
@@ -379,6 +380,7 @@ const BannerForm = ({
               he: "הכנס תיאור באנר"
             }}
             rows={3}
+            required={false}
           />
         </CardContent>
       </Card>
