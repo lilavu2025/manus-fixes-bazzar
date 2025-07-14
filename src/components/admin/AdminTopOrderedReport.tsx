@@ -89,11 +89,12 @@ const AdminTopOrderedReport = () => {
                         <td>{idx + 1}</td>
                         <td>
                           {product.image ? (
-                            <img
-                              src={product.image}
-                              alt={product.name}
-                              className="w-12 h-12 object-cover rounded"
-                            />
+                            <div className="w-12 h-12 rounded">
+                              <div
+                                className="w-full h-full bg-center bg-contain bg-no-repeat rounded"
+                                style={{ backgroundImage: `url(${product.image})` }}
+                              />
+                            </div>
                           ) : (
                             <span className="text-gray-400">-</span>
                           )}

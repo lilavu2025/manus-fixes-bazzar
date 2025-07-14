@@ -187,10 +187,9 @@ const AddCategoryDialog: React.FC<AddCategoryDialogProps> = ({
                     </Label>
                     <div className="w-full h-48 rounded-lg border bg-gray-50 flex items-center justify-center overflow-hidden">
                       {previewImage || formData.image ? (
-                        <img
-                          src={previewImage || formData.image}
-                          alt="preview"
-                          className="object-cover w-full h-full"
+                        <div
+                          className="w-full h-full bg-center bg-contain bg-no-repeat"
+                          style={{ backgroundImage: `url(${previewImage || formData.image})` }}
                         />
                       ) : (
                         <span className="text-gray-400 text-lg">

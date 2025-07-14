@@ -60,10 +60,9 @@ const ViewCategoryDialog: React.FC<ViewCategoryDialogProps> = ({
             <div className="flex flex-col items-center gap-2">
               <div className="w-32 h-32 rounded-2xl overflow-hidden border-2 border-blue-200 bg-gray-50 flex items-center justify-center mb-2 shadow-sm">
                 {category.image ? (
-                  <img
-                    src={category.image}
-                    alt={category.name}
-                    className="object-cover w-full h-full"
+                  <div
+                    className="w-full h-full bg-center bg-contain bg-no-repeat"
+                    style={{ backgroundImage: `url(${category.image})` }}
                   />
                 ) : (
                   <span className="text-gray-400 text-xs flex flex-col items-center gap-1">

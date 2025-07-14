@@ -497,11 +497,9 @@ const AdminOffers: React.FC = () => {
                   {/* صورة العرض */}
                   {offer.image_url && (
                     <div className="relative h-48 overflow-hidden">
-                      <img
-                        loading="lazy"
-                        src={offer.image_url}
-                        alt={currentTitle}
-                        className="w-full h-full object-cover transition-transform duration-200 hover:scale-105"
+                      <div
+                        className="w-full h-full bg-center bg-contain bg-no-repeat transition-transform duration-200 hover:scale-105"
+                        style={{ backgroundImage: `url(${offer.image_url})` }}
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                     </div>
