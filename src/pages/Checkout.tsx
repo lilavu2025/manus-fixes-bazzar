@@ -591,10 +591,9 @@ const Checkout: React.FC = () => {
                       key={item.product.id || `item-${index}`}
                       className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50"
                     >
-                      <img
-                        src={item.product.image}
-                        alt={item.product.name}
-                        className="w-12 h-12 object-cover rounded"
+                      <div 
+                        className="w-12 h-12 bg-center bg-contain bg-no-repeat rounded border border-gray-200 flex-shrink-0"
+                        style={{ backgroundImage: `url(${item.product.image})` }}
                       />
                       <div className="flex-1 min-w-0">
                         <h4 className="font-medium text-sm truncate">

@@ -191,10 +191,9 @@ const OrderDetailsDialog: React.FC<OrderDetailsDialogProps> = ({
                         <div className="flex flex-col sm:flex-row gap-4">
                           {/* صورة المنتج */}
                           <div className="flex-shrink-0 mx-auto sm:mx-0">
-                            <img
-                              src={item.products?.image}
-                              alt={item.products?.name_ar || item.products?.name_en || ""}
-                              className="w-24 h-24 object-cover rounded-lg border shadow-sm"
+                            <div 
+                              className="w-24 h-24 bg-center bg-contain bg-no-repeat rounded-lg border shadow-sm"
+                              style={{ backgroundImage: `url(${item.products?.image})` }}
                             />
                           </div>
                           

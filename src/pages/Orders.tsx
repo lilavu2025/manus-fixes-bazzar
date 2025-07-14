@@ -538,15 +538,9 @@ const Orders: React.FC = () => {
                               >
                                 <td className="p-2">
                                   <div className="flex items-center gap-2">
-                                    <img
-                                      src={item.products?.image}
-                                      alt={
-                                        item.products?.name_ar ||
-                                        item.products?.name_en ||
-                                        item.products?.name_he ||
-                                        ""
-                                      }
-                                      className="w-10 h-10 object-cover rounded"
+                                    <div 
+                                      className="w-10 h-10 bg-center bg-contain bg-no-repeat rounded border border-gray-200"
+                                      style={{ backgroundImage: `url(${item.products?.image})` }}
                                     />
                                     <div className="flex flex-col">
                                       <span className="font-medium">

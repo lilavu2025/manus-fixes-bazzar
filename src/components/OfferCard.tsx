@@ -71,10 +71,9 @@ const OfferCard: React.FC<OfferCardProps> = ({
           equalHeight ? "h-full" : ""
         }`}
       >
-        <LazyImage
-          src={offer.image_url}
-          alt={offer.title_ar || offer.title_en || t("specialOffer")}
-          className="w-full h-40 object-cover rounded mb-4 group-hover:scale-105 transition-transform duration-200"
+        <div 
+          className="w-full h-40 bg-center bg-contain bg-no-repeat rounded mb-4 group-hover:scale-105 transition-transform duration-200"
+          style={{ backgroundImage: `url(${offer.image_url})` }}
         />
         <h3
           className={`text-xl font-bold mb-2 text-center w-full ${
@@ -135,13 +134,10 @@ const OfferCard: React.FC<OfferCardProps> = ({
           <div className="space-y-6">
             {/* صورة العرض */}
             {offer.image_url && (
-              <div className="relative h-64 overflow-hidden rounded-lg">
-                <LazyImage
-                  src={offer.image_url}
-                  alt={offer.title_ar || offer.title_en || t("specialOffer")}
-                  className="w-full h-full object-cover"
-                />
-              </div>
+              <div 
+                className="relative h-64 bg-center bg-contain bg-no-repeat rounded-lg"
+                style={{ backgroundImage: `url(${offer.image_url})` }}
+              />
             )}
 
             {/* تفاصيل العرض */}
