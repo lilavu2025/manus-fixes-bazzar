@@ -98,7 +98,7 @@ const BannerCarousel: React.FC<BannerCarouselProps> = ({ banners }) => {
 
   return (
     <div 
-      className="relative w-full min-h-48 sm:min-h-64 md:min-h-80 lg:min-h-96 xl:min-h-[28rem] rounded-2xl overflow-hidden group select-none shadow-2xl border border-white/10"
+      className="relative w-full h-64 sm:h-80 md:h-96 lg:h-[30rem] rounded-2xl overflow-hidden group select-none shadow-2xl border border-white/10"
       {...swipeHandlers}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -252,67 +252,44 @@ const BannerCarousel: React.FC<BannerCarouselProps> = ({ banners }) => {
             />
           </div>
 
-          {/* Multi-layer gradient overlay for depth */}
-          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+          {/* Multi-layer gradient overlay for depth - أخف */}
+          <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-black/20 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
           
-          {/* Shimmer effect for premium feel */}
-          <div className="absolute inset-0 shimmer-effect opacity-30" />
-
-          {/* Content with enhanced animations */}
-          <div className={`absolute inset-0 flex items-center ${isRTL ? 'justify-end' : 'justify-start'} p-4 sm:p-6 md:p-8 lg:p-12`}>
-            <div className={`text-white max-w-xs sm:max-w-md lg:max-w-lg ${
+          {/* Content with minimal design */}
+          <div className={`absolute inset-0 flex items-end ${isRTL ? 'justify-end' : 'justify-start'} p-4 sm:p-6 md:p-8`}>
+            <div className={`text-white max-w-xs sm:max-w-md ${
               index === currentSlide 
                 ? (isRTL ? 'animate-slide-in-left' : 'animate-slide-in-right')
                 : 'opacity-0'
             }`}>
-              <div className="glass-effect rounded-2xl p-4 sm:p-6 lg:p-8 max-w-full backdrop-blur-md border border-white/20">
-                {/* Decorative elements */}
-                <div className="flex items-center gap-2 mb-3">
-                  <Sparkles className="w-5 h-5 text-yellow-400 animate-pulse" />
-                  <div className="h-px bg-gradient-to-r from-yellow-400 to-transparent flex-1" />
-                </div>
-
-                <h2 className="text-lg sm:text-xl md:text-2xl lg:text-4xl xl:text-5xl font-bold mb-3 sm:mb-4 leading-tight bg-gradient-to-r from-white to-gray-200 bg-clip-text text-transparent">
+              {/* تصميم مينيمال مع خلفية شفافة خفيفة */}
+              {/* <div className="bg-black/30 backdrop-blur-sm rounded-lg p-3 sm:p-4 space-y-2">
+                <h2 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold leading-tight">
                   {banner.title}
                 </h2>
-                <p className="text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl opacity-90 mb-4 sm:mb-6 leading-relaxed">
+                <p className="text-sm sm:text-base opacity-90 leading-relaxed">
                   {banner.subtitle}
                 </p>
                 
-                {/* Enhanced CTA button */}
-                <div className="flex items-center gap-3">
-                  {banner.link ? (
+                زر أنيق وصغير
+                {banner.link && (
+                  <div className="pt-2">
                     <a
                       href={banner.link}
                       target={banner.link.startsWith("http") ? "_blank" : undefined}
                       rel={banner.link.startsWith("http") ? "noopener" : undefined}
                     >
                       <Button
-                        size="lg"
-                        className="bg-gradient-to-r from-primary via-primary to-primary/90 hover:from-primary/90 hover:via-primary hover:to-primary text-white font-semibold px-6 sm:px-8 md:px-10 text-sm sm:text-base md:text-lg rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 group"
+                        size="sm"
+                        className="bg-primary hover:bg-primary/90 text-white font-medium px-4 py-2 text-sm rounded-md shadow-md hover:shadow-lg transition-all duration-300"
                       >
-                        <Zap className="w-4 h-4 mr-2 group-hover:animate-pulse" />
-                        {t("shopNow")}
+                        {t("shopNow")} →
                       </Button>
                     </a>
-                  ) : (
-                    <Button
-                      size="lg"
-                      className="bg-gradient-to-r from-gray-500 to-gray-600 text-white font-semibold px-6 sm:px-8 md:px-10 text-sm sm:text-base md:text-lg rounded-xl opacity-60"
-                      disabled
-                    >
-                      {t("shopNow")}
-                    </Button>
-                  )}
-                </div>
-
-                {/* Bottom decorative line */}
-                <div className="flex items-center gap-2 mt-4">
-                  <div className="h-px bg-gradient-to-r from-transparent to-white/30 flex-1" />
-                  <Sparkles className="w-4 h-4 text-yellow-400 animate-pulse" />
-                </div>
-              </div>
+                  </div>
+                )}
+              </div> */}
             </div>
           </div>
         </div>
