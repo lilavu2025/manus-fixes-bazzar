@@ -616,6 +616,23 @@ export async function disableUserById(
   }
 }
 
+// حذف مستخدم مباشرة (للاستخدام في التطوير فقط)
+// هذه الدالة تحذف المستخدم من profiles فقط ولا تؤرشف البيانات
+export async function deleteUserDirectly(userId: string): Promise<boolean> {
+  try {
+    // في وضع التطوير، نحذف المستخدم من جدول profiles مباشرة
+    const { error } = await supabase
+      .from("profiles")
+      .delete()
+      .eq("id", userId);
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error("Error deleting user directly:", error);
+    return false;
+  }
+}
+
 // تسجيل نشاط الأدمن على المستخدم
 export async function logUserActivity(
   adminId: string,

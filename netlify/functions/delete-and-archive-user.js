@@ -35,10 +35,23 @@ exports.handler = async function(event, context) {
     .select('*')
     .eq('id', userId)
     .single();
+  
+  // إذا لم يكن المستخدم موجود في profiles، حاول حذفه من auth فقط
   if (fetchError || !userData) {
+    console.log('User not found in profiles, attempting to delete from auth only');
+    
+    // محاولة حذف المستخدم من نظام المصادقة
+    const { error: authError } = await supabase.auth.admin.deleteUser(userId);
+    if (authError) {
+      return {
+        statusCode: 500,
+        body: JSON.stringify({ error: 'Auth delete error: ' + authError.message })
+      };
+    }
+    
     return {
-      statusCode: 404,
-      body: JSON.stringify({ error: 'User not found or fetch error' })
+      statusCode: 200,
+      body: JSON.stringify({ success: true, message: 'User deleted from auth only (was already deleted from profiles)' })
     };
   }
 
@@ -110,12 +123,13 @@ exports.handler = async function(event, context) {
     };
   }
 
-  // 4. حذف المستخدم من جدول profiles
+  // 4. حذف المستخدم من جدول profiles (إذا لم يكن محذوف مسبقاً)
   const { error: deleteError } = await supabase
     .from('profiles')
     .delete()
     .eq('id', userId);
-  if (deleteError) {
+  if (deleteError && deleteError.code !== 'PGRST116') {
+    // PGRST116 يعني "no rows found" وهذا طبيعي إذا كان المستخدم محذوف مسبقاً
     return {
       statusCode: 500,
       body: JSON.stringify({ error: 'Delete error: ' + deleteError.message })
@@ -136,6 +150,16 @@ exports.handler = async function(event, context) {
       // لا نريد إيقاف العملية إذا فشل تسجيل النشاط
       console.error('Error logging admin activity:', logError);
     }
+  }
+
+  // 6. التأكد من حذف المستخدم من auth.users أيضاً (cleanup إضافي)
+  try {
+    const { error: finalAuthError } = await supabase.auth.admin.deleteUser(userId);
+    if (finalAuthError) {
+      console.log('Final auth cleanup error (may be already deleted):', finalAuthError.message);
+    }
+  } catch (cleanupError) {
+    console.log('Auth cleanup attempt failed:', cleanupError);
   }
 
   return {
