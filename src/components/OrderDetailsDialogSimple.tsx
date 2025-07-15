@@ -10,6 +10,8 @@ import FormattedDate from "@/components/ui/FormattedDate";
 import { mapOrderFromDb } from "@/utils/orderUtils";
 import type { OrdersWithDetails } from "@/integrations/supabase/dataFetchers";
 import { decompressText } from "@/utils/commonUtils";
+import { getDisplayPrice } from "@/utils/priceUtils";
+import { useAuth } from "@/contexts/useAuth";
 
 interface OrderDetailsDialogProps {
   order: OrdersWithDetails | null;
@@ -23,6 +25,7 @@ const OrderDetailsDialog: React.FC<OrderDetailsDialogProps> = ({
   onClose,
 }) => {
   const { t, language } = useLanguage();
+  const { profile } = useAuth();
 
   // دالة فك الضغط لملاحظات الطلب
   function safeDecompressNotes(notes: string) {
@@ -191,10 +194,9 @@ const OrderDetailsDialog: React.FC<OrderDetailsDialogProps> = ({
                         <div className="flex flex-col sm:flex-row gap-4">
                           {/* صورة المنتج */}
                           <div className="flex-shrink-0 mx-auto sm:mx-0">
-                            <img
-                              src={item.products?.image}
-                              alt={item.products?.name_ar || item.products?.name_en || ""}
-                              className="w-24 h-24 object-cover rounded-lg border shadow-sm"
+                            <div 
+                              className="w-24 h-24 bg-center bg-contain bg-no-repeat rounded-lg border shadow-sm"
+                              style={{ backgroundImage: `url(${item.products?.image})` }}
                             />
                           </div>
                           
@@ -223,13 +225,67 @@ const OrderDetailsDialog: React.FC<OrderDetailsDialogProps> = ({
                               <div className="text-center sm:text-right">
                                 <span className="block font-medium text-gray-700 mb-1">{t("unitPrice")}</span>
                                 <span className="font-semibold text-gray-800">
-                                  {item.price.toFixed(2)} {t("currency")}
+                                  {getDisplayPrice(
+                                    {
+                                      id: item.products?.id || "",
+                                      name: item.products?.name_ar || "",
+                                      nameEn: item.products?.name_en || "",
+                                      nameHe: item.products?.name_he || "",
+                                      description: item.products?.description_ar || "",
+                                      descriptionEn: item.products?.description_en || "",
+                                      descriptionHe: item.products?.description_he || "",
+                                      price: item.price,
+                                      originalPrice: item.products?.original_price,
+                                      wholesalePrice: item.products?.wholesale_price,
+                                      image: item.products?.image || "",
+                                      images: item.products?.images || [],
+                                      category: "", // fallback
+                                      inStock: typeof item.products?.in_stock === "boolean" ? item.products.in_stock : true,
+                                      rating: item.products?.rating || 0,
+                                      reviews: 0, // fallback
+                                      discount: item.products?.discount,
+                                      featured: item.products?.featured,
+                                      tags: item.products?.tags || [],
+                                      stock_quantity: item.products?.stock_quantity,
+                                      active: item.products?.active,
+                                      created_at: item.products?.created_at,
+                                    },
+                                    profile?.user_type,
+                                  ).toFixed(2)} {t("currency")}
                                 </span>
                               </div>
                               <div className="text-center sm:text-right">
                                 <span className="block font-medium text-gray-700 mb-1">{t("total")}</span>
                                 <span className="font-bold text-primary text-lg">
-                                  {(item.price * item.quantity).toFixed(2)} {t("currency")}
+                                  {(
+                                    getDisplayPrice(
+                                      {
+                                        id: item.products?.id || "",
+                                        name: item.products?.name_ar || "",
+                                        nameEn: item.products?.name_en || "",
+                                        nameHe: item.products?.name_he || "",
+                                        description: item.products?.description_ar || "",
+                                        descriptionEn: item.products?.description_en || "",
+                                        descriptionHe: item.products?.description_he || "",
+                                        price: item.price,
+                                        originalPrice: item.products?.original_price,
+                                        wholesalePrice: item.products?.wholesale_price,
+                                        image: item.products?.image || "",
+                                        images: item.products?.images || [],
+                                        category: "", // fallback
+                                        inStock: typeof item.products?.in_stock === "boolean" ? item.products.in_stock : true,
+                                        rating: item.products?.rating || 0,
+                                        reviews: 0, // fallback
+                                        discount: item.products?.discount,
+                                        featured: item.products?.featured,
+                                        tags: item.products?.tags || [],
+                                        stock_quantity: item.products?.stock_quantity,
+                                        active: item.products?.active,
+                                        created_at: item.products?.created_at,
+                                      },
+                                      profile?.user_type,
+                                    ) * item.quantity
+                                  ).toFixed(2)} {t("currency")}
                                 </span>
                               </div>
                               <div className="text-center sm:text-right">

@@ -167,8 +167,66 @@ const OrderDetailsPrint: React.FC<OrderDetailsPrintProps> = ({ order, t, profile
                         </div>
                       </td>
                       <td className="p-2 text-center">{item.quantity}</td>
-                      <td className="p-2 text-center">{getDisplayPrice(([] as Product[]).find((p) => p.id === item.product_id) as Product, profile?.user_type) || item.price} ₪</td>
-                      <td className="p-2 text-center font-semibold">{(item.price * item.quantity).toFixed(2)} ₪</td>
+                      <td className="p-2 text-center">
+                        {getDisplayPrice(
+                          {
+                            id: product?.id || "",
+                            name: product?.name_ar || "",
+                            nameEn: product?.name_en || "",
+                            nameHe: product?.name_he || "",
+                            description: product?.description_ar || "",
+                            descriptionEn: product?.description_en || "",
+                            descriptionHe: product?.description_he || "",
+                            price: item.price,
+                            originalPrice: product?.original_price,
+                            wholesalePrice: product?.wholesale_price,
+                            image: product?.image || "",
+                            images: product?.images || [],
+                            category: "", // fallback
+                            inStock: typeof product?.in_stock === "boolean" ? product.in_stock : true,
+                            rating: product?.rating || 0,
+                            reviews: 0, // fallback
+                            discount: product?.discount,
+                            featured: product?.featured,
+                            tags: product?.tags || [],
+                            stock_quantity: product?.stock_quantity,
+                            active: product?.active,
+                            created_at: product?.created_at,
+                          },
+                          profile?.user_type,
+                        ).toFixed(2)} ₪
+                      </td>
+                      <td className="p-2 text-center font-semibold">
+                        {(
+                          getDisplayPrice(
+                            {
+                              id: product?.id || "",
+                              name: product?.name_ar || "",
+                              nameEn: product?.name_en || "",
+                              nameHe: product?.name_he || "",
+                              description: product?.description_ar || "",
+                              descriptionEn: product?.description_en || "",
+                              descriptionHe: product?.description_he || "",
+                              price: item.price,
+                              originalPrice: product?.original_price,
+                              wholesalePrice: product?.wholesale_price,
+                              image: product?.image || "",
+                              images: product?.images || [],
+                              category: "", // fallback
+                              inStock: typeof product?.in_stock === "boolean" ? product.in_stock : true,
+                              rating: product?.rating || 0,
+                              reviews: 0, // fallback
+                              discount: product?.discount,
+                              featured: product?.featured,
+                              tags: product?.tags || [],
+                              stock_quantity: product?.stock_quantity,
+                              active: product?.active,
+                              created_at: product?.created_at,
+                            },
+                            profile?.user_type,
+                          ) * item.quantity
+                        ).toFixed(2)} ₪
+                      </td>
                     </tr>
                   );
                 })

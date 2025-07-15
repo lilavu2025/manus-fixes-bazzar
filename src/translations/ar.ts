@@ -407,6 +407,7 @@ export const arTranslations = {
   errorLoadingData: "خطأ في تحميل البيانات",
   searchCategories: "ابحث في الفئات...",
   noCategoriesAvailable: "لا توجد فئات متاحة",
+  noItemsAvailable: "لا توجد عناصر متاحة",
   showing: "يتم عرض",
 
   // Product Actions

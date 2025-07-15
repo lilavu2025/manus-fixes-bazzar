@@ -267,6 +267,7 @@ const AddProductDialog: React.FC<AddProductDialogProps> = ({
                     he: "הכנס תיאור מוצר בעברית",
                   }}
                   type="textarea"
+                  required={false}
                 />
               </div>
 

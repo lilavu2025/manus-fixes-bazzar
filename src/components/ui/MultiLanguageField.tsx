@@ -24,6 +24,7 @@ interface MultiLanguageFieldProps {
   };
   rows?: number;
   className?: string;
+  required?: boolean; // إضافة خاصية للتحكم في كون الحقل مطلوب أم لا
 }
 
 const MultiLanguageField: React.FC<MultiLanguageFieldProps> = ({
@@ -34,7 +35,8 @@ const MultiLanguageField: React.FC<MultiLanguageFieldProps> = ({
   onChange,
   placeholder,
   rows = 3,
-  className = ''
+  className = '',
+  required = false // قيمة افتراضية
 }) => {
   const { language: currentLang } = useLanguage();
 
@@ -44,12 +46,12 @@ const MultiLanguageField: React.FC<MultiLanguageFieldProps> = ({
   // إذا كان هناك لغة واحدة فقط، لا نعرض التبويبات
   if (visibleLanguages.length === 1) {
     const lang = visibleLanguages[0];
-    const isRequired = isLanguageFieldRequired(lang);
+    const isFieldRequired = required && isLanguageFieldRequired(lang);
     
     return (
       <div className={className}>
         <Label htmlFor={`${fieldName}_${lang}`}>
-          {label} {isRequired && <span className="text-red-500">*</span>}
+          {label} {isFieldRequired && <span className="text-red-500">*</span>}
         </Label>
         {type === 'textarea' ? (
           <Textarea
@@ -58,7 +60,7 @@ const MultiLanguageField: React.FC<MultiLanguageFieldProps> = ({
             onChange={(e) => onChange(lang, e.target.value)}
             placeholder={placeholder?.[lang]}
             rows={rows}
-            required={isRequired}
+            required={isFieldRequired}
           />
         ) : (
           <Input
@@ -66,7 +68,7 @@ const MultiLanguageField: React.FC<MultiLanguageFieldProps> = ({
             value={values[lang] || ''}
             onChange={(e) => onChange(lang, e.target.value)}
             placeholder={placeholder?.[lang]}
-            required={isRequired}
+            required={isFieldRequired}
           />
         )}
       </div>
@@ -78,13 +80,13 @@ const MultiLanguageField: React.FC<MultiLanguageFieldProps> = ({
     <div className={className}>
       <div className="space-y-4">
         {visibleLanguages.map((lang) => {
-          const isRequired = isLanguageFieldRequired(lang);
+          const isFieldRequired = required && isLanguageFieldRequired(lang);
           const langName = getLanguageName(lang, currentLang);
           
           return (
             <div key={lang}>
               <Label htmlFor={`${fieldName}_${lang}`} className="text-sm">
-                {langName} {isRequired && <span className="text-red-500">*</span>}
+                {langName} {isFieldRequired && <span className="text-red-500">*</span>}
               </Label>
               {type === 'textarea' ? (
                 <Textarea
@@ -93,7 +95,7 @@ const MultiLanguageField: React.FC<MultiLanguageFieldProps> = ({
                   onChange={(e) => onChange(lang, e.target.value)}
                   placeholder={placeholder?.[lang]}
                   rows={rows}
-                  required={isRequired}
+                  required={isFieldRequired}
                 />
               ) : (
                 <Input
@@ -101,7 +103,7 @@ const MultiLanguageField: React.FC<MultiLanguageFieldProps> = ({
                   value={values[lang] || ''}
                   onChange={(e) => onChange(lang, e.target.value)}
                   placeholder={placeholder?.[lang]}
-                  required={isRequired}
+                  required={isFieldRequired}
                 />
               )}
             </div>

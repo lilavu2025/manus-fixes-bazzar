@@ -6,6 +6,7 @@
   "description": "موقع تجارة إلكترونية متعدد اللغات مع دعم كامل للعربية والعبرية والإنجليزية",
   "scripts": {
     "dev": "tsx scripts/dev-default.ts",
+    "dev:netlify": "tsx scripts/dev-netlify.ts",
     "dev:client": "tsx scripts/dev-client.ts",
     "build": "npx tsx scripts/build-default.ts",
     "build:dev": "vite build --mode development",
@@ -131,6 +132,7 @@
     "eslint-plugin-react-refresh": "^0.4.9",
     "globals": "^15.9.0",
     "lovable-tagger": "^1.1.7",
+    "netlify-cli": "^22.2.2",
     "postcss": "^8.4.47",
     "rollup-plugin-visualizer": "^6.0.3",
     "tailwindcss": "^3.4.11",

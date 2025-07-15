@@ -425,11 +425,12 @@ const AdminCategories: React.FC = () => {
                                   {idx + 1}
                                 </TableCell>
                                 <TableCell>
-                                  <img
-                                    src={category.image}
-                                    alt={category.name}
-                                    className="w-12 h-12 object-cover rounded-lg mx-auto border"
-                                  />
+                                  <div className="w-12 h-12 rounded-lg mx-auto border">
+                                    <div
+                                      className="w-full h-full bg-center bg-contain bg-no-repeat rounded-lg"
+                                      style={{ backgroundImage: `url(${category.image})` }}
+                                    />
+                                  </div>
                                 </TableCell>
                                 <TableCell className="font-medium">
                                   {(() => {

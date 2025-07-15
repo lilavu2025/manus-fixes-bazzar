@@ -113,11 +113,9 @@ const PaginatedProductsTable: React.FC<PaginatedProductsTableProps> = ({
               {/* Product Image */}
               <div className="w-20 h-20 flex-shrink-0 flex items-center justify-center bg-gray-50 rounded-lg border">
                 {product.image ? (
-                  <img
-                    src={product.image}
-                    alt={getProductName(product)}
-                    className="w-full h-full object-cover rounded-lg"
-                    loading="lazy"
+                  <div
+                    className="w-full h-full bg-center bg-contain bg-no-repeat rounded-lg"
+                    style={{ backgroundImage: `url(${product.image})` }}
                   />
                 ) : (
                   <span className="text-xs text-gray-400">{t("noImage")}</span>

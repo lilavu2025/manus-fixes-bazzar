@@ -116,10 +116,9 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
                       key={item.id}
                       className={`flex ${isRTL ? "flex-row-reverse" : "flex-row"} gap-4 p-4 bg-gray-50 rounded-lg shadow-md animate-fade-in relative`}
                     >
-                      <img
-                        src={item.product.image}
-                        alt={item.product.name}
-                        className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-lg flex-shrink-0 border border-gray-200"
+                      <div 
+                        className="w-16 h-16 sm:w-20 sm:h-20 bg-center bg-contain bg-no-repeat rounded-lg flex-shrink-0 border border-gray-200"
+                        style={{ backgroundImage: `url(${item.product.image})` }}
                       />
 
                       <div className={`flex-1 flex flex-col justify-between ${isRTL ? "items-end" : "items-start"}`}>
