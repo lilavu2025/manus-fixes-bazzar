@@ -1251,4 +1251,19 @@ export const arTranslations = {
   paginationResults: "نتيجة",
   first: "الأول",
   last: "الأخير",
+  
+  // User Activity Labels
+  unknownUser: "مستخدم غير معروف",
+  unknownAdmin: "مدير غير معروف", 
+  emailNotAvailable: "البريد غير متوفر",
+  userUpdate: "تحديث بيانات المستخدم",
+  userDelete: "حذف المستخدم", 
+  userDisable: "تعطيل المستخدم",
+  userEnable: "تفعيل المستخدم",
+  createUser: "إنشاء مستخدم جديد",
+  userLogin: "دخول المستخدم",
+  userLogout: "خروج المستخدم",
+  profileUpdate: "تحديث الملف الشخصي",
+  userTypeChange: "تغيير نوع المستخدم",
+  userUnavailable: "مستخدم غير متوفر",
 };

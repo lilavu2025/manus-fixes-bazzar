@@ -206,7 +206,15 @@ const ActivityLogDialog: React.FC<ActivityLogDialogProps> = ({
     enable: t("enableUser") || "تفعيل المستخدم", 
     delete: t("deleteUser") || "حذف المستخدم",
     restore: t("restoreUser") || "استعادة المستخدم",
-    update: t("updateUser") || "تحديث المستخدم",
+    update: t("updateUser") || "تحديث بيانات المستخدم",
+    create: t("createUser") || "إنشاء مستخدم جديد",
+    password_reset: t("passwordReset") || "إعادة تعيين كلمة المرور",
+    stock_increased: t("stockIncreased") || "زيادة المخزون",
+    stock_decreased: t("stockDecreased") || "نقص المخزون",
+    login: t("userLogin") || "دخول المستخدم",
+    logout: t("userLogout") || "خروج المستخدم",
+    profile_update: t("profileUpdate") || "تحديث الملف الشخصي",
+    type_change: t("userTypeChange") || "تغيير نوع المستخدم",
   };
 
   const getActionIcon = (action: string) => {
@@ -331,17 +339,20 @@ const ActivityLogDialog: React.FC<ActivityLogDialogProps> = ({
                   <User className="h-4 w-4 text-blue-600" />
                   <div>
                     <p className="font-medium text-blue-900">
-                      {adminProfile?.full_name || log.admin_id}
+                      {adminProfile?.full_name || 
+                       (log.details?.admin_name) || 
+                       (log.details?.admin_full_name) ||
+                       t("unknownAdmin") || "مدير غير معروف"}
                     </p>
                     <p className="text-xs text-blue-600">{t("fullName") || "الاسم الكامل"}</p>
                   </div>
                 </div>
                 
-                {adminProfile?.email && (
+                {(adminProfile?.email || log.details?.admin_email) && (
                   <div className="flex items-center gap-3">
                     <Mail className="h-4 w-4 text-blue-600" />
                     <div>
-                      <p className="text-sm text-blue-800">{adminProfile.email}</p>
+                      <p className="text-sm text-blue-800">{adminProfile?.email || log.details?.admin_email}</p>
                       <p className="text-xs text-blue-600">{t("email") || "البريد الإلكتروني"}</p>
                     </div>
                   </div>
@@ -384,18 +395,20 @@ const ActivityLogDialog: React.FC<ActivityLogDialogProps> = ({
                     <p className="font-medium text-gray-900">
                       {userProfile?.full_name || 
                        (log.details?.full_name) || 
-                       t("userUnavailable") || "مستخدم غير متوفر"}
+                       (log.details?.user_name) || 
+                       (log.details?.deletedUserName) ||
+                       t("unknownUser") || "مستخدم غير معروف"}
                     </p>
                     <p className="text-xs text-gray-600">{t("fullName") || "الاسم الكامل"}</p>
                   </div>
                 </div>
                 
-                {(userProfile?.email || log.details?.email) && (
+                {(userProfile?.email || log.details?.email || log.details?.user_email) && (
                   <div className="flex items-center gap-3">
                     <Mail className="h-4 w-4 text-gray-600" />
                     <div>
                       <p className="text-sm text-gray-800">
-                        {userProfile?.email || log.details?.email}
+                        {userProfile?.email || log.details?.email || log.details?.user_email}
                       </p>
                       <p className="text-xs text-gray-600">{t("email") || "البريد الإلكتروني"}</p>
                     </div>
