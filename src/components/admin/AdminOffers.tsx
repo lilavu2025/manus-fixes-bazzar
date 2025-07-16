@@ -65,7 +65,9 @@ const AdminOffers: React.FC = () => {
       description_en: "",
       description_ar: "",
       description_he: "",
+      discount_type: "percentage" as "percentage" | "fixed",
       discount_percent: "",
+      discount_amount: "",
       image_url: "",
       start_date: "",
       end_date: "",
@@ -142,34 +144,22 @@ const AdminOffers: React.FC = () => {
       return true;
     });
 
-    if (!hasRequiredTitles || !form.discount_percent) {
+    if (!hasRequiredTitles) {
       toast.error(t("pleaseCompleteRequiredFields"));
       return;
     }
 
-    // التحقق من وجود صورة
-    if (!form.image_url || form.image_url.trim().length === 0) {
-      toast.error(t("imageRequired") || "يجب إضافة صورة للعرض");
-      return;
-    }
-
-    // التحقق من التواريخ المطلوبة
-    if (!form.start_date || form.start_date.trim().length === 0) {
-      toast.error(t("startDateRequired") || "يجب تحديد تاريخ البداية");
-      return;
-    }
-
-    if (!form.end_date || form.end_date.trim().length === 0) {
-      toast.error(t("endDateRequired") || "يجب تحديد تاريخ النهاية");
-      return;
-    }
-
-    if (
-      Number(form.discount_percent) <= 0 ||
-      Number(form.discount_percent) > 100
-    ) {
-      toast.error(t("invalidDiscountPercent"));
-      return;
+    // التحقق من وجود قيمة الخصم حسب النوع المختار
+    if (form.discount_type === "percentage") {
+      if (!form.discount_percent || Number(form.discount_percent) <= 0 || Number(form.discount_percent) > 100) {
+        toast.error(t("invalidDiscountPercent") || "نسبة الخصم يجب أن تكون بين 1 و 100");
+        return;
+      }
+    } else if (form.discount_type === "fixed") {
+      if (!form.discount_amount || Number(form.discount_amount) <= 0) {
+        toast.error(t("invalidDiscountAmount") || "مبلغ الخصم يجب أن يكون أكبر من 0");
+        return;
+      }
     }
 
     if (
@@ -189,7 +179,9 @@ const AdminOffers: React.FC = () => {
     const endDate = form.end_date ? new Date(form.end_date).toISOString() : null;
     
     const offerData: any = {
-      discount_percentage: Number(form.discount_percent),
+      discount_type: form.discount_type,
+      discount_percentage: form.discount_type === "percentage" ? Number(form.discount_percent) : null,
+      discount_amount: form.discount_type === "fixed" ? Number(form.discount_amount) : null,
       image_url: form.image_url,
       start_date: startDate,
       end_date: endDate,
@@ -259,9 +251,22 @@ const AdminOffers: React.FC = () => {
       return true;
     });
 
-    if (!hasRequiredTitles || !form.discount_percent) {
+    if (!hasRequiredTitles) {
       toast.error(t("pleaseCompleteRequiredFields"));
       return;
+    }
+
+    // التحقق من وجود قيمة الخصم حسب النوع المختار
+    if (form.discount_type === "percentage") {
+      if (!form.discount_percent || Number(form.discount_percent) <= 0 || Number(form.discount_percent) > 100) {
+        toast.error(t("invalidDiscountPercent") || "نسبة الخصم يجب أن تكون بين 1 و 100");
+        return;
+      }
+    } else if (form.discount_type === "fixed") {
+      if (!form.discount_amount || Number(form.discount_amount) <= 0) {
+        toast.error(t("invalidDiscountAmount") || "مبلغ الخصم يجب أن يكون أكبر من 0");
+        return;
+      }
     }
     
     // التحقق من وجود صورة
@@ -299,7 +304,9 @@ const AdminOffers: React.FC = () => {
     // إعداد بيانات التحديث بناءً على اللغات المتاحة
     const availableLangs = getAvailableLanguages();
     const updateData: any = {
-      discount_percentage: Number(form.discount_percent),
+      discount_type: form.discount_type,
+      discount_percentage: form.discount_type === "percentage" ? Number(form.discount_percent) : null,
+      discount_amount: form.discount_type === "fixed" ? Number(form.discount_amount) : null,
       image_url: form.image_url || null,
       start_date: form.start_date,
       end_date: form.end_date,
@@ -344,7 +351,9 @@ const AdminOffers: React.FC = () => {
         description_en: selectedOffer.description_en || "",
         description_ar: selectedOffer.description_ar || "",
         description_he: selectedOffer.description_he || "",
+        discount_type: selectedOffer.discount_type || "percentage",
         discount_percent: String(selectedOffer.discount_percentage || ""),
+        discount_amount: String(selectedOffer.discount_amount || ""),
         image_url: selectedOffer.image_url || "",
         start_date: selectedOffer.start_date
           ? selectedOffer.start_date.split("T")[0]
@@ -520,9 +529,11 @@ const AdminOffers: React.FC = () => {
                     {/* نسبة الخصم */}
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center space-x-2">
-                        <Percent className="h-4 w-4 text-primary" />
                         <span className="text-lg font-bold text-primary">
-                          {offer.discount_percentage} {t("discount")}
+                          {offer.discount_type === "percentage" 
+                            ? `${offer.discount_percentage}% ${t("discount")}` 
+                            : `${offer.discount_amount} ${t("currency") || "شيكل"} ${t("discount")}`
+                          }
                         </span>
                       </div>
                     </div>
@@ -679,23 +690,69 @@ const AdminOffers: React.FC = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* اختيار نوع الخصم */}
                   <div>
                     <Label className="text-sm font-medium text-purple-700 mb-2 block">
-                      {t("discountPercent") || "نسبة الخصم"} <span className="text-red-500">*</span>
+                      {t("discountType") || "نوع الخصم"} <span className="text-red-500">*</span>
                     </Label>
-                    <Input
-                      name="discount_percent"
-                      type="number"
-                      min="1"
-                      max="100"
-                      value={form.discount_percent}
-                      onChange={handleInput}
-                      placeholder="0"
-                      required
-                      className="border-purple-200 focus:border-purple-500"
-                    />
+                    <select
+                      name="discount_type"
+                      value={form.discount_type}
+                      onChange={(e) => setForm(prev => ({ 
+                        ...prev, 
+                        discount_type: e.target.value as "percentage" | "fixed",
+                        // إعادة تعيين القيم عند التغيير
+                        discount_percent: "",
+                        discount_amount: ""
+                      }))}
+                      className="w-full p-2 border border-purple-200 rounded-md focus:border-purple-500 focus:outline-none"
+                    >
+                      <option value="percentage">{t("percentageDiscount") || "خصم بالنسبة المئوية"}</option>
+                      <option value="fixed">{t("fixedAmountDiscount") || "خصم بمبلغ ثابت"}</option>
+                    </select>
                   </div>
+
+                  {/* حقل نسبة الخصم - يظهر فقط عند اختيار percentage */}
+                  {form.discount_type === "percentage" && (
+                    <div>
+                      <Label className="text-sm font-medium text-purple-700 mb-2 block">
+                        {t("discountPercent") || "نسبة الخصم"} <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        name="discount_percent"
+                        type="number"
+                        min="1"
+                        max="100"
+                        value={form.discount_percent}
+                        onChange={handleInput}
+                        placeholder="0"
+                        required
+                        className="border-purple-200 focus:border-purple-500"
+                      />
+                    </div>
+                  )}
+
+                  {/* حقل مبلغ الخصم - يظهر فقط عند اختيار fixed */}
+                  {form.discount_type === "fixed" && (
+                    <div>
+                      <Label className="text-sm font-medium text-purple-700 mb-2 block">
+                        {t("discountAmount") || "مبلغ الخصم"} <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        name="discount_amount"
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        value={form.discount_amount}
+                        onChange={handleInput}
+                        placeholder="0.00"
+                        required
+                        className="border-purple-200 focus:border-purple-500"
+                      />
+                    </div>
+                  )}
+
                   <div>
                     <Label className="text-sm font-medium text-purple-700 mb-2 block">
                       {t("image") || "الصورة"} <span className="text-red-500">*</span>
@@ -858,23 +915,69 @@ const AdminOffers: React.FC = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* اختيار نوع الخصم */}
                   <div>
                     <Label className="text-sm font-medium text-purple-700 mb-2 block">
-                      {t("discountPercent") || "نسبة الخصم"} <span className="text-red-500">*</span>
+                      {t("discountType") || "نوع الخصم"} <span className="text-red-500">*</span>
                     </Label>
-                    <Input
-                      name="discount_percent"
-                      type="number"
-                      min="1"
-                      max="100"
-                      value={form.discount_percent}
-                      onChange={handleInput}
-                      placeholder="0"
-                      required
-                      className="border-purple-200 focus:border-purple-500"
-                    />
+                    <select
+                      name="discount_type"
+                      value={form.discount_type}
+                      onChange={(e) => setForm(prev => ({ 
+                        ...prev, 
+                        discount_type: e.target.value as "percentage" | "fixed",
+                        // إعادة تعيين القيم عند التغيير
+                        discount_percent: "",
+                        discount_amount: ""
+                      }))}
+                      className="w-full p-2 border border-purple-200 rounded-md focus:border-purple-500 focus:outline-none"
+                    >
+                      <option value="percentage">{t("percentageDiscount") || "خصم بالنسبة المئوية"}</option>
+                      <option value="fixed">{t("fixedAmountDiscount") || "خصم بمبلغ ثابت"}</option>
+                    </select>
                   </div>
+
+                  {/* حقل نسبة الخصم - يظهر فقط عند اختيار percentage */}
+                  {form.discount_type === "percentage" && (
+                    <div>
+                      <Label className="text-sm font-medium text-purple-700 mb-2 block">
+                        {t("discountPercent") || "نسبة الخصم"} <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        name="discount_percent"
+                        type="number"
+                        min="1"
+                        max="100"
+                        value={form.discount_percent}
+                        onChange={handleInput}
+                        placeholder="0"
+                        required
+                        className="border-purple-200 focus:border-purple-500"
+                      />
+                    </div>
+                  )}
+
+                  {/* حقل مبلغ الخصم - يظهر فقط عند اختيار fixed */}
+                  {form.discount_type === "fixed" && (
+                    <div>
+                      <Label className="text-sm font-medium text-purple-700 mb-2 block">
+                        {t("discountAmount") || "مبلغ الخصم"} <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        name="discount_amount"
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        value={form.discount_amount}
+                        onChange={handleInput}
+                        placeholder="0.00"
+                        required
+                        className="border-purple-200 focus:border-purple-500"
+                      />
+                    </div>
+                  )}
+
                   <div>
                     <Label className="text-sm font-medium text-purple-700 mb-2 block">
                       {t("image") || "الصورة"}
