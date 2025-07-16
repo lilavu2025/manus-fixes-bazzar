@@ -127,7 +127,18 @@ const AdminOffers: React.FC = () => {
     setGetProductSearch(productName);
     const selectedProduct = productsData.find(p => getProductDisplayName(p) === productName);
     if (selectedProduct) {
-      setForm(prev => ({ ...prev, get_product_id: selectedProduct.id }));
+      setForm(prev => {
+        // تحديث صورة العرض تلقائياً بصورة المنتج المجاني إذا كان النوع "اشتري واحصل"
+        const shouldUpdateImage = prev.offer_type === "buy_get" && 
+          selectedProduct.image && selectedProduct.image.trim() !== "";
+        
+        return {
+          ...prev, 
+          get_product_id: selectedProduct.id,
+          // تحديث صورة العرض تلقائياً بصورة المنتج المجاني
+          image_url: shouldUpdateImage ? selectedProduct.image : prev.image_url
+        };
+      });
     } else {
       setForm(prev => ({ ...prev, get_product_id: "" }));
     }
@@ -887,7 +898,9 @@ const AdminOffers: React.FC = () => {
                             linked_product_id: "",
                             get_product_id: "",
                             get_discount_type: "free",
-                            get_discount_value: ""
+                            get_discount_value: "",
+                            // إعادة تعيين الصورة عند التغيير إلى نوع خصم عادي
+                            ...(newOfferType === "discount" && { image_url: "" })
                           })
                         }));
                         // إعادة تعيين أسماء المنتجات عند التغيير
@@ -1018,7 +1031,7 @@ const AdminOffers: React.FC = () => {
                             min="1"
                             value={form.buy_quantity}
                             onChange={handleInput}
-                            placeholder="1"
+                            placeholder={t("buyQuantity") || "الكمية المطلوبة"} 
                             required
                             className="border-purple-200 focus:border-purple-500"
                           />
@@ -1280,7 +1293,9 @@ const AdminOffers: React.FC = () => {
                             linked_product_id: "",
                             get_product_id: "",
                             get_discount_type: "free",
-                            get_discount_value: ""
+                            get_discount_value: "",
+                            // إعادة تعيين الصورة عند التغيير إلى نوع خصم عادي
+                            ...(newOfferType === "discount" && { image_url: "" })
                           })
                         }));
                         // إعادة تعيين أسماء المنتجات عند التغيير
@@ -1411,7 +1426,7 @@ const AdminOffers: React.FC = () => {
                             min="1"
                             value={form.buy_quantity}
                             onChange={handleInput}
-                            placeholder="1"
+                            placeholder={t("buyQuantity") || "الكمية المطلوبة"} 
                             required
                             className="border-purple-200 focus:border-purple-500"
                           />
