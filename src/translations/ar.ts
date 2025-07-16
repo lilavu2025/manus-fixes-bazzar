@@ -1270,4 +1270,18 @@ export const arTranslations = {
   profileUpdate: "تحديث الملف الشخصي",
   userTypeChange: "تغيير نوع المستخدم",
   userUnavailable: "مستخدم غير متوفر",
+
+  offerType: "نوع العرض",
+  regularDiscount: "خصم عادي",
+  buyGetOffer: "اشترِ واحصل على عرض",
+  linkedProduct: "منتج مرتبط",
+  buyQuantity : "اشترِ كمية",
+  getProduct: "احصل على المنتج",
+  getDiscountType: "احصل على نوع الخصم",
+  discountPercentage: "نسبة الخصم",
+  fixedDiscount: "خصم ثابت",
+  getDiscount: "احصل على خصم",
+  getFree: "احصل على منتج مجاني",
+  buy: "اشترِ",
+
 };

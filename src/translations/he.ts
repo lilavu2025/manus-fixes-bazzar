@@ -1252,4 +1252,18 @@ export const heTranslations = {
   paginationResults: "תוצאות",
   first: "ראשון",
   last: "אחרון",
+
+  offerType: "סוג מבצע",
+  regularDiscount: "הנחה רגילה",
+  buyGetOffer: "קנה וקבל",
+  linkedProduct: "מוצר מקושר",
+  buyQuantity : "קנה כמות",
+  getProduct: "קבל מוצר",
+  getDiscountType: "קבל סוג הנחה",
+  discountPercentage: "אחוז הנחה",
+  fixedDiscount: "הנחה קבועה",
+  getDiscount: "קבל הנחה",
+  getFree: "קבל מוצר חינם",
+  buy: "קנה",
+
 };

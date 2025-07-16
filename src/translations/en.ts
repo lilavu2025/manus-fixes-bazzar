@@ -1273,4 +1273,18 @@ export const enTranslations = {
   paginationResults: "results",
   first: "First",
   last: "Last",
+
+  offerType: "Offer Type",
+  regularDiscount: "Regular Discount",
+  buyGetOffer: "Buy Get Offer",
+  linkedProduct: "Linked Product",
+  buyQuantity : "Buy Quantity",
+  getProduct: "Get Product",
+  getDiscountType: "Get Discount Type",
+  discountPercentage: "Discount Percentage",
+  fixedDiscount: "Fixed Discount",
+  getDiscount: "Get Discount",
+  getFree: "Get Free Product",
+  buy: "Buy",
+
 };
