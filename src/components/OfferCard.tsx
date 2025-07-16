@@ -45,7 +45,7 @@ const OfferCard: React.FC<OfferCardProps> = ({
       description: offer.description_ar || "",
       descriptionEn: offer.description_en || "",
       descriptionHe: offer.description_he || "",
-      price: offer.discount_percent || 0,
+      price: offer.discount_percentage || 0,
       originalPrice: undefined,
       wholesalePrice: undefined,
       image: offer.image_url,
@@ -54,7 +54,7 @@ const OfferCard: React.FC<OfferCardProps> = ({
       inStock: true,
       rating: 0,
       reviews: 0,
-      discount: offer.discount_percent,
+      discount: offer.discount_percentage,
       featured: false,
       tags: [],
     };
@@ -99,7 +99,7 @@ const OfferCard: React.FC<OfferCardProps> = ({
         </p>
         <div className="flex items-center gap-2 mb-2">
           <span className="text-lg font-bold text-primary">
-            {t("discount")}: {offer.discount_percent}%
+            {t("discount")}: {offer.discount_percentage}%
           </span>
         </div>
         <div className="text-sm text-gray-500 mb-4">
@@ -145,7 +145,7 @@ const OfferCard: React.FC<OfferCardProps> = ({
               <div className="flex items-center justify-center gap-2">
                 <Percent className="h-6 w-6 text-primary" />
                 <span className="text-2xl font-bold text-primary">
-                  {offer.discount_percent} {t("discount")}
+                  {offer.discount_percentage} {t("discount")}
                 </span>
               </div>
 
