@@ -633,7 +633,7 @@ export async function deleteUserDirectly(userId: string): Promise<boolean> {
   }
 }
 
-// تسجيل نشاط الأدمن على المستخدم
+// تسجيل نشاط الأدمن على المستخدم مع حفظ معلومات الأدمن والمستخدم
 export async function logUserActivity(
   adminId: string,
   userId: string,
@@ -641,12 +641,47 @@ export async function logUserActivity(
   details: Record<string, unknown> = {},
 ): Promise<boolean> {
   try {
+    // جلب معلومات الأدمن
+    const { data: adminProfile } = await supabase
+      .from("profiles")
+      .select("full_name, email, phone")
+      .eq("id", adminId)
+      .single();
+
+    // جلب معلومات المستخدم المستهدف
+    let userProfile = null;
+    const { data: userFromProfiles } = await supabase
+      .from("profiles")
+      .select("full_name, email, phone")
+      .eq("id", userId)
+      .single();
+
+    if (userFromProfiles) {
+      userProfile = userFromProfiles;
+    } else {
+      // جرب من deleted_users
+      const { data: userFromDeleted } = await supabase
+        .from("deleted_users")
+        .select("full_name, email, phone")
+        .eq("user_id", userId)
+        .single();
+      if (userFromDeleted) {
+        userProfile = userFromDeleted;
+      }
+    }
+
     const { error } = await supabase.from("user_activity_log").insert([
       {
         admin_id: adminId,
         user_id: userId,
         action,
         details: details as any,
+        admin_name: adminProfile?.full_name || null,
+        admin_email: adminProfile?.email || null,
+        admin_phone: adminProfile?.phone || null,
+        target_user_name: userProfile?.full_name || null,
+        target_user_email: userProfile?.email || null,
+        target_user_phone: userProfile?.phone || null,
         created_at: new Date().toISOString(),
       },
     ]);
@@ -658,7 +693,7 @@ export async function logUserActivity(
   }
 }
 
-// تسجيل تحديث محدد مع القيم القديمة والجديدة
+// تسجيل تحديث محدد مع القيم القديمة والجديدة وحفظ معلومات الأدمن والمستخدم
 export async function logUserUpdateActivity(
   adminId: string,
   userId: string,
@@ -668,6 +703,35 @@ export async function logUserUpdateActivity(
   details: Record<string, unknown> = {},
 ): Promise<boolean> {
   try {
+    // جلب معلومات الأدمن
+    const { data: adminProfile } = await supabase
+      .from("profiles")
+      .select("full_name, email, phone")
+      .eq("id", adminId)
+      .single();
+
+    // جلب معلومات المستخدم المستهدف
+    let userProfile = null;
+    const { data: userFromProfiles } = await supabase
+      .from("profiles")
+      .select("full_name, email, phone")
+      .eq("id", userId)
+      .single();
+
+    if (userFromProfiles) {
+      userProfile = userFromProfiles;
+    } else {
+      // جرب من deleted_users
+      const { data: userFromDeleted } = await supabase
+        .from("deleted_users")
+        .select("full_name, email, phone")
+        .eq("user_id", userId)
+        .single();
+      if (userFromDeleted) {
+        userProfile = userFromDeleted;
+      }
+    }
+
     const { error } = await supabase.from("user_activity_log").insert([
       {
         admin_id: adminId,
@@ -677,6 +741,12 @@ export async function logUserUpdateActivity(
         old_value: oldValue?.toString() || null,
         new_value: newValue?.toString() || null,
         details: details as any,
+        admin_name: adminProfile?.full_name || null,
+        admin_email: adminProfile?.email || null,
+        admin_phone: adminProfile?.phone || null,
+        target_user_name: userProfile?.full_name || null,
+        target_user_email: userProfile?.email || null,
+        target_user_phone: userProfile?.phone || null,
         created_at: new Date().toISOString(),
       },
     ]);

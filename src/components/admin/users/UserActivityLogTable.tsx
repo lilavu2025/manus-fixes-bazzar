@@ -52,11 +52,19 @@ import {
 const UserActivityLogTable: React.FC = () => {
   const { t, language, isRTL: isRTLDirection } = useLanguage();
   const ACTION_LABELS: Record<string, string> = {
-    disable: t("disableUser"),
-    enable: t("enableUser"),
-    delete: t("deleteUser"),
-    restore: t("restoreUser"),
-    update: t("updateUser"),
+    disable: t("disableUser") || "تعطيل المستخدم",
+    enable: t("enableUser") || "تفعيل المستخدم", 
+    delete: t("deleteUser") || "حذف المستخدم",
+    restore: t("restoreUser") || "استعادة المستخدم",
+    update: t("updateUser") || "تحديث بيانات المستخدم",
+    create: t("createUser") || "إنشاء مستخدم جديد",
+    password_reset: t("passwordReset") || "إعادة تعيين كلمة المرور",
+    stock_increased: t("stockIncreased") || "زيادة المخزون",
+    stock_decreased: t("stockDecreased") || "نقص المخزون",
+    login: t("userLogin") || "دخول المستخدم",
+    logout: t("userLogout") || "خروج المستخدم",
+    profile_update: t("profileUpdate") || "تحديث الملف الشخصي",
+    type_change: t("userTypeChange") || "تغيير نوع المستخدم",
   };
 
   const FIELD_LABELS: Record<string, string> = {
@@ -87,6 +95,13 @@ const UserActivityLogTable: React.FC = () => {
     new_value?: string;
     details: any | null;
     created_at: string;
+    // الحقول الجديدة للحفاظ على معلومات الأدمن والمستخدم
+    admin_name?: string;
+    admin_email?: string;
+    admin_phone?: string;
+    target_user_name?: string;
+    target_user_email?: string;
+    target_user_phone?: string;
   }
 
   const [logs, setLogs] = useState<UserActivityLog[]>([]);
@@ -266,7 +281,7 @@ const UserActivityLogTable: React.FC = () => {
     }
   }, [fromDate, toDate, actionFilter, initialLoad]);
 
-  // تطبيق البحث المحلي على البيانات الموجودة
+  // تطبيق البحث المحلي على البيانات الموجودة مع تحسين البحث
   const filteredLogs = logs.filter(log => {
     if (!searchTerm) return true;
     
@@ -276,10 +291,31 @@ const UserActivityLogTable: React.FC = () => {
     const adminEmail = profileMap[log.admin_id]?.email?.toLowerCase() || "";
     const userEmail = profileMap[log.user_id]?.email?.toLowerCase() || "";
     
+    // البحث في تفاصيل النشاط أيضاً
+    let detailsText = "";
+    if (log.details && typeof log.details === "object") {
+      const details = log.details as any;
+      detailsText = [
+        details.full_name,
+        details.user_name, 
+        details.deletedUserName,
+        details.email,
+        details.user_email,
+        details.admin_name,
+        details.admin_full_name,
+        details.admin_email
+      ].filter(Boolean).join(" ").toLowerCase();
+    }
+    
+    // البحث في نص الإجراء المترجم
+    const actionText = (ACTION_LABELS[log.action] || log.action).toLowerCase();
+    
     return adminName.includes(searchLower) || 
            userName.includes(searchLower) ||
            adminEmail.includes(searchLower) ||
-           userEmail.includes(searchLower);
+           userEmail.includes(searchLower) ||
+           detailsText.includes(searchLower) ||
+           actionText.includes(searchLower);
   });
 
   // جلب تفاصيل المستخدم عند الضغط
@@ -372,14 +408,16 @@ const UserActivityLogTable: React.FC = () => {
   const exportAdminActivityToExcel = () => {
     const ws = XLSX.utils.json_to_sheet(
       filteredLogs.map((l) => {
-        // بيانات الأدمن
-        let adminName = profileMap[l.admin_id]?.full_name;
-        let adminEmail = profileMap[l.admin_id]?.email;
-        let adminPhone = profileMap[l.admin_id]?.phone;
-        // بيانات المستخدم
-        let userName = profileMap[l.user_id]?.full_name;
-        let userEmail = profileMap[l.user_id]?.email;
-        let userPhone = profileMap[l.user_id]?.phone;
+        // بيانات الأدمن - إعطاء الأولوية للحقول المحفوظة
+        let adminName = l.admin_name || profileMap[l.admin_id]?.full_name;
+        let adminEmail = l.admin_email || profileMap[l.admin_id]?.email;
+        let adminPhone = l.admin_phone || profileMap[l.admin_id]?.phone;
+        
+        // بيانات المستخدم - إعطاء الأولوية للحقول المحفوظة
+        let userName = l.target_user_name || profileMap[l.user_id]?.full_name;
+        let userEmail = l.target_user_email || profileMap[l.user_id]?.email;
+        let userPhone = l.target_user_phone || profileMap[l.user_id]?.phone;
+        
         // إذا لم يوجد اسم المستخدم، جرب من details
         if (
           (!userName || userName === l.user_id) &&
@@ -390,11 +428,16 @@ const UserActivityLogTable: React.FC = () => {
             full_name?: string;
             email?: string;
             phone?: string;
+            user_name?: string;
+            user_email?: string;
+            user_phone?: string;
+            deletedUserName?: string;
           };
-          userName = detailsObj.full_name || userName || "مستخدم غير متوفر";
-          userEmail = detailsObj.email || userEmail || "";
-          userPhone = detailsObj.phone || userPhone || "";
+          userName = userName || detailsObj.full_name || detailsObj.user_name || detailsObj.deletedUserName || "مستخدم غير معروف";
+          userEmail = userEmail || detailsObj.email || detailsObj.user_email || "";
+          userPhone = userPhone || detailsObj.phone || detailsObj.user_phone || "";
         }
+        
         // إذا لم يوجد اسم الأدمن، جرب من details (نادراً)
         if (
           (!adminName || adminName === l.admin_id) &&
@@ -405,21 +448,22 @@ const UserActivityLogTable: React.FC = () => {
             admin_full_name?: string;
             admin_email?: string;
             admin_phone?: string;
+            admin_name?: string;
           };
-          adminName =
-            detailsObj.admin_full_name || adminName || "أدمن غير متوفر";
-          adminEmail = detailsObj.admin_email || adminEmail || "";
-          adminPhone = detailsObj.admin_phone || adminPhone || "";
+          adminName = adminName || detailsObj.admin_full_name || detailsObj.admin_name || "مدير غير معروف";
+          adminEmail = adminEmail || detailsObj.admin_email || "";
+          adminPhone = adminPhone || detailsObj.admin_phone || "";
         }
+        
         return {
           ID: l.id,
-          Admin: adminName || l.admin_id,
-          "Admin Email": adminEmail || "",
-          "Admin Phone": adminPhone || "",
-          User: userName || l.user_id,
-          "User Email": userEmail || "",
-          "User Phone": userPhone || "",
-          Action: l.action,
+          Admin: adminName || "مدير غير معروف",
+          "Admin Email": adminEmail || "غير متوفر",
+          "Admin Phone": adminPhone || "غير متوفر",
+          User: userName || "مستخدم غير معروف",
+          "User Email": userEmail || "غير متوفر",
+          "User Phone": userPhone || "غير متوفر",
+          Action: ACTION_LABELS[l.action] || l.action,
           Field: l.target_field || "",
           "Old Value": l.old_value || "",
           "New Value": l.new_value || "",
@@ -723,12 +767,13 @@ const UserActivityLogTable: React.FC = () => {
                 </TableHeader>
                 <TableBody>
                   {filteredLogs.map((log, index) => {
-                    // استخراج بيانات المستخدم
+                    // استخراج بيانات المستخدم مع إعطاء الأولوية للحقول المحفوظة
                     const userProfile = profileMap[log.user_id];
-                    let displayName = userProfile?.full_name;
-                    let displayEmail = userProfile?.email;
-                    let displayPhone = userProfile?.phone;
+                    let displayName = log.target_user_name || userProfile?.full_name;
+                    let displayEmail = log.target_user_email || userProfile?.email;
+                    let displayPhone = log.target_user_phone || userProfile?.phone;
                     
+                    // محاولة الحصول على البيانات من details إذا لم تتوفر في الحقول المحفوظة
                     if (
                       (!displayName || !displayEmail) &&
                       log.details &&
@@ -738,18 +783,30 @@ const UserActivityLogTable: React.FC = () => {
                         full_name?: string;
                         email?: string;
                         phone?: string;
+                        user_name?: string;
+                        user_email?: string;
+                        user_phone?: string;
+                        deletedUserName?: string;
                       };
-                      displayName = displayName || detailsObj.full_name;
-                      displayEmail = displayEmail || detailsObj.email;
-                      displayPhone = displayPhone || detailsObj.phone;
+                      displayName = displayName || detailsObj.full_name || detailsObj.user_name || detailsObj.deletedUserName;
+                      displayEmail = displayEmail || detailsObj.email || detailsObj.user_email;
+                      displayPhone = displayPhone || detailsObj.phone || detailsObj.user_phone;
                     }
                     
-                    if (!displayName) displayName = t("userUnavailable") || "مستخدم غير متوفر";
-                    if (!displayEmail) displayEmail = "";
-                    if (!displayPhone) displayPhone = null;
+                    // تحسين عرض الاسم
+                    if (!displayName || displayName.trim() === '') {
+                      displayName = t("unknownUser") || "مستخدم غير معروف";
+                    }
+                    if (!displayEmail || displayEmail.trim() === '') {
+                      displayEmail = t("emailNotAvailable") || "البريد غير متوفر";
+                    }
                     
-                    const canShowDetails = !!displayName && displayName !== "مستخدم غير متوفر";
+                    const canShowDetails = userProfile || (displayName && displayName !== "مستخدم غير معروف");
+                    
+                    // تحسين عرض اسم الأدمن مع إعطاء الأولوية للحقول المحفوظة
                     const adminProfile = profileMap[log.admin_id];
+                    const adminDisplayName = log.admin_name || adminProfile?.full_name || t("unknownAdmin") || "مدير غير معروف";
+                    const adminDisplayEmail = log.admin_email || adminProfile?.email;
                     
                     return (
                       <TableRow 
@@ -766,11 +823,11 @@ const UserActivityLogTable: React.FC = () => {
                             </div>
                             <div className="min-w-0 flex-1">
                               <div className="font-medium text-blue-900 text-sm truncate">
-                                {adminProfile?.full_name || log.admin_id}
+                                {adminDisplayName}
                               </div>
-                              {adminProfile?.email && (
+                              {(adminDisplayEmail || adminProfile?.email) && (
                                 <div className="text-xs text-blue-600 truncate">
-                                  {adminProfile.email}
+                                  {adminDisplayEmail || adminProfile?.email}
                                 </div>
                               )}
                             </div>

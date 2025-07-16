@@ -227,7 +227,7 @@ const Offers: React.FC = () => {
                   }}
                   transition={{ duration: 0.4 }}
                 >
-                  <OfferCard offer={offer} />
+                  <OfferCard offer={offer} equalHeight={true} />
                 </motion.div>
               )
             )}
