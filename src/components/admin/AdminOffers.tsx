@@ -479,7 +479,7 @@ const AdminOffers: React.FC = () => {
               return (
                 <Card
                   key={offer.id}
-                  className={`relative overflow-hidden transition-all duration-200 hover:shadow-lg ${
+                  className={`relative overflow-hidden transition-all duration-200 hover:shadow-lg flex flex-col h-full ${
                     !isActive ? "opacity-60" : ""
                   }`}
                 >
@@ -525,41 +525,43 @@ const AdminOffers: React.FC = () => {
                     )}
                   </CardHeader>
 
-                  <CardContent className="pt-0">
-                    {/* نسبة الخصم */}
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-lg font-bold text-primary">
-                          {offer.discount_type === "percentage" 
-                            ? `${offer.discount_percentage}% ${t("discount")}` 
-                            : `${offer.discount_amount} ${t("currency") || "شيكل"} ${t("discount")}`
-                          }
-                        </span>
+                  <CardContent className="pt-0 flex-grow flex flex-col justify-between">
+                    <div>
+                      {/* نسبة الخصم */}
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-lg font-bold text-primary">
+                            {offer.discount_type === "percentage" 
+                              ? `${offer.discount_percentage}% ${t("discount")}` 
+                              : `${offer.discount_amount} ${t("currency") || "شيكل"} ${t("discount")}`
+                            }
+                          </span>
+                        </div>
                       </div>
+
+                      {/* تواريخ العرض */}
+                      {(offer.start_date || offer.end_date) && (
+                        <div className="text-xs text-gray-500 mb-4 space-y-1">
+                          {offer.start_date && (
+                            <div className="flex items-center">
+                              <Calendar className="h-3 w-3 mr-1" />
+                              {t("startDate")}:{" "}
+                              {new Date(offer.start_date).toLocaleDateString('en-US', { calendar: 'gregory' })}
+                            </div>
+                          )}
+                          {offer.end_date && (
+                            <div className="flex items-center">
+                              <Calendar className="h-3 w-3 mr-1" />
+                              {t("endDate")}:{" "}
+                              {new Date(offer.end_date).toLocaleDateString('en-US', { calendar: 'gregory' })}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
 
-                    {/* تواريخ العرض */}
-                    {(offer.start_date || offer.end_date) && (
-                      <div className="text-xs text-gray-500 mb-4 space-y-1">
-                        {offer.start_date && (
-                          <div className="flex items-center">
-                            <Calendar className="h-3 w-3 mr-1" />
-                            {t("startDate")}:{" "}
-                            {new Date(offer.start_date).toLocaleDateString('en-US', { calendar: 'gregory' })}
-                          </div>
-                        )}
-                        {offer.end_date && (
-                          <div className="flex items-center">
-                            <Calendar className="h-3 w-3 mr-1" />
-                            {t("endDate")}:{" "}
-                            {new Date(offer.end_date).toLocaleDateString('en-US', { calendar: 'gregory' })}
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* أزرار الإجراءات */}
-                    <div className="flex gap-2">
+                    {/* أزرار الإجراءات - مثبتة في الأسفل */}
+                    <div className="flex gap-2 mt-auto">
                       <Button
                         size="sm"
                         variant="outline"
