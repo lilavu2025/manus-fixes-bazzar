@@ -35,6 +35,13 @@ interface ActivityLogData {
   new_value?: string;
   details: any | null;
   created_at: string;
+  // الحقول الجديدة للحفاظ على معلومات الأدمن والمستخدم
+  admin_name?: string;
+  admin_email?: string;
+  admin_phone?: string;
+  target_user_name?: string;
+  target_user_email?: string;
+  target_user_phone?: string;
 }
 
 interface ProfileData {
@@ -339,7 +346,8 @@ const ActivityLogDialog: React.FC<ActivityLogDialogProps> = ({
                   <User className="h-4 w-4 text-blue-600" />
                   <div>
                     <p className="font-medium text-blue-900">
-                      {adminProfile?.full_name || 
+                      {log.admin_name || 
+                       adminProfile?.full_name || 
                        (log.details?.admin_name) || 
                        (log.details?.admin_full_name) ||
                        t("unknownAdmin") || "مدير غير معروف"}
@@ -348,11 +356,11 @@ const ActivityLogDialog: React.FC<ActivityLogDialogProps> = ({
                   </div>
                 </div>
                 
-                {(adminProfile?.email || log.details?.admin_email) && (
+                {(log.admin_email || adminProfile?.email || log.details?.admin_email) && (
                   <div className="flex items-center gap-3">
                     <Mail className="h-4 w-4 text-blue-600" />
                     <div>
-                      <p className="text-sm text-blue-800">{adminProfile?.email || log.details?.admin_email}</p>
+                      <p className="text-sm text-blue-800">{log.admin_email || adminProfile?.email || log.details?.admin_email}</p>
                       <p className="text-xs text-blue-600">{t("email") || "البريد الإلكتروني"}</p>
                     </div>
                   </div>
@@ -393,7 +401,8 @@ const ActivityLogDialog: React.FC<ActivityLogDialogProps> = ({
                   <User className="h-4 w-4 text-gray-600" />
                   <div>
                     <p className="font-medium text-gray-900">
-                      {userProfile?.full_name || 
+                      {log.target_user_name ||
+                       userProfile?.full_name || 
                        (log.details?.full_name) || 
                        (log.details?.user_name) || 
                        (log.details?.deletedUserName) ||
@@ -403,12 +412,12 @@ const ActivityLogDialog: React.FC<ActivityLogDialogProps> = ({
                   </div>
                 </div>
                 
-                {(userProfile?.email || log.details?.email || log.details?.user_email) && (
+                {(log.target_user_email || userProfile?.email || log.details?.email || log.details?.user_email) && (
                   <div className="flex items-center gap-3">
                     <Mail className="h-4 w-4 text-gray-600" />
                     <div>
                       <p className="text-sm text-gray-800">
-                        {userProfile?.email || log.details?.email || log.details?.user_email}
+                        {log.target_user_email || userProfile?.email || log.details?.email || log.details?.user_email}
                       </p>
                       <p className="text-xs text-gray-600">{t("email") || "البريد الإلكتروني"}</p>
                     </div>

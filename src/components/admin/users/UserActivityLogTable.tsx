@@ -95,6 +95,13 @@ const UserActivityLogTable: React.FC = () => {
     new_value?: string;
     details: any | null;
     created_at: string;
+    // الحقول الجديدة للحفاظ على معلومات الأدمن والمستخدم
+    admin_name?: string;
+    admin_email?: string;
+    admin_phone?: string;
+    target_user_name?: string;
+    target_user_email?: string;
+    target_user_phone?: string;
   }
 
   const [logs, setLogs] = useState<UserActivityLog[]>([]);
@@ -401,14 +408,16 @@ const UserActivityLogTable: React.FC = () => {
   const exportAdminActivityToExcel = () => {
     const ws = XLSX.utils.json_to_sheet(
       filteredLogs.map((l) => {
-        // بيانات الأدمن
-        let adminName = profileMap[l.admin_id]?.full_name;
-        let adminEmail = profileMap[l.admin_id]?.email;
-        let adminPhone = profileMap[l.admin_id]?.phone;
-        // بيانات المستخدم
-        let userName = profileMap[l.user_id]?.full_name;
-        let userEmail = profileMap[l.user_id]?.email;
-        let userPhone = profileMap[l.user_id]?.phone;
+        // بيانات الأدمن - إعطاء الأولوية للحقول المحفوظة
+        let adminName = l.admin_name || profileMap[l.admin_id]?.full_name;
+        let adminEmail = l.admin_email || profileMap[l.admin_id]?.email;
+        let adminPhone = l.admin_phone || profileMap[l.admin_id]?.phone;
+        
+        // بيانات المستخدم - إعطاء الأولوية للحقول المحفوظة
+        let userName = l.target_user_name || profileMap[l.user_id]?.full_name;
+        let userEmail = l.target_user_email || profileMap[l.user_id]?.email;
+        let userPhone = l.target_user_phone || profileMap[l.user_id]?.phone;
+        
         // إذا لم يوجد اسم المستخدم، جرب من details
         if (
           (!userName || userName === l.user_id) &&
@@ -424,10 +433,11 @@ const UserActivityLogTable: React.FC = () => {
             user_phone?: string;
             deletedUserName?: string;
           };
-          userName = detailsObj.full_name || detailsObj.user_name || detailsObj.deletedUserName || userName || "مستخدم غير معروف";
-          userEmail = detailsObj.email || detailsObj.user_email || userEmail || "";
-          userPhone = detailsObj.phone || detailsObj.user_phone || userPhone || "";
+          userName = userName || detailsObj.full_name || detailsObj.user_name || detailsObj.deletedUserName || "مستخدم غير معروف";
+          userEmail = userEmail || detailsObj.email || detailsObj.user_email || "";
+          userPhone = userPhone || detailsObj.phone || detailsObj.user_phone || "";
         }
+        
         // إذا لم يوجد اسم الأدمن، جرب من details (نادراً)
         if (
           (!adminName || adminName === l.admin_id) &&
@@ -440,11 +450,11 @@ const UserActivityLogTable: React.FC = () => {
             admin_phone?: string;
             admin_name?: string;
           };
-          adminName =
-            detailsObj.admin_full_name || detailsObj.admin_name || adminName || "مدير غير معروف";
-          adminEmail = detailsObj.admin_email || adminEmail || "";
-          adminPhone = detailsObj.admin_phone || adminPhone || "";
+          adminName = adminName || detailsObj.admin_full_name || detailsObj.admin_name || "مدير غير معروف";
+          adminEmail = adminEmail || detailsObj.admin_email || "";
+          adminPhone = adminPhone || detailsObj.admin_phone || "";
         }
+        
         return {
           ID: l.id,
           Admin: adminName || "مدير غير معروف",
@@ -757,13 +767,13 @@ const UserActivityLogTable: React.FC = () => {
                 </TableHeader>
                 <TableBody>
                   {filteredLogs.map((log, index) => {
-                    // استخراج بيانات المستخدم مع تحسين العرض
+                    // استخراج بيانات المستخدم مع إعطاء الأولوية للحقول المحفوظة
                     const userProfile = profileMap[log.user_id];
-                    let displayName = userProfile?.full_name;
-                    let displayEmail = userProfile?.email;
-                    let displayPhone = userProfile?.phone;
+                    let displayName = log.target_user_name || userProfile?.full_name;
+                    let displayEmail = log.target_user_email || userProfile?.email;
+                    let displayPhone = log.target_user_phone || userProfile?.phone;
                     
-                    // محاولة الحصول على البيانات من details إذا لم تتوفر في profiles
+                    // محاولة الحصول على البيانات من details إذا لم تتوفر في الحقول المحفوظة
                     if (
                       (!displayName || !displayEmail) &&
                       log.details &&
@@ -792,10 +802,11 @@ const UserActivityLogTable: React.FC = () => {
                     }
                     
                     const canShowDetails = userProfile || (displayName && displayName !== "مستخدم غير معروف");
-                    const adminProfile = profileMap[log.admin_id];
                     
-                    // تحسين عرض اسم الأدمن
-                    const adminDisplayName = adminProfile?.full_name || t("unknownAdmin") || "مدير غير معروف";
+                    // تحسين عرض اسم الأدمن مع إعطاء الأولوية للحقول المحفوظة
+                    const adminProfile = profileMap[log.admin_id];
+                    const adminDisplayName = log.admin_name || adminProfile?.full_name || t("unknownAdmin") || "مدير غير معروف";
+                    const adminDisplayEmail = log.admin_email || adminProfile?.email;
                     
                     return (
                       <TableRow 
@@ -814,9 +825,9 @@ const UserActivityLogTable: React.FC = () => {
                               <div className="font-medium text-blue-900 text-sm truncate">
                                 {adminDisplayName}
                               </div>
-                              {adminProfile?.email && (
+                              {(adminDisplayEmail || adminProfile?.email) && (
                                 <div className="text-xs text-blue-600 truncate">
-                                  {adminProfile.email}
+                                  {adminDisplayEmail || adminProfile?.email}
                                 </div>
                               )}
                             </div>
