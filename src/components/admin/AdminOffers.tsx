@@ -287,13 +287,6 @@ const AdminOffers: React.FC = () => {
     }
     
     if (
-      Number(form.discount_percent) <= 0 ||
-      Number(form.discount_percent) > 100
-    ) {
-      toast.error(t("invalidDiscountPercent"));
-      return;
-    }
-    if (
       form.start_date &&
       form.end_date &&
       new Date(form.start_date) >= new Date(form.end_date)
