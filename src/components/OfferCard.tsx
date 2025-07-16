@@ -71,7 +71,7 @@ const OfferCard: React.FC<OfferCardProps> = ({
   return (
     <>
       <div
-        className={`bg-white rounded-xl shadow-md p-4 flex flex-col items-center transition hover:shadow-lg group relative ${
+        className={`bg-white rounded-xl shadow-md p-4 flex flex-col transition hover:shadow-lg group relative ${
           equalHeight ? "h-full" : ""
         }`}
       >
@@ -79,48 +79,52 @@ const OfferCard: React.FC<OfferCardProps> = ({
           className="w-full h-40 bg-center bg-contain bg-no-repeat rounded mb-4 group-hover:scale-105 transition-transform duration-200"
           style={{ backgroundImage: `url(${offer.image_url})` }}
         />
-        <h3
-          className={`text-xl font-bold mb-2 text-center w-full ${
-            showFullTitle ? "" : "truncate"
-          }`}
-        >
-          {offer.title_ar || offer.title_en}
-        </h3>
-        <p
-          className={`text-gray-600 mb-2 text-center w-full ${
-            showDescriptionWithReadMore ? "" : "line-clamp-2"
-          }`}
-        >
-          {offer.description_ar || offer.description_en}
-          {showDescriptionWithReadMore && offer.description_ar?.length > 100 && (
-            <span
-              className="text-primary cursor-pointer ml-2"
-              onClick={() => setShowMore(!showMore)}
-            >
-              {showMore ? t("showLess") : t("readMore")}
+        
+        {/* المحتوى الذي يمكن أن يتمدد */}
+        <div className="flex flex-col flex-grow text-center">
+          <h3
+            className="text-xl font-bold mb-2 w-full text-center"
+          >
+            {offer.title_ar || offer.title_en}
+          </h3>
+          <p
+            className={`text-gray-600 mb-2 w-full ${
+              showDescriptionWithReadMore ? "" : "line-clamp-2"
+            }`}
+          >
+            {offer.description_ar || offer.description_en}
+            {showDescriptionWithReadMore && offer.description_ar?.length > 100 && (
+              <span
+                className="text-primary cursor-pointer ml-2"
+                onClick={() => setShowMore(!showMore)}
+              >
+                {showMore ? t("showLess") : t("readMore")}
+              </span>
+            )}
+          </p>
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <span className="text-lg font-bold text-primary">
+              {t("discount")}: {offer.discount_type === "percentage" 
+                ? `${offer.discount_percentage}%` 
+                : `${offer.discount_amount} ${t("currency") || "شيكل"}`
+              }
             </span>
-          )}
-        </p>
-        <div className="flex items-center gap-2 mb-2">
-          <span className="text-lg font-bold text-primary">
-            {t("discount")}: {offer.discount_type === "percentage" 
-              ? `${offer.discount_percentage}%` 
-              : `${offer.discount_amount} ${t("currency") || "شيكل"}`
-            }
-          </span>
+          </div>
+          <div className="text-sm text-gray-500 mb-4">
+            {t("validUntil")}:{" "}
+            {new Date(offer.end_date).toLocaleDateString("en-US", {
+              calendar: "gregory",
+            })}
+          </div>
         </div>
-        <div className="text-sm text-gray-500 mb-4">
-          {t("validUntil")}:{" "}
-          {new Date(offer.end_date).toLocaleDateString("en-US", {
-            calendar: "gregory",
-          })}
-        </div>
+
+        {/* الزر مثبت في الأسفل */}
         <button
           onClick={(e) => {
             e.preventDefault();
             handleViewOffer();
           }}
-          className="mt-auto w-full bg-primary text-white rounded-lg py-2 font-bold hover:bg-primary/90 transition text-center block"
+          className="w-full bg-primary text-white rounded-lg py-2 font-bold hover:bg-primary/90 transition text-center block"
         >
           {t("viewOffer")}
         </button>
@@ -150,7 +154,6 @@ const OfferCard: React.FC<OfferCardProps> = ({
             {/* تفاصيل العرض */}
             <div className="space-y-4">
               <div className="flex items-center justify-center gap-2">
-                <Percent className="h-6 w-6 text-primary" />
                 <span className="text-2xl font-bold text-primary">
                   {offer.discount_type === "percentage" 
                     ? `${offer.discount_percentage}% ${t("discount")}` 
