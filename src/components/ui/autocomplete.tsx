@@ -28,6 +28,10 @@ const Autocomplete: React.FC<AutocompleteProps> = ({
 
   React.useEffect(() => {
     setInputValue(value || "");
+    // تحديث محتوى العنصر contentEditable عند تغيير القيمة
+    if (editableDivRef.current && editableDivRef.current.textContent !== (value || "")) {
+      editableDivRef.current.textContent = value || "";
+    }
   }, [value]);
 
   const filteredOptions = options.filter(
@@ -59,7 +63,6 @@ const Autocomplete: React.FC<AutocompleteProps> = ({
         }}
         role="textbox"
         aria-label={placeholder}
-        dangerouslySetInnerHTML={{ __html: inputValue || '' }}
       />
       {inputValue && (
         <button
@@ -74,7 +77,7 @@ const Autocomplete: React.FC<AutocompleteProps> = ({
             }
             // Clear the specific contentEditable div using ref
             if (editableDivRef.current) {
-              editableDivRef.current.innerHTML = '';
+              editableDivRef.current.textContent = '';
             }
           }}
         >
@@ -91,6 +94,10 @@ const Autocomplete: React.FC<AutocompleteProps> = ({
                 setInputValue(option);
                 onInputChange(option);
                 setShowOptions(false);
+                // تحديث محتوى العنصر contentEditable
+                if (editableDivRef.current) {
+                  editableDivRef.current.textContent = option;
+                }
                 inputRef.current?.blur();
               }}
             >
