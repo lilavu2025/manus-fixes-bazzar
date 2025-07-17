@@ -25,7 +25,7 @@ import ErrorBoundary from "@/components/ErrorBoundary";
 import SEO from "@/components/SEO";
 import PerformanceMonitorComponent from "@/components/PerformanceMonitor";
 import ProtectedRoute from "@/components/ProtectedRoute";
-import { NativeSplashScreen } from "@/components/splash";
+import { ModernSplashScreen } from "@/components/splash";
 import { useSplash } from "@/hooks/useSplash";
 
 // Critical pages - Regular imports for initial load
@@ -193,7 +193,7 @@ const App = () => {
     if (showSplash) {
       return (
         <LanguageProvider>
-          <NativeSplashScreen onFinish={handleSplashFinish} duration={duration} />
+          <ModernSplashScreen onFinish={handleSplashFinish} duration={duration} />
         </LanguageProvider>
       );
     }

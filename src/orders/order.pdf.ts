@@ -2,6 +2,7 @@ import config from "@/configs/activeConfig";
 import type { Order } from "./order.types";
 import { getOrderDisplayTotal } from "./order.displayTotal";
 import html2pdf from "html2pdf.js";
+import { getDisplayPrice } from "@/utils/priceUtils";
 
 export async function downloadInvoicePdf(
   order: Order,
@@ -34,6 +35,35 @@ export async function downloadInvoicePdf(
           productDescription = product[`description_${currentLang}`] || product.description_ar || product.description_en || product.description_he || '';
         }
         
+        // الحصول على السعر المناسب حسب نوع العميل
+        const displayPrice = product ? getDisplayPrice(
+          {
+            id: product.id || "",
+            name: product.name_ar || "",
+            nameEn: product.name_en || "",
+            nameHe: product.name_he || "",
+            description: product.description_ar || "",
+            descriptionEn: product.description_en || "",
+            descriptionHe: product.description_he || "",
+            price: item.price,
+            originalPrice: product.original_price,
+            wholesalePrice: product.wholesale_price,
+            image: product.image || "",
+            images: product.images || [],
+            category: "", // fallback
+            inStock: typeof product.in_stock === "boolean" ? product.in_stock : true,
+            rating: product.rating || 0,
+            reviews: 0, // fallback
+            discount: product.discount,
+            featured: product.featured,
+            tags: product.tags || [],
+            stock_quantity: product.stock_quantity,
+            active: product.active,
+            created_at: product.created_at,
+          },
+          (profile as any)?.user_type,
+        ) : item.price;
+        
         return `
       <tr>
         <td>
@@ -43,8 +73,8 @@ export async function downloadInvoicePdf(
           ${productDescription ? `<div style="font-size: 12px; color: #666; line-height: 1.3;">${productDescription}</div>` : ''}
         </td>
         <td>${item.quantity}</td>
-        <td>${item.price.toFixed(2)} ₪</td>
-        <td>${(item.quantity * item.price).toFixed(2)} ₪</td>
+        <td>${displayPrice.toFixed(2)} ₪</td>
+        <td>${(item.quantity * displayPrice).toFixed(2)} ₪</td>
       </tr>
     `;
     })
