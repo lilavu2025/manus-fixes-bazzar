@@ -1,5 +1,6 @@
 // Splash Screen Components Export
 export { default as NativeSplashScreen } from './NativeSplashScreen';
+export { default as ModernSplashScreen } from './ModernSplashScreen';
 export { useSplashScreen } from './useSplashScreen';
 
 // Types
