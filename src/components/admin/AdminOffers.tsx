@@ -45,6 +45,8 @@ import {
 import AdminHeader from "./AdminHeader";
 import { ClearableInput } from "@/components/ui/ClearableInput";
 import Autocomplete from "@/components/ui/autocomplete";
+import OfferStatsCard from "@/components/OfferStatsCard";
+import OfferSummaryStats from "@/components/admin/OfferSummaryStats";
 
 const AdminOffers: React.FC = () => {
   const { t, isRTL, language } = useLanguage();
@@ -75,8 +77,8 @@ const AdminOffers: React.FC = () => {
       start_date: "",
       end_date: "",
       active: true,
-      // حقول خاصية اشتري واحصل
-      offer_type: "discount" as "discount" | "buy_get",
+      // نوع العرض
+      offer_type: "discount" as "discount" | "buy_get" | "product_discount",
       buy_quantity: "",
       linked_product_id: "",
       get_product_id: "",
@@ -116,7 +118,18 @@ const AdminOffers: React.FC = () => {
     setLinkedProductSearch(productName);
     const selectedProduct = productsData.find(p => getProductDisplayName(p) === productName);
     if (selectedProduct) {
-      setForm(prev => ({ ...prev, linked_product_id: selectedProduct.id }));
+      setForm(prev => {
+        // تحديث صورة العرض تلقائياً بصورة المنتج إذا كان النوع "خصم على منتج معين"
+        const shouldUpdateImage = prev.offer_type === "product_discount" && 
+          selectedProduct.image && selectedProduct.image.trim() !== "";
+        
+        return {
+          ...prev, 
+          linked_product_id: selectedProduct.id,
+          // تحديث صورة العرض تلقائياً بصورة المنتج
+          image_url: shouldUpdateImage ? selectedProduct.image : prev.image_url
+        };
+      });
     } else {
       setForm(prev => ({ ...prev, linked_product_id: "" }));
     }
@@ -223,8 +236,13 @@ const AdminOffers: React.FC = () => {
     }
 
     // التحقق من بيانات العرض حسب النوع
-    if (form.offer_type === "discount") {
-      // التحقق من وجود قيمة الخصم حسب النوع المختار
+    if ((form.offer_type === "discount" || form.offer_type === "product_discount")) {
+      // التحقق من وجود منتج مرتبط
+      if (form.offer_type === "product_discount" && !form.linked_product_id) {
+        toast.error(t("selectProduct") || "يرجى اختيار المنتج");
+        return;
+      }
+      
       if (form.discount_type === "percentage") {
         if (!form.discount_percent || Number(form.discount_percent) <= 0 || Number(form.discount_percent) > 100) {
           toast.error(t("invalidDiscountPercent") || "نسبة الخصم يجب أن تكون بين 1 و 100");
@@ -281,16 +299,16 @@ const AdminOffers: React.FC = () => {
     
     const offerData: any = {
       offer_type: form.offer_type,
-      discount_type: form.offer_type === "discount" ? form.discount_type : null,
-      discount_percentage: form.offer_type === "discount" && form.discount_type === "percentage" ? Number(form.discount_percent) : null,
-      discount_amount: form.offer_type === "discount" && form.discount_type === "fixed" ? Number(form.discount_amount) : null,
+      discount_type: (form.offer_type === "discount" || form.offer_type === "product_discount") ? form.discount_type : null,
+      discount_percentage: (form.offer_type === "discount" || form.offer_type === "product_discount") && form.discount_type === "percentage" ? Number(form.discount_percent) : null,
+      discount_amount: (form.offer_type === "discount" || form.offer_type === "product_discount") && form.discount_type === "fixed" ? Number(form.discount_amount) : null,
       image_url: form.image_url,
       start_date: startDate,
       end_date: endDate,
       active: form.active,
       // حقول اشتري واحصل
       buy_quantity: form.offer_type === "buy_get" ? Number(form.buy_quantity) : null,
-      linked_product_id: form.offer_type === "buy_get" ? form.linked_product_id : null,
+      linked_product_id: form.offer_type === "buy_get" ? form.linked_product_id : (form.offer_type === "product_discount" ? form.linked_product_id : null),
       get_product_id: form.offer_type === "buy_get" ? form.get_product_id : null,
       get_discount_type: form.offer_type === "buy_get" ? form.get_discount_type : null,
       get_discount_value: form.offer_type === "buy_get" && form.get_discount_type !== "free" ? Number(form.get_discount_value) : null,
@@ -365,8 +383,13 @@ const AdminOffers: React.FC = () => {
     }
 
     // التحقق من بيانات العرض حسب النوع
-    if (form.offer_type === "discount") {
+    if ((form.offer_type === "discount" || form.offer_type === "product_discount")) {
       // التحقق من وجود قيمة الخصم حسب النوع المختار
+      if (form.offer_type === "product_discount" && !form.linked_product_id) {
+        toast.error(t("selectProduct") || "يرجى اختيار منتج");
+        return;
+      }
+      
       if (form.discount_type === "percentage") {
         if (!form.discount_percent || Number(form.discount_percent) <= 0 || Number(form.discount_percent) > 100) {
           toast.error(t("invalidDiscountPercent") || "نسبة الخصم يجب أن تكون بين 1 و 100");
@@ -435,16 +458,16 @@ const AdminOffers: React.FC = () => {
     const availableLangs = getAvailableLanguages();
     const updateData: any = {
       offer_type: form.offer_type,
-      discount_type: form.offer_type === "discount" ? form.discount_type : null,
-      discount_percentage: form.offer_type === "discount" && form.discount_type === "percentage" ? Number(form.discount_percent) : null,
-      discount_amount: form.offer_type === "discount" && form.discount_type === "fixed" ? Number(form.discount_amount) : null,
+      discount_type: (form.offer_type === "discount" || form.offer_type === "product_discount") ? form.discount_type : null,
+      discount_percentage: (form.offer_type === "discount" || form.offer_type === "product_discount") && form.discount_type === "percentage" ? Number(form.discount_percent) : null,
+      discount_amount: (form.offer_type === "discount" || form.offer_type === "product_discount") && form.discount_type === "fixed" ? Number(form.discount_amount) : null,
       image_url: form.image_url || null,
       start_date: form.start_date,
       end_date: form.end_date,
       active: form.active,
       // حقول اشتري واحصل
       buy_quantity: form.offer_type === "buy_get" ? Number(form.buy_quantity) : null,
-      linked_product_id: form.offer_type === "buy_get" ? form.linked_product_id : null,
+      linked_product_id: form.offer_type === "buy_get" ? form.linked_product_id : (form.offer_type === "product_discount" ? form.linked_product_id : null),
       get_product_id: form.offer_type === "buy_get" ? form.get_product_id : null,
       get_discount_type: form.offer_type === "buy_get" ? form.get_discount_type : null,
       get_discount_value: form.offer_type === "buy_get" && form.get_discount_type !== "free" ? Number(form.get_discount_value) : null,
@@ -574,6 +597,11 @@ const AdminOffers: React.FC = () => {
         addLabel={t("addOffer") || "إضافة عرض"}
         onAdd={() => setShowAdd(true)}
       />
+
+      {/* الإحصائيات العامة */}
+      {!loading && offersData.length > 0 && (
+        <OfferSummaryStats offers={offersData} />
+      )}
 
       {/* شريط الفلاتر الموحد (تصميم متجاوب ومحسّن) */}
       <Card className="shadow-lg border-0 mt-1">
@@ -710,6 +738,22 @@ const AdminOffers: React.FC = () => {
                                 })()}
                               </div>
                             </div>
+                          ) : offer.offer_type === "product_discount" ? (
+                            <div className="space-y-1">
+                              <span className="text-lg font-bold text-purple-600">
+                                {offer.discount_type === "percentage" 
+                                  ? `${offer.discount_percentage}% ${t("discount")}` 
+                                  : `${offer.discount_amount} ${t("currency")} ${t("discount")}`
+                                }
+                              </span>
+                              <div className="text-xs text-purple-600">
+                                {t("on") || "على"} {" "}
+                                {(() => {
+                                  const linkedProduct = productsData.find(p => p.id === offer.linked_product_id);
+                                  return linkedProduct ? getProductDisplayName(linkedProduct) : t("product") || "منتج";
+                                })()}
+                              </div>
+                            </div>
                           ) : (
                             <span className="text-lg font-bold text-primary">
                               {offer.discount_type === "percentage" 
@@ -740,6 +784,11 @@ const AdminOffers: React.FC = () => {
                           )}
                         </div>
                       )}
+
+                      {/* إحصائيات العرض */}
+                      <div className="bg-gray-50 rounded-lg p-3 mb-4">
+                        <OfferStatsCard offer={offer} variant="inline" />
+                      </div>
                     </div>
 
                     {/* أزرار الإجراءات - مثبتة في الأسفل */}
@@ -885,7 +934,7 @@ const AdminOffers: React.FC = () => {
                       name="offer_type"
                       value={form.offer_type}
                       onChange={(e) => {
-                        const newOfferType = e.target.value as "discount" | "buy_get";
+                        const newOfferType = e.target.value as "discount" | "product_discount" | "buy_get";
                         setForm(prev => ({ 
                           ...prev, 
                           offer_type: newOfferType,
@@ -911,8 +960,8 @@ const AdminOffers: React.FC = () => {
                       }}
                       className="w-full p-2 border border-purple-200 rounded-md focus:border-purple-500 focus:outline-none"
                     >
-                      <option value="discount">{t("regularDiscount") || "خصم عادي"}</option>
-                      <option value="buy_get">{t("buyGetOffer") || "اشتري واحصل"}</option>
+                      <option value="discount">{t("regularDiscount") || "خصم على كل المنتجات"}</option>
+                      <option value="product_discount">{t("productDiscount") || "خصم على المنتج"}</option><option value="buy_get">{t("buyGetOffer") || "اشتري واحصل"}</option>
                     </select>
                   </div>
 
@@ -995,6 +1044,91 @@ const AdminOffers: React.FC = () => {
                           bucket="product-images"
                         />
                       </div>
+                    </div>
+                  )}
+
+                  {/* حقول الخصم على منتج معين  */}
+                  {form.offer_type === "product_discount" && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      {/* اختيار المنتج */}
+                      <div>
+                        <Label className="text-sm font-medium text-purple-700 mb-2 block">
+                          {t("product") || "المنتج"} <span className="text-red-500">*</span>
+                        </Label>
+                        <Autocomplete
+                          value={linkedProductSearch}
+                          onInputChange={handleLinkedProductChange}
+                          onClear={() => {
+                            setLinkedProductSearch("");
+                            setForm(prev => ({ ...prev, linked_product_id: "" }));
+                          }}
+                          options={productOptions}
+                          placeholder={t("selectProduct") || "اختر المنتج..."}
+                          required
+                        />
+                      </div>
+
+                      {/* اختيار نوع الخصم */}
+                      <div>
+                        <Label className="text-sm font-medium text-purple-700 mb-2 block">
+                          {t("discountType") || "نوع الخصم"} <span className="text-red-500">*</span>
+                        </Label>
+                        <select
+                          name="discount_type"
+                          value={form.discount_type}
+                          onChange={(e) => setForm(prev => ({ 
+                            ...prev, 
+                            discount_type: e.target.value as "percentage" | "fixed",
+                            //إعادة تعيين القيم عند التغيير
+                            discount_percent: "",
+                            discount_amount: ""
+                          }))}
+                          className="w-full p-2 border border-purple-200 rounded-md focus:border-purple-500 focus:outline-none"
+                        >
+                          <option value="percentage">{t("percentageDiscount") || "خصم بالنسبة المئوية"}</option>
+                          <option value="fixed">{t("fixedAmountDiscount") || "خصم بمبلغ ثابت"}</option>
+                        </select>
+                      </div>
+
+                      {/* حقل نسبة الخصم - يظهر فقط عند اختيار percentage*/}
+                      {form.discount_type === "percentage" && (
+                        <div>
+                          <Label className="text-sm font-medium text-purple-700 mb-2 block">
+                            {t("discountPercent") || "نسبة الخصم"} <span className="text-red-500">*</span>
+                          </Label>
+                          <Input
+                            name="discount_percent"
+                            type="number"
+                            min="1"
+                            max="100"
+                            value={form.discount_percent}
+                            onChange={handleInput}
+                            placeholder="0"
+                            required
+                            className="border-purple-200 focus:border-purple-500"
+                          />
+                        </div>
+                      )}
+
+                      {/*حقل مبلغ الخصم - يظهر فقط عند اختيار fixed */}
+                      {form.discount_type === "fixed" && (
+                        <div>
+                          <Label className="text-sm font-medium text-purple-700 mb-2 block">
+                            {t("discountAmount") || "مبلغ الخصم"} <span className="text-red-500">*</span>
+                          </Label>
+                          <Input
+                            name="discount_amount"
+                            type="number"
+                            min="0.01"
+                            step="0.01"
+                            value={form.discount_amount}
+                            onChange={handleInput}
+                            placeholder="0.00"
+                            required
+                            className="border-purple-200 focus:border-purple-500"
+                          />
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -1280,7 +1414,7 @@ const AdminOffers: React.FC = () => {
                       name="offer_type"
                       value={form.offer_type}
                       onChange={(e) => {
-                        const newOfferType = e.target.value as "discount" | "buy_get";
+                        const newOfferType = e.target.value as "discount" | "product_discount" | "buy_get";
                         setForm(prev => ({ 
                           ...prev, 
                           offer_type: newOfferType,
@@ -1306,8 +1440,8 @@ const AdminOffers: React.FC = () => {
                       }}
                       className="w-full p-2 border border-purple-200 rounded-md focus:border-purple-500 focus:outline-none"
                     >
-                      <option value="discount">{t("regularDiscount") || "خصم عادي"}</option>
-                      <option value="buy_get">{t("buyGetOffer") || "اشتري واحصل"}</option>
+                      <option value="discount">{t("regularDiscount") || "خصم على كل المنتجات"}</option>
+                      <option value="product_discount">{t("productDiscount") || "خصم على منتج"}</option><option value="buy_get">{t("buyGetOffer") || "اشتري واحصل"}</option>
                     </select>
                   </div>
 
@@ -1392,6 +1526,91 @@ const AdminOffers: React.FC = () => {
                       </div>
                     </div>
                   )}
+                  {/* حقول الخصم على منتج معين  */}
+                  {form.offer_type === "product_discount" && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      {/* اختيار المنتج */}
+                      <div>
+                        <Label className="text-sm font-medium text-purple-700 mb-2 block">
+                          {t("product") || "المنتج"} <span className="text-red-500">*</span>
+                        </Label>
+                        <Autocomplete
+                          value={linkedProductSearch}
+                          onInputChange={handleLinkedProductChange}
+                          onClear={() => {
+                            setLinkedProductSearch("");
+                            setForm(prev => ({ ...prev, linked_product_id: "" }));
+                          }}
+                          options={productOptions}
+                          placeholder={t("selectProduct") || "اختر المنتج..."}
+                          required
+                        />
+                      </div>
+
+                      {/* اختيار نوع الخصم */}
+                      <div>
+                        <Label className="text-sm font-medium text-purple-700 mb-2 block">
+                          {t("discountType") || "نوع الخصم"} <span className="text-red-500">*</span>
+                        </Label>
+                        <select
+                          name="discount_type"
+                          value={form.discount_type}
+                          onChange={(e) => setForm(prev => ({ 
+                            ...prev, 
+                            discount_type: e.target.value as "percentage" | "fixed",
+                            // إعادة تعيين القيم عند التغيير
+                            discount_percent: "",
+                            discount_amount: ""
+                          }))}
+                          className="w-full p-2 border border-purple-200 rounded-md focus:border-purple-500 focus:outline-none"
+                        >
+                          <option value="percentage">{t("percentageDiscount") || "خصم بالنسبة المئوية"}</option>
+                          <option value="fixed">{t("fixedAmountDiscount") || "خصم بمبلغ ثابت"}</option>
+                        </select>
+                      </div>
+
+                      {/* حقل نسبة الخصم - يظهر فقط عند اختيار percentage */}
+                      {form.discount_type === "percentage" && (
+                        <div>
+                          <Label className="text-sm font-medium text-purple-700 mb-2 block">
+                            {t("discountPercent") || "نسبة الخصم"} <span className="text-red-500">*</span>
+                          </Label>
+                          <Input
+                            name="discount_percent"
+                            type="number"
+                            min="1"
+                            max="100"
+                            value={form.discount_percent}
+                            onChange={handleInput}
+                            placeholder="0"
+                            required
+                            className="border-purple-200 focus:border-purple-500"
+                          />
+                        </div>
+                      )}
+
+                      {/* حقل المبلغ الثابت - يظهر فقط عند اختيار fixed */}
+                      {form.discount_type === "fixed" && (
+                        <div>
+                          <Label className="text-sm font-medium text-purple-700 mb-2 block">
+                            {t("discountAmount") || "مبلغ الخصم"} <span className="text-red-500">*</span>
+                          </Label>
+                          <Input
+                            name="discount_amount"
+                            type="number"
+                            min="0.01"
+                            step="0.01"
+                            value={form.discount_amount}
+                            onChange={handleInput}
+                            placeholder="0.00"
+                            required
+                            className="border-purple-200 focus:border-purple-500"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+
 
                   {/* حقول اشتري واحصل */}
                   {form.offer_type === "buy_get" && (

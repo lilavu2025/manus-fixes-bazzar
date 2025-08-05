@@ -1254,7 +1254,7 @@ export const heTranslations = {
   last: "אחרון",
 
   offerType: "סוג מבצע",
-  regularDiscount: "הנחה רגילה",
+  regularDiscount: "הנחה על כל המוצרים",
   buyGetOffer: "קנה וקבל",
   linkedProduct: "מוצר מקושר",
   buyQuantity : "קנה כמות",
@@ -1265,5 +1265,15 @@ export const heTranslations = {
   getDiscount: "קבל הנחה",
   getFree: "קבל מוצר חינם",
   buy: "קנה",
+  freeItems: "פריטים חינמיים",
+  freeItem: "פריט חינמי",
+  fromOffer: "מהמבצע",
+  totalDiscount: "סה״כ הנחה",
+  averageOrderValue: "ערך הזמנה ממוצע",
+  conversionRate: "שיעור המרה",
+  offersDiscount: "הנחת מבצעים",
+  appliedOffers: "מבצעים מוחלים",
+  youSave: "אתה חוסך",
+  statisticsPeriod: "תקופת סטטיסטיקות",
 
 };

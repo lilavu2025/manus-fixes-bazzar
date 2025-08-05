@@ -3,6 +3,7 @@
 import { supabase } from "./client";
 import type { Database, TablesInsert, TablesUpdate } from "./types";
 import type { Banner, ContactInfo } from "./dataFetchers";
+import { processOffersStockDeduction, deductOrderItemsFromStock } from "../../services/stockService";
 
 // مخزن مؤقت للطلبات المعلقة لمنع التكرار
 const pendingCartRequests = new Map<string, Promise<boolean>>();
@@ -469,11 +470,26 @@ export async function updateOrderStatus(
       updateObj.cancelled_by_name =
         userMeta?.full_name || userMeta?.email || "أدمن";
     }
+    
     const { error } = await supabase
       .from("orders")
       .update(updateObj)
       .eq("id", orderId);
     if (error) throw error;
+    
+    // إرجاع المنتجات المجانية فقط عند إلغاء الطلبية
+    if (newStatus === "cancelled") {
+      console.log(`🎁 بدء إرجاع المنتجات المجانية للطلبية الملغية: ${orderId}`);
+      const { restoreFreeProductsStock } = await import('@/services/stockService');
+      const freeStockResult = await restoreFreeProductsStock(orderId);
+      
+      if (freeStockResult.success) {
+        console.log('✅ تم إرجاع المنتجات المجانية بنجاح');
+      } else {
+        console.warn('⚠️ حدث خطأ في إرجاع المنتجات المجانية:', freeStockResult.error);
+      }
+    }
+    
     return true;
   } catch (err) {
     console.error("Error updating order status:", err);
@@ -528,6 +544,15 @@ export async function addOrder(
       .from("order_items")
       .insert(itemsToInsert);
     if (itemsError) throw itemsError;
+    
+    // خصم المنتجات العادية من المخزون
+    await deductOrderItemsFromStock(itemsToInsert);
+    
+    // خصم المنتجات المجانية من العروض من المخزون
+    if (orderInsertObj.applied_offers || orderInsertObj.free_items) {
+      await processOffersStockDeduction(order.id, orderInsertObj.applied_offers, orderInsertObj.free_items);
+    }
+    
     // تحديث المنتجات الأكثر مبيعًا بعد كل طلب جديد
     await updateTopOrderedProducts();
     return true;
@@ -570,9 +595,21 @@ export async function editOrder(
 // حذف طلب
 export async function deleteOrder(orderId: string) {
   try {
+    // إرجاع المنتجات المجانية قبل حذف الطلبية
+    console.log(`🎁 بدء إرجاع المنتجات المجانية قبل حذف الطلبية: ${orderId}`);
+    const { restoreFreeProductsStock } = await import('@/services/stockService');
+    const freeStockResult = await restoreFreeProductsStock(orderId);
+    
+    if (freeStockResult.success) {
+      console.log('✅ تم إرجاع المنتجات المجانية بنجاح قبل الحذف');
+    } else {
+      console.warn('⚠️ حدث خطأ في إرجاع المنتجات المجانية:', freeStockResult.error);
+    }
+    
     // حذف العناصر المرتبطة أولاً
     const { error: itemsError } = await supabase.from("order_items").delete().eq("order_id", orderId);
     if (itemsError) throw itemsError;
+    
     // ثم حذف الطلب نفسه
     const { error } = await supabase.from("orders").delete().eq("id", orderId);
     if (error) throw error;
@@ -806,11 +843,24 @@ export async function cancelUserOrder(
       cancelled_by_name:
         userMeta.full_name || userMeta.email || userMeta.displayName || "user",
     };
+    
     const { error } = await supabase
       .from("orders")
       .update(updateObj)
       .eq("id", orderId);
     if (error) throw error;
+    
+    // إرجاع المنتجات المجانية عند إلغاء الطلبية من قبل المستخدم
+    console.log(`🎁 بدء إرجاع المنتجات المجانية للطلبية الملغية من قبل المستخدم: ${orderId}`);
+    const { restoreFreeProductsStock } = await import('@/services/stockService');
+    const freeStockResult = await restoreFreeProductsStock(orderId);
+    
+    if (freeStockResult.success) {
+      console.log('✅ تم إرجاع المنتجات المجانية بنجاح');
+    } else {
+      console.warn('⚠️ حدث خطأ في إرجاع المنتجات المجانية:', freeStockResult.error);
+    }
+    
     return true;
   } catch (error) {
     console.error("Error cancelling user order:", error);

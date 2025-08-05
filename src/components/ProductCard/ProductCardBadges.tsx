@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '@/utils/languageContextUtils';
 import { useAuth } from '@/contexts/useAuth';
+import ProductOfferBadge from '@/components/ProductOfferBadge';
+import { OfferService } from '@/services/offerService';
 
 interface ProductCardBadgesProps {
   product: {
@@ -31,8 +33,29 @@ const ProductCardBadges = ({
 }: ProductCardBadgesProps) => {
   const { t, isRTL } = useLanguage();
   const { profile } = useAuth();
+  const [hasOffer, setHasOffer] = useState(false);
 
   const isWholesale = profile?.user_type === 'wholesale';
+
+  // فحص وجود عروض للمنتج
+  useEffect(() => {
+    const checkOffers = async () => {
+      if (!product.id) {
+        setHasOffer(false);
+        return;
+      }
+      
+      try {
+        const productOffers = await OfferService.getOffersForProduct(product.id);
+        setHasOffer(productOffers.length > 0);
+      } catch (error) {
+        console.error("Error checking offers for product:", error);
+        setHasOffer(false);
+      }
+    };
+
+    checkOffers();
+  }, [product.id]);
 
   // Helper functions with stronger validation
   const isNewProduct = () => {
@@ -129,8 +152,11 @@ const ProductCardBadges = ({
       {/* البادجز على الصورة - الخصم والجديد فقط */}
       {isOnImage && (
         <>
-          {/* بادج الخصم */}
-          {isValidDiscount(product.discount) && (
+          {/* بادج العروض */}
+          <ProductOfferBadge product={product} variant="compact" />
+          
+          {/* بادج الخصم العادي - فقط إذا لم يكن هناك عرض */}
+          {!hasOffer && isValidDiscount(product.discount) && (
             <Badge variant="destructive" className="bg-red-500 text-white font-bold animate-pulse text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1">
               -{typeof product.discount === 'string' ? parseFloat(product.discount) : product.discount}%
             </Badge>

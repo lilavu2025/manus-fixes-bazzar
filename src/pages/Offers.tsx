@@ -65,6 +65,17 @@ const Offers: React.FC = () => {
 
   const filteredOffers = offers.filter(
     (offer: Database["public"]["Tables"]["offers"]["Row"]) => {
+      // إخفاء العروض غير النشطة
+      if (!offer.active) return false;
+      
+      // إخفاء العروض منتهية الصلاحية
+      if (offer.end_date) {
+        const endDate = new Date(offer.end_date);
+        const now = new Date();
+        if (endDate < now) return false;
+      }
+      
+      // فلترة البحث
       if (debouncedSearchQuery === "") return true;
       
       const searchLower = debouncedSearchQuery.toLowerCase().trim();

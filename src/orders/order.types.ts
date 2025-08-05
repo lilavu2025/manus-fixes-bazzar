@@ -46,6 +46,10 @@ export interface Order {
   discount_type?: "amount" | "percent";
   discount_value?: number;
   total_after_discount?: number;
+  // حقول العروض الجديدة
+  applied_offers?: string | null;
+  free_items?: string | null;
+  discount_from_offers?: number | null;
 }
 
 export interface OrderItem {

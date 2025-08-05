@@ -63,6 +63,10 @@ export interface OrderRow {
   discount_type?: string;
   discount_value?: number;
   total_after_discount?: number;
+  // حقول العروض الجديدة
+  applied_offers?: string;
+  free_items?: string;
+  discount_from_offers?: number;
 }
 
 // جلب جميع البانرات
@@ -188,11 +192,12 @@ export async function fetchAllUsers(): Promise<UserProfile[]> {
 export async function fetchOrdersWithDetails(): Promise<OrdersWithDetails[]> {
   const { data, error } = await supabase
     .from('orders')
-    .select(`*, payment_method, shipping_address, cancelled_by, cancelled_by_name, profiles:profiles(id, full_name, email, phone, user_type), order_items(*, products(id, name_ar, name_en, name_he, image))`)
+    .select(`*, payment_method, shipping_address, cancelled_by, cancelled_by_name, applied_offers, free_items, discount_from_offers, profiles:profiles(id, full_name, email, phone, user_type), order_items(*, products(id, name_ar, name_en, name_he, image))`)
     .order('created_at', { ascending: false });
   if (error) throw error;
   if (!data) throw new Error('لم يتم العثور على بيانات الطلبات');
-  return (data).map((order: any) => ({
+  
+  return (data as any[]).map((order: any) => ({
     id: order.id,
     order_number: order.order_number, // إضافة رقم الطلبية
     status: order.status,
@@ -201,6 +206,10 @@ export async function fetchOrdersWithDetails(): Promise<OrdersWithDetails[]> {
     discount_type: order.discount_type,
     discount_value: order.discount_value,
     total_after_discount: order.total_after_discount,
+    // إضافة حقول العروض الجديدة
+    applied_offers: order.applied_offers,
+    free_items: order.free_items,
+    discount_from_offers: order.discount_from_offers,
     created_at: order.created_at,
     updated_at: order.updated_at,
     payment_method: order.payment_method || '',
@@ -236,12 +245,12 @@ export async function fetchUserOrdersWithDetails(userId: string): Promise<Orders
   try {
     const { data, error } = await supabase
       .from('orders')
-      .select('*, payment_method, shipping_address, admin_created, admin_creator_name, total_after_discount, discount_type, discount_value, order_items(*, products(id, name_ar, name_en, name_he, description_ar, description_en, description_he, price, original_price, wholesale_price, image, images, category_id, in_stock, rating, reviews_count, discount, featured, tags, stock_quantity, active, created_at))')
+      .select('*, payment_method, shipping_address, admin_created, admin_creator_name, total_after_discount, discount_type, discount_value, applied_offers, free_items, discount_from_offers, order_items(*, products(id, name_ar, name_en, name_he, description_ar, description_en, description_he, price, original_price, wholesale_price, image, images, category_id, in_stock, rating, reviews_count, discount, featured, tags, stock_quantity, active, created_at))')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
     if (error) throw error;
 
-    return (data || []).map((order: OrderRow & { admin_created?: boolean; admin_creator_name?: string; order_number?: number; total_after_discount?: number | null; discount_type?: string | null; discount_value?: number | null }) => ({
+    return (data || []).map((order: any) => ({
       id: order.id,
       order_number: order.order_number,
       status: order.status,
@@ -291,6 +300,10 @@ export async function fetchUserOrdersWithDetails(userId: string): Promise<Orders
       admin_created: !!order.admin_created,
       admin_creator_name: order.admin_creator_name ?? undefined,
       payment_method: order.payment_method || '', // إضافة payment_method هنا
+      // إضافة حقول العروض الجديدة
+      applied_offers: order.applied_offers,
+      free_items: order.free_items,
+      discount_from_offers: order.discount_from_offers,
     }));
   } catch (error) {
     console.error('Error fetching user orders:', error);
@@ -357,6 +370,10 @@ export interface OrdersWithDetails {
   customer_name?: string;
   admin_created?: boolean;
   admin_creator_name?: string;
+  // حقول العروض الجديدة
+  applied_offers?: string | null;
+  free_items?: string | null;
+  discount_from_offers?: number | null;
 }
 
 // جلب الفئات مع عدد المنتجات لكل فئة (للاستخدام الإداري)
