@@ -19,6 +19,17 @@ export function calculateOrderTotal(items: OrderItem[]): number {
   return items.reduce((total, item) => total + item.price * item.quantity, 0);
 }
 
+// دالة حساب المجموع الكلي مع مراعاة المنتجات المجانية
+export function calculateOrderTotalWithFreeItems(items: any[]): number {
+  return items.reduce((total, item) => {
+    // تجاهل المنتجات المجانية في الحساب
+    if (item.is_free) {
+      return total;
+    }
+    return total + item.price * item.quantity;
+  }, 0);
+}
+
 // دوال النصوص والألوان الخاصة بالحالة والدفع
 export function getStatusColor(status: string): string {
   switch (status) {

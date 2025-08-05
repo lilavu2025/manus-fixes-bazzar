@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import Autocomplete from "../../ui/autocomplete";
 import type { NewOrderForm, OrderItem } from "@/orders/order.types";
-import { calculateOrderTotal } from "@/orders/order.utils";
+import { calculateOrderTotal, calculateOrderTotalWithFreeItems } from "@/orders/order.utils";
 import OrderDiscountSection from "./OrderDiscountSection";
 import OrderDiscountSummary from "./OrderDiscountSummary";
 import { LanguageContext } from '@/contexts/LanguageContext.context';
@@ -47,6 +47,14 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
     setEditOrderForm(f => {
       if (!f) return f;
       return { ...f, items: f.items.filter(item => item.id !== id) };
+    });
+  }
+
+  // حذف صنف من الطلب بالفهرس (للمنتجات التي قد يكون لها id معقد)
+  function removeOrderItemByIndex(index: number) {
+    setEditOrderForm(f => {
+      if (!f) return f;
+      return { ...f, items: f.items.filter((_, i) => i !== index) };
     });
   }
 
@@ -384,38 +392,57 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
               </div>
               <div className="space-y-3">
                 {editOrderForm.items.map((item, index) => (
-                  <div key={item.id} className="p-4 border rounded-lg bg-white shadow-sm">
+                  <div key={item.id} className={`p-4 border rounded-lg shadow-sm ${(item as any).is_free ? 'bg-green-50 border-green-200' : 'bg-white'}`}>
                     <div className="mb-3">
                       <Label className="text-sm font-semibold">
                         {t("product") || "المنتج"} <span className="text-primary font-bold">{editOrderForm.items.length > 1 ? (index + 1) : null}</span> <span className="text-red-500">*</span>
+                        {(item as any).is_free && (
+                          <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-bold mr-2">
+                            🎁 مجاني
+                          </span>
+                        )}
                       </Label>
                     </div>
                     <div className="flex flex-wrap items-end gap-3">
                       <div className="flex-1 min-w-[250px]">
-                        <Autocomplete
-                        value={
-                          products.find(p => p.id === item.product_id)?.[`name_${language}`] ||
-                          products.find(p => p.id === item.product_id)?.name_ar ||
-                          ""
-                        }
-                        onClear={() => {
-                          // مسح جميع بيانات المنتج عند الضغط على X
-                          setEditOrderForm(f => {
-                            if (!f) return f;
-                            const updatedItems = f.items.map((itm, idx) =>
-                              idx === index
-                                ? {
-                                    ...itm,
-                                    product_id: "",
-                                    product_name: "",
-                                    price: 0,
-                                    quantity: 1,
-                                  }
-                                : itm
-                            );
-                            return { ...f, items: updatedItems };
-                          });
-                        }}
+                        {(item as any).is_free ? (
+                          // للمنتجات المجانية: عرض Input معطل
+                          <Input
+                            value={
+                              products.find(p => p.id === item.product_id)?.[`name_${language}`] ||
+                              products.find(p => p.id === item.product_id)?.name_ar ||
+                              ""
+                            }
+                            disabled
+                            className="bg-green-50 text-green-700 border-green-200 cursor-not-allowed"
+                            placeholder="منتج مجاني من عرض مطبق"
+                          />
+                        ) : (
+                          // للمنتجات العادية: Autocomplete
+                          <Autocomplete
+                            value={
+                              products.find(p => p.id === item.product_id)?.[`name_${language}`] ||
+                              products.find(p => p.id === item.product_id)?.name_ar ||
+                              ""
+                            }
+                            onClear={() => {
+                              // مسح جميع بيانات المنتج عند الضغط على X
+                              setEditOrderForm(f => {
+                                if (!f) return f;
+                                const updatedItems = f.items.map((itm, idx) =>
+                                  idx === index
+                                    ? {
+                                        ...itm,
+                                        product_id: "",
+                                        product_name: "",
+                                        price: 0,
+                                        quantity: 1,
+                                      }
+                                    : itm
+                                );
+                                return { ...f, items: updatedItems };
+                              });
+                            }}
                         renderOption={(option) => {
                           const product = products.find(
                             p => p[`name_${language}`] === option || p.name_ar === option || p.name_en === option || p.name_he === option
@@ -482,7 +509,9 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
                         }}
                         options={products.map(p => p[`name_${language}`] || p.name_ar || p.id)}
                         placeholder={t("searchOrSelectProduct") || "ابحث أو اكتب اسم المنتج"}
-                        required                        />
+                        required
+                        />
+                        )}
                       </div>
                       <div className="w-24">
                         <Label className="text-xs text-gray-600 mb-1 block">
@@ -503,35 +532,59 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
                             })
                           }
                           required
+                          disabled={(item as any).is_free} // تعطيل تحرير الكمية للمنتجات المجانية
+                          className={(item as any).is_free ? "bg-green-50 text-green-700" : ""}
                         />
                       </div>
                       <div className="w-28">
                         <Label className="text-xs text-gray-600 mb-1 block">
                           {t("price") || "السعر"} <span className="text-red-500">*</span>
+                          {(item as any).is_free && (
+                            <span className="text-green-600 font-bold ml-1">مجاني</span>
+                          )}
                         </Label>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          value={item.price === 0 ? "" : item.price}
-                          onChange={e =>
-                            setEditOrderForm(f => {
-                              if (!f) return f;
-                              const val = e.target.value === "" ? 0 : parseFloat(e.target.value) || 0;
-                              const updatedItems = f.items.map((itm, idx) =>
-                                idx === index ? { ...itm, price: val } : itm
-                              );
-                              return { ...f, items: updatedItems };
-                            })
-                          }
-                          required
-                        />
+                        <div className="flex flex-col gap-1">
+                          {(item as any).is_free && (item as any).original_price > 0 && (
+                            <span className="text-xs text-gray-500 line-through">
+                              {(item as any).original_price} ₪
+                            </span>
+                          )}
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={item.price === 0 ? 0 : item.price && item.price >= 0 ? item.price : 0}
+                            onChange={e =>
+                              setEditOrderForm(f => {
+                                if (!f) return f;
+                                const val = e.target.value === "" ? 0 : parseFloat(e.target.value) || 0;
+                                const updatedItems = f.items.map((itm, idx) =>
+                                  idx === index ? { ...itm, price: val } : itm
+                                );
+                                return { ...f, items: updatedItems };
+                              })
+                            }
+                            required
+                            disabled={(item as any).is_free} // تعطيل تحرير السعر للمنتجات المجانية
+                            className={(item as any).is_free ? "bg-green-50 text-green-700" : ""}
+                          />
+                        </div>
                       </div>
                       <Button
                         type="button"
-                        onClick={() => removeOrderItem(item.id)}
-                        variant="destructive"
+                        onClick={() => {
+                          if ((item as any).is_free) {
+                            // تحذير للمنتجات المجانية
+                            if (window.confirm("هذا منتج مجاني من عرض مطبق. هل أنت متأكد من حذفه؟")) {
+                              removeOrderItemByIndex(index); // استخدام الفهرس للمنتجات المجانية
+                            }
+                          } else {
+                            removeOrderItem(item.id);
+                          }
+                        }}
+                        variant={(item as any).is_free ? "outline" : "destructive"}
                         size="sm"
                         className="h-10"
+                        title={(item as any).is_free ? "منتج مجاني من عرض مطبق" : "حذف المنتج"}
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -541,10 +594,32 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
               </div>
               {/* المجموع الكلي */}
               {editOrderForm.items.length > 0 && (
-                <div className="text-right mt-3">
-                  <p className="text-lg font-semibold">
-                    {t("total") || "المجموع الكلي"}: {calculateOrderTotal(editOrderForm.items)} ₪
-                  </p>
+                <div className="text-right mt-3 space-y-2">
+                  {/* عرض تفصيلي للمجموع */}
+                  {(() => {
+                    const totalBeforeFree = calculateOrderTotal(editOrderForm.items);
+                    const totalAfterFree = calculateOrderTotalWithFreeItems(editOrderForm.items);
+                    const freeProductsValue = totalBeforeFree - totalAfterFree;
+                    
+                    return (
+                      <div className="border rounded-lg p-3 bg-gray-50">
+                        <p className="text-sm text-gray-600">
+                          {t("subtotal") || "المجموع الفرعي"}: {totalBeforeFree} ₪
+                        </p>
+                        {freeProductsValue > 0 && (
+                          <p className="text-sm text-green-600">
+                            {t("freeProductsDiscount") || "خصم المنتجات المجانية"}: -{freeProductsValue} ₪
+                          </p>
+                        )}
+                        <div className="border-t pt-2 mt-2">
+                          <p className="text-lg font-semibold">
+                            {t("total") || "المجموع الكلي"}: {totalAfterFree} ₪
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                  
                   <OrderDiscountSummary
                     discountEnabled={editOrderForm.discountEnabled}
                     discountType={editOrderForm.discountType}

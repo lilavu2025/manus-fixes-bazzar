@@ -19,7 +19,7 @@ import { Address } from "@/types";
 import { useOrdersRealtime } from "@/hooks/useOrdersRealtime";
 import { useProductsRealtime } from "@/hooks/useProductsRealtime";
 import { compressText } from "@/utils/commonUtils";
-import { calculateOrderTotal } from "../../orders/order.utils";
+import { calculateOrderTotal, calculateOrderTotalWithFreeItems } from "../../orders/order.utils";
 import { safeDecompressNotes } from "../../orders/order.utils";
 import { filteredOrders as filterOrdersUtil, advancedFilteredOrders as advFilteredOrdersUtil, advancedFilteredOrdersWithoutStatus as advFilteredOrdersNoStatusUtil } from "../../orders/order.filters";
 import { getOrderStats as getOrderStatsUtil } from "../../orders/order.stats";
@@ -187,7 +187,7 @@ const AdminOrders: React.FC = () => {
         setIsAddingOrder(false);
         return;
       }
-      const total = calculateOrderTotal(orderForm.items);
+      const total = calculateOrderTotalWithFreeItems(orderForm.items);
       const orderInsertObj = {
         items: orderForm.items as any, // لضمان التوافق مع نوع JSON
         total,
@@ -256,10 +256,7 @@ const AdminOrders: React.FC = () => {
     }
     setIsAddingOrder(true);
     try {
-      const total = editOrderForm.items.reduce(
-        (total, item) => total + item.price * item.quantity,
-        0,
-      );
+      const total = calculateOrderTotalWithFreeItems(editOrderForm.items);
       const updateObj = {
         items: editOrderForm.items as any, // إرسال المصفوفة مباشرة وليس كنص
         total,
@@ -604,18 +601,101 @@ const AdminOrders: React.FC = () => {
                       : Array.isArray(latestOrder.items)
                         ? latestOrder.items
                         : [];
+
+                    // إضافة المنتجات المجانية من العروض المطبقة
+                    const appliedOffers = latestOrder.applied_offers 
+                      ? (typeof latestOrder.applied_offers === 'string' 
+                          ? JSON.parse(latestOrder.applied_offers) 
+                          : latestOrder.applied_offers)
+                      : [];
+
+                    // إضافة المنتجات المجانية إلى قائمة العناصر
+                    const freeItems = [];
+                    
+                    for (const appliedOffer of appliedOffers) {
+                      // التحقق من وجود منتجات مجانية في العرض المطبق
+                      if (appliedOffer.freeProducts && Array.isArray(appliedOffer.freeProducts)) {
+                        for (const freeProductRef of appliedOffer.freeProducts) {
+                          const freeProduct = products.find(p => p.id === freeProductRef.productId);
+                          
+                          if (freeProduct) {
+                            // تحديد السعر الأصلي بناءً على نوع المستخدم
+                            let selectedUser = latestOrder?.profiles as any;
+                            let userType = (selectedUser && selectedUser.user_type) ? selectedUser.user_type : 'retail';
+                            let originalPrice = 0;
+                            let wholesale = 0;
+                            
+                            if (typeof freeProduct.wholesale_price === 'number' && freeProduct.wholesale_price > 0) wholesale = freeProduct.wholesale_price;
+                            
+                            if (userType === 'admin' || userType === 'wholesale') {
+                              originalPrice = wholesale > 0 ? wholesale : freeProduct.price;
+                            } else {
+                              originalPrice = freeProduct.price;
+                            }
+                            
+                            freeItems.push({
+                              id: `free_${freeProductRef.productId}_${Date.now()}_${Math.random()}`,
+                              product_id: freeProductRef.productId,
+                              quantity: freeProductRef.quantity || 1,
+                              price: 0,
+                              product_name: freeProduct.name_ar || freeProduct.name_en || freeProduct.id,
+                              is_free: true, // علامة للمنتج المجاني
+                              original_price: originalPrice || 0, // السعر الأصلي حسب نوع المستخدم
+                            });
+                          } else {
+                            console.log('❌ لم يتم العثور على المنتج المجاني:', freeProductRef.productId);
+                          }
+                        }
+                      }
+                      
+                      // التحقق التقليدي للتوافق مع البنى القديمة
+                      else if (appliedOffer.offer && appliedOffer.offer.offer_type === 'buy_get' && appliedOffer.offer.get_discount_type === 'free') {
+                        const freeProduct = products.find(p => p.id === appliedOffer.offer.get_product_id);
+                        
+                        if (freeProduct) {
+                          // تحديد السعر الأصلي بناءً على نوع المستخدم
+                          let selectedUser = latestOrder?.profiles as any;
+                          let userType = (selectedUser && selectedUser.user_type) ? selectedUser.user_type : 'retail';
+                          let originalPrice = 0;
+                          let wholesale = 0;
+                          
+                          if (typeof freeProduct.wholesale_price === 'number' && freeProduct.wholesale_price > 0) wholesale = freeProduct.wholesale_price;
+                          
+                          if (userType === 'admin' || userType === 'wholesale') {
+                            originalPrice = wholesale > 0 ? wholesale : freeProduct.price;
+                          } else {
+                            originalPrice = freeProduct.price;
+                          }
+                          
+                          freeItems.push({
+                            id: `free_${appliedOffer.offer.get_product_id}_${Date.now()}_${Math.random()}`,
+                            product_id: appliedOffer.offer.get_product_id,
+                            quantity: 1,
+                            price: 0,
+                            product_name: freeProduct.name_ar || freeProduct.name_en || freeProduct.id,
+                            is_free: true, // علامة للمنتج المجاني
+                            original_price: originalPrice || 0, // السعر الأصلي حسب نوع المستخدم
+                          });
+                        } else {
+                          console.log('❌ لم يتم العثور على المنتج المجاني:', appliedOffer.offer.get_product_id);
+                        }
+                      }
+                    }
+
+                    const allItems = [...items, ...freeItems];
+
                     setEditOrderForm({
                       user_id: latestOrder.user_id,
                       payment_method: latestOrder.payment_method,
                       status: latestOrder.status,
                       notes: latestOrder.notes ? safeDecompressNotes(latestOrder.notes) : "",
-                      items,
+                      items: allItems,
                       shipping_address: {
                         ...shipping_address,
                         fullName: customerName,
                       },
                     });
-                    setOriginalOrderForEdit(mapOrderFromDb({ ...latestOrder, items, shipping_address } as Record<string, unknown>));
+                    setOriginalOrderForEdit(mapOrderFromDb({ ...latestOrder, items: allItems, shipping_address } as Record<string, unknown>));
                     setShowEditOrder(true);
                   }}
                   onDelete={(order) => {
