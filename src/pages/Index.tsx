@@ -162,15 +162,29 @@ const Index: React.FC = () => {
               showPartialItems={true}
               centerContent={true}
             >
-              {offers.map((offer) => (
-                <OfferCard
-                  key={offer.id}
-                  offer={offer}
-                  showFullTitle
-                  showDescriptionWithReadMore
-                  equalHeight
-                />
-              ))}
+              {offers
+                .filter((offer) => {
+                  // إخفاء العروض غير النشطة
+                  if (!offer.active) return false;
+                  
+                  // إخفاء العروض منتهية الصلاحية
+                  if (offer.end_date) {
+                    const endDate = new Date(offer.end_date);
+                    const now = new Date();
+                    if (endDate < now) return false;
+                  }
+                  
+                  return true;
+                })
+                .map((offer) => (
+                  <OfferCard
+                    key={offer.id}
+                    offer={offer}
+                    showFullTitle
+                    showDescriptionWithReadMore
+                    equalHeight
+                  />
+                ))}
             </HorizontalSlider>
           </div>
         )}

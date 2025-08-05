@@ -11,6 +11,7 @@ import QuantitySelector from "@/components/QuantitySelector";
 import { getLocalizedName, getLocalizedDescription } from "@/utils/getLocalizedName";
 import { getDisplayPrice } from "@/utils/priceUtils";
 import ProductCardBadges from "./ProductCardBadges";
+import ProductCardIncentives from "./ProductCardIncentives";
 import { toast } from "sonner";
 
 interface ProductCardContentProps {
@@ -62,6 +63,9 @@ const ProductCardContent: React.FC<ProductCardContentProps> = ({
         <div className="flex-shrink-0">
           <ProductCardBadges product={product} variant="belowName" />
         </div>
+
+        {/* تحفيزات العروض - متطابق مع صفحة التفاصيل */}
+        <ProductCardIncentives productId={product.id} />
 
         {/* وصف المنتج */}
         {description && (

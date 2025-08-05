@@ -6,6 +6,8 @@ import { getLocalizedName, getLocalizedDescription } from '@/utils/getLocalizedN
 import { useAuth } from '@/contexts/useAuth';
 import { getDisplayPrice } from '@/utils/priceUtils';
 import ProductCardBadges from '@/components/ProductCard/ProductCardBadges';
+import ProductOfferIncentives from '@/components/ProductOfferIncentives';
+import ProductOffersDisplay from '@/components/ProductOffersDisplay';
 import type { Product as ProductFull } from '@/types/product';
 
 interface ProductInfoProps {
@@ -44,6 +46,12 @@ const ProductInfo = ({ product }: ProductInfoProps) => {
         <h3 className="font-semibold mb-3 text-sm sm:text-base">{t('productDescription')}</h3>
         <p className="text-gray-600 leading-relaxed text-sm sm:text-base line-height-relaxed">{getLocalizedDescription(product, language)}</p>
       </div>
+      
+      {/* Active Offers */}
+      <ProductOffersDisplay currentProduct={product} />
+      
+      {/* Offer Incentives */}
+      <ProductOfferIncentives productId={product.id} />
     </div>
   );
 };

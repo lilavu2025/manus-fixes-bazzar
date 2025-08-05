@@ -113,5 +113,9 @@ export function mapOrderFromDb(order: Record<string, unknown>): Order {
     discount_type: order["discount_type"] as "amount" | "percent" | undefined,
     discount_value: order["discount_value"] as number | undefined,
     total_after_discount: order["total_after_discount"] as number | undefined,
+    // إضافة حقول العروض الجديدة
+    applied_offers: order["applied_offers"] as string | null,
+    free_items: order["free_items"] as string | null,
+    discount_from_offers: order["discount_from_offers"] as number | null,
   };
 }

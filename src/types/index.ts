@@ -115,6 +115,10 @@ export interface Order {
   customer_name?: string | null;
   cancelled_by?: string;
   cancelled_by_name?: string;
+  // حقول العروض الجديدة
+  applied_offers?: string | null;
+  free_items?: string | null;
+  discount_from_offers?: number | null;
 }
 
 // ====================
