@@ -9,8 +9,11 @@ interface OrderDiscountSummaryProps {
   t: (key: string) => string;
 }
 
-const calculateOrderTotal = (items: { price: number; quantity: number }[]) => {
-  return items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+const calculateOrderTotalWithFreeItems = (items: { price: number; quantity: number; is_free?: boolean }[]) => {
+  return items.reduce((sum, item) => {
+    if (item.is_free) return sum; // تجاهل المنتجات المجانية
+    return sum + (item.price * item.quantity);
+  }, 0);
 };
 
 const OrderDiscountSummary: React.FC<OrderDiscountSummaryProps> = ({
@@ -21,7 +24,7 @@ const OrderDiscountSummary: React.FC<OrderDiscountSummaryProps> = ({
   t,
 }) => {
   if (!items.length) return null;
-  const total = calculateOrderTotal(items);
+  const total = calculateOrderTotalWithFreeItems(items);
   let after = total;
   if (!(discountEnabled && discountValue > 0)) return null;
   if (discountType === "percent") {

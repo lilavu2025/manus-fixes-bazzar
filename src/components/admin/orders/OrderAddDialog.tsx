@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import type { NewOrderForm, OrderItem } from "@/orders/order.types";
-import { calculateOrderTotal } from "@/orders/order.utils";
+import { calculateOrderTotal, calculateOrderTotalWithFreeItems } from "@/orders/order.utils";
 import Autocomplete from "../../ui/autocomplete";
 import AddressSelector from "@/components/addresses/AddressSelector";
 import { getNextOrderNumber } from "@/integrations/supabase/getNextOrderNumber";
@@ -494,10 +494,32 @@ const OrderAddDialog: React.FC<OrderAddDialogProps> = ({
               ))}
             </div>
             {orderForm.items.length > 0 && (
-              <div className="text-right mt-3">
-                <p className="text-lg font-semibold">
-                  {t("total") || "المجموع الكلي"}: {calculateOrderTotal(orderForm.items)} ₪
-                </p>
+              <div className="text-right mt-3 space-y-2">
+                {/* عرض تفصيلي للمجموع */}
+                {(() => {
+                  const totalBeforeFree = calculateOrderTotal(orderForm.items);
+                  const totalAfterFree = calculateOrderTotalWithFreeItems(orderForm.items);
+                  const freeProductsValue = totalBeforeFree - totalAfterFree;
+                  
+                  return (
+                    <div className="border rounded-lg p-3 bg-gray-50">
+                      <p className="text-sm text-gray-600">
+                        {t("subtotal") || "المجموع الفرعي"}: {totalBeforeFree} ₪
+                      </p>
+                      {freeProductsValue > 0 && (
+                        <p className="text-sm text-green-600">
+                          {t("freeProductsDiscount") || "خصم المنتجات المجانية"}: -{freeProductsValue} ₪
+                        </p>
+                      )}
+                      <div className="border-t pt-2 mt-2">
+                        <p className="text-lg font-semibold">
+                          {t("total") || "المجموع الكلي"}: {totalAfterFree} ₪
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })()}
+                
                 <OrderDiscountSummary
                   discountEnabled={orderForm.discountEnabled}
                   discountType={orderForm.discountType}
