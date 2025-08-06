@@ -1326,4 +1326,5 @@ export const enTranslations = {
   fromOffer: "From Offer",
   conversionRate: "Conversion Rate",
   statisticsPeriod: "Statistics Period",
+  freeProductsDiscount: "Free Products Discount",
 };

@@ -1,6 +1,6 @@
-import React, { useEffect, useContext } from "react";
+import React, { useEffect, useContext, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
@@ -12,6 +12,7 @@ import { calculateOrderTotal, calculateOrderTotalWithFreeItems } from "@/orders/
 import OrderDiscountSection from "./OrderDiscountSection";
 import OrderDiscountSummary from "./OrderDiscountSummary";
 import { LanguageContext } from '@/contexts/LanguageContext.context';
+import { checkProductOfferEligibility, applyOfferToProduct, removeAppliedOffer, type OfferEligibility } from "@/utils/offerUtils";
 
 interface OrderEditDialogProps {
   open: boolean;
@@ -41,6 +42,71 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
   products,
 }) => {
   const { language } = useContext(LanguageContext) ?? { language: 'ar' };
+  const [offerEligibilities, setOfferEligibilities] = useState<Record<string, OfferEligibility>>({});
+
+  // فحص العروض المتاحة للمنتجات
+  const checkOffersForItems = async () => {
+    if (!editOrderForm?.items) return;
+    
+    const userType = originalOrderForEdit?.profiles?.user_type || 'retail';
+    const newEligibilities: Record<string, OfferEligibility> = {};
+    
+    for (const item of editOrderForm.items) {
+      if (item.product_id && item.quantity > 0 && !(item as any).is_free) {
+        try {
+          const eligibility = await checkProductOfferEligibility(
+            item.product_id,
+            item.quantity,
+            editOrderForm.items,
+            userType
+          );
+          
+          if (eligibility.isEligible && eligibility.canApply) {
+            newEligibilities[item.product_id] = eligibility;
+          }
+        } catch (error) {
+          console.error("Error checking offer for product:", item.product_id, error);
+        }
+      }
+    }
+    
+    setOfferEligibilities(newEligibilities);
+  };
+
+  // تطبيق العرض
+  const handleApplyOffer = async (productId: string, eligibility: OfferEligibility) => {
+    if (!editOrderForm || !eligibility.offer) return;
+    
+    try {
+      const userType = originalOrderForEdit?.profiles?.user_type || 'retail';
+      const updatedItems = await applyOfferToProduct(
+        eligibility.offer,
+        productId,
+        editOrderForm.items,
+        products,
+        userType
+      );
+      
+      setEditOrderForm(prev => prev ? { ...prev, items: updatedItems } : prev);
+      
+      // إزالة العرض من قائمة العروض المتاحة لأنه تم تطبيقه
+      setOfferEligibilities(prev => {
+        const updated = { ...prev };
+        delete updated[productId];
+        return updated;
+      });
+    } catch (error) {
+      console.error("Error applying offer:", error);
+    }
+  };
+
+  // إزالة العرض المطبق
+  const handleRemoveOffer = (offerId: string) => {
+    if (!editOrderForm) return;
+    
+    const updatedItems = removeAppliedOffer(editOrderForm.items, offerId);
+    setEditOrderForm(prev => prev ? { ...prev, items: updatedItems } : prev);
+  };
 
   // حذف صنف من الطلب
   function removeOrderItem(id: string) {
@@ -68,6 +134,11 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
       return {
         ...prev,
         items: prev.items.map(item => {
+          // لا نحدث أسعار المنتجات المجانية، نخليها صفر
+          if ((item as any).is_free) {
+            return item;
+          }
+          
           const matched = products.find(p => p.id === item.product_id);
           if (!matched) return item;
           let price = 0;
@@ -102,6 +173,19 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, originalOrderForEdit]);
+
+  // فحص العروض عند تغيير العناصر
+  useEffect(() => {
+    if (editOrderForm?.items && products.length > 0) {
+      // إضافة تأخير بسيط لتجنب الاستدعاءات المتكررة
+      const timeoutId = setTimeout(() => {
+        checkOffersForItems();
+      }, 300);
+      
+      return () => clearTimeout(timeoutId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editOrderForm?.items, products]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -569,26 +653,79 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
                           />
                         </div>
                       </div>
-                      <Button
-                        type="button"
-                        onClick={() => {
-                          if ((item as any).is_free) {
-                            // تحذير للمنتجات المجانية
-                            if (window.confirm("هذا منتج مجاني من عرض مطبق. هل أنت متأكد من حذفه؟")) {
-                              removeOrderItemByIndex(index); // استخدام الفهرس للمنتجات المجانية
+                      <div className="flex flex-col gap-2">
+                        <Button
+                          type="button"
+                          onClick={() => {
+                            if ((item as any).is_free) {
+                              // تحذير للمنتجات المجانية
+                              if (window.confirm("هذا منتج مجاني من عرض مطبق. هل أنت متأكد من حذفه؟")) {
+                                removeOrderItemByIndex(index); // استخدام الفهرس للمنتجات المجانية
+                              }
+                            } else {
+                              removeOrderItem(item.id);
                             }
-                          } else {
-                            removeOrderItem(item.id);
-                          }
-                        }}
-                        variant={(item as any).is_free ? "outline" : "destructive"}
-                        size="sm"
-                        className="h-10"
-                        title={(item as any).is_free ? "منتج مجاني من عرض مطبق" : "حذف المنتج"}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                          }}
+                          variant={(item as any).is_free ? "outline" : "destructive"}
+                          size="sm"
+                          className="h-10"
+                          title={(item as any).is_free ? "منتج مجاني من عرض مطبق" : "حذف المنتج"}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                        
+                        {/* زر تطبيق العرض - يظهر فقط عند تحقيق شروط عرض */}
+                        {item.product_id && offerEligibilities[item.product_id] && !((item as any).is_free) && (
+                          <Button
+                            type="button"
+                            onClick={() => handleApplyOffer(item.product_id, offerEligibilities[item.product_id])}
+                            variant="outline"
+                            size="sm"
+                            className="h-10 bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+                            title={offerEligibilities[item.product_id].message}
+                          >
+                            <Gift className="h-4 w-4" />
+                          </Button>
+                        )}
+                        
+                        {/* زر إزالة العرض المطبق */}
+                        {(item as any).offer_applied && (item as any).offer_id && (
+                          <Button
+                            type="button"
+                            onClick={() => handleRemoveOffer((item as any).offer_id)}
+                            variant="outline"
+                            size="sm"
+                            className="h-10 bg-red-50 border-red-200 text-red-700 hover:bg-red-100"
+                            title="إزالة العرض المطبق"
+                          >
+                            <span className="text-xs">✕</span>
+                          </Button>
+                        )}
+                      </div>
                     </div>
+                    
+                    {/* عرض معلومات العرض المطبق */}
+                    {(item as any).offer_applied && (item as any).offer_name && (
+                      <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-sm">
+                        <span className="text-blue-700 font-medium">
+                          🎉 عرض مطبق: {(item as any).offer_name}
+                        </span>
+                        {(item as any).original_price && (
+                          <span className="block text-gray-600 text-xs mt-1">
+                            السعر الأصلي: {(item as any).original_price} ₪
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* عرض معلومات العرض المتاح */}
+                    {item.product_id && offerEligibilities[item.product_id] && !((item as any).is_free) && (
+                      <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-sm">
+                        <span className="text-green-700 font-medium">
+                          🎁 {offerEligibilities[item.product_id].message}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -597,9 +734,37 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
                 <div className="text-right mt-3 space-y-2">
                   {/* عرض تفصيلي للمجموع */}
                   {(() => {
-                    const totalBeforeFree = calculateOrderTotal(editOrderForm.items);
-                    const totalAfterFree = calculateOrderTotalWithFreeItems(editOrderForm.items);
-                    const freeProductsValue = totalBeforeFree - totalAfterFree;
+                    // حساب المجموع الفرعي للمنتجات العادية
+                    const regularItemsTotal = editOrderForm.items
+                      .filter(item => !(item as any).is_free)
+                      .reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                    
+                    // حساب قيمة المنتجات المجانية بناءً على نوع الزبون
+                    let selectedUser = originalOrderForEdit?.profiles;
+                    let userType = (selectedUser && selectedUser.user_type) ? selectedUser.user_type : 'retail';
+                    
+                    const freeProductsValue = editOrderForm.items
+                      .filter(item => (item as any).is_free)
+                      .reduce((sum, item) => {
+                        const matched = products.find(p => p.id === item.product_id);
+                        if (!matched) return sum;
+                        
+                        let price = 0;
+                        let wholesale = 0;
+                        if (typeof matched.wholesale_price === 'number' && matched.wholesale_price > 0) wholesale = matched.wholesale_price;
+                        if (typeof matched.wholesalePrice === 'number' && matched.wholesalePrice > 0) wholesale = Math.max(wholesale, matched.wholesalePrice);
+                        
+                        if (userType === 'admin' || userType === 'wholesale') {
+                          price = wholesale > 0 ? wholesale : matched.price;
+                        } else {
+                          price = matched.price;
+                        }
+                        
+                        return sum + (price * item.quantity);
+                      }, 0);
+                    
+                    const totalBeforeFree = regularItemsTotal + freeProductsValue;
+                    const totalAfterFree = regularItemsTotal;
                     
                     return (
                       <div className="border rounded-lg p-3 bg-gray-50">

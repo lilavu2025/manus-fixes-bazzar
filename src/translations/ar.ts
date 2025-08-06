@@ -1332,4 +1332,5 @@ export const arTranslations = {
   statisticsPeriod: "فترة الإحصائيات",
   value: "قيمة",
 
+  freeProductsDiscount: "خصم المنتجات المجانية"
 };

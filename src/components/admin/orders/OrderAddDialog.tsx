@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { BadgeDollarSign, Percent, Plus, Trash2 } from "lucide-react";
+import { BadgeDollarSign, Percent, Plus, Trash2, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,6 +19,7 @@ import OrderDiscountSection from "./OrderDiscountSection";
 import OrderDiscountSummary from "./OrderDiscountSummary";
 import { LanguageContext } from '@/contexts/LanguageContext.context';
 import { addOrderItemToForm } from "@/orders/order.form.utils"; // استيراد الدالة من المسار الصحيح
+import { checkProductOfferEligibility, applyOfferToProduct, removeAppliedOffer, type OfferEligibility } from "@/utils/offerUtils";
 
 interface OrderAddDialogProps {
   open: boolean;
@@ -57,6 +58,7 @@ const OrderAddDialog: React.FC<OrderAddDialogProps> = ({
 }) => {
   const { language } = useContext(LanguageContext) ?? { language: 'ar' };
   const [nextOrderNumber, setNextOrderNumber] = useState<number | null>(null);
+  const [offerEligibilities, setOfferEligibilities] = useState<Record<string, OfferEligibility>>({});
 
   // إضافة الخصم إلى orderForm إذا لم يكن موجوداً
   useEffect(() => {
@@ -95,6 +97,83 @@ const OrderAddDialog: React.FC<OrderAddDialogProps> = ({
     }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orderForm.user_id, allowCustomClient]);
+
+  // فحص العروض المتاحة للمنتجات
+  const checkOffersForItems = async () => {
+    if (!orderForm?.items) return;
+    
+    const selectedUser = users.find(u => u.id === orderForm.user_id);
+    const userType = (selectedUser && selectedUser.user_type) ? selectedUser.user_type : 'retail';
+    const newEligibilities: Record<string, OfferEligibility> = {};
+    
+    for (const item of orderForm.items) {
+      if (item.product_id && item.quantity > 0 && !(item as any).is_free) {
+        try {
+          const eligibility = await checkProductOfferEligibility(
+            item.product_id,
+            item.quantity,
+            orderForm.items,
+            userType
+          );
+          
+          if (eligibility.isEligible && eligibility.canApply) {
+            newEligibilities[item.product_id] = eligibility;
+          }
+        } catch (error) {
+          console.error("Error checking offer for product:", item.product_id, error);
+        }
+      }
+    }
+    
+    setOfferEligibilities(newEligibilities);
+  };
+
+  // تطبيق العرض
+  const handleApplyOffer = async (productId: string, eligibility: OfferEligibility) => {
+    if (!eligibility.offer) return;
+    
+    try {
+      const selectedUser = users.find(u => u.id === orderForm.user_id);
+      const userType = (selectedUser && selectedUser.user_type) ? selectedUser.user_type : 'retail';
+      const updatedItems = await applyOfferToProduct(
+        eligibility.offer,
+        productId,
+        orderForm.items,
+        products,
+        userType
+      );
+      
+      setOrderForm(prev => ({ ...prev, items: updatedItems }));
+      
+      // إزالة العرض من قائمة العروض المتاحة لأنه تم تطبيقه
+      setOfferEligibilities(prev => {
+        const updated = { ...prev };
+        delete updated[productId];
+        return updated;
+      });
+    } catch (error) {
+      console.error("Error applying offer:", error);
+    }
+  };
+
+  // إزالة العرض المطبق
+  const handleRemoveOffer = (offerId: string) => {
+    const updatedItems = removeAppliedOffer(orderForm.items, offerId);
+    setOrderForm(prev => ({ ...prev, items: updatedItems }));
+  };
+
+  // فحص العروض عند تغيير العناصر
+  useEffect(() => {
+    if (orderForm?.items && products.length > 0) {
+      // إضافة تأخير بسيط لتجنب الاستدعاءات المتكررة
+      const timeoutId = setTimeout(() => {
+        checkOffersForItems();
+      }, 300);
+      
+      return () => clearTimeout(timeoutId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderForm?.items, products]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -480,16 +559,69 @@ const OrderAddDialog: React.FC<OrderAddDialogProps> = ({
                         required
                       />
                     </div>
-                    <Button
-                      type="button"
-                      onClick={() => removeOrderItem(item.id)}
-                      variant="destructive"
-                      size="sm"
-                      className="h-10"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <div className="flex flex-col gap-2">
+                      <Button
+                        type="button"
+                        onClick={() => removeOrderItem(item.id)}
+                        variant="destructive"
+                        size="sm"
+                        className="h-10"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                      
+                      {/* زر تطبيق العرض - يظهر فقط عند تحقيق شروط عرض */}
+                      {item.product_id && offerEligibilities[item.product_id] && !((item as any).is_free) && (
+                        <Button
+                          type="button"
+                          onClick={() => handleApplyOffer(item.product_id, offerEligibilities[item.product_id])}
+                          variant="outline"
+                          size="sm"
+                          className="h-10 bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+                          title={offerEligibilities[item.product_id].message}
+                        >
+                          <Gift className="h-4 w-4" />
+                        </Button>
+                      )}
+                      
+                      {/* زر إزالة العرض المطبق */}
+                      {(item as any).offer_applied && (item as any).offer_id && (
+                        <Button
+                          type="button"
+                          onClick={() => handleRemoveOffer((item as any).offer_id)}
+                          variant="outline"
+                          size="sm"
+                          className="h-10 bg-red-50 border-red-200 text-red-700 hover:bg-red-100"
+                          title="إزالة العرض المطبق"
+                        >
+                          <span className="text-xs">✕</span>
+                        </Button>
+                      )}
+                    </div>
                   </div>
+                  
+                  {/* عرض معلومات العرض المطبق */}
+                  {(item as any).offer_applied && (item as any).offer_name && (
+                    <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-sm">
+                      <span className="text-blue-700 font-medium">
+                        🎉 عرض مطبق: {(item as any).offer_name}
+                      </span>
+                      {(item as any).original_price && (
+                        <span className="block text-gray-600 text-xs mt-1">
+                          السعر الأصلي: {(item as any).original_price} ₪
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  
+                  {/* عرض معلومات العرض المتاح */}
+                  {item.product_id && offerEligibilities[item.product_id] && !((item as any).is_free) && (
+                    <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-sm">
+                      <span className="text-green-700 font-medium">
+                        🎁 {offerEligibilities[item.product_id].message}
+                      </span>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
