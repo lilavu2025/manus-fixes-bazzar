@@ -78,7 +78,8 @@ const OrderAddDialog: React.FC<OrderAddDialogProps> = ({
   }, [open]);
 
   useEffect(() => {
-    // تحديث أسعار المنتجات عند تغيير المستخدم
+    // تحديث أسعار المنتجات عند تغيير المستخدم أو فتح الديالوج
+    if (!open) return;
     let selectedUser = users.find(u => u.id === orderForm.user_id);
     let userType = (selectedUser && selectedUser.user_type) ? selectedUser.user_type : 'retail';
     setOrderForm(prev => ({
@@ -96,7 +97,7 @@ const OrderAddDialog: React.FC<OrderAddDialogProps> = ({
       })
     }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [orderForm.user_id, allowCustomClient]);
+  }, [open, orderForm.user_id, allowCustomClient]);
 
   // فحص العروض المتاحة للمنتجات
   const checkOffersForItems = async () => {

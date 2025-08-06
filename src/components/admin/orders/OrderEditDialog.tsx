@@ -105,7 +105,32 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
     if (!editOrderForm) return;
     
     const updatedItems = removeAppliedOffer(editOrderForm.items, offerId);
-    setEditOrderForm(prev => prev ? { ...prev, items: updatedItems } : prev);
+    
+    // إعادة حساب الأسعار بناءً على نوع المستخدم بعد إزالة العرض
+    const selectedUser = originalOrderForEdit?.profiles;
+    const userType = (selectedUser && selectedUser.user_type) ? selectedUser.user_type : 'retail';
+    
+    const itemsWithCorrectPrices = updatedItems.map(item => {
+      // تحديث السعر فقط للمنتجات التي تم إزالة العرض منها وليست مجانية
+      if (!(item as any).is_free && !(item as any).offer_applied) {
+        const matched = products.find(p => p.id === item.product_id);
+        if (matched) {
+          let price = matched.price;
+          let wholesale = 0;
+          if (typeof matched.wholesale_price === 'number' && matched.wholesale_price > 0) wholesale = matched.wholesale_price;
+          if (typeof matched.wholesalePrice === 'number' && matched.wholesalePrice > 0) wholesale = Math.max(wholesale, matched.wholesalePrice);
+          
+          if (userType === 'admin' || userType === 'wholesale') {
+            price = wholesale > 0 ? wholesale : matched.price;
+          }
+          
+          return { ...item, price };
+        }
+      }
+      return item;
+    });
+    
+    setEditOrderForm(prev => prev ? { ...prev, items: itemsWithCorrectPrices } : prev);
   };
 
   // حذف صنف من الطلب
@@ -124,9 +149,9 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
     });
   }
 
-  // تحديث أسعار المنتجات عند تغيير المستخدم (أو عند تحميل الطلبية)
+  // تحديث أسعار المنتجات عند تغيير المستخدم (أو عند تحميل الطلبية أو فتح الديالوج)
   useEffect(() => {
-    if (!editOrderForm) return;
+    if (!editOrderForm || !open) return;
     let selectedUser = originalOrderForEdit?.profiles;
     let userType = (selectedUser && selectedUser.user_type) ? selectedUser.user_type : 'retail';
     setEditOrderForm(prev => {
@@ -155,7 +180,7 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
       };
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [originalOrderForEdit?.profiles?.user_type, products]);
+  }, [open, originalOrderForEdit?.profiles?.user_type, products]);
 
   // عند فتح الديالوج، إذا الطلبية الأصلية فيها خصم، فعّل الخصم وعبّي القيم
   useEffect(() => {
@@ -630,7 +655,24 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
                         <div className="flex flex-col gap-1">
                           {(item as any).is_free && (item as any).original_price > 0 && (
                             <span className="text-xs text-gray-500 line-through">
-                              {(item as any).original_price} ₪
+                              {(() => {
+                                // حساب السعر الأصلي بناءً على نوع المستخدم
+                                const selectedUser = originalOrderForEdit?.profiles;
+                                const userType = (selectedUser && selectedUser.user_type) ? selectedUser.user_type : 'retail';
+                                const matched = products.find(p => p.id === item.product_id);
+                                if (!matched) return (item as any).original_price;
+                                
+                                let price = matched.price;
+                                let wholesale = 0;
+                                if (typeof matched.wholesale_price === 'number' && matched.wholesale_price > 0) wholesale = matched.wholesale_price;
+                                if (typeof matched.wholesalePrice === 'number' && matched.wholesalePrice > 0) wholesale = Math.max(wholesale, matched.wholesalePrice);
+                                
+                                if (userType === 'admin' || userType === 'wholesale') {
+                                  price = wholesale > 0 ? wholesale : matched.price;
+                                }
+                                
+                                return price;
+                              })()} ₪
                             </span>
                           )}
                           <Input
@@ -712,7 +754,24 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
                         </span>
                         {(item as any).original_price && (
                           <span className="block text-gray-600 text-xs mt-1">
-                            السعر الأصلي: {(item as any).original_price} ₪
+                            السعر الأصلي: {(() => {
+                              // حساب السعر الأصلي بناءً على نوع المستخدم
+                              const selectedUser = originalOrderForEdit?.profiles;
+                              const userType = (selectedUser && selectedUser.user_type) ? selectedUser.user_type : 'retail';
+                              const matched = products.find(p => p.id === item.product_id);
+                              if (!matched) return (item as any).original_price;
+                              
+                              let price = matched.price;
+                              let wholesale = 0;
+                              if (typeof matched.wholesale_price === 'number' && matched.wholesale_price > 0) wholesale = matched.wholesale_price;
+                              if (typeof matched.wholesalePrice === 'number' && matched.wholesalePrice > 0) wholesale = Math.max(wholesale, matched.wholesalePrice);
+                              
+                              if (userType === 'admin' || userType === 'wholesale') {
+                                price = wholesale > 0 ? wholesale : matched.price;
+                              }
+                              
+                              return price;
+                            })()} ₪
                           </span>
                         )}
                       </div>
