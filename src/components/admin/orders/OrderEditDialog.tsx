@@ -1,3 +1,4 @@
+// OrderEditDialog.tsx
 import React, { useEffect, useContext, useState, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Plus, Trash2, Gift } from "lucide-react";
@@ -124,7 +125,7 @@ function buildChangesForConfirm(originalOrder: any, edited: NewOrderForm, produc
     };
   });
 
-  // ALSO include previous free refs from free_items or applied_offers
+  // also previous free refs from free_items / applied_offers
   const prevFreeA = normalizeFreeRefs(originalOrder?.free_items);
   const prevFreeB = freeFromAppliedOffers(originalOrder?.applied_offers);
   const prevFreeMerged: FreeRef[] = (() => {
@@ -139,9 +140,7 @@ function buildChangesForConfirm(originalOrder: any, edited: NewOrderForm, produc
     if (!oldByPid[f.productId]) {
       oldByPid[f.productId] = { qty: f.quantity, price: 0 };
     } else {
-      // خذ الأكبر بين الموجود والمخزن كـ free_ref
       oldByPid[f.productId].qty = Math.max(oldByPid[f.productId].qty, f.quantity);
-      // السعر القديم للمنتج المجاني = 0
       oldByPid[f.productId].price = 0;
     }
   }
@@ -162,8 +161,11 @@ function buildChangesForConfirm(originalOrder: any, edited: NewOrderForm, produc
     const oldQty = old?.qty ?? 0;
     const oldPriceForDisplay = old?.price ?? basePrice(pid);
 
-    const oldStr = `الكمية: ${oldQty}, السعر: ${oldPriceForDisplay}`;
-    const newStr = `الكمية: ${newQty}, السعر: ${newPriceForDisplay}`;
+    // 🎁 لو بند مجاني، خلي الملصق واضح في النص نفسه
+    const prefix = it.is_free || oldPriceForDisplay === 0 || newPriceForDisplay === 0 ? "🎁 " : "";
+
+    const oldStr = `${prefix}الكمية: ${oldQty}, السعر: ${oldPriceForDisplay}`;
+    const newStr = `${prefix}الكمية: ${newQty}, السعر: ${newPriceForDisplay}`;
 
     if (oldStr !== newStr) {
       changes.push({
@@ -175,6 +177,47 @@ function buildChangesForConfirm(originalOrder: any, edited: NewOrderForm, produc
   });
 
   return changes;
+}
+
+/* ===== Build offers like Checkout (single source of truth) ===== */
+
+async function computeOffersLikeCheckout(
+  items: any[],
+  products: any[],
+  userType?: string
+): Promise<{ appliedOffers: any[]; freeRefs: FreeRef[]; totalDiscount: number }> {
+  // cart-like shape for OfferService.applyOffers
+  const cartItemsForOffers = items
+    .filter((it: any) => it.product_id && !it.is_free && (it.quantity || 0) > 0)
+    .map((it: any) => {
+      const p = products.find((x: any) => x.id === it.product_id);
+      return p ? { id: `cart_${p.id}`, product: p, quantity: Number(it.quantity || 0) } : null;
+    })
+    .filter(Boolean) as any[];
+
+  if (cartItemsForOffers.length === 0) {
+    return { appliedOffers: [], freeRefs: [], totalDiscount: 0 };
+  }
+
+  const result = await OfferService.applyOffers(cartItemsForOffers, userType);
+  const appliedOffers = result?.appliedOffers || [];
+  const freeItems = result?.freeItems || [];
+
+  const freeRefs: FreeRef[] = [];
+  for (const f of freeItems) {
+    const pid = f?.product?.id;
+    const qty = Number(f?.quantity || 1);
+    if (pid) freeRefs.push({ productId: String(pid), quantity: qty > 0 ? qty : 1 });
+  }
+  // dedupe max qty
+  const map = new Map<string, number>();
+  for (const fr of freeRefs) map.set(fr.productId, Math.max(map.get(fr.productId) || 0, fr.quantity));
+
+  return {
+    appliedOffers,
+    freeRefs: Array.from(map.entries()).map(([productId, quantity]) => ({ productId, quantity })),
+    totalDiscount: Number(result?.totalDiscount || 0),
+  };
 }
 
 /* ===== Component ===== */
@@ -401,7 +444,6 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
 
   const handleApplyOffer = async (productId: string, eligibility: OfferEligibility) => {
     if (!editOrderForm || !eligibility.offer) return;
-    
     try {
       const userType = originalOrderForEdit?.profiles?.user_type || 'retail';
       const updatedItems = await applyOfferToProduct(
@@ -411,11 +453,8 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
         products,
         userType
       );
-      
       autoAppliedOffersRef.current.add(eligibility.offer.id);
       setEditOrderForm(prev => prev ? { ...prev, items: updatedItems } : prev);
-      
-      // إزالة العرض من قائمة العروض المتاحة لأنه تم تطبيقه
       setOfferEligibilities(prev => {
         const updated = { ...prev };
         delete updated[productId];
@@ -429,14 +468,10 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
   // إزالة العرض المطبق
   const handleRemoveOffer = (offerId: string) => {
     if (!editOrderForm) return;
-    
     autoAppliedOffersRef.current.delete(offerId);
     const updatedItems = removeAppliedOffer(editOrderForm.items, offerId);
-    
-    // إعادة حساب الأسعار بناءً على نوع المستخدم بعد إزالة العرض
     const selectedUser = originalOrderForEdit?.profiles;
     const userType = (selectedUser && selectedUser.user_type) ? selectedUser.user_type : 'retail';
-
     const itemsWithCorrectPrices = updatedItems.map(item => {
       if ((item as any).is_free || (item as any).offer_applied) return item;
       const matched = products.find(p => p.id === item.product_id);
@@ -444,19 +479,16 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
       const base = getDisplayPrice(matched, userType);
       return { ...item, price: base, original_price: base };
     });
-
     setEditOrderForm(prev => prev ? { ...prev, items: itemsWithCorrectPrices } : prev);
   };
 
-  // حذف صنف من الطلب
+  // حذف صنف
   function removeOrderItem(id: string) {
     setEditOrderForm(f => {
       if (!f) return f;
       return { ...f, items: f.items.filter(item => item.id !== id) };
     });
   }
-
-  // حذف صنف من الطلب بالفهرس (للمنتجات التي قد يكون لها id معقد)
   function removeOrderItemByIndex(index: number) {
     setEditOrderForm(f => {
       if (!f) return f;
@@ -464,7 +496,7 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
     });
   }
 
-  // تحديث أسعار المنتجات عند تغيّر نوع المستخدم/فتح الديالوج مع المحافظة على الخصومات
+  // تحديث أسعار عند الفتح/نوع المستخدم
   useEffect(() => {
     if (!editOrderForm || !open) return;
     const selectedUser = originalOrderForEdit?.profiles;
@@ -492,12 +524,11 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, originalOrderForEdit?.profiles?.user_type, products]);
 
-  // عند فتح الديالوج، إذا الطلبية الأصلية فيها خصم، فعّل الخصم وعبّي القيم
+  // sync خصم يدوي من الطلب الأصلي
   useEffect(() => {
     if (!open || !originalOrderForEdit) return;
     setEditOrderForm(f => {
       if (!f) return f;
-      // إذا الطلبية الأصلية فيها خصم
       const hasDiscount = !!originalOrderForEdit.discount_type && originalOrderForEdit.discount_value > 0;
       return {
         ...f,
@@ -534,7 +565,7 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [offerEligibilities]);
 
-  // تطبيع العناصر قبل الحفظ + بناء التغييرات والتجهيز لدايلوج التأكيد
+  // تطبيع العناصر قبل الحفظ (للتوافق مع Checkout: نحفظ سعر الأساس للبنود المخفضة)
   const normalizeItemsForSave = (items: any[]) => {
     return items.map(it => {
       if ((it as any).is_free) {
@@ -548,8 +579,11 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
         };
       }
       if ((it as any).offer_applied) {
+        const base = typeof (it as any).original_price === 'number' ? (it as any).original_price : it.price;
         return {
           ...it,
+          // نخزّن بسعر الأساس
+          price: base,
           offer_applied: true,
           offer_id: (it as any).offer_id,
           offer_name: (it as any).offer_name,
@@ -586,16 +620,53 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
           <form
             className="space-y-8 px-6 py-6"
             autoComplete="off"
-            onSubmit={e => {
+            onSubmit={async e => {
               e.preventDefault();
 
               const userType = originalOrderForEdit?.profiles?.user_type || 'retail';
 
-              const normalizedItems = normalizeItemsForSave(editOrderForm.items as any[]);
-              // ⬅️ مهم: free_items بصيغة {productId, quantity} والعروض موحّدة
-              const { applied_offers, free_items } = summarizeOffersForOrder(normalizedItems as any[], products, userType);
+              // 1) احسب العروض بنفس منطق الشيك أوت
+              const { appliedOffers, freeRefs, totalDiscount } =
+                await computeOffersLikeCheckout(editOrderForm.items, products, userType);
 
-              // التغييرات (وتصحيح “الكمية السابقة” للمجاني)
+              // 2) تأكد من وجود العناصر المجانية في الـ UI حسب freeRefs (لأجل التأكيد فقط)
+              let itemsForUi = [...editOrderForm.items];
+              for (const fr of freeRefs) {
+                const existsIdx = itemsForUi.findIndex((x: any) => x.product_id === fr.productId && x.is_free);
+                if (fr.quantity <= 0 && existsIdx !== -1) {
+                  itemsForUi.splice(existsIdx, 1);
+                } else if (fr.quantity > 0) {
+                  const freeProd = products.find(p => p.id === fr.productId);
+                  const originalPrice = freeProd ? getDisplayPrice(freeProd as any, userType) : 0;
+                  if (existsIdx !== -1) {
+                    if (itemsForUi[existsIdx].quantity !== fr.quantity) {
+                      itemsForUi[existsIdx] = { ...(itemsForUi[existsIdx] as any), quantity: fr.quantity };
+                    }
+                  } else {
+                    itemsForUi.push({
+                      id: `free_${fr.productId}`,
+                      product_id: fr.productId,
+                      quantity: fr.quantity,
+                      price: 0,
+                      product_name: freeProd?.name_ar || freeProd?.name_en || "",
+                      is_free: true,
+                      original_price: originalPrice,
+                    } as any);
+                  }
+                }
+              }
+
+              // 3) عناصر للحفظ (نرجّع سعر البنود المخفضة إلى الأساس)
+              const normalizedItems = normalizeItemsForSave(itemsForUi as any[]);
+
+              // 4) جهّز الحقول للعرض والحفظ
+              const applied_offers_obj = appliedOffers;
+              const free_items_obj = freeRefs;
+
+              const applied_offers = applied_offers_obj.length ? JSON.stringify(applied_offers_obj) : null;
+              const free_items = free_items_obj.length ? JSON.stringify(free_items_obj) : null;
+
+              // 5) تغييرات التأكيد
               const confirmChanges = buildChangesForConfirm(
                 originalOrderForEdit,
                 { ...editOrderForm, items: normalizedItems } as any,
@@ -603,13 +674,20 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
                 userType
               );
 
+              // 6) خزّن بالـ form (للدايلوج و AdminOrders)
               setEditOrderForm(f => f ? {
                 ...f,
                 items: normalizedItems,
-                applied_offers: applied_offers.length ? JSON.stringify(applied_offers) : null,
-                free_items: free_items.length ? JSON.stringify(free_items) : null,
+                // للعرض في Confirm
+                applied_offers_obj,
+                free_items_obj,
+                offers_discount_total: totalDiscount,
+                // للحفظ في DB
+                applied_offers,
+                free_items,
               } as any : f);
 
+              // خصم يدوي إن كان مطفّى
               if (editOrderForm.discountEnabled === false || editOrderForm.discountValue === 0) {
                 setEditOrderForm(f => f ? {
                   ...f,
@@ -623,7 +701,7 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
               setShowConfirmEditDialog(true);
             }}
           >
-            {/* اسم العميل (غير قابل للتغيير) */}
+            {/* اسم العميل */}
             <div className="mb-4">
               <Label>{t("customerName") || "اسم العميل"}</Label>
               <Input
@@ -853,9 +931,7 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
                   onClick={() => {
                     setEditOrderForm(f => {
                       if (!f) return f;
-                      // استخدم نفس منطق OrderAddDialog: إذا المنتج مكرر زد الكمية فقط
                       const items = f.items;
-                      // ابحث عن أول عنصر فارغ (بدون product_id)
                       const emptyIndex = items.findIndex(itm => !itm.product_id);
                       if (emptyIndex !== -1) return f;
                       return {
@@ -908,7 +984,7 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
                       </div>
                       <div className="flex flex-wrap items-end gap-3">
                         <div className="flex-1 min-w-[250px]">
-                          {isFree ? (
+                          {isFree || (item as any).offer_applied ? (
                             <Input
                               value={
                                 products.find(p => p.id === item.product_id)?.[`name_${language}`] ||
@@ -968,7 +1044,6 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
                                 if (!val || val.trim() === "") {
                                   return;
                                 }
-                                
                                 const matched = products.find(
                                   p => p[`name_${language}`] === val || p.name_ar === val || p.name_en === val || p.name_he === val
                                 );
@@ -1030,7 +1105,7 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
                               })
                             }
                             required
-                            disabled={isFree}
+                            disabled={isFree || (item as any).offer_applied}
                             className={isFree ? "bg-green-50 text-green-700" : ""}
                           />
                         </div>
@@ -1039,7 +1114,11 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
                             {t("price") || "السعر"} <span className="text-red-500">*</span>
                             {isFree && (
                               <span className="text-green-600 font-bold ml-1">مجاني</span>
-                            )}
+                            ) &&
+                            <span className="text-xs text-gray-500 line-through">
+                                {(item as any).original_price} ₪
+                              </span>
+                              }
                           </Label>
                           <div className="flex flex-col gap-1">
                             {((item as any).offer_applied &&
@@ -1064,12 +1143,13 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
                                 })
                               }
                               required
-                              disabled={isFree}
+                              disabled={isFree || (item as any).offer_applied}
                               className={isFree ? "bg-green-50 text-green-700" : ""}
                             />
                           </div>
                         </div>
                         <div className="flex flex-col gap-2">
+                          {!isFree && (
                           <Button
                             type="button"
                             onClick={() => {
@@ -1081,15 +1161,16 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
                                 removeOrderItem(item.id);
                               }
                             }}
-                            variant={isFree ? "outline" : "destructive"}
+                            variant={"destructive"}
                             size="sm"
                             className="h-10"
                             title={isFree ? "منتج مجاني من عرض مطبق" : "حذف المنتج"}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
-                          
-                          {/* زر تطبيق العرض - يظهر فقط عند تحقيق شروط عرض */}
+                          )}
+
+                          {/* زر تطبيق العرض - يظهر فقط عند تحقق شروط عرض */}
                           {item.product_id && offerEligibilities[item.product_id] && !isFree && (
                             <Button
                               type="button"
@@ -1102,9 +1183,9 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
                               <Gift className="h-4 w-4" />
                             </Button>
                           )}
-                          
+
                           {/* زر إزالة العرض المطبق */}
-                          {(item as any).offer_applied && (item as any).offer_id && (
+                          {/* {(item as any).offer_applied && (item as any).offer_id && (
                             <Button
                               type="button"
                               onClick={() => handleRemoveOffer((item as any).offer_id)}
@@ -1115,32 +1196,29 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
                             >
                               <span className="text-xs">✕</span>
                             </Button>
-                          )}
+                          )} */}
                         </div>
                       </div>
-                      
-                      {/* عرض معلومات العرض المطبق */}
+
                       {(item as any).offer_applied && (
                         <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-sm">
                           <span className="text-blue-700 font-medium">
                             🎉 عرض مطبق: {(item as any).offer_name || "عرض"}
                           </span>
                           {typeof (item as any).original_price === "number" && (
-                            <span className="block text-gray-600 text-xs mt-1">
+                            <span className="block text-gray-600 text-xs mt-1 line-through">
                               السعر الأصلي: {(item as any).original_price} ₪
                             </span>
                           )}
                         </div>
                       )}
 
-                      {/* شارة: هذا المنتج حقق شرط العرض */}
                       {(item as any).offer_trigger && (item as any).offer_trigger_id && (
                         <div className="mt-2 p-2 bg-emerald-50 border border-emerald-200 rounded text-sm">
-                          <span className="text-emerald-700 font-medium">✅ هذا المنتج حقق شرط العرض</span>
+                          <span className="text-emerald-700 font-medium">✅ هذا المنتج حقق العرض :"{(item as any).offer_name || "عرض"}"</span>
                         </div>
                       )}
 
-                      {/* عرض معلومات العرض المتاح */}
                       {item.product_id && offerEligibilities[item.product_id] && !isFree && (
                         <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-sm">
                           <span className="text-green-700 font-medium">
@@ -1152,10 +1230,10 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
                   );
                 })}
               </div>
+
               {/* المجموع الكلي */}
               {editOrderForm.items.length > 0 && (
                 <div className="text-right mt-3 space-y-2">
-                  {/* عرض تفصيلي للمجموع */}
                   {(() => {
                     const selectedUser = originalOrderForEdit?.profiles;
                     const userType = (selectedUser && selectedUser.user_type) ? selectedUser.user_type : 'retail';
@@ -1167,6 +1245,7 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
                     };
 
                     const subtotalBeforeDiscounts = editOrderForm.items
+                      .filter((it: any) => !it.is_free)
                       .reduce((sum, it: any) => sum + (basePrice(it) * (it.quantity || 0)), 0);
 
                     const freeProductsDiscount = editOrderForm.items
@@ -1180,7 +1259,7 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
                         return sum + perUnit * (it.quantity || 0);
                       }, 0);
 
-                    const grandTotal = subtotalBeforeDiscounts - freeProductsDiscount - itemDiscounts;
+                    const grandTotal = subtotalBeforeDiscounts - itemDiscounts;
 
                     return (
                       <div className="border rounded-lg p-3 bg-gray-50">

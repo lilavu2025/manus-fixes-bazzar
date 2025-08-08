@@ -1,4 +1,5 @@
-import React from "react";
+// ConfirmEditOrderDialog.tsx
+import React, { useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/utils/languageContextUtils";
@@ -19,7 +20,7 @@ interface ConfirmEditOrderDialogProps {
   changes: Change[];
 
   /** مداخل جديدة (اختيارية) لعرض العروض والمجاني بشكل موحّد */
-  appliedOffers?: any[];       // الشكل: { offer:{id,title_ar,title_en}, discountAmount, affectedProducts[], freeProducts[] }
+  appliedOffers?: any[];       // { offer:{id,title_ar,title_en}, discountAmount, affectedProducts[], freeProducts[] }
   prevAppliedOffers?: any[];
 
   freeItemsNow?: FreeRef[];    // {productId, quantity} (الحالي)
@@ -72,6 +73,14 @@ function byProductId<T extends { productId: string }>(arr: T[] | undefined | nul
   return map;
 }
 
+/** ✅ كشف محسّن: يعتبره مجاني لو فيه 🎁 أو كلمة "مجاني" أو السعر: 0 (عربي/إنجليزي) */
+const isFreePriceText = (s?: string) => {
+  const txt = String(s || "");
+  if (txt.includes("🎁") || /مجاني/.test(txt)) return true;
+  const m = txt.match(/(?:السعر|price)\s*:\s*([0-9]+(?:\.[0-9]+)?)/i);
+  return m ? Number(m[1]) === 0 : false;
+};
+
 const ConfirmEditOrderDialog: React.FC<ConfirmEditOrderDialogProps> = ({
   open,
   onConfirm,
@@ -95,7 +104,6 @@ const ConfirmEditOrderDialog: React.FC<ConfirmEditOrderDialogProps> = ({
   // لو ما اجت props، طلعها من appliedOffers/prevAppliedOffers أو من itemsBefore/itemsAfter
   const canonicalPrevFree =
     (freeItemsPrev && freeItemsPrev.length ? freeItemsPrev : freeFromOffers(prevAppliedOffers)) ||
-    // fallback: من itemsBefore (أي عنصر سعره 0 أو is_free)
     (Array.isArray(itemsBefore)
       ? normalizeFreeRefs(
           (itemsBefore as any[])
@@ -123,11 +131,39 @@ const ConfirmEditOrderDialog: React.FC<ConfirmEditOrderDialogProps> = ({
     ...Array.from(nowMap.keys()),
   ]));
 
+  // Set بأسماء المنتجات المجانية (لإسناد التلوين بجدول التغييرات)
+  const freeNameSet = useMemo(() => {
+    return new Set(allFreeProductIds.map(pid => productName(products, pid)));
+  }, [allFreeProductIds, products]);
+
+  const isFreeLabel = (label: string) => {
+    const clean = String(label || "").replace(/^🎁\s*/, "").trim();
+    return freeNameSet.has(clean) || /مجاني/.test(clean);
+  };
+
   // ===== عروض مطبقة (الحالي) =====
   const appliedList = Array.isArray(appliedOffers) ? appliedOffers : [];
   const totalOfferDiscount = typeof discountFromOffers === "number"
     ? discountFromOffers
     : appliedList.reduce((s: number, a: any) => s + (Number(a?.discountAmount) || 0), 0);
+
+  // لتمييز الصف في جدول التغييرات
+  const classifyRow = (c: Change) => {
+    const freeByText  = isFreePriceText(c.oldValue) || isFreePriceText(c.newValue);
+    const freeByLabel = isFreeLabel(c.label);
+    if (freeByText || freeByLabel) return "free";
+
+    const getPrice = (s: string) => {
+      const m = String(s || "").match(/(?:السعر|price)\s*:\s*([0-9]+(?:\.[0-9]+)?)/i);
+      return m ? Number(m[1]) : NaN;
+    };
+    const oldP = getPrice(c.oldValue);
+    const newP = getPrice(c.newValue);
+    if (Number.isFinite(oldP) && Number.isFinite(newP) && oldP !== newP && oldP > 0 && newP > 0) {
+      return "discount";
+    }
+    return "normal";
+  };
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onCancel()}>
@@ -137,70 +173,6 @@ const ConfirmEditOrderDialog: React.FC<ConfirmEditOrderDialogProps> = ({
             {t("confirmEditOrder") || "تأكيد تعديل الطلبية"}
           </DialogTitle>
         </DialogHeader>
-
-        {/* قسم: ملخص العروض */}
-        <div className="mb-4 rounded-lg border p-3 bg-primary/5">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="font-semibold">
-              {t("appliedOffers") || "العروض المطبقة"}
-            </div>
-            <div className="text-sm">
-              {(t("totalDiscount") || "إجمالي الخصم") + ": "}
-              <span className="font-bold">{totalOfferDiscount.toFixed ? totalOfferDiscount.toFixed(2) : totalOfferDiscount}</span>
-            </div>
-          </div>
-
-          {appliedList.length === 0 ? (
-            <div className="mt-2 text-sm text-gray-600">
-              {t("noOffersApplied") || "لا توجد عروض مطبقة."}
-            </div>
-          ) : (
-            <ul className="mt-3 space-y-2">
-              {appliedList.map((o: any, idx: number) => {
-                const title = o?.offer?.title_ar || o?.offer?.title_en || o?.offer?.id || t("offer") || "عرض";
-                const affectedCount = Array.isArray(o?.affectedProducts) ? o.affectedProducts.length : 0;
-                const freeCount = Array.isArray(o?.freeProducts) ? o.freeProducts.length : 0;
-                return (
-                  <li key={idx} className="rounded-md border p-2">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div className="font-medium">
-                        {title}
-                      </div>
-                      <div className="text-xs text-gray-700">
-                        {t("discount") || "الخصم"}: <b>{Number(o?.discountAmount || 0).toFixed(2)}</b>
-                      </div>
-                    </div>
-                    <div className="mt-1 text-xs text-gray-600 flex flex-wrap gap-3">
-                      <span className="inline-flex items-center gap-1">
-                        <span className="px-2 py-0.5 rounded bg-gray-100">
-                          {t("affectedProducts") || "منتجات متأثرة"}: {affectedCount}
-                        </span>
-                      </span>
-                      <span className="inline-flex items-center gap-1">
-                        <span className="px-2 py-0.5 rounded bg-gray-100">
-                          {t("freeProducts") || "منتجات مجانية"}: {freeCount}
-                        </span>
-                      </span>
-                    </div>
-                    {/* قائمة المنتجات المجانية ضمن العرض (إن وجدت) */}
-                    {Array.isArray(o?.freeProducts) && o.freeProducts.length > 0 && (
-                      <div className="mt-2">
-                        <div className="text-xs font-medium mb-1">{t("freeProductsList") || "قائمة المنتجات المجانية"}</div>
-                        <ul className="text-xs list-disc ms-5">
-                          {o.freeProducts.map((fp: any, i: number) => (
-                            <li key={i}>
-                              {productName(products, String(fp.productId))} — {t("qty") || "الكمية"}: {fp.quantity || 1}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </div>
 
         {/* قسم: المنتجات المجانية (سابق/حالي) */}
         <div className="mb-4 rounded-lg border p-3">
@@ -226,8 +198,11 @@ const ConfirmEditOrderDialog: React.FC<ConfirmEditOrderDialogProps> = ({
                   const nowQty  = nowMap.get(pid)?.quantity ?? 0;
                   const changed = prevQty !== nowQty;
                   return (
-                    <tr key={pid} className={changed ? "bg-yellow-50" : ""}>
-                      <td className="p-2 border">{productName(products, pid)}</td>
+                    <tr
+                      key={pid}
+                      className={`bg-green-50 ${changed ? "ring-1 ring-green-300" : ""}`}
+                    >
+                      <td className="p-2 border">🎁 {productName(products, pid)}</td>
                       <td className="p-2 border">{prevQty}</td>
                       <td className="p-2 border">
                         <span className={changed ? "font-semibold" : ""}>{nowQty}</span>
@@ -243,14 +218,11 @@ const ConfirmEditOrderDialog: React.FC<ConfirmEditOrderDialogProps> = ({
               </tbody>
             </table>
           )}
-          <div className="mt-2 text-xs text-gray-600">
-            {t("freeItemsStockNote") || "ملاحظة: سيتم خصم الكميات المجانية من المخزون بواسطة منطق الخادم/التريغر وفق إعدادات النظام."}
-          </div>
         </div>
 
-        {/* جدول التغييرات المفصّلة (كما كان) */}
+        {/* جدول التغييرات المفصّلة مع تمييز مجاني/مخفّض (بدون إيموجي هنا) */}
         <div className="mb-4 text-gray-700">
-          <p>{t("areYouSureYouWantToSaveTheFollowingChanges") || "هل أنت متأكد أنك تريد حفظ التعديلات التالية على الطلبية؟"}</p>
+          <p>{t("areYouSureYouWantToSaveTheFollowingChanges") || "هل أنت متأكد أنك تريد حفظ التعديلات التالية؟"}</p>
           <table className="w-full mt-4 border text-sm">
             <thead>
               <tr className="bg-gray-100">
@@ -261,13 +233,34 @@ const ConfirmEditOrderDialog: React.FC<ConfirmEditOrderDialogProps> = ({
             </thead>
             <tbody>
               {changes.length > 0 ? (
-                changes.map((change, idx) => (
-                  <tr key={idx}>
-                    <td className="p-2 border">{change.label}</td>
-                    <td className="p-2 border">{change.oldValue}</td>
-                    <td className="p-2 border">{change.newValue}</td>
-                  </tr>
-                ))
+                changes.map((change, idx) => {
+                  const kind = classifyRow(change); // "free" | "discount" | "normal"
+                  const cellBg =
+                    kind === "free"
+                      ? "bg-green-50"
+                      : kind === "discount"
+                      ? "bg-yellow-50"
+                      : "";
+                  const cellStyle = kind === "free" ? { backgroundColor: "#ecfdf5" } : undefined; // fallback
+
+                  return (
+                    <tr
+                      key={idx}
+                      title={kind === "free" ? "بند مجاني" : kind === "discount" ? "بند مخفّض" : ""}
+                    >
+                      <td className={`p-2 border ${cellBg}`} style={cellStyle}>
+                        {kind === "free" ? "🎁 " : kind === "discount" ? "🏷️ " : ""}
+                        {change.label}
+                      </td>
+                      <td className={`p-2 border ${cellBg}`} style={cellStyle}>
+                        {change.oldValue}
+                      </td>
+                      <td className={`p-2 border ${cellBg}`} style={cellStyle}>
+                        {change.newValue}
+                      </td>
+                    </tr>
+                  );
+                })
               ) : (
                 <tr>
                   <td colSpan={3} className="p-2 border text-center">

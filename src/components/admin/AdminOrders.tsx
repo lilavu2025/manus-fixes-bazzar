@@ -778,11 +778,32 @@ const AdminOrders: React.FC = () => {
         products={products}
       />
 
+      {/* ==== التعديل المهم هنا: تمرير معلومات العروض والمجاني للدايلوج ==== */}
       <ConfirmEditOrderDialog
         open={showConfirmEditDialog}
         onConfirm={handleEditOrder}
         onCancel={() => setShowConfirmEditDialog(false)}
         changes={editOrderChanges}
+        appliedOffers={
+          (editOrderForm as any)?.applied_offers_obj ??
+          normalizeJsonField((editOrderForm as any)?.applied_offers) ??
+          []
+        }
+        prevAppliedOffers={
+          normalizeJsonField((originalOrderForEdit as any)?.applied_offers) ?? []
+        }
+        freeItemsNow={
+          (editOrderForm as any)?.free_items_obj ??
+          normalizeFreeRefs((editOrderForm as any)?.free_items) ??
+          []
+        }
+        freeItemsPrev={
+          normalizeFreeRefs((originalOrderForEdit as any)?.free_items) ?? []
+        }
+        itemsBefore={(originalOrderForEdit as any)?.items || []}
+        itemsAfter={(editOrderForm as any)?.items || []}
+        products={products}
+        discountFromOffers={Number((editOrderForm as any)?.offers_discount_total || 0)}
       />
     </div>
   );
