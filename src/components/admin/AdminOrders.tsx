@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   useUpdateOrderStatus,
   useAddOrder,
@@ -19,14 +19,17 @@ import { Address } from "@/types";
 import { useOrdersRealtime } from "@/hooks/useOrdersRealtime";
 import { useProductsRealtime } from "@/hooks/useProductsRealtime";
 import { compressText } from "@/utils/commonUtils";
-import { calculateOrderTotal, calculateOrderTotalWithFreeItems } from "../../orders/order.utils";
+import { calculateOrderTotalWithFreeItems } from "../../orders/order.utils";
 import { safeDecompressNotes } from "../../orders/order.utils";
-import { filteredOrders as filterOrdersUtil, advancedFilteredOrders as advFilteredOrdersUtil, advancedFilteredOrdersWithoutStatus as advFilteredOrdersNoStatusUtil } from "../../orders/order.filters";
+import {
+  filteredOrders as filterOrdersUtil,
+  advancedFilteredOrders as advFilteredOrdersUtil,
+  advancedFilteredOrdersWithoutStatus as advFilteredOrdersNoStatusUtil
+} from "../../orders/order.filters";
 import { getOrderStats as getOrderStatsUtil } from "../../orders/order.stats";
 import { getOrderEditChangesDetailed as getOrderEditChangesDetailedUtil } from "../../orders/order.compare";
 import { addOrderItemToForm, removeOrderItemFromForm, updateOrderItemInForm } from "../../orders/order.form.utils";
 import OrderCard from "./orders/OrderCard";
-import OrderDetailsPrint from "./orders/OrderDetailsPrint";
 import OrderDeleteDialog from "./orders/OrderDeleteDialog";
 import OrderDetailsDialog from "./orders/OrderDetailsDialog";
 import OrderFiltersBar from "./orders/OrderFiltersBar";
@@ -42,24 +45,150 @@ import { orderPrint } from "@/orders/order.print";
 import { downloadInvoicePdf } from "@/orders/order.pdf";
 import VirtualScrollList from "../VirtualScrollList";
 
-// مكون إدارة الطلبات الرئيسي في لوحة تحكم الأدمن
+// ================= Helpers =================
+
+// Normalize any unknown "json" field to a JS value or null
+function normalizeJsonField(raw: any) {
+  if (!raw) return null;
+  if (typeof raw === "string") {
+    try { return JSON.parse(raw); } catch { return null; }
+  }
+  return raw;
+}
+
+// Normalize free refs to the canonical shape: { productId, quantity }
+function normalizeFreeRefs(raw: any): { productId: string; quantity: number }[] {
+  const arr = normalizeJsonField(raw);
+  if (!Array.isArray(arr)) return [];
+  const out: { productId: string; quantity: number }[] = [];
+  for (const r of arr) {
+    const pid =
+      r?.productId ||
+      r?.product_id ||
+      r?.product?.id ||
+      r?.productId?.id ||
+      null;
+    const qty = Number(r?.quantity || r?.qty || 1);
+    if (pid) out.push({ productId: String(pid), quantity: qty > 0 ? qty : 1 });
+  }
+  // dedupe by productId, keep max quantity
+  const map = new Map<string, number>();
+  for (const x of out) map.set(x.productId, Math.max(map.get(x.productId) || 0, x.quantity));
+  return Array.from(map.entries()).map(([productId, quantity]) => ({ productId, quantity }));
+}
+
+// Build a canonical freeRefs from either free_items or applied_offers.freeProducts
+function getCanonicalFreeRefs(free_items_raw: any, applied_offers_raw: any) {
+  const fromFree = normalizeFreeRefs(free_items_raw);
+  if (fromFree.length > 0) return fromFree;
+  const applied = normalizeJsonField(applied_offers_raw);
+  const allFreeFromApplied = Array.isArray(applied)
+    ? applied.flatMap((a: any) => Array.isArray(a?.freeProducts) ? a.freeProducts : [])
+    : [];
+  return normalizeFreeRefs(allFreeFromApplied);
+}
+
+// Ensure free items exist in items[] based on canonical freeRefs
+function injectFreeItemsIfMissing(
+  items: any[],
+  freeRefs: { productId: string; quantity: number }[],
+  products: any[],
+  userType: 'retail' | 'wholesale' | 'admin' = 'retail'
+) {
+  const hasFree = new Set(
+    items
+      .filter(it => it?.is_free || Number(it?.price) === 0)
+      .map(it => String(it.product_id))
+  );
+
+  const getOriginalPrice = (p: any) => {
+    const wholesale = typeof p?.wholesale_price === 'number' && p.wholesale_price > 0 ? p.wholesale_price : 0;
+    if (userType === 'admin' || userType === 'wholesale') return wholesale > 0 ? wholesale : (p?.price || 0);
+    return p?.price || 0;
+  };
+
+  const additions: any[] = [];
+  for (const ref of freeRefs) {
+    if (!ref?.productId || hasFree.has(String(ref.productId))) continue;
+    const prod = products.find(p => String(p.id) === String(ref.productId));
+    if (!prod) continue;
+    additions.push({
+      id: `free_${ref.productId}_${Date.now()}_${Math.random()}`,
+      product_id: ref.productId,
+      quantity: ref.quantity || 1,
+      price: 0,
+      is_free: true,
+      product_name: prod.name_ar || prod.name_en || prod.id,
+      original_price: getOriginalPrice(prod),
+    });
+  }
+  return additions.length ? [...items, ...additions] : items;
+}
+
+// Summarize offers from items[] (canonical shapes)
+function summarizeOffersForSave(items: any[]) {
+  const appliedMap: Record<string, {
+    offer: any;
+    discountAmount: number;
+    affectedProducts: string[];
+    freeProducts: { productId: string; quantity: number }[];
+  }> = {};
+  const freeItemsOut: { productId: string; quantity: number }[] = [];
+
+  for (const it of items || []) {
+    const offerId = it?.offer_id || it?.offer?.id;
+    const offerName = it?.offer_name || it?.offer?.title_ar || it?.offer?.title_en;
+    if (offerId && !appliedMap[offerId]) {
+      appliedMap[offerId] = {
+        offer: { id: offerId, title_ar: offerName, title_en: offerName },
+        discountAmount: 0,
+        affectedProducts: [],
+        freeProducts: [],
+      };
+    }
+
+    // discounts
+    if (offerId && it?.offer_applied && typeof it?.original_price === "number") {
+      const perUnitDiscount = Math.max(0, it.original_price - (it.price ?? 0));
+      appliedMap[offerId].discountAmount += perUnitDiscount * (it.quantity || 0);
+      const pid = String(it.product_id || "");
+      if (pid && !appliedMap[offerId].affectedProducts.includes(pid)) {
+        appliedMap[offerId].affectedProducts.push(pid);
+      }
+    }
+
+    // free items
+    if (it?.is_free) {
+      const pid = String(it.product_id || "");
+      const qty = Number(it.quantity || 1);
+      if (pid) {
+        freeItemsOut.push({ productId: pid, quantity: qty > 0 ? qty : 1 });
+        if (offerId) {
+          appliedMap[offerId].freeProducts.push({ productId: pid, quantity: qty > 0 ? qty : 1 });
+        }
+      }
+    }
+  }
+
+  // dedupe freeItemsOut
+  const freeMap = new Map<string, number>();
+  for (const f of freeItemsOut) freeMap.set(f.productId, Math.max(freeMap.get(f.productId) || 0, f.quantity));
+  const canonicalFree = Array.from(freeMap.entries()).map(([productId, quantity]) => ({ productId, quantity }));
+
+  return { applied_offers: Object.values(appliedMap), free_items: canonicalFree };
+}
+
+// ================= Component =================
+
 const AdminOrders: React.FC = () => {
-  // اللغة والاتجاه
   const { t, isRTL, language } = useLanguage();
-  // التوست المحسن
   const enhancedToast = useEnhancedToast();
-  // بيانات المستخدم الحالي
   const { user, profile } = useAuth();
-  // كاش الاستعلامات
   const queryClient = useQueryClient();
-  // موقع الصفحة (للتعامل مع الفلاتر من التنقل)
   const location = useLocation();
 
-  // حالات الفلاتر والبحث
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [sortBy, setSortBy] = useState("created_at");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
   const [showAddOrder, setShowAddOrder] = useState(false);
   const [isAddingOrder, setIsAddingOrder] = useState(false);
   const [orderForm, setOrderForm] = useState<NewOrderForm>(initialOrderForm);
@@ -77,126 +206,88 @@ const AdminOrders: React.FC = () => {
   const [editOrderChanges, setEditOrderChanges] = useState<Change[]>([]);
   const [originalOrderForEdit, setOriginalOrderForEdit] = useState<Order | null>(null);
   const virtualListRef = useRef<HTMLDivElement>(null);
-  // جلب المستخدمين والمنتجات
-  const { users, isLoading: usersLoading } = useAdminUsers();
-  const { products, loading: productsLoading } = useProductsRealtime();
 
-  // التعامل مع الفلاتر القادمة من التنقل بين الصفحات
+  const { users } = useAdminUsers();
+  const { products } = useProductsRealtime();
+
   useEffect(() => {
-    if (location.state?.filterStatus) {
-      setStatusFilter(location.state.filterStatus);
-    }
-    if (location.state?.filterOrderId) {
-      setSearchQuery(location.state.filterOrderId);
-    }
-    if (location.state?.searchQuery) {
-      setSearchQuery(location.state.searchQuery);
-    }
+    const st: any = (location as any).state;
+    if (st?.filterStatus) setStatusFilter(st.filterStatus);
+    if (st?.filterOrderId) setSearchQuery(st.filterOrderId);
+    if (st?.searchQuery) setSearchQuery(st.searchQuery);
   }, [location.state]);
 
-  // جلب الطلبات بشكل لحظي
   const {
     orders,
     loading: ordersLoading,
     error: ordersError,
     refetch: refetchOrders,
-    setOrders,
   } = useOrdersRealtime();
 
-  // ربط دوال التعامل مع الطلبات (تحديث، حذف، إضافة، تعديل)
   const updateOrderStatusMutation = useUpdateOrderStatus();
   const deleteOrderMutation = useDeleteOrder();
   const addOrderMutation = useAddOrder();
   const editOrderMutation = useEditOrder();
 
-  // تعريف المستخدم بشكل آمن - استخدم profile بدلاً من user_metadata
   const safeUser =
     typeof user === "object" && user && "user_metadata" in user
-      ? (user as {
-          user_metadata?: { full_name?: string; email?: string };
-          email?: string;
-        })
+      ? (user as { user_metadata?: { full_name?: string; email?: string }; email?: string })
       : undefined;
-  const safeUserMeta = safeUser?.user_metadata;
-  
-  // الحصول على اسم المدير من profile أو user
-  const adminCreatorName = profile?.full_name || safeUserMeta?.full_name || safeUser?.email || "مدير غير محدد";
+  const adminCreatorName =
+    profile?.full_name || safeUser?.user_metadata?.full_name || safeUser?.email || "مدير غير محدد";
 
-  // تحديث حالة الطلب
   const updateOrderStatus = (orderId: string, newStatus: string) => {
     updateOrderStatusMutation.mutate(
-      {
-        orderId,
-        newStatus,
-        userMeta: {
-          full_name: safeUserMeta?.full_name,
-          email: safeUser?.email,
-        },
-      },
+      { orderId, newStatus, userMeta: { full_name: safeUser?.user_metadata?.full_name, email: safeUser?.email } },
       {
         onSuccess: () => {
-          enhancedToast.operationSuccess('orderStatusUpdatedSuccess');
+          enhancedToast.operationSuccess("orderStatusUpdatedSuccess");
           refetchOrders();
-          queryClient.invalidateQueries({ queryKey: ["admin-orders-stats"] }); // إعادة جلب إحصائيات لوحة التحكم
+          queryClient.invalidateQueries({ queryKey: ["admin-orders-stats"] });
         },
-        onError: (err: unknown) => {
-          enhancedToast.operationError('orderStatusUpdateFailed');
-        },
-      },
+        onError: () => enhancedToast.operationError("orderStatusUpdateFailed"),
+      }
     );
   };
 
-  // إضافة صنف جديد للطلب
-  const addOrderItem = () => {
-    setOrderForm((prev) => addOrderItemToForm(prev, products));
-  };
-
-  // حذف صنف من الطلب
-  const removeOrderItem = (itemId: string) => {
-    setOrderForm((prev) => removeOrderItemFromForm(prev, itemId));
-  };
-
-  // تحديث صنف في الطلب
-  const updateOrderItem = (
-    itemId: string,
-    field: keyof OrderItem,
-    value: string | number,
-  ) => {
+  const addOrderItem = () => setOrderForm((prev) => addOrderItemToForm(prev, products));
+  const removeOrderItem = (itemId: string) => setOrderForm((prev) => removeOrderItemFromForm(prev, itemId));
+  const updateOrderItem = (itemId: string, field: keyof OrderItem, value: string | number) =>
     setOrderForm((prev) => updateOrderItemInForm(prev, itemId, field, value, products));
-  };
 
-  // إضافة طلب جديد
+  // ================= Add Order =================
   const handleAddOrder = async () => {
     try {
       setIsAddingOrder(true);
       if (!orderForm.user_id && !allowCustomClient) {
-        enhancedToast.error('selectCustomerRequired');
+        enhancedToast.error("selectCustomerRequired");
         setIsAddingOrder(false);
         return;
       }
       if (orderForm.items.length === 0) {
-        enhancedToast.error('addAtLeastOneProduct');
+        enhancedToast.error("addAtLeastOneProduct");
         setIsAddingOrder(false);
         return;
       }
-      if (
-        !orderForm.shipping_address.fullName ||
-        !orderForm.shipping_address.phone
-      ) {
-        enhancedToast.error('enterShippingInfo');
+      if (!orderForm.shipping_address.fullName || !orderForm.shipping_address.phone) {
+        enhancedToast.error("enterShippingInfo");
         setIsAddingOrder(false);
         return;
       }
+
+      // Canonical summary
+      const { applied_offers, free_items } = summarizeOffersForSave(orderForm.items);
       const total = calculateOrderTotalWithFreeItems(orderForm.items);
-      const orderInsertObj = {
-        items: orderForm.items as any, // لضمان التوافق مع نوع JSON
+
+      const orderInsertObj: any = {
+        items: orderForm.items as any,
         total,
         status: orderForm.status,
         payment_method: orderForm.payment_method,
-        shipping_address: orderForm.shipping_address as any, // إرسال كائن العنوان مباشرة وليس كنص
+        shipping_address: orderForm.shipping_address as any,
         notes: orderForm.notes ? compressText(orderForm.notes) : null,
         admin_created: true,
-        admin_creator_name: adminCreatorName, // استخدم المتغير المحدث
+        admin_creator_name: adminCreatorName,
         ...(orderForm.user_id
           ? { user_id: orderForm.user_id }
           : { customer_name: orderForm.shipping_address.fullName }),
@@ -206,48 +297,40 @@ const AdminOrders: React.FC = () => {
               discount_value: orderForm.discountValue,
               total_after_discount:
                 orderForm.discountType === "percent"
-                  ? Math.max(
-                      total - (total * orderForm.discountValue) / 100,
-                      0
-                    )
+                  ? Math.max(total - (total * orderForm.discountValue) / 100, 0)
                   : Math.max(total - orderForm.discountValue, 0),
             }
           : {}),
+        applied_offers: JSON.stringify(applied_offers || []),
+        free_items: JSON.stringify(free_items || []),
       };
-      const orderItems = orderForm.items.map((item) => ({
-        product_id: item.product_id,
-        quantity: item.quantity,
-        price: item.price,
-      }));
+
+      const orderItems = orderForm.items
+        .filter((it: any) => !it?.is_free)
+        .map((item) => ({ product_id: item.product_id, quantity: item.quantity, price: item.price }));
+
       addOrderMutation.mutate(
-        {
-          orderInsertObj,
-          orderItems: orderItems as any[],
-        },
+        { orderInsertObj, orderItems: orderItems as any[] },
         {
           onSuccess: () => {
-            enhancedToast.adminSuccess('orderAdded');
+            enhancedToast.adminSuccess("orderAdded");
             setShowAddOrder(false);
             setOrderForm(initialOrderForm);
             setAllowCustomClient(false);
             refetchOrders();
-            queryClient.invalidateQueries({ queryKey: ["admin-orders-stats"] }); // إعادة جلب إحصائيات لوحة التحكم
+            queryClient.invalidateQueries({ queryKey: ["admin-orders-stats"] });
           },
-          onError: (error: unknown) => {
-            toast.error(t("orderAddFailed"));
-          },
-          onSettled: () => {
-            setIsAddingOrder(false);
-          },
-        },
+          onError: () => toast.error(t("orderAddFailed")),
+          onSettled: () => setIsAddingOrder(false),
+        }
       );
-    } catch (error: unknown) {
+    } catch {
       toast.error(t("orderAddFailed"));
       setIsAddingOrder(false);
     }
   };
 
-  // تعديل الطلب (يتم استدعاؤها من Dialog التعديل)
+  // ================= Edit Order =================
   const handleEditOrder = async () => {
     if (!editOrderForm || !editOrderId) return;
     if (!editOrderForm.items || editOrderForm.items.length === 0) {
@@ -256,88 +339,126 @@ const AdminOrders: React.FC = () => {
     }
     setIsAddingOrder(true);
     try {
-      const total = calculateOrderTotalWithFreeItems(editOrderForm.items);
-      const updateObj = {
-        items: editOrderForm.items as any, // إرسال المصفوفة مباشرة وليس كنص
+      // Build canonical free refs from either field
+      const freeRefs = getCanonicalFreeRefs(
+        (editOrderForm as any).free_items,
+        (editOrderForm as any).applied_offers
+      );
+
+      const userType: any =
+        ((originalOrderForEdit as any)?.profiles?.user_type) ||
+        (profile as any)?.user_type ||
+        "retail";
+
+      const itemsWithFree = injectFreeItemsIfMissing(
+        [...(editOrderForm.items || [])],
+        freeRefs,
+        products,
+        userType
+      );
+
+      // stabilize in form
+      editOrderForm.items = itemsWithFree;
+
+      // Totals
+      const original_total = (itemsWithFree || []).reduce((sum, it: any) => {
+        const unit = typeof it?.original_price === "number" ? it.original_price : (it.price || 0);
+        return sum + unit * (it.quantity || 0);
+      }, 0);
+      const total = calculateOrderTotalWithFreeItems(itemsWithFree);
+      const discount_from_offers = Math.max(0, original_total - total);
+
+      // Re-summarize from items (single source of truth)
+      const { applied_offers, free_items } = summarizeOffersForSave(itemsWithFree);
+
+      const updateObj: any = {
+        items: itemsWithFree as any,
         total,
+        original_total,
+        discount_from_offers,
+        applied_offers: JSON.stringify(applied_offers || []),
+        free_items: JSON.stringify(free_items || []),
         status: editOrderForm.status,
         payment_method: editOrderForm.payment_method,
-        shipping_address: editOrderForm.shipping_address as any, // إرسال كائن العنوان مباشرة وليس كنص
+        shipping_address: editOrderForm.shipping_address as any,
         notes: editOrderForm.notes ? compressText(editOrderForm.notes) : null,
         updated_at: new Date().toISOString(),
         ...(editOrderForm.shipping_address.fullName
           ? { customer_name: editOrderForm.shipping_address.fullName }
           : {}),
       };
-      const orderItems = editOrderForm.items.map((item) => ({
-        product_id: item.product_id,
-        quantity: item.quantity,
-        price: item.price,
-      }));
-      // معالجة حذف الخصم إذا تم إلغاء تفعيله أو قيمته صفر
+
+      // Manual discount
       const updateObjWithDiscount = {
         ...updateObj,
-        ...( (!editOrderForm.discountEnabled || !editOrderForm.discountValue)
-          ? {
-              discount_type: null,
-              discount_value: null,
-              total_after_discount: null,
-            }
-          : {
-              discount_type: editOrderForm.discountType,
-              discount_value: editOrderForm.discountValue,
-              total_after_discount:
-                editOrderForm.discountType === "percent"
-                  ? Math.max(0, total - (total * (editOrderForm.discountValue || 0) / 100))
-                  : Math.max(0, total - (editOrderForm.discountValue || 0)),
-            }
+        ...(
+          (!editOrderForm.discountEnabled || !editOrderForm.discountValue)
+            ? { discount_type: null, discount_value: null, total_after_discount: null }
+            : {
+                discount_type: editOrderForm.discountType,
+                discount_value: editOrderForm.discountValue,
+                total_after_discount:
+                  editOrderForm.discountType === "percent"
+                    ? Math.max(0, total - (total * (editOrderForm.discountValue || 0) / 100))
+                    : Math.max(0, total - (editOrderForm.discountValue || 0)),
+              }
         )
       };
+
+      const orderItems = itemsWithFree
+        .filter((it: any) => !it?.is_free)
+        .map((item) => ({
+          product_id: item.product_id,
+          quantity: item.quantity,
+          price: item.price,
+        }));
+
       editOrderMutation.mutate(
         { editOrderId, updateObj: updateObjWithDiscount, orderItems },
         {
           onSuccess: () => {
-            enhancedToast.adminSuccess('orderEdited');
+            enhancedToast.adminSuccess("orderEdited");
             setShowEditOrder(false);
             setEditOrderForm(null);
             setEditOrderId(null);
             setShowConfirmEditDialog(false);
             refetchOrders();
-            queryClient.invalidateQueries({ queryKey: ["admin-orders-stats"] }); // إعادة جلب إحصائيات لوحة التحكم
+            queryClient.invalidateQueries({ queryKey: ["admin-orders-stats"] });
           },
-          onError: (error: unknown) => {
-            toast.error(t("orderEditFailed"));
-          },
-          onSettled: () => {
-            setIsAddingOrder(false);
-          },
-        },
+          onError: () => toast.error(t("orderEditFailed")),
+          onSettled: () => setIsAddingOrder(false),
+        }
       );
-    } catch (error) {
+    } catch {
       toast.error(t("orderEditFailed"));
       setIsAddingOrder(false);
     }
   };
 
-  // فلترة الطلبات حسب الفلاتر المختارة
+  // ================= Lists & Stats =================
   const filteredOrdersMemo = useMemo(() => filterOrdersUtil(orders, statusFilter), [orders, statusFilter]);
-  const advancedFilteredOrdersMemo = useMemo(() => advFilteredOrdersUtil(filteredOrdersMemo, dateFrom, dateTo, paymentFilter, searchQuery), [filteredOrdersMemo, dateFrom, dateTo, paymentFilter, searchQuery]);
-  const advancedFilteredOrdersWithoutStatusMemo = useMemo(() => advFilteredOrdersNoStatusUtil(orders, dateFrom, dateTo, paymentFilter, searchQuery), [orders, dateFrom, dateTo, paymentFilter, searchQuery]);
+  const advancedFilteredOrdersMemo = useMemo(
+    () => advFilteredOrdersUtil(filteredOrdersMemo, dateFrom, dateTo, paymentFilter, searchQuery),
+    [filteredOrdersMemo, dateFrom, dateTo, paymentFilter, searchQuery]
+  );
+  const advancedFilteredOrdersWithoutStatusMemo = useMemo(
+    () => advFilteredOrdersNoStatusUtil(orders, dateFrom, dateTo, paymentFilter, searchQuery),
+    [orders, dateFrom, dateTo, paymentFilter, searchQuery]
+  );
 
-  // حساب الإحصائيات من جميع الطلبات (بدون فلترة)
   const stats = React.useMemo(() => getOrderStatsUtil((Array.isArray(orders) ? orders.map(o => {
     let shipping_address: Address = { id: "", fullName: "", phone: "", city: "", area: "", street: "", building: "" };
     if (typeof o.shipping_address === "object" && o.shipping_address !== null && !Array.isArray(o.shipping_address)) {
       shipping_address = {
-        id: o.shipping_address.id ? String(o.shipping_address.id) : "",
-        fullName: o.shipping_address.fullName ? String(o.shipping_address.fullName) : "",
-        phone: o.shipping_address.phone ? String(o.shipping_address.phone) : "",
-        city: o.shipping_address.city ? String(o.shipping_address.city) : "",
-        area: o.shipping_address.area ? String(o.shipping_address.area) : "",
-        street: o.shipping_address.street ? String(o.shipping_address.street) : "",
-        building: o.shipping_address.building ? String(o.shipping_address.building) : "",
-        floor: o.shipping_address.floor ? String(o.shipping_address.floor) : undefined,
-        apartment: o.shipping_address.apartment ? String(o.shipping_address.apartment) : undefined,
+        id: (o as any).shipping_address.id ? String((o as any).shipping_address.id) : "",
+        fullName: (o as any).shipping_address.fullName ? String((o as any).shipping_address.fullName) : "",
+        phone: (o as any).shipping_address.phone ? String((o as any).shipping_address.phone) : "",
+        city: (o as any).shipping_address.city ? String((o as any).shipping_address.city) : "",
+        area: (o as any).shipping_address.area ? String((o as any).shipping_address.area) : "",
+        street: (o as any).shipping_address.street ? String((o as any).shipping_address.street) : "",
+        building: (o as any).shipping_address.building ? String((o as any).shipping_address.building) : "",
+        floor: (o as any).shipping_address.floor ? String((o as any).shipping_address.floor) : undefined,
+        apartment: (o as any).shipping_address.apartment ? String((o as any).shipping_address.apartment) : undefined,
       };
     }
     return {
@@ -346,7 +467,7 @@ const AdminOrders: React.FC = () => {
       payment_method: o.payment_method || "cash",
       created_at: o.created_at,
       user_id: o.user_id || "",
-      items: Array.isArray(o.items) ? o.items.map((item: any) => ({
+      items: Array.isArray(o.items) ? (o.items as any[]).map((item: any) => ({
         id: item.id || "",
         product_id: item.product_id || "",
         quantity: item.quantity || 0,
@@ -356,28 +477,25 @@ const AdminOrders: React.FC = () => {
       total: typeof o.total === "number" ? o.total : 0,
       shipping_address,
       updated_at: o.updated_at || "",
-      customer_name: o.customer_name || "",
+      customer_name: (o as any).customer_name || "",
     };
   }) : [])), [orders]);
 
-  // حذف الطلب مع تأكيد
+  // ================= Delete =================
   const handleDeleteOrder = async () => {
     if (!orderToDelete) return;
     deleteOrderMutation.mutate(orderToDelete.id, {
       onSuccess: () => {
-        enhancedToast.adminSuccess('orderDeleted');
+        enhancedToast.adminSuccess("orderDeleted");
         setShowDeleteDialog(false);
         setOrderToDelete(null);
         refetchOrders();
-        queryClient.invalidateQueries({ queryKey: ["admin-orders-stats"] }); // إعادة جلب إحصائيات لوحة التحكم
+        queryClient.invalidateQueries({ queryKey: ["admin-orders-stats"] });
       },
-      onError: () => {
-        toast.error(t("orderDeleteFailed"));
-      },
+      onError: () => toast.error(t("orderDeleteFailed")),
     });
   };
 
-  // عند اختيار مستخدم من القائمة
   const handleSelectUser = React.useCallback(
     (userId: string) => {
       setOrderForm((prev) => {
@@ -385,11 +503,7 @@ const AdminOrders: React.FC = () => {
           return {
             ...prev,
             user_id: "",
-            shipping_address: {
-              ...prev.shipping_address,
-              fullName: "",
-              phone: "",
-            },
+            shipping_address: { ...prev.shipping_address, fullName: "", phone: "" },
           };
         const user = users.find((u) => u.id === userId);
         if (user) {
@@ -409,25 +523,22 @@ const AdminOrders: React.FC = () => {
     [users],
   );
 
-  // توليد رسالة واتساب (تحميل الفاتورة)
   const generateOrderPrint = async (order: any, t: any, currentLang: "ar" | "en" | "he") => {
     await orderPrint(order, t, language, profile?.full_name || "-", products);
   };
 
-  // شاشة تحميل الطلبات
   if (ordersLoading) {
     return (
       <div className="space-y-6">
         <h1 className="text-3xl font-bold">{t("manageOrders")}</h1>
         <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto animate-spin rounded-full border-primary"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 mx-auto rounded-full border-primary"></div>
           <p className="mt-4 text-gray-600">{t("loadingOrders")}</p>
         </div>
       </div>
     );
   }
 
-  // شاشة ظهور خطأ في جلب الطلبات
   if (ordersError) {
     return (
       <div className="space-y-6">
@@ -439,7 +550,7 @@ const AdminOrders: React.FC = () => {
               <h3 className="text-lg font-medium text-red-900 mb-2">
                 {t("errorLoadingOrders")}
               </h3>
-              <p className="text-red-600 mb-4">{ordersError.message}</p>
+              <p className="text-red-600 mb-4">{(ordersError as any).message}</p>
               <Button onClick={() => refetchOrders()}>{t("retry")}</Button>
             </div>
           </CardContent>
@@ -448,20 +559,15 @@ const AdminOrders: React.FC = () => {
     );
   }
 
-  // شاشة إدارة الطلبات الرئيسية
   return (
-    <div
-      className={`space-y-6 ${isRTL ? "text-right" : "text-left"}`}
-      dir={isRTL ? "rtl" : "ltr"}
-    >
-      {/* شريط الإحصائيات */}
+    <div className={`space-y-6 ${isRTL ? "text-right" : "text-left"}`} dir={isRTL ? "rtl" : "ltr"}>
       <OrderStatsBar
         stats={stats}
         statusFilter={statusFilter}
         setStatusFilter={setStatusFilter}
         t={t}
       />
-      {/* شريط الفلاتر */}
+
       <OrderFiltersBar
         t={t}
         searchQuery={searchQuery}
@@ -475,28 +581,23 @@ const AdminOrders: React.FC = () => {
         statusFilter={statusFilter}
         setStatusFilter={setStatusFilter}
         onResetFilters={() => {
-          setStatusFilter("all");
-          setDateFrom("");
-          setDateTo("");
-          setPaymentFilter("all");
-          setSearchQuery("");
+          setStatusFilter("all"); setDateFrom(""); setDateTo(""); setPaymentFilter("all"); setSearchQuery("");
         }}
         onExportExcel={() => {}}
       />
-      {/* رأس الصفحة مع زر إضافة طلب */}
+
       <AdminHeader
         title={t("orders") || "الطلبات"}
         count={advancedFilteredOrdersMemo.length}
         addLabel={t("addNewOrder") || "إضافة طلب جديد"}
         onAdd={() => setShowAddOrder(true)}
       />
-      {/* Dialog إضافة طلب جديد */}
+
       <OrderAddDialog
         open={showAddOrder}
         onOpenChange={(open) => {
           setShowAddOrder(open);
           if (!open) {
-            // إعادة تصفير النموذج عند إغلاق الحوار
             setOrderForm(initialOrderForm);
             setAllowCustomClient(false);
           }
@@ -515,21 +616,17 @@ const AdminOrders: React.FC = () => {
         handleAddOrder={handleAddOrder}
         t={t}
       />
-      {/* قائمة الطلبات مع تمرير الفلاتر */}
+
       {advancedFilteredOrdersMemo.length === 0 ? (
         <Card>
           <CardContent className="p-12">
             <div className="text-center">
               <ShoppingCart className="h-16 w-16 text-gray-300 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">
-                {statusFilter === "all"
-                  ? t("noOrders")
-                  : t("noOrdersForStatus") + " \" " + t(statusFilter) + " \"" }
+                {statusFilter === "all" ? t("noOrders") : t("noOrdersForStatus") + " \" " + t(statusFilter) + " \""}
               </h3>
               <p className="text-gray-500">
-                {statusFilter === "all"
-                  ? t("ordersWillAppearHere")
-                  : t("tryChangingFilterToShowOtherOrders")}
+                {statusFilter === "all" ? t("ordersWillAppearHere") : t("tryChangingFilterToShowOtherOrders")}
               </p>
             </div>
           </CardContent>
@@ -542,34 +639,31 @@ const AdminOrders: React.FC = () => {
             containerHeight={window.innerHeight - 320}
             overscan={6}
             getItemKey={(order) => order.id}
-            renderItem={(order, idx) => {
-              // جلب الطلب الأحدث من قاعدة البيانات
+            renderItem={(order) => {
               const latestOrder = Array.isArray(orders)
-                ? orders.find((o) => o.id === order.id) || order
+                ? (orders as any[]).find((o) => o.id === order.id) || order
                 : order;
-              // معالجة أصناف الطلب
-              let items = [];
-              if (typeof latestOrder.items === "string") {
-                try {
-                  items = JSON.parse(latestOrder.items);
-                } catch {
-                  items = [];
-                }
-              } else if (Array.isArray(latestOrder.items)) {
-                items = latestOrder.items;
+
+              let items: any[] = [];
+              if (typeof (latestOrder as any).items === "string") {
+                try { items = JSON.parse((latestOrder as any).items); } catch { items = []; }
+              } else if (Array.isArray((latestOrder as any).items)) {
+                items = (latestOrder as any).items;
               }
-              // معالجة عنوان الشحن
-              let shipping_address: any = latestOrder.shipping_address;
+
+              let shipping_address: any = (latestOrder as any).shipping_address;
               if (typeof shipping_address === "string") {
-                try {
-                  shipping_address = JSON.parse(shipping_address);
-                } catch {
-                  shipping_address = {};
-                }
+                try { shipping_address = JSON.parse(shipping_address); } catch { shipping_address = {}; }
               } else if (typeof shipping_address !== "object" || shipping_address === null) {
                 shipping_address = {};
               }
-              const customerName = latestOrder.customer_name || shipping_address.fullName || latestOrder.profiles?.full_name || "";
+
+              const customerName =
+                (latestOrder as any).customer_name ||
+                shipping_address.fullName ||
+                (latestOrder as any).profiles?.full_name ||
+                "";
+
               return (
                 <OrderCard
                   key={order.id}
@@ -578,124 +672,57 @@ const AdminOrders: React.FC = () => {
                   t={t}
                   onShowDetails={() => {
                     setSelectedOrder(
-                      mapOrderFromDb({
-                        ...latestOrder,
-                        items,
-                        shipping_address,
-                      } as Record<string, unknown>),
+                      mapOrderFromDb({ ...latestOrder, items, shipping_address } as Record<string, unknown>)
                     );
                   }}
                   onPrintOrder={(order) => orderPrint(order, t, language, profile?.full_name || "-", products)}
                   onDownloadPdf={(order) => downloadInvoicePdf(order, t, language, profile?.full_name || "-", products)}
                   onEdit={(order) => {
                     setEditOrderId(order.id);
-                    // معالجة order_items من قاعدة البيانات
-                    const items = Array.isArray((latestOrder as any).order_items)
-                      ? (latestOrder as any).order_items.map(item => ({
-                          id: item.id,
-                          product_id: item.product_id,
-                          quantity: item.quantity,
-                          price: item.price,
-                          product_name: item.products?.name_ar || item.products?.name_en || item.products?.id || "",
-                        }))
-                      : Array.isArray(latestOrder.items)
-                        ? latestOrder.items
-                        : [];
 
-                    // إضافة المنتجات المجانية من العروض المطبقة
-                    const appliedOffers = latestOrder.applied_offers 
-                      ? (typeof latestOrder.applied_offers === 'string' 
-                          ? JSON.parse(latestOrder.applied_offers) 
-                          : latestOrder.applied_offers)
+                    const itemsFromDb = Array.isArray((latestOrder as any).items)
+                      ? (latestOrder as any).items
+                      : (Array.isArray((latestOrder as any).order_items)
+                        ? (latestOrder as any).order_items.map((item: any) => ({
+                            id: item.id || `item_${item.product_id}_${Date.now()}`,
+                            product_id: item.product_id,
+                            quantity: item.quantity,
+                            price: item.price,
+                            product_name: item.product_name || "",
+                          }))
+                        : []);
+
+                    const appliedOffers = (latestOrder as any).applied_offers
+                      ? (typeof (latestOrder as any).applied_offers === "string"
+                        ? JSON.parse((latestOrder as any).applied_offers)
+                        : (latestOrder as any).applied_offers)
                       : [];
 
-                    // إضافة المنتجات المجانية إلى قائمة العناصر
-                    const freeItems = [];
-                    
-                    for (const appliedOffer of appliedOffers) {
-                      // التحقق من وجود منتجات مجانية في العرض المطبق
-                      if (appliedOffer.freeProducts && Array.isArray(appliedOffer.freeProducts)) {
-                        for (const freeProductRef of appliedOffer.freeProducts) {
-                          const freeProduct = products.find(p => p.id === freeProductRef.productId);
-                          
-                          if (freeProduct) {
-                            // تحديد السعر الأصلي بناءً على نوع المستخدم
-                            let selectedUser = latestOrder?.profiles as any;
-                            let userType = (selectedUser && selectedUser.user_type) ? selectedUser.user_type : 'retail';
-                            let originalPrice = 0;
-                            let wholesale = 0;
-                            
-                            if (typeof freeProduct.wholesale_price === 'number' && freeProduct.wholesale_price > 0) wholesale = freeProduct.wholesale_price;
-                            
-                            if (userType === 'admin' || userType === 'wholesale') {
-                              originalPrice = wholesale > 0 ? wholesale : freeProduct.price;
-                            } else {
-                              originalPrice = freeProduct.price;
-                            }
-                            
-                            freeItems.push({
-                              id: `free_${freeProductRef.productId}_${Date.now()}_${Math.random()}`,
-                              product_id: freeProductRef.productId,
-                              quantity: freeProductRef.quantity || 1,
-                              price: 0,
-                              product_name: freeProduct.name_ar || freeProduct.name_en || freeProduct.id,
-                              is_free: true, // علامة للمنتج المجاني
-                              original_price: originalPrice || 0, // السعر الأصلي حسب نوع المستخدم
-                            });
-                          } else {
-                            console.log('❌ لم يتم العثور على المنتج المجاني:', freeProductRef.productId);
-                          }
-                        }
-                      }
-                      
-                      // التحقق التقليدي للتوافق مع البنى القديمة
-                      else if (appliedOffer.offer && appliedOffer.offer.offer_type === 'buy_get' && appliedOffer.offer.get_discount_type === 'free') {
-                        const freeProduct = products.find(p => p.id === appliedOffer.offer.get_product_id);
-                        
-                        if (freeProduct) {
-                          // تحديد السعر الأصلي بناءً على نوع المستخدم
-                          let selectedUser = latestOrder?.profiles as any;
-                          let userType = (selectedUser && selectedUser.user_type) ? selectedUser.user_type : 'retail';
-                          let originalPrice = 0;
-                          let wholesale = 0;
-                          
-                          if (typeof freeProduct.wholesale_price === 'number' && freeProduct.wholesale_price > 0) wholesale = freeProduct.wholesale_price;
-                          
-                          if (userType === 'admin' || userType === 'wholesale') {
-                            originalPrice = wholesale > 0 ? wholesale : freeProduct.price;
-                          } else {
-                            originalPrice = freeProduct.price;
-                          }
-                          
-                          freeItems.push({
-                            id: `free_${appliedOffer.offer.get_product_id}_${Date.now()}_${Math.random()}`,
-                            product_id: appliedOffer.offer.get_product_id,
-                            quantity: 1,
-                            price: 0,
-                            product_name: freeProduct.name_ar || freeProduct.name_en || freeProduct.id,
-                            is_free: true, // علامة للمنتج المجاني
-                            original_price: originalPrice || 0, // السعر الأصلي حسب نوع المستخدم
-                          });
-                        } else {
-                          console.log('❌ لم يتم العثور على المنتج المجاني:', appliedOffer.offer.get_product_id);
-                        }
-                      }
-                    }
+                    // Build canonical free refs to preview in edit dialog too
+                    const freeRefs = getCanonicalFreeRefs(
+                      (latestOrder as any).free_items,
+                      appliedOffers
+                    );
 
-                    const allItems = [...items, ...freeItems];
+                    // Add visual free items if missing
+                    const userType: any = (latestOrder as any)?.profiles?.user_type || "retail";
+                    const allItems = injectFreeItemsIfMissing([...itemsFromDb], freeRefs, products, userType);
 
                     setEditOrderForm({
-                      user_id: latestOrder.user_id,
-                      payment_method: latestOrder.payment_method,
-                      status: latestOrder.status,
-                      notes: latestOrder.notes ? safeDecompressNotes(latestOrder.notes) : "",
+                      user_id: (latestOrder as any).user_id,
+                      payment_method: (latestOrder as any).payment_method,
+                      status: (latestOrder as any).status,
+                      notes: (latestOrder as any).notes ? safeDecompressNotes((latestOrder as any).notes) : "",
                       items: allItems,
-                      shipping_address: {
-                        ...shipping_address,
-                        fullName: customerName,
-                      },
-                    });
-                    setOriginalOrderForEdit(mapOrderFromDb({ ...latestOrder, items: allItems, shipping_address } as Record<string, unknown>));
+                      shipping_address: { ...shipping_address, fullName: customerName },
+                      // pass-through original fields so handleEditOrder can read them if needed
+                      ...(latestOrder as any).applied_offers ? { applied_offers: (latestOrder as any).applied_offers } : {},
+                      ...(latestOrder as any).free_items ? { free_items: (latestOrder as any).free_items } : {},
+                    } as any);
+
+                    setOriginalOrderForEdit(
+                      mapOrderFromDb({ ...latestOrder, items: allItems, shipping_address } as Record<string, unknown>)
+                    );
                     setShowEditOrder(true);
                   }}
                   onDelete={(order) => {
@@ -709,7 +736,7 @@ const AdminOrders: React.FC = () => {
           />
         </div>
       )}
-      {/* Dialog حذف الطلب */}
+
       <OrderDeleteDialog
         open={showDeleteDialog}
         onOpenChange={setShowDeleteDialog}
@@ -718,7 +745,7 @@ const AdminOrders: React.FC = () => {
         handleDeleteOrder={handleDeleteOrder}
         setShowDeleteDialog={setShowDeleteDialog}
       />
-      {/* Dialog تفاصيل الطلب */}
+
       <OrderDetailsDialog
         open={!!selectedOrder}
         onOpenChange={() => setSelectedOrder(null)}
@@ -728,7 +755,7 @@ const AdminOrders: React.FC = () => {
         generateOrderPrint={generateOrderPrint}
         onDownloadPdf={(order) => downloadInvoicePdf(order, t, language, profile?.full_name || "-", products)}
       />
-      {/* Dialog تعديل الطلب */}
+
       <OrderEditDialog
         open={showEditOrder}
         onOpenChange={(opened) => {
@@ -743,12 +770,14 @@ const AdminOrders: React.FC = () => {
         originalOrderForEdit={originalOrderForEdit}
         setEditOrderChanges={setEditOrderChanges}
         setShowConfirmEditDialog={setShowConfirmEditDialog}
-        getOrderEditChangesDetailed={(original, edited) => getOrderEditChangesDetailedUtil(original, edited, t, language, products)}
+        getOrderEditChangesDetailed={(original, edited) =>
+          getOrderEditChangesDetailedUtil(original, edited, t, language, products)
+        }
         t={t}
         isRTL={isRTL}
         products={products}
       />
-      {/* Dialog تأكيد تعديل الطلب */}
+
       <ConfirmEditOrderDialog
         open={showConfirmEditDialog}
         onConfirm={handleEditOrder}

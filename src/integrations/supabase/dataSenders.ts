@@ -569,6 +569,21 @@ export async function editOrder(
   orderItems: Omit<TablesInsert<"order_items">, "order_id">[],
 ) {
   try {
+    // تحديث مخزون المنتجات المجانية بناءً على الفروقات فقط
+    console.log(`🔄 بدء تحديث مخزون المنتجات المجانية للطلبية: ${editOrderId}`);
+    const { updateFreeProductsStockOnEdit } = await import('@/services/stockService');
+    const stockUpdateResult = await updateFreeProductsStockOnEdit(
+      editOrderId,
+      updateObj.applied_offers,
+      updateObj.free_items
+    );
+    
+    if (stockUpdateResult.success) {
+      console.log('✅ تم تحديث مخزون المنتجات المجانية بنجاح');
+    } else {
+      console.warn('⚠️ حدث خطأ في تحديث مخزون المنتجات المجانية:', stockUpdateResult);
+    }
+
     const { error } = await supabase
       .from("orders")
       .update(updateObj)
@@ -585,6 +600,7 @@ export async function editOrder(
         .insert(itemsToInsert);
       if (itemsError) throw itemsError;
     }
+
     return true;
   } catch (error) {
     console.error("Error editing order:", error);
