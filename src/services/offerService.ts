@@ -28,11 +28,11 @@ export interface OfferApplicationResult {
 
 export class OfferService {
   /**
-   * جلب العروض النشطة
+   * جلب العروض النشطة ضمن الفترة الحالية
    */
   static async getActiveOffers(): Promise<Offer[]> {
     const now = new Date().toISOString();
-    
+
     const { data, error } = await supabase
       .from("offers")
       .select("*")
@@ -50,7 +50,7 @@ export class OfferService {
   }
 
   /**
-   * جلب المنتجات من قاعدة البيانات
+   * جلب منتجات بحسب IDs
    */
   static async getProducts(productIds: string[]): Promise<Product[]> {
     if (!productIds.length) return [];
@@ -91,7 +91,10 @@ export class OfferService {
   }
 
   /**
-   * تطبيق العروض على السلة
+   * تطبيق جميع العروض الفعالة على السلة — يرجّع:
+   * - قائمة العروض المطبقة + مجموع الخصم
+   * - العناصر المجانية الناتجة
+   * - updatedItems (نفس الإدخال لأن CartItem لا يحتوي price)
    */
   static async applyOffers(
     cartItems: CartItem[],
@@ -151,13 +154,6 @@ export class OfferService {
     cartItems: CartItem[],
     userType?: string
   ): Promise<AppliedOffer> {
-    const result: AppliedOffer = {
-      offer,
-      discountAmount: 0,
-      affectedProducts: [],
-      freeProducts: []
-    };
-
     if (offer.offer_type === "buy_get") {
       return this.applyBuyGetOffer(offer, cartItems, userType);
     } else {
@@ -166,7 +162,7 @@ export class OfferService {
   }
 
   /**
-   * تطبيق عرض "اشتري واحصل"
+   * buy X get Y (free/discount)
    */
   private static async applyBuyGetOffer(
     offer: Offer,
@@ -193,87 +189,50 @@ export class OfferService {
 
     // البحث عن المنتج المطلوب شراؤه في السلة
     const linkedItem = cartItems.find(item => item.product.id === linkedProductId);
-    
     if (!linkedItem || linkedItem.quantity < buyQuantity) {
-      console.log("Buy-get offer conditions not met:", {
-        linkedItem: !!linkedItem,
-        quantity: linkedItem?.quantity,
-        buyQuantity
-      });
       return result;
     }
 
     // حساب عدد المرات التي يمكن تطبيق العرض فيها
     const applicableTimes = Math.floor(linkedItem.quantity / buyQuantity);
-    
     result.affectedProducts.push(linkedProductId);
 
     if (getDiscountType === "free") {
       // منتج مجاني - جلب معلومات المنتج أولاً
       const getProducts = await this.getProducts([getProductId]);
       const getProduct = getProducts[0];
-      
       if (getProduct) {
         result.freeProducts = [{ productId: getProductId, quantity: applicableTimes }];
-        console.log("Applied free product offer:", {
-          productId: getProductId,
-          quantity: applicableTimes,
-          product: getProduct.name
-        });
-      } else {
-        console.warn("Free product not found:", getProductId);
       }
-    } else {
-      // خصم على المنتج المحدد
-      const getProducts = await this.getProducts([getProductId]);
-      const getProduct = getProducts[0];
-      
-      if (getProduct) {
-        // البحث عن المنتج المستهدف في السلة
-        const targetItem = cartItems.find(item => item.product.id === getProductId);
-        
-        if (targetItem) {
-          // المنتج موجود في السلة - نطبق الخصم على الكمية الموجودة
-          const productPrice = getDisplayPrice(getProduct, userType);
-          let discountPerProduct = 0;
-
-          if (getDiscountType === "percentage") {
-            discountPerProduct = (productPrice * getDiscountValue) / 100;
-          } else if (getDiscountType === "fixed") {
-            discountPerProduct = Math.min(getDiscountValue, productPrice);
-          }
-
-          // نطبق الخصم على عدد المرات المؤهلة أو كمية المنتج في السلة (أيهما أقل)
-          const discountableQuantity = Math.min(targetItem.quantity, applicableTimes);
-          result.discountAmount = discountPerProduct * discountableQuantity;
-          result.affectedProducts.push(getProductId);
-          
-          console.log("Applied discount to existing cart item:", {
-            productId: getProductId,
-            productName: getProduct.name,
-            discountPerProduct,
-            discountableQuantity,
-            totalDiscount: result.discountAmount
-          });
-        } else {
-          // المنتج غير موجود في السلة - لا نطبق الخصم
-          console.log("Target product not in cart - no discount applied:", {
-            productId: getProductId,
-            productName: getProduct.name,
-            note: "Add this product to cart to receive the discount"
-          });
-          
-          // لا نضيف أي خصم أو منتجات متأثرة
-          // الخصم سيكون متاح فقط عند إضافة المنتج للسلة
-        }
-      }
+      return result;
     }
+
+    // خصم على المنتج المحدد
+    const getProducts = await this.getProducts([getProductId]);
+    const getProduct = getProducts[0];
+    if (!getProduct) return result;
+
+    const targetItem = cartItems.find(item => item.product.id === getProductId);
+    if (!targetItem) return result;
+
+    const productPrice = getDisplayPrice(getProduct, userType);
+    let discountPerProduct = 0;
+
+    if (getDiscountType === "percentage") {
+      discountPerProduct = (productPrice * getDiscountValue) / 100;
+    } else if (getDiscountType === "fixed") {
+      discountPerProduct = Math.min(getDiscountValue, productPrice);
+    }
+
+    const discountableQuantity = Math.min(targetItem.quantity, applicableTimes);
+    result.discountAmount = discountPerProduct * discountableQuantity;
+    result.affectedProducts.push(getProductId);
 
     return result;
   }
 
   /**
-   * تطبيق عرض الخصم العادي
+   * خصم عادي على العناصر (percentage/fixed)
    */
   private static async applyDiscountOffer(
     offer: Offer,
@@ -331,11 +290,11 @@ export class OfferService {
         return;
       }
 
-      // تحديث إحصائيات العرض باستخدام استعلام مباشر
+      // ملاحظة: تحديث counters بهذه الطريقة بدائي — يفضّل triggers أو upserts تراكمية
       const { error: updateError } = await supabase
         .from("offers")
         .update({
-          usage_count: 1, // سنحدث هذا لاحقاً بطريقة أفضل
+          usage_count: 1,
           total_discount_given: discountAmount,
           total_orders: 1
         })
@@ -396,22 +355,20 @@ export class OfferService {
    */
   static async getOfferAnalytics(offerId: string) {
     try {
-      const basicStats = await this.getOfferStats(offerId);
-      
       // حساب نقاط الأداء
+      const basic = await this.getOfferStats(offerId);
       let performanceScore = 0;
-      if (basicStats.usageCount > 0) {
-        if (basicStats.usageCount >= 50) performanceScore = 5; // ممتاز
-        else if (basicStats.usageCount >= 20) performanceScore = 4; // جيد جداً
-        else if (basicStats.usageCount >= 10) performanceScore = 3; // جيد
-        else if (basicStats.usageCount >= 5) performanceScore = 2; // مقبول
-        else performanceScore = 1; // ضعيف
+      if (basic.usageCount > 0) {
+        if (basic.usageCount >= 50) performanceScore = 5;
+        else if (basic.usageCount >= 20) performanceScore = 4;
+        else if (basic.usageCount >= 10) performanceScore = 3;
+        else if (basic.usageCount >= 5) performanceScore = 2;
+        else performanceScore = 1;
       }
-
       return {
-        ...basicStats,
-        performanceScore,
-        orderCount: basicStats.totalOrders // إضافة عدد الطلبات مع اسم مختلف للوضوح
+        ...basic,
+        orderCount: basic.totalOrders,
+        performanceScore
       };
     } catch (error) {
       console.error("Error in getOfferAnalytics:", error);
@@ -429,7 +386,7 @@ export class OfferService {
    * تحقق من صحة العرض على منتج معين
    */
   static async isOfferValidForProduct(
-    offerId: string, 
+    offerId: string,
     productId: string
   ): Promise<boolean> {
     try {
@@ -470,10 +427,9 @@ export class OfferService {
    */
   static async getOffersForProduct(productId: string): Promise<Offer[]> {
     try {
-      const activeOffers = await this.getActiveOffers();
-      
-      return activeOffers.filter(offer => {
-        // العروض العادية تطبق على جميع المنتجات
+      const active = await this.getActiveOffers();
+
+      return active.filter(offer => {
         if (offer.offer_type === "discount") return true;
         
         // عروض اشتري واحصل تطبق على المنتجات المرتبطة
@@ -482,7 +438,7 @@ export class OfferService {
           const getProductId = (offer as any).get_product_id;
           return productId === linkedProductId || productId === getProductId;
         }
-        
+
         return false;
       });
     } catch (error) {

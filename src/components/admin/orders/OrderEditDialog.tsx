@@ -1,4 +1,4 @@
-import React, { useEffect, useContext, useState } from "react";
+import React, { useEffect, useContext, useState, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Plus, Trash2, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,11 +8,119 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import Autocomplete from "../../ui/autocomplete";
 import type { NewOrderForm, OrderItem } from "@/orders/order.types";
-import { calculateOrderTotal, calculateOrderTotalWithFreeItems } from "@/orders/order.utils";
 import OrderDiscountSection from "./OrderDiscountSection";
 import OrderDiscountSummary from "./OrderDiscountSummary";
 import { LanguageContext } from '@/contexts/LanguageContext.context';
 import { checkProductOfferEligibility, applyOfferToProduct, removeAppliedOffer, type OfferEligibility } from "@/utils/offerUtils";
+import { getDisplayPrice } from "@/utils/priceUtils";
+import { OfferService, type Offer } from "@/services/offerService";
+
+/* ===== Helpers ===== */
+
+function summarizeOffersForOrder(items: OrderItem[], products: any[], userType?: string) {
+  const appliedMap: Record<string, {
+    offer: any;
+    discountAmount: number;
+    affectedProducts: string[];
+    freeProducts: { productId: string; quantity: number }[];
+  }> = {};
+  const freeItemsOut: any[] = [];
+
+  const getProd = (pid: string) => products.find(p => p.id === pid);
+
+  items.forEach((it: any) => {
+    const offerId = it.offer_id;
+    const offerName = it.offer_name;
+
+    if (!offerId) return;
+
+    if (!appliedMap[offerId]) {
+      appliedMap[offerId] = {
+        offer: { id: offerId, title_ar: offerName, title_en: offerName, offer_type: it.is_free ? "buy_get" : (it.offer_applied ? "discount" : "discount") },
+        discountAmount: 0,
+        affectedProducts: [],
+        freeProducts: [],
+      };
+    }
+
+    if (it.is_free) {
+      const p = getProd(it.product_id);
+      if (p) {
+        freeItemsOut.push({
+          id: `free_${offerId}_${it.product_id}`,
+          product: {
+            id: p.id,
+            name: p.name_ar || p.name_en || p.name || "",
+            price: p.price,
+            wholesalePrice: p.wholesale_price ?? p.wholesalePrice,
+            image: p.image
+          },
+          quantity: it.quantity
+        });
+      }
+      appliedMap[offerId].freeProducts.push({ productId: it.product_id, quantity: it.quantity });
+    }
+
+    if (it.offer_applied && typeof it.original_price === "number") {
+      const perUnitDiscount = Math.max(0, it.original_price - (it.price ?? 0));
+      appliedMap[offerId].discountAmount += perUnitDiscount * (it.quantity || 0);
+      if (!appliedMap[offerId].affectedProducts.includes(it.product_id)) {
+        appliedMap[offerId].affectedProducts.push(it.product_id);
+      }
+    }
+  });
+
+  const applied_offers = Object.values(appliedMap);
+  return { applied_offers, free_items: freeItemsOut };
+}
+
+function buildChangesForConfirm(originalOrder: any, edited: NewOrderForm, products: any[], userType?: string) {
+  const changes: { label: string; oldValue: string; newValue: string }[] = [];
+
+  const basePrice = (pid: string) => {
+    const prod = products.find((p: any) => p.id === pid);
+    return prod ? getDisplayPrice(prod, userType) : 0;
+  };
+
+  const oldByPid: Record<string, { qty: number; price: number }> = {};
+  (originalOrder?.items || []).forEach((it: any) => {
+    oldByPid[it.product_id] = {
+      qty: it.quantity,
+      price: typeof it.price === "number" ? it.price : basePrice(it.product_id),
+    };
+  });
+
+  edited.items.forEach((it: any) => {
+    const old = oldByPid[it.product_id];
+    const name =
+      products.find((p: any) => p.id === it.product_id)?.name_ar ||
+      it.product_name ||
+      it.product_id;
+
+    const newQty = it.quantity || 0;
+    const newPriceForDisplay = it.is_free
+      ? 0
+      : (typeof it.price === "number" ? it.price : basePrice(it.product_id));
+
+    const oldQty = old?.qty ?? 0;
+    const oldPriceForDisplay = old?.price ?? basePrice(it.product_id);
+
+    const oldStr = `الكمية: ${oldQty}, السعر: ${oldPriceForDisplay}`;
+    const newStr = `الكمية: ${newQty}, السعر: ${newPriceForDisplay}`;
+
+    if (oldStr !== newStr) {
+      changes.push({
+        label: name,
+        oldValue: oldStr,
+        newValue: newStr,
+      });
+    }
+  });
+
+  return changes;
+}
+
+/* ===== Component ===== */
 
 interface OrderEditDialogProps {
   open: boolean;
@@ -43,14 +151,36 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
 }) => {
   const { language } = useContext(LanguageContext) ?? { language: 'ar' };
   const [offerEligibilities, setOfferEligibilities] = useState<Record<string, OfferEligibility>>({});
+  const autoAppliedOffersRef = useRef<Set<string>>(new Set());
+  const offersCacheRef = useRef<Record<string, Offer[]>>({});
 
-  // فحص العروض المتاحة للمنتجات
+  function isOfferAlreadyAppliedForProduct(items: any[], eligibility: OfferEligibility) {
+    const offerId = eligibility.offer?.id;
+    if (!offerId) return false;
+
+    const hasFree = items.some(it =>
+      (it as any).is_free && (it as any).offer_id === offerId
+    );
+    const hasDiscountApplied = items.some(it =>
+      (it as any).offer_applied && (it as any).offer_id === offerId
+    );
+
+    const getPid = (eligibility.offer as any)?.get_product_id;
+    const targetAlreadyGranted = getPid && items.some(it =>
+      it.product_id === getPid && ( (it as any).is_free || (it as any).offer_applied )
+    );
+
+    const autoApplied = autoAppliedOffersRef.current.has(offerId);
+    return !!(hasFree || hasDiscountApplied || targetAlreadyGranted || autoApplied);
+  }
+
+  // ==== فحص العروض المتاحة =====
   const checkOffersForItems = async () => {
     if (!editOrderForm?.items) return;
-    
+
     const userType = originalOrderForEdit?.profiles?.user_type || 'retail';
     const newEligibilities: Record<string, OfferEligibility> = {};
-    
+
     for (const item of editOrderForm.items) {
       if (item.product_id && item.quantity > 0 && !(item as any).is_free) {
         try {
@@ -60,20 +190,158 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
             editOrderForm.items,
             userType
           );
-          
+
           if (eligibility.isEligible && eligibility.canApply) {
-            newEligibilities[item.product_id] = eligibility;
+            if (!isOfferAlreadyAppliedForProduct(editOrderForm.items, eligibility)) {
+              newEligibilities[item.product_id] = eligibility;
+            }
           }
         } catch (error) {
           console.error("Error checking offer for product:", item.product_id, error);
         }
       }
     }
-    
+
     setOfferEligibilities(newEligibilities);
   };
 
-  // تطبيق العرض
+  // cache offers per pid
+  const getOffersFor = async (pid: string) => {
+    if (!offersCacheRef.current[pid]) {
+      offersCacheRef.current[pid] = await OfferService.getOffersForProduct(pid);
+    }
+    return offersCacheRef.current[pid];
+  };
+
+  // ==== تصالح العروض تلقائياً عند تغيّر الكميات ====
+  const reconcileOffers = async () => {
+    if (!editOrderForm?.items) return;
+    const userType = originalOrderForEdit?.profiles?.user_type || 'retail';
+
+    let items = [...editOrderForm.items];
+    let changed = false;
+
+    for (const line of items) {
+      if (!line.product_id || (line as any).is_free) continue;
+
+      const offers = await getOffersFor(line.product_id);
+      if (!offers.length) continue;
+
+      for (const offer of offers) {
+        if (offer.offer_type !== "buy_get") continue;
+
+        const linkedProductId = (offer as any).linked_product_id;
+        if (linkedProductId !== line.product_id) continue;
+
+        const buyQuantity = (offer as any).buy_quantity || 1;
+        const getProductId = (offer as any).get_product_id;
+        const getDiscountType = (offer as any).get_discount_type || "free";
+        const getDiscountValue = (offer as any).get_discount_value || 0;
+
+        const qty = line.quantity || 0;
+        const applicableTimes = Math.floor(qty / buyQuantity);
+
+        // تحديث وسم trigger للعنصر
+        const lineIdx = items.findIndex(it => it.id === line.id);
+        if (lineIdx !== -1) {
+          const hadTrigger = !!(items[lineIdx] as any).offer_trigger;
+          const shouldTrigger = applicableTimes > 0;
+          if (hadTrigger !== shouldTrigger) changed = true;
+          items[lineIdx] = {
+            ...(items[lineIdx] as any),
+            offer_trigger: shouldTrigger || undefined,
+            offer_trigger_id: shouldTrigger ? offer.id : undefined,
+            offer_id: shouldTrigger ? ((items[lineIdx] as any).offer_id ?? offer.id) : undefined,
+            offer_name: shouldTrigger ? ((items[lineIdx] as any).offer_name ?? (offer.title_ar || offer.title_en)) : undefined,
+          } as any;
+        }
+
+        // FREE: حدّث/ازل المنتج المجاني
+        if (getDiscountType === "free") {
+          const freeIndex = items.findIndex(it => it.product_id === getProductId && (it as any).is_free);
+          if (applicableTimes <= 0) {
+            if (freeIndex !== -1) {
+              items.splice(freeIndex, 1);
+              changed = true;
+            }
+          } else {
+            if (freeIndex !== -1) {
+              const cur = items[freeIndex];
+              if (cur.quantity !== applicableTimes) {
+                items[freeIndex] = { ...cur, quantity: applicableTimes } as any;
+                changed = true;
+              }
+            } else {
+              const freeProduct = products.find(p => p.id === getProductId);
+              if (freeProduct) {
+                const originalPrice = getDisplayPrice(freeProduct as any, userType);
+                items.push({
+                  id: `free_${offer.id}_${getProductId}`,
+                  product_id: getProductId,
+                  quantity: applicableTimes,
+                  price: 0,
+                  product_name: freeProduct.name_ar || freeProduct.name_en || "",
+                  is_free: true,
+                  original_price: originalPrice,
+                  offer_id: offer.id,
+                  offer_name: offer.title_ar || offer.title_en,
+                } as any);
+                changed = true;
+              }
+            }
+          }
+        } else {
+          // خصم على منتج الهدف
+          const targetIdx = items.findIndex(it => it.product_id === getProductId && !(it as any).is_free);
+          const targetProduct = products.find(p => p.id === getProductId);
+          const originalPrice = targetProduct ? getDisplayPrice(targetProduct as any, userType) : 0;
+
+          if (applicableTimes <= 0) {
+            // الشرط سقط: شيل الخصم إن وجد
+            if (targetIdx !== -1 && (items[targetIdx] as any).offer_applied && (items[targetIdx] as any).offer_id === offer.id) {
+              const original = (items[targetIdx] as any).original_price ?? originalPrice;
+              items[targetIdx] = {
+                ...items[targetIdx],
+                price: original,
+                original_price: undefined,
+                offer_applied: undefined,
+                offer_id: undefined,
+                offer_name: undefined,
+              } as any;
+              changed = true;
+            }
+          } else {
+            // الشرط محقق: طبّق الخصم لو موجود المنتج الهدف
+            if (targetIdx !== -1) {
+              let discountedPrice = originalPrice;
+              if (getDiscountType === "percentage") {
+                discountedPrice = Math.max(0, originalPrice * (1 - getDiscountValue / 100));
+              } else if (getDiscountType === "fixed") {
+                discountedPrice = Math.max(0, originalPrice - getDiscountValue);
+              }
+              const tgt = items[targetIdx] as any;
+              if (!tgt.offer_applied || tgt.price !== discountedPrice || tgt.offer_id !== offer.id) {
+                items[targetIdx] = {
+                  ...items[targetIdx],
+                  price: discountedPrice,
+                  original_price: tgt.original_price ?? originalPrice,
+                  offer_applied: true,
+                  offer_id: offer.id,
+                  offer_name: offer.title_ar || offer.title_en,
+                } as any;
+                changed = true;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    if (changed) {
+      setEditOrderForm(prev => prev ? { ...prev, items } : prev);
+    }
+  };
+
   const handleApplyOffer = async (productId: string, eligibility: OfferEligibility) => {
     if (!editOrderForm || !eligibility.offer) return;
     
@@ -87,6 +355,7 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
         userType
       );
       
+      autoAppliedOffersRef.current.add(eligibility.offer.id);
       setEditOrderForm(prev => prev ? { ...prev, items: updatedItems } : prev);
       
       // إزالة العرض من قائمة العروض المتاحة لأنه تم تطبيقه
@@ -104,32 +373,21 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
   const handleRemoveOffer = (offerId: string) => {
     if (!editOrderForm) return;
     
+    autoAppliedOffersRef.current.delete(offerId);
     const updatedItems = removeAppliedOffer(editOrderForm.items, offerId);
     
     // إعادة حساب الأسعار بناءً على نوع المستخدم بعد إزالة العرض
     const selectedUser = originalOrderForEdit?.profiles;
     const userType = (selectedUser && selectedUser.user_type) ? selectedUser.user_type : 'retail';
-    
+
     const itemsWithCorrectPrices = updatedItems.map(item => {
-      // تحديث السعر فقط للمنتجات التي تم إزالة العرض منها وليست مجانية
-      if (!(item as any).is_free && !(item as any).offer_applied) {
-        const matched = products.find(p => p.id === item.product_id);
-        if (matched) {
-          let price = matched.price;
-          let wholesale = 0;
-          if (typeof matched.wholesale_price === 'number' && matched.wholesale_price > 0) wholesale = matched.wholesale_price;
-          if (typeof matched.wholesalePrice === 'number' && matched.wholesalePrice > 0) wholesale = Math.max(wholesale, matched.wholesalePrice);
-          
-          if (userType === 'admin' || userType === 'wholesale') {
-            price = wholesale > 0 ? wholesale : matched.price;
-          }
-          
-          return { ...item, price };
-        }
-      }
-      return item;
+      if ((item as any).is_free || (item as any).offer_applied) return item;
+      const matched = products.find(p => p.id === item.product_id);
+      if (!matched) return item;
+      const base = getDisplayPrice(matched, userType);
+      return { ...item, price: base, original_price: base };
     });
-    
+
     setEditOrderForm(prev => prev ? { ...prev, items: itemsWithCorrectPrices } : prev);
   };
 
@@ -149,33 +407,28 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
     });
   }
 
-  // تحديث أسعار المنتجات عند تغيير المستخدم (أو عند تحميل الطلبية أو فتح الديالوج)
+  // تحديث أسعار المنتجات عند تغيّر نوع المستخدم/فتح الديالوج مع المحافظة على الخصومات
   useEffect(() => {
     if (!editOrderForm || !open) return;
-    let selectedUser = originalOrderForEdit?.profiles;
-    let userType = (selectedUser && selectedUser.user_type) ? selectedUser.user_type : 'retail';
+    const selectedUser = originalOrderForEdit?.profiles;
+    const userType = (selectedUser && selectedUser.user_type) ? selectedUser.user_type : 'retail';
+
     setEditOrderForm(prev => {
       if (!prev) return prev;
       return {
         ...prev,
         items: prev.items.map(item => {
-          // لا نحدث أسعار المنتجات المجانية، نخليها صفر
-          if ((item as any).is_free) {
-            return item;
-          }
-          
+          if ((item as any).is_free) return item;
           const matched = products.find(p => p.id === item.product_id);
           if (!matched) return item;
-          let price = 0;
-          let wholesale = 0;
-          if (typeof matched.wholesale_price === 'number' && matched.wholesale_price > 0) wholesale = matched.wholesale_price;
-          if (typeof matched.wholesalePrice === 'number' && matched.wholesalePrice > 0) wholesale = Math.max(wholesale, matched.wholesalePrice);
-          if (userType === 'admin' || userType === 'wholesale') {
-            price = wholesale > 0 ? wholesale : matched.price;
-          } else {
-            price = matched.price;
+          const base = getDisplayPrice(matched, userType);
+          if ((item as any).offer_applied && typeof item.price === 'number') {
+            if (typeof (item as any).original_price !== 'number') {
+              return { ...item, original_price: base };
+            }
+            return item;
           }
-          return { ...item, price };
+          return { ...item, price: base, original_price: base };
         })
       };
     });
@@ -199,18 +452,65 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, originalOrderForEdit]);
 
-  // فحص العروض عند تغيير العناصر
+  // فحص/تصالح العروض عند تغيّر العناصر
   useEffect(() => {
     if (editOrderForm?.items && products.length > 0) {
-      // إضافة تأخير بسيط لتجنب الاستدعاءات المتكررة
       const timeoutId = setTimeout(() => {
         checkOffersForItems();
-      }, 300);
-      
+        reconcileOffers();
+      }, 200);
       return () => clearTimeout(timeoutId);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editOrderForm?.items, products]);
+
+  // تطبيق تلقائي للعروض لما الأهلية تتولّد
+  useEffect(() => {
+    if (!editOrderForm?.items) return;
+    const entries = Object.entries(offerEligibilities);
+    if (entries.length === 0) return;
+    for (const [productId, eligibility] of entries) {
+      if (!eligibility?.offer) continue;
+      if (isOfferAlreadyAppliedForProduct(editOrderForm.items, eligibility)) continue;
+      handleApplyOffer(productId, eligibility);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [offerEligibilities]);
+
+  // تطبيع العناصر قبل الحفظ
+  const normalizeItemsForSave = (items: any[]) => {
+    return items.map(it => {
+      if ((it as any).is_free) {
+        return {
+          ...it,
+          price: 0,
+          is_free: true,
+          offer_id: (it as any).offer_id,
+          offer_name: (it as any).offer_name,
+          original_price: (it as any).original_price,
+        };
+      }
+      if ((it as any).offer_applied) {
+        return {
+          ...it,
+          offer_applied: true,
+          offer_id: (it as any).offer_id,
+          offer_name: (it as any).offer_name,
+          original_price: (it as any).original_price ?? it.price,
+        };
+      }
+      return {
+        ...it,
+        is_free: undefined,
+        offer_applied: undefined,
+        offer_id: undefined,
+        offer_name: undefined,
+        original_price: undefined,
+        offer_trigger: undefined,
+        offer_trigger_id: undefined,
+      };
+    });
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -231,7 +531,20 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
             autoComplete="off"
             onSubmit={e => {
               e.preventDefault();
-              // إذا تم إلغاء تفعيل الخصم، احذف الخصم من الداتا بيس
+
+              const userType = originalOrderForEdit?.profiles?.user_type || 'retail';
+
+              const normalizedItems = normalizeItemsForSave(editOrderForm.items as any[]);
+              const { applied_offers, free_items } = summarizeOffersForOrder(normalizedItems as any[], products, userType);
+              const confirmChanges = buildChangesForConfirm(originalOrderForEdit, { ...editOrderForm, items: normalizedItems } as any, products, userType);
+
+              setEditOrderForm(f => f ? {
+                ...f,
+                items: normalizedItems,
+                applied_offers: applied_offers.length ? JSON.stringify(applied_offers) : null,
+                free_items: free_items.length ? JSON.stringify(free_items) : null,
+              } as any : f);
+
               if (editOrderForm.discountEnabled === false || editOrderForm.discountValue === 0) {
                 setEditOrderForm(f => f ? {
                   ...f,
@@ -240,7 +553,8 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
                   discountEnabled: false,
                 } : f);
               }
-              setEditOrderChanges(getOrderEditChangesDetailed(originalOrderForEdit, editOrderForm));
+
+              setEditOrderChanges(confirmChanges);
               setShowConfirmEditDialog(true);
             }}
           >
@@ -253,6 +567,7 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
                 className="bg-gray-100 font-bold"
               />
             </div>
+
             {/* باقي الحقول */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div>
@@ -298,6 +613,7 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
                 </Select>
               </div>
             </div>
+
             {/* معلومات الشحن */}
             <div className="bg-gray-50 rounded-xl p-4 border mt-2">
               <h3 className="text-lg font-semibold mb-4 text-primary">
@@ -449,6 +765,7 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
                 </div>
               </div>
             </div>
+
             {/* قسم الخصم */}
             <OrderDiscountSection
               discountEnabled={editOrderForm.discountEnabled}
@@ -459,6 +776,7 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
               onDiscountValueChange={val => setEditOrderForm(f => f ? { ...f, discountValue: val } : f)}
               t={t}
             />
+
             {/* المنتجات */}
             <div className="bg-gray-50 rounded-xl p-4 border mt-2">
               <div className="flex justify-between items-center mb-4">
@@ -474,10 +792,7 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
                       const items = f.items;
                       // ابحث عن أول عنصر فارغ (بدون product_id)
                       const emptyIndex = items.findIndex(itm => !itm.product_id);
-                      if (emptyIndex !== -1) {
-                        // إذا فيه سطر فارغ، لا تضف سطر جديد
-                        return f;
-                      }
+                      if (emptyIndex !== -1) return f;
                       return {
                         ...f,
                         items: [
@@ -500,350 +815,332 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
                 </Button>
               </div>
               <div className="space-y-3">
-                {editOrderForm.items.map((item, index) => (
-                  <div key={item.id} className={`p-4 border rounded-lg shadow-sm ${(item as any).is_free ? 'bg-green-50 border-green-200' : 'bg-white'}`}>
-                    <div className="mb-3">
-                      <Label className="text-sm font-semibold">
-                        {t("product") || "المنتج"} <span className="text-primary font-bold">{editOrderForm.items.length > 1 ? (index + 1) : null}</span> <span className="text-red-500">*</span>
-                        {(item as any).is_free && (
-                          <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-bold mr-2">
-                            🎁 مجاني
-                          </span>
-                        )}
-                      </Label>
-                    </div>
-                    <div className="flex flex-wrap items-end gap-3">
-                      <div className="flex-1 min-w-[250px]">
-                        {(item as any).is_free ? (
-                          // للمنتجات المجانية: عرض Input معطل
-                          <Input
-                            value={
-                              products.find(p => p.id === item.product_id)?.[`name_${language}`] ||
-                              products.find(p => p.id === item.product_id)?.name_ar ||
-                              ""
-                            }
-                            disabled
-                            className="bg-green-50 text-green-700 border-green-200 cursor-not-allowed"
-                            placeholder="منتج مجاني من عرض مطبق"
-                          />
-                        ) : (
-                          // للمنتجات العادية: Autocomplete
-                          <Autocomplete
-                            value={
-                              products.find(p => p.id === item.product_id)?.[`name_${language}`] ||
-                              products.find(p => p.id === item.product_id)?.name_ar ||
-                              ""
-                            }
-                            onClear={() => {
-                              // مسح جميع بيانات المنتج عند الضغط على X
-                              setEditOrderForm(f => {
-                                if (!f) return f;
-                                const updatedItems = f.items.map((itm, idx) =>
-                                  idx === index
-                                    ? {
-                                        ...itm,
-                                        product_id: "",
-                                        product_name: "",
-                                        price: 0,
-                                        quantity: 1,
-                                      }
-                                    : itm
-                                );
-                                return { ...f, items: updatedItems };
-                              });
-                            }}
-                        renderOption={(option) => {
-                          const product = products.find(
-                            p => p[`name_${language}`] === option || p.name_ar === option || p.name_en === option || p.name_he === option
-                          );
-                          if (!product) return option;
-                          const description = product[`description_${language}`] || product.description_ar || product.description_en || product.description_he;
-                          return (
-                            <div className="py-1">
-                              <div className="font-semibold">{option}</div>
-                              {description && (
-                                <div className="text-sm text-gray-500 mt-1">{description}</div>
-                              )}
-                            </div>
-                          );
-                        }}
-                        onInputChange={val => {
-                          // إذا كان النص فارغاً، لا تفعل شيئاً (سيتم التعامل معه في onClear)
-                          if (!val || val.trim() === "") {
-                            return;
-                          }
-                          
-                          const matched = products.find(
-                            p => p[`name_${language}`] === val || p.name_ar === val || p.name_en === val || p.name_he === val
-                          );
-                          // تحديث السطر الحالي
-                          setEditOrderForm(f => {
-                            if (!f) return f;
-                            if (matched) {
-                              const existingIndex = f.items.findIndex((itm, idx) => itm.product_id === matched.id && idx !== index);
-                              if (existingIndex !== -1) {
-                                // زد الكمية في السطر الموجود واحذف السطر الحالي
-                                const updatedItems = f.items
-                                  .map((itm, idx) => idx === existingIndex ? { ...itm, quantity: Number(itm.quantity) + 1 } : itm)
-                                  .filter((itm, idx) => idx !== index);
-                                return { ...f, items: updatedItems };
-                              }
-                            }
-                            // تحديث السطر الحالي كالمعتاد
-                            let selectedUser = originalOrderForEdit?.profiles;
-                            let userType = (selectedUser && selectedUser.user_type) ? selectedUser.user_type : 'retail';
-                            let price = 0;
-                            let wholesale = 0;
-                            if (matched) {
-                              if (typeof matched.wholesale_price === 'number' && matched.wholesale_price > 0) wholesale = matched.wholesale_price;
-                              if (typeof matched.wholesalePrice === 'number' && matched.wholesalePrice > 0) wholesale = Math.max(wholesale, matched.wholesalePrice);
-                              if (userType === 'admin' || userType === 'wholesale') {
-                                price = wholesale > 0 ? wholesale : matched.price;
-                              } else {
-                                price = matched.price;
-                              }
-                            }
-                            const updatedItems = f.items.map((itm, idx) =>
-                              idx === index
-                                ? {
-                                    ...itm,
-                                    product_id: matched ? matched.id : "",
-                                    product_name: val,
-                                    price: matched ? price : 0,
-                                  }
-                                : itm
-                            );
-                            return { ...f, items: updatedItems };
-                          });
-                        }}
-                        options={products.map(p => p[`name_${language}`] || p.name_ar || p.id)}
-                        placeholder={t("searchOrSelectProduct") || "ابحث أو اكتب اسم المنتج"}
-                        required
-                        />
-                        )}
-                      </div>
-                      <div className="w-24">
-                        <Label className="text-xs text-gray-600 mb-1 block">
-                          {t("quantity") || "الكمية"} <span className="text-red-500">*</span>
-                        </Label>
-                        <Input
-                          type="number"
-                          min="1"
-                          value={item.quantity === 0 ? "" : item.quantity}
-                          onChange={e =>
-                            setEditOrderForm(f => {
-                              if (!f) return f;
-                              const val = e.target.value === "" ? 0 : parseInt(e.target.value) || 1;
-                              const updatedItems = f.items.map((itm, idx) =>
-                                idx === index ? { ...itm, quantity: val } : itm
-                              );
-                              return { ...f, items: updatedItems };
-                            })
-                          }
-                          required
-                          disabled={(item as any).is_free} // تعطيل تحرير الكمية للمنتجات المجانية
-                          className={(item as any).is_free ? "bg-green-50 text-green-700" : ""}
-                        />
-                      </div>
-                      <div className="w-28">
-                        <Label className="text-xs text-gray-600 mb-1 block">
-                          {t("price") || "السعر"} <span className="text-red-500">*</span>
-                          {(item as any).is_free && (
-                            <span className="text-green-600 font-bold ml-1">مجاني</span>
-                          )}
-                        </Label>
-                        <div className="flex flex-col gap-1">
-                          {(item as any).is_free && (item as any).original_price > 0 && (
-                            <span className="text-xs text-gray-500 line-through">
-                              {(() => {
-                                // حساب السعر الأصلي بناءً على نوع المستخدم
-                                const selectedUser = originalOrderForEdit?.profiles;
-                                const userType = (selectedUser && selectedUser.user_type) ? selectedUser.user_type : 'retail';
-                                const matched = products.find(p => p.id === item.product_id);
-                                if (!matched) return (item as any).original_price;
-                                
-                                let price = matched.price;
-                                let wholesale = 0;
-                                if (typeof matched.wholesale_price === 'number' && matched.wholesale_price > 0) wholesale = matched.wholesale_price;
-                                if (typeof matched.wholesalePrice === 'number' && matched.wholesalePrice > 0) wholesale = Math.max(wholesale, matched.wholesalePrice);
-                                
-                                if (userType === 'admin' || userType === 'wholesale') {
-                                  price = wholesale > 0 ? wholesale : matched.price;
-                                }
-                                
-                                return price;
-                              })()} ₪
+                {editOrderForm.items.map((item, index) => {
+                  const isFree = (item as any).is_free;
+                  const isDiscounted = (item as any).offer_applied && !isFree;
+
+                  return (
+                    <div key={item.id} className={`p-4 border rounded-lg shadow-sm ${isFree ? 'bg-green-50 border-green-200' : isDiscounted ? 'bg-yellow-50 border-yellow-200' : 'bg-white'}`}>
+                      <div className="mb-3">
+                        <Label className="text-sm font-semibold">
+                          {t("product") || "المنتج"} <span className="text-primary font-bold">{editOrderForm.items.length > 1 ? (index + 1) : null}</span> <span className="text-red-500">*</span>
+                          {isFree && (
+                            <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-bold mr-2">
+                              🎁 مجاني
                             </span>
                           )}
+                          {!isFree && (item as any).offer_applied && (
+                            <span className="bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full text-xs font-bold mr-2">
+                              % خصم مطبق
+                            </span>
+                          )}
+                          {(item as any).offer_trigger && (
+                            <span className="bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full text-xs font-bold mr-2">
+                              ✅ حقق الشرط
+                            </span>
+                          )}
+                        </Label>
+                      </div>
+                      <div className="flex flex-wrap items-end gap-3">
+                        <div className="flex-1 min-w-[250px]">
+                          {isFree ? (
+                            <Input
+                              value={
+                                products.find(p => p.id === item.product_id)?.[`name_${language}`] ||
+                                products.find(p => p.id === item.product_id)?.name_ar ||
+                                ""
+                              }
+                              disabled
+                              className="bg-green-50 text-green-700 border-green-200 cursor-not-allowed"
+                              placeholder="منتج مجاني من عرض مطبق"
+                            />
+                          ) : (
+                            <Autocomplete
+                              value={
+                                products.find(p => p.id === item.product_id)?.[`name_${language}`] ||
+                                products.find(p => p.id === item.product_id)?.name_ar ||
+                                ""
+                              }
+                              onClear={() => {
+                                setEditOrderForm(f => {
+                                  if (!f) return f;
+                                  const updatedItems = f.items.map((itm, idx) =>
+                                    idx === index
+                                      ? {
+                                          ...itm,
+                                          product_id: "",
+                                          product_name: "",
+                                          price: 0,
+                                          quantity: 1,
+                                          offer_applied: undefined,
+                                          offer_id: undefined,
+                                          offer_name: undefined,
+                                          original_price: undefined,
+                                          offer_trigger: undefined,
+                                          offer_trigger_id: undefined,
+                                        }
+                                      : itm
+                                  );
+                                  return { ...f, items: updatedItems };
+                                });
+                              }}
+                              renderOption={(option) => {
+                                const product = products.find(
+                                  p => p[`name_${language}`] === option || p.name_ar === option || p.name_en === option || p.name_he === option
+                                );
+                                if (!product) return option;
+                                const description = product[`description_${language}`] || product.description_ar || product.description_en || product.description_he;
+                                return (
+                                  <div className="py-1">
+                                    <div className="font-semibold">{option}</div>
+                                    {description && (
+                                      <div className="text-sm text-gray-500 mt-1">{description}</div>
+                                    )}
+                                  </div>
+                                );
+                              }}
+                              onInputChange={val => {
+                                if (!val || val.trim() === "") {
+                                  return;
+                                }
+                                
+                                const matched = products.find(
+                                  p => p[`name_${language}`] === val || p.name_ar === val || p.name_en === val || p.name_he === val
+                                );
+                                setEditOrderForm(f => {
+                                  if (!f) return f;
+                                  if (matched) {
+                                    const existingIndex = f.items.findIndex((itm, idx) => itm.product_id === matched.id && idx !== index);
+                                    if (existingIndex !== -1) {
+                                      const updatedItems = f.items
+                                        .map((itm, idx) => idx === existingIndex ? { ...itm, quantity: Number(itm.quantity) + 1 } : itm)
+                                        .filter((itm, idx) => idx !== index);
+                                      return { ...f, items: updatedItems };
+                                    }
+                                  }
+                                  const selectedUser = originalOrderForEdit?.profiles;
+                                  const userType = (selectedUser && selectedUser.user_type) ? selectedUser.user_type : 'retail';
+                                  const priceBase = matched ? getDisplayPrice(matched, userType) : 0;
+                                  const updatedItems = f.items.map((itm, idx) =>
+                                    idx === index
+                                      ? {
+                                          ...itm,
+                                          product_id: matched ? matched.id : "",
+                                          product_name: val,
+                                          price: matched ? priceBase : 0,
+                                          original_price: matched ? priceBase : 0,
+                                          offer_applied: undefined,
+                                          offer_id: undefined,
+                                          offer_name: undefined,
+                                          offer_trigger: undefined,
+                                          offer_trigger_id: undefined,
+                                        }
+                                      : itm
+                                  );
+                                  return { ...f, items: updatedItems };
+                                });
+                              }}
+                              options={products.map(p => p[`name_${language}`] || p.name_ar || p.id)}
+                              placeholder={t("searchOrSelectProduct") || "ابحث أو اكتب اسم المنتج"}
+                              required
+                            />
+                          )}
+                        </div>
+                        <div className="w-24">
+                          <Label className="text-xs text-gray-600 mb-1 block">
+                            {t("quantity") || "الكمية"} <span className="text-red-500">*</span>
+                          </Label>
                           <Input
                             type="number"
-                            step="0.01"
-                            value={item.price === 0 ? 0 : item.price && item.price >= 0 ? item.price : 0}
+                            min="1"
+                            value={item.quantity === 0 ? "" : item.quantity}
                             onChange={e =>
                               setEditOrderForm(f => {
                                 if (!f) return f;
-                                const val = e.target.value === "" ? 0 : parseFloat(e.target.value) || 0;
+                                const val = e.target.value === "" ? 0 : parseInt(e.target.value) || 1;
                                 const updatedItems = f.items.map((itm, idx) =>
-                                  idx === index ? { ...itm, price: val } : itm
+                                  idx === index ? { ...itm, quantity: val } : itm
                                 );
                                 return { ...f, items: updatedItems };
                               })
                             }
                             required
-                            disabled={(item as any).is_free} // تعطيل تحرير السعر للمنتجات المجانية
-                            className={(item as any).is_free ? "bg-green-50 text-green-700" : ""}
+                            disabled={isFree}
+                            className={isFree ? "bg-green-50 text-green-700" : ""}
                           />
                         </div>
-                      </div>
-                      <div className="flex flex-col gap-2">
-                        <Button
-                          type="button"
-                          onClick={() => {
-                            if ((item as any).is_free) {
-                              // تحذير للمنتجات المجانية
-                              if (window.confirm("هذا منتج مجاني من عرض مطبق. هل أنت متأكد من حذفه؟")) {
-                                removeOrderItemByIndex(index); // استخدام الفهرس للمنتجات المجانية
+                        <div className="w-28">
+                          <Label className="text-xs text-gray-600 mb-1 block">
+                            {t("price") || "السعر"} <span className="text-red-500">*</span>
+                            {isFree && (
+                              <span className="text-green-600 font-bold ml-1">مجاني</span>
+                            )}
+                          </Label>
+                          <div className="flex flex-col gap-1">
+                            {((item as any).offer_applied &&
+                              typeof (item as any).original_price === "number" &&
+                              ((item as any).original_price > (item.price ?? 0))) && (
+                              <span className="text-xs text-gray-500 line-through">
+                                {(item as any).original_price} ₪
+                              </span>
+                            )}
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={item.price === 0 ? 0 : item.price && item.price >= 0 ? item.price : 0}
+                              onChange={e =>
+                                setEditOrderForm(f => {
+                                  if (!f) return f;
+                                  const val = e.target.value === "" ? 0 : parseFloat(e.target.value) || 0;
+                                  const updatedItems = f.items.map((itm, idx) =>
+                                    idx === index ? { ...itm, price: val } : itm
+                                  );
+                                  return { ...f, items: updatedItems };
+                                })
                               }
-                            } else {
-                              removeOrderItem(item.id);
-                            }
-                          }}
-                          variant={(item as any).is_free ? "outline" : "destructive"}
-                          size="sm"
-                          className="h-10"
-                          title={(item as any).is_free ? "منتج مجاني من عرض مطبق" : "حذف المنتج"}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                        
-                        {/* زر تطبيق العرض - يظهر فقط عند تحقيق شروط عرض */}
-                        {item.product_id && offerEligibilities[item.product_id] && !((item as any).is_free) && (
+                              required
+                              disabled={isFree}
+                              className={isFree ? "bg-green-50 text-green-700" : ""}
+                            />
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-2">
                           <Button
                             type="button"
-                            onClick={() => handleApplyOffer(item.product_id, offerEligibilities[item.product_id])}
-                            variant="outline"
-                            size="sm"
-                            className="h-10 bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
-                            title={offerEligibilities[item.product_id].message}
-                          >
-                            <Gift className="h-4 w-4" />
-                          </Button>
-                        )}
-                        
-                        {/* زر إزالة العرض المطبق */}
-                        {(item as any).offer_applied && (item as any).offer_id && (
-                          <Button
-                            type="button"
-                            onClick={() => handleRemoveOffer((item as any).offer_id)}
-                            variant="outline"
-                            size="sm"
-                            className="h-10 bg-red-50 border-red-200 text-red-700 hover:bg-red-100"
-                            title="إزالة العرض المطبق"
-                          >
-                            <span className="text-xs">✕</span>
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                    
-                    {/* عرض معلومات العرض المطبق */}
-                    {(item as any).offer_applied && (item as any).offer_name && (
-                      <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-sm">
-                        <span className="text-blue-700 font-medium">
-                          🎉 عرض مطبق: {(item as any).offer_name}
-                        </span>
-                        {(item as any).original_price && (
-                          <span className="block text-gray-600 text-xs mt-1">
-                            السعر الأصلي: {(() => {
-                              // حساب السعر الأصلي بناءً على نوع المستخدم
-                              const selectedUser = originalOrderForEdit?.profiles;
-                              const userType = (selectedUser && selectedUser.user_type) ? selectedUser.user_type : 'retail';
-                              const matched = products.find(p => p.id === item.product_id);
-                              if (!matched) return (item as any).original_price;
-                              
-                              let price = matched.price;
-                              let wholesale = 0;
-                              if (typeof matched.wholesale_price === 'number' && matched.wholesale_price > 0) wholesale = matched.wholesale_price;
-                              if (typeof matched.wholesalePrice === 'number' && matched.wholesalePrice > 0) wholesale = Math.max(wholesale, matched.wholesalePrice);
-                              
-                              if (userType === 'admin' || userType === 'wholesale') {
-                                price = wholesale > 0 ? wholesale : matched.price;
+                            onClick={() => {
+                              if (isFree) {
+                                if (window.confirm("هذا منتج مجاني من عرض مطبق. هل أنت متأكد من حذفه؟")) {
+                                  removeOrderItemByIndex(index);
+                                }
+                              } else {
+                                removeOrderItem(item.id);
                               }
-                              
-                              return price;
-                            })()} ₪
+                            }}
+                            variant={isFree ? "outline" : "destructive"}
+                            size="sm"
+                            className="h-10"
+                            title={isFree ? "منتج مجاني من عرض مطبق" : "حذف المنتج"}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                          
+                          {/* زر تطبيق العرض - يظهر فقط عند تحقيق شروط عرض */}
+                          {item.product_id && offerEligibilities[item.product_id] && !isFree && (
+                            <Button
+                              type="button"
+                              onClick={() => handleApplyOffer(item.product_id, offerEligibilities[item.product_id])}
+                              variant="outline"
+                              size="sm"
+                              className="h-10 bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+                              title={offerEligibilities[item.product_id].message}
+                            >
+                              <Gift className="h-4 w-4" />
+                            </Button>
+                          )}
+                          
+                          {/* زر إزالة العرض المطبق */}
+                          {(item as any).offer_applied && (item as any).offer_id && (
+                            <Button
+                              type="button"
+                              onClick={() => handleRemoveOffer((item as any).offer_id)}
+                              variant="outline"
+                              size="sm"
+                              className="h-10 bg-red-50 border-red-200 text-red-700 hover:bg-red-100"
+                              title="إزالة العرض المطبق"
+                            >
+                              <span className="text-xs">✕</span>
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* عرض معلومات العرض المطبق */}
+                      {(item as any).offer_applied && (
+                        <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-sm">
+                          <span className="text-blue-700 font-medium">
+                            🎉 عرض مطبق: {(item as any).offer_name || "عرض"}
                           </span>
-                        )}
-                      </div>
-                    )}
-                    
-                    {/* عرض معلومات العرض المتاح */}
-                    {item.product_id && offerEligibilities[item.product_id] && !((item as any).is_free) && (
-                      <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-sm">
-                        <span className="text-green-700 font-medium">
-                          🎁 {offerEligibilities[item.product_id].message}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                ))}
+                          {typeof (item as any).original_price === "number" && (
+                            <span className="block text-gray-600 text-xs mt-1">
+                              السعر الأصلي: {(item as any).original_price} ₪
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {/* شارة: هذا المنتج حقق شرط العرض */}
+                      {(item as any).offer_trigger && (item as any).offer_trigger_id && (
+                        <div className="mt-2 p-2 bg-emerald-50 border border-emerald-200 rounded text-sm">
+                          <span className="text-emerald-700 font-medium">✅ هذا المنتج حقق شرط العرض</span>
+                        </div>
+                      )}
+
+                      {/* عرض معلومات العرض المتاح */}
+                      {item.product_id && offerEligibilities[item.product_id] && !isFree && (
+                        <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-sm">
+                          <span className="text-green-700 font-medium">
+                            🎁 {offerEligibilities[item.product_id].message}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
               {/* المجموع الكلي */}
               {editOrderForm.items.length > 0 && (
                 <div className="text-right mt-3 space-y-2">
                   {/* عرض تفصيلي للمجموع */}
                   {(() => {
-                    // حساب المجموع الفرعي للمنتجات العادية
-                    const regularItemsTotal = editOrderForm.items
-                      .filter(item => !(item as any).is_free)
-                      .reduce((sum, item) => sum + (item.price * item.quantity), 0);
-                    
-                    // حساب قيمة المنتجات المجانية بناءً على نوع الزبون
-                    let selectedUser = originalOrderForEdit?.profiles;
-                    let userType = (selectedUser && selectedUser.user_type) ? selectedUser.user_type : 'retail';
-                    
-                    const freeProductsValue = editOrderForm.items
-                      .filter(item => (item as any).is_free)
-                      .reduce((sum, item) => {
-                        const matched = products.find(p => p.id === item.product_id);
-                        if (!matched) return sum;
-                        
-                        let price = 0;
-                        let wholesale = 0;
-                        if (typeof matched.wholesale_price === 'number' && matched.wholesale_price > 0) wholesale = matched.wholesale_price;
-                        if (typeof matched.wholesalePrice === 'number' && matched.wholesalePrice > 0) wholesale = Math.max(wholesale, matched.wholesalePrice);
-                        
-                        if (userType === 'admin' || userType === 'wholesale') {
-                          price = wholesale > 0 ? wholesale : matched.price;
-                        } else {
-                          price = matched.price;
-                        }
-                        
-                        return sum + (price * item.quantity);
+                    const selectedUser = originalOrderForEdit?.profiles;
+                    const userType = (selectedUser && selectedUser.user_type) ? selectedUser.user_type : 'retail';
+
+                    const basePrice = (it: any) => {
+                      const prod = products.find((p: any) => p.id === it.product_id);
+                      if (!prod) return 0;
+                      return getDisplayPrice(prod, userType);
+                    };
+
+                    const subtotalBeforeDiscounts = editOrderForm.items
+                      .reduce((sum, it: any) => sum + (basePrice(it) * (it.quantity || 0)), 0);
+
+                    const freeProductsDiscount = editOrderForm.items
+                      .filter((it: any) => it.is_free)
+                      .reduce((sum, it: any) => sum + (basePrice(it) * (it.quantity || 0)), 0);
+
+                    const itemDiscounts = editOrderForm.items
+                      .filter((it: any) => it.offer_applied && typeof it.original_price === 'number')
+                      .reduce((sum, it: any) => {
+                        const perUnit = Math.max(0, ((it.original_price as number) - (it.price || 0)));
+                        return sum + perUnit * (it.quantity || 0);
                       }, 0);
-                    
-                    const totalBeforeFree = regularItemsTotal + freeProductsValue;
-                    const totalAfterFree = regularItemsTotal;
-                    
+
+                    const grandTotal = subtotalBeforeDiscounts - freeProductsDiscount - itemDiscounts;
+
                     return (
                       <div className="border rounded-lg p-3 bg-gray-50">
                         <p className="text-sm text-gray-600">
-                          {t("subtotal") || "المجموع الفرعي"}: {totalBeforeFree} ₪
+                          {t("subtotal") || "المجموع الفرعي"}: {subtotalBeforeDiscounts} ₪
                         </p>
-                        {freeProductsValue > 0 && (
+                        {freeProductsDiscount > 0 && (
                           <p className="text-sm text-green-600">
-                            {t("freeProductsDiscount") || "خصم المنتجات المجانية"}: -{freeProductsValue} ₪
+                            {t("freeProductsDiscount") || "خصم المنتجات المجانية"}: -{freeProductsDiscount} ₪
+                          </p>
+                        )}
+                        {itemDiscounts > 0 && (
+                          <p className="text-sm text-green-600">
+                            {t("itemsDiscount") || "خصم المنتجات المخفضة"}: -{itemDiscounts} ₪
                           </p>
                         )}
                         <div className="border-t pt-2 mt-2">
                           <p className="text-lg font-semibold">
-                            {t("total") || "المجموع الكلي"}: {totalAfterFree} ₪
+                            {t("total") || "المجموع الكلي"}: {grandTotal} ₪
                           </p>
                         </div>
                       </div>
                     );
                   })()}
-                  
+
                   <OrderDiscountSummary
                     discountEnabled={editOrderForm.discountEnabled}
                     discountType={editOrderForm.discountType}
@@ -854,6 +1151,7 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
                 </div>
               )}
             </div>
+
             {/* ملاحظات */}
             <div>
               <Label htmlFor="notes">{t("notes") || "ملاحظات"}</Label>
@@ -866,6 +1164,7 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
                 placeholder={t("orderNotesPlaceholder") || "أدخل ملاحظات إضافية (اختياري)"}
               />
             </div>
+
             {/* أزرار الحفظ */}
             <div className="flex flex-col sm:flex-row justify-end gap-2 mt-6">
               <Button

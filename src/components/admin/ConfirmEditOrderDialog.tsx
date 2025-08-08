@@ -42,8 +42,8 @@ const ConfirmEditOrderDialog: React.FC<ConfirmEditOrderDialogProps> = ({ open, o
                 changes.map((change, idx) => (
                   <tr key={idx}>
                     <td className="p-2 border">{change.label}</td>
-                    <td className="p-2 border">{change.oldValue}</td>
-                    <td className="p-2 border">{change.newValue}</td>
+                    <td className="p-2 border whitespace-pre-wrap">{change.oldValue}</td>
+                    <td className="p-2 border whitespace-pre-wrap">{change.newValue}</td>
                   </tr>
                 ))
               ) : (

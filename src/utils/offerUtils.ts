@@ -1,6 +1,7 @@
 import { OfferService, type Offer } from "@/services/offerService";
 import type { OrderItem } from "@/orders/order.types";
 import type { Product } from "@/types/product";
+import { getDisplayPrice } from "@/utils/priceUtils";
 
 export interface OfferEligibility {
   isEligible: boolean;
@@ -170,35 +171,44 @@ export async function applyOfferToProduct(
     let updatedItems = [...currentItems];
 
     if (offer.offer_type === "buy_get") {
+      const linkedProductId = (offer as any).linked_product_id;
       const getProductId = (offer as any).get_product_id;
-      const getDiscountType = (offer as any).get_discount_type;
+      const buyQuantity = (offer as any).buy_quantity || 1;
+      const getDiscountType = (offer as any).get_discount_type || "free";
       const getDiscountValue = (offer as any).get_discount_value || 0;
 
+      const linkedItem = updatedItems.find(i => i.product_id === linkedProductId);
+      const applicableTimes = linkedItem ? Math.floor((linkedItem.quantity || 0) / buyQuantity) : 0;
+
+      // وسم عنصر الشراء بأنه حقق الشرط
+      if (linkedItem && applicableTimes > 0) {
+        Object.assign(linkedItem as any, {
+          offer_trigger: true,
+          offer_trigger_id: offer.id,
+          offer_id: (linkedItem as any).offer_id ?? offer.id,
+          offer_name: (linkedItem as any).offer_name ?? (offer.title_ar || offer.title_en),
+        });
+      }
+
       if (getDiscountType === "free") {
-        // إضافة منتج مجاني
+        // إضافة/تحديث منتج مجاني بعدد مرات الاستحقاق
         const freeProduct = products.find(p => p.id === getProductId);
-        if (freeProduct) {
-          // تحقق من أن المنتج المجاني غير موجود بالفعل
+        if (freeProduct && applicableTimes > 0) {
           const existingFreeItem = updatedItems.find(item => 
             item.product_id === getProductId && (item as any).is_free
           );
 
-          if (!existingFreeItem) {
-            // حساب السعر الأصلي للمنتج المجاني بناءً على نوع المستخدم
-            let originalPrice = freeProduct.price;
-            if (userType === 'admin' || userType === 'wholesale') {
-              const wholesalePrice = (freeProduct as any).wholesale_price || (freeProduct as any).wholesalePrice || 0;
-              if (wholesalePrice > 0) {
-                originalPrice = wholesalePrice;
-              }
-            }
+          const originalPrice = getDisplayPrice(freeProduct as any, userType);
 
+          if (existingFreeItem) {
+            (existingFreeItem as any).quantity = applicableTimes;
+          } else {
             updatedItems.push({
               id: `free_${offer.id}_${getProductId}`,
               product_id: getProductId,
-              quantity: 1,
+              quantity: applicableTimes,
               price: 0, // مجاني
-              product_name: freeProduct.name || freeProduct.nameEn || "",
+              product_name: (freeProduct as any).name || (freeProduct as any).nameEn || "",
               is_free: true,
               original_price: originalPrice,
               offer_id: offer.id,
@@ -211,31 +221,25 @@ export async function applyOfferToProduct(
         const targetItemIndex = updatedItems.findIndex(item => item.product_id === getProductId);
         const targetProduct = products.find(p => p.id === getProductId);
         
-        if (targetProduct) {
+        if (targetProduct && applicableTimes > 0) {
           // حساب السعر الأصلي بناءً على نوع المستخدم
-          let originalPrice = targetProduct.price;
-          if (userType === 'admin' || userType === 'wholesale') {
-            const wholesalePrice = (targetProduct as any).wholesale_price || (targetProduct as any).wholesalePrice || 0;
-            if (wholesalePrice > 0) {
-              originalPrice = wholesalePrice;
-            }
-          }
+          const originalPrice = getDisplayPrice(targetProduct as any, userType);
           
           // حساب السعر بعد الخصم
           let discountedPrice = originalPrice;
           if (getDiscountType === "percentage") {
-            discountedPrice = originalPrice * (1 - getDiscountValue / 100);
+            discountedPrice = Math.max(0, originalPrice * (1 - getDiscountValue / 100));
           } else if (getDiscountType === "fixed") {
             discountedPrice = Math.max(0, originalPrice - getDiscountValue);
           }
 
           if (targetItemIndex !== -1) {
             // المنتج موجود في السلة - تحديث السعر
-            const targetItem = updatedItems[targetItemIndex];
+            const targetItem = updatedItems[targetItemIndex] as any;
             updatedItems[targetItemIndex] = {
               ...targetItem,
               price: discountedPrice,
-              original_price: originalPrice,
+              original_price: targetItem.original_price ?? originalPrice,
               offer_applied: true,
               offer_id: offer.id,
               offer_name: offer.title_ar || offer.title_en
@@ -247,7 +251,7 @@ export async function applyOfferToProduct(
               product_id: getProductId,
               quantity: 1,
               price: discountedPrice,
-              product_name: targetProduct.name || targetProduct.nameEn || "",
+              product_name: (targetProduct as any).name || (targetProduct as any).nameEn || "",
               original_price: originalPrice,
               offer_applied: true,
               offer_id: offer.id,
@@ -256,6 +260,20 @@ export async function applyOfferToProduct(
           }
         }
       }
+    }
+
+    if (offer.offer_type === "discount") {
+      // خصم عام — وسم العناصر فقط (لا نغيّر الأسعار هنا، الحساب يتم عند التجميع)
+      updatedItems = updatedItems.map((it: any) => {
+        if (it.is_free) return it;
+        return {
+          ...it,
+          offer_applied: true,
+          offer_id: offer.id,
+          offer_name: offer.title_ar || offer.title_en,
+          original_price: typeof it.original_price === "number" ? it.original_price : it.price,
+        };
+      });
     }
 
     return updatedItems;
@@ -287,7 +305,9 @@ export function removeAppliedOffer(
         original_price: undefined,
         offer_applied: undefined,
         offer_id: undefined,
-        offer_name: undefined
+        offer_name: undefined,
+        offer_trigger: undefined,
+        offer_trigger_id: undefined,
       } as OrderItem;
     }
     return item;
