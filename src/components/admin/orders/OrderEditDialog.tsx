@@ -15,7 +15,40 @@ import { checkProductOfferEligibility, applyOfferToProduct, removeAppliedOffer, 
 import { getDisplayPrice } from "@/utils/priceUtils";
 import { OfferService, type Offer } from "@/services/offerService";
 
-/* ===== Helpers ===== */
+/* ===== Helpers: JSON & Free Refs canonicals ===== */
+
+type FreeRef = { productId: string; quantity: number };
+
+function normalizeJson(x: any) {
+  if (!x) return null;
+  if (typeof x === "string") { try { return JSON.parse(x); } catch { return null; } }
+  return x;
+}
+
+function normalizeFreeRefs(raw: any): FreeRef[] {
+  const arr = normalizeJson(raw);
+  if (!Array.isArray(arr)) return [];
+  const out: FreeRef[] = [];
+  for (const r of arr) {
+    const pid = r?.productId || r?.product_id || r?.product?.id || r?.productId?.id || null;
+    const qty = Number(r?.quantity || r?.qty || 1);
+    if (pid) out.push({ productId: String(pid), quantity: qty > 0 ? qty : 1 });
+  }
+  // dedupe keep max qty
+  const map = new Map<string, number>();
+  for (const x of out) map.set(x.productId, Math.max(map.get(x.productId) || 0, x.quantity));
+  return Array.from(map.entries()).map(([productId, quantity]) => ({ productId, quantity }));
+}
+
+function freeFromAppliedOffers(rawApplied: any): FreeRef[] {
+  const applied = normalizeJson(rawApplied);
+  const list = Array.isArray(applied)
+    ? applied.flatMap((a: any) => Array.isArray(a?.freeProducts) ? a.freeProducts : [])
+    : [];
+  return normalizeFreeRefs(list);
+}
+
+/* ===== Offers summary (returns canonical free_items) ===== */
 
 function summarizeOffersForOrder(items: OrderItem[], products: any[], userType?: string) {
   const appliedMap: Record<string, {
@@ -24,19 +57,18 @@ function summarizeOffersForOrder(items: OrderItem[], products: any[], userType?:
     affectedProducts: string[];
     freeProducts: { productId: string; quantity: number }[];
   }> = {};
-  const freeItemsOut: any[] = [];
-
-  const getProd = (pid: string) => products.find(p => p.id === pid);
+  const freeRefs: FreeRef[] = [];
 
   items.forEach((it: any) => {
     const offerId = it.offer_id;
     const offerName = it.offer_name;
+    if (!offerId && !it.is_free && !it.offer_applied) return;
 
-    if (!offerId) return;
+    const typeGuess = it.is_free ? "buy_get" : (it.offer_applied ? "discount" : "discount");
 
-    if (!appliedMap[offerId]) {
+    if (offerId && !appliedMap[offerId]) {
       appliedMap[offerId] = {
-        offer: { id: offerId, title_ar: offerName, title_en: offerName, offer_type: it.is_free ? "buy_get" : (it.offer_applied ? "discount" : "discount") },
+        offer: { id: offerId, title_ar: offerName, title_en: offerName, offer_type: typeGuess },
         discountAmount: 0,
         affectedProducts: [],
         freeProducts: [],
@@ -44,35 +76,34 @@ function summarizeOffersForOrder(items: OrderItem[], products: any[], userType?:
     }
 
     if (it.is_free) {
-      const p = getProd(it.product_id);
-      if (p) {
-        freeItemsOut.push({
-          id: `free_${offerId}_${it.product_id}`,
-          product: {
-            id: p.id,
-            name: p.name_ar || p.name_en || p.name || "",
-            price: p.price,
-            wholesalePrice: p.wholesale_price ?? p.wholesalePrice,
-            image: p.image
-          },
-          quantity: it.quantity
-        });
+      const qty = Number(it.quantity || 1);
+      const pid = String(it.product_id);
+      freeRefs.push({ productId: pid, quantity: qty > 0 ? qty : 1 });
+      if (offerId) {
+        appliedMap[offerId].freeProducts.push({ productId: pid, quantity: qty > 0 ? qty : 1 });
       }
-      appliedMap[offerId].freeProducts.push({ productId: it.product_id, quantity: it.quantity });
     }
 
-    if (it.offer_applied && typeof it.original_price === "number") {
+    if (offerId && it.offer_applied && typeof it.original_price === "number") {
       const perUnitDiscount = Math.max(0, it.original_price - (it.price ?? 0));
       appliedMap[offerId].discountAmount += perUnitDiscount * (it.quantity || 0);
-      if (!appliedMap[offerId].affectedProducts.includes(it.product_id)) {
-        appliedMap[offerId].affectedProducts.push(it.product_id);
+      const pid = String(it.product_id || "");
+      if (pid && !appliedMap[offerId].affectedProducts.includes(pid)) {
+        appliedMap[offerId].affectedProducts.push(pid);
       }
     }
   });
 
+  // dedupe freeRefs (max qty)
+  const map = new Map<string, number>();
+  for (const f of freeRefs) map.set(f.productId, Math.max(map.get(f.productId) || 0, f.quantity));
+  const free_items = Array.from(map.entries()).map(([productId, quantity]) => ({ productId, quantity }));
+
   const applied_offers = Object.values(appliedMap);
-  return { applied_offers, free_items: freeItemsOut };
+  return { applied_offers, free_items };
 }
+
+/* ===== Changes builder: fix "old free qty = 0" by reading prev free from order ===== */
 
 function buildChangesForConfirm(originalOrder: any, edited: NewOrderForm, products: any[], userType?: string) {
   const changes: { label: string; oldValue: string; newValue: string }[] = [];
@@ -82,28 +113,54 @@ function buildChangesForConfirm(originalOrder: any, edited: NewOrderForm, produc
     return prod ? getDisplayPrice(prod, userType) : 0;
   };
 
+  // prev quantities/prices from original items
   const oldByPid: Record<string, { qty: number; price: number }> = {};
   (originalOrder?.items || []).forEach((it: any) => {
-    oldByPid[it.product_id] = {
-      qty: it.quantity,
-      price: typeof it.price === "number" ? it.price : basePrice(it.product_id),
+    const pid = String(it.product_id);
+    const isFree = !!it?.is_free || Number(it?.price) === 0;
+    oldByPid[pid] = {
+      qty: (oldByPid[pid]?.qty || 0) + (Number(it.quantity || 0)),
+      price: isFree ? 0 : (typeof it.price === "number" ? it.price : basePrice(pid)),
     };
   });
 
+  // ALSO include previous free refs from free_items or applied_offers
+  const prevFreeA = normalizeFreeRefs(originalOrder?.free_items);
+  const prevFreeB = freeFromAppliedOffers(originalOrder?.applied_offers);
+  const prevFreeMerged: FreeRef[] = (() => {
+    const m = new Map<string, number>();
+    [...prevFreeA, ...prevFreeB].forEach(({ productId, quantity }) => {
+      m.set(productId, Math.max(m.get(productId) || 0, quantity));
+    });
+    return Array.from(m.entries()).map(([productId, quantity]) => ({ productId, quantity }));
+  })();
+
+  for (const f of prevFreeMerged) {
+    if (!oldByPid[f.productId]) {
+      oldByPid[f.productId] = { qty: f.quantity, price: 0 };
+    } else {
+      // خذ الأكبر بين الموجود والمخزن كـ free_ref
+      oldByPid[f.productId].qty = Math.max(oldByPid[f.productId].qty, f.quantity);
+      // السعر القديم للمنتج المجاني = 0
+      oldByPid[f.productId].price = 0;
+    }
+  }
+
   edited.items.forEach((it: any) => {
-    const old = oldByPid[it.product_id];
+    const pid = String(it.product_id);
+    const old = oldByPid[pid];
     const name =
-      products.find((p: any) => p.id === it.product_id)?.name_ar ||
+      products.find((p: any) => String(p.id) === pid)?.name_ar ||
       it.product_name ||
-      it.product_id;
+      pid;
 
     const newQty = it.quantity || 0;
     const newPriceForDisplay = it.is_free
       ? 0
-      : (typeof it.price === "number" ? it.price : basePrice(it.product_id));
+      : (typeof it.price === "number" ? it.price : basePrice(pid));
 
     const oldQty = old?.qty ?? 0;
-    const oldPriceForDisplay = old?.price ?? basePrice(it.product_id);
+    const oldPriceForDisplay = old?.price ?? basePrice(pid);
 
     const oldStr = `الكمية: ${oldQty}, السعر: ${oldPriceForDisplay}`;
     const newStr = `الكمية: ${newQty}, السعر: ${newPriceForDisplay}`;
@@ -477,7 +534,7 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [offerEligibilities]);
 
-  // تطبيع العناصر قبل الحفظ
+  // تطبيع العناصر قبل الحفظ + بناء التغييرات والتجهيز لدايلوج التأكيد
   const normalizeItemsForSave = (items: any[]) => {
     return items.map(it => {
       if ((it as any).is_free) {
@@ -535,8 +592,16 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
               const userType = originalOrderForEdit?.profiles?.user_type || 'retail';
 
               const normalizedItems = normalizeItemsForSave(editOrderForm.items as any[]);
+              // ⬅️ مهم: free_items بصيغة {productId, quantity} والعروض موحّدة
               const { applied_offers, free_items } = summarizeOffersForOrder(normalizedItems as any[], products, userType);
-              const confirmChanges = buildChangesForConfirm(originalOrderForEdit, { ...editOrderForm, items: normalizedItems } as any, products, userType);
+
+              // التغييرات (وتصحيح “الكمية السابقة” للمجاني)
+              const confirmChanges = buildChangesForConfirm(
+                originalOrderForEdit,
+                { ...editOrderForm, items: normalizedItems } as any,
+                products,
+                userType
+              );
 
               setEditOrderForm(f => f ? {
                 ...f,
