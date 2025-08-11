@@ -488,6 +488,11 @@ export async function updateOrderStatus(
       } else {
         console.warn('⚠️ حدث خطأ في إرجاع المنتجات المجانية:', freeStockResult.error);
       }
+      
+      // تحديث عدد المبيعات بعد إلغاء الطلبية
+      console.log('🔄 تحديث إحصائيات المبيعات بعد إلغاء الطلبية...');
+      await updateTopOrderedProducts();
+      console.log('✅ تم تحديث إحصائيات المبيعات');
     }
     
     return true;
@@ -499,28 +504,134 @@ export async function updateOrderStatus(
 
 // تحديث المنتجات الأكثر مبيعًا تلقائيًا بعد كل طلب جديد
 export async function updateTopOrderedProducts() {
-  // 1. احسب عدد مرات بيع كل منتج
-  const { data: orderItems, error: orderItemsError } = await supabase
-    .from('order_items')
-    .select('product_id, quantity');
-  if (orderItemsError) {
-    console.error('Error fetching order_items:', orderItemsError.message);
-    throw orderItemsError;
-  }
-  // حساب عدد مرات بيع كل منتج يدويًا
-  const salesCount = {};
-  for (const item of orderItems || []) {
-    if (!item.product_id) continue;
-    salesCount[item.product_id] = (salesCount[item.product_id] || 0) + (item.quantity || 0);
-  }
-  // ترتيب المنتجات حسب عدد المبيعات (مع تحويل القيم إلى أرقام)
-  const sorted = Object.entries(salesCount)
-    .sort((a, b) => Number(b[1]) - Number(a[1]));
-  // 3. حدث عمود top_ordered لجميع المنتجات
-  await supabase.from('products').update({ top_ordered: false, sales_count: 0 }).neq('top_ordered', false);
-  // 4. حدّث المنتجات الأكثر مبيعاً مع sales_count
-  for (const [productId, count] of sorted.slice(0, 10)) {
-    await supabase.from('products').update({ top_ordered: true, sales_count: count }).eq('id', productId);
+  try {
+    console.log('🔄 بدء تحديث إحصائيات المبيعات...');
+    
+    // أولاً، دعنا نتحقق من هيكل جدول المنتجات
+    const { data: sampleProduct, error: sampleError } = await supabase
+      .from('products')
+      .select('*')
+      .limit(1)
+      .single();
+      
+    if (sampleError) {
+      console.error('❌ خطأ في جلب عينة المنتج:', sampleError);
+    } else {
+      console.log('📋 هيكل المنتج:', Object.keys(sampleProduct || {}));
+      console.log('🔍 هل يحتوي على sales_count؟', 'sales_count' in (sampleProduct || {}));
+    }
+    
+    // 1. احسب عدد مرات بيع كل منتج من الطلبات غير الملغاة فقط
+    const { data: orderItems, error: orderItemsError } = await supabase
+      .from('order_items')
+      .select(`
+        product_id, 
+        quantity,
+        order_id
+      `);
+      
+    if (orderItemsError) {
+      console.error('Error fetching order_items:', orderItemsError.message);
+      throw orderItemsError;
+    }
+
+    // 2. جلب معلومات الطلبات للتحقق من الحالة
+    const { data: orders, error: ordersError } = await supabase
+      .from('orders')
+      .select('id, status');
+      
+    if (ordersError) {
+      console.error('Error fetching orders:', ordersError.message);
+      throw ordersError;
+    }
+
+    // 3. إنشاء خريطة للطلبات وحالاتها
+    const orderStatusMap = new Map();
+    let cancelledOrdersCount = 0;
+    orders?.forEach(order => {
+      orderStatusMap.set(order.id, order.status);
+      if (order.status === 'cancelled') cancelledOrdersCount++;
+    });
+
+    console.log(`📊 إجمالي الطلبات: ${orders?.length || 0}`);
+    console.log(`❌ الطلبات الملغاة: ${cancelledOrdersCount}`);
+    console.log(`✅ الطلبات النشطة: ${(orders?.length || 0) - cancelledOrdersCount}`);
+
+    // 4. حساب عدد مرات بيع كل منتج (فقط من الطلبات غير الملغاة)
+    const salesCount = {};
+    let processedItems = 0;
+    let skippedItems = 0;
+    for (const item of orderItems || []) {
+      if (!item.product_id || !item.order_id) continue;
+      
+      // تحقق من حالة الطلبية
+      const orderStatus = orderStatusMap.get(item.order_id);
+      if (orderStatus === 'cancelled') {
+        skippedItems++;
+        continue; // تجاهل المنتجات من الطلبات الملغاة
+      }
+      
+      processedItems++;
+      salesCount[item.product_id] = (salesCount[item.product_id] || 0) + (item.quantity || 0);
+    }
+
+    console.log(`📦 إجمالي عناصر الطلبات: ${orderItems?.length || 0}`);
+    console.log(`✅ عناصر تم معالجتها: ${processedItems}`);
+    console.log(`❌ عناصر تم تجاهلها (من طلبات ملغاة): ${skippedItems}`);
+    console.log('📊 إحصائيات المبيعات المحسوبة:', Object.keys(salesCount).length, 'منتج');
+    
+    // 5. ترتيب المنتجات حسب عدد المبيعات (مع تحويل القيم إلى أرقام)
+    const sorted = Object.entries(salesCount)
+      .sort((a, b) => Number(b[1]) - Number(a[1]));
+      
+    console.log('🏆 أعلى 3 منتجات مبيعاً:', sorted.slice(0, 3));
+      
+    // 6. تحديث المنتجات - أولاً نحاول تحديث top_ordered فقط
+    console.log('🔄 إعادة تعيين جميع المنتجات...');
+    const resetResult = await supabase.from('products').update({ top_ordered: false }).neq('top_ordered', false);
+    if (resetResult.error) {
+      console.error('❌ خطأ في إعادة تعيين المنتجات:', resetResult.error);
+    } else {
+      console.log('✅ تم إعادة تعيين المنتجات بنجاح');
+    }
+    
+    // 7. تحديث أفضل المنتجات - سنحدث فقط top_ordered ونجرب sales_count إذا أمكن
+    console.log('🏆 تحديث أفضل 10 منتجات...');
+    for (const [productId, count] of sorted.slice(0, 10)) {
+      console.log(`- تحديث المنتج ${productId}: ${count} مبيعة`);
+      
+      // أولاً نحدث top_ordered فقط (هذا يجب أن يعمل دائماً)
+      let updateResult = await supabase.from('products')
+        .update({ top_ordered: true })
+        .eq('id', productId);
+        
+      if (updateResult.error) {
+        console.error(`❌ فشل تحديث top_ordered للمنتج ${productId}:`, updateResult.error);
+        continue;
+      }
+      
+      console.log(`✅ تم تحديث top_ordered للمنتج ${productId}`);
+    }
+    
+    // الآن سنحاول أيضاً تحديث sales_count للمنتجات الأخرى (إعادة تعيين)
+    console.log('🔄 إعادة تعيين sales_count للمنتجات غير المتميزة...');
+    const topProductIds = sorted.slice(0, 10).map(([id]) => id);
+    
+    // تحديث المنتجات غير المتميزة
+    const resetNonTopResult = await supabase.from('products')
+      .update({ top_ordered: false })
+      .not('id', 'in', `(${topProductIds.map(id => `'${id}'`).join(',')})`);
+      
+    if (resetNonTopResult.error) {
+      console.warn('⚠️ تحذير: فشل إعادة تعيين المنتجات غير المتميزة:', resetNonTopResult.error);
+    } else {
+      console.log('✅ تم إعادة تعيين المنتجات غير المتميزة');
+    }
+    
+    console.log('✅ تم الانتهاء من تحديث إحصائيات المبيعات');
+  } catch (error) {
+    console.error('❌ خطأ في تحديث إحصائيات المبيعات:', error);
+    throw error;
   }
 }
 
@@ -629,6 +740,12 @@ export async function deleteOrder(orderId: string) {
     // ثم حذف الطلب نفسه
     const { error } = await supabase.from("orders").delete().eq("id", orderId);
     if (error) throw error;
+    
+    // تحديث عدد المبيعات بعد حذف الطلبية
+    console.log('🔄 تحديث إحصائيات المبيعات بعد حذف الطلبية...');
+    await updateTopOrderedProducts();
+    console.log('✅ تم تحديث إحصائيات المبيعات');
+    
     return true;
   } catch (error) {
     console.error("Error deleting order:", error);
@@ -876,6 +993,11 @@ export async function cancelUserOrder(
     } else {
       console.warn('⚠️ حدث خطأ في إرجاع المنتجات المجانية:', freeStockResult.error);
     }
+    
+    // تحديث عدد المبيعات بعد إلغاء الطلبية من قبل المستخدم
+    console.log('🔄 تحديث إحصائيات المبيعات بعد إلغاء الطلبية من قبل المستخدم...');
+    await updateTopOrderedProducts();
+    console.log('✅ تم تحديث إحصائيات المبيعات');
     
     return true;
   } catch (error) {
