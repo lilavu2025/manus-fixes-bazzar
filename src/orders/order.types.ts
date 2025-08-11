@@ -59,6 +59,14 @@ export interface OrderItem {
   price: number;
   product_name: string;
   products?: Product;
+  // Offer-related properties
+  is_free?: boolean;
+  offer_applied?: boolean;
+  offer_id?: string;
+  offer_name?: string;
+  original_price?: number;
+  offer_trigger?: boolean;
+  offer_trigger_id?: string;
 }
 
 export interface NewOrderForm {

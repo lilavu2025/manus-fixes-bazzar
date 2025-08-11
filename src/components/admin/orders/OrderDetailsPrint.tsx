@@ -301,33 +301,8 @@ const OrderDetailsPrint: React.FC<OrderDetailsPrintProps> = ({ order, t, profile
                       <td className="p-2 text-center">{item.quantity}</td>
                       <td className="p-2 text-center">
                         {(() => {
-                          const originalPrice = getDisplayPrice(
-                            {
-                              id: product?.id || "",
-                              name: product?.name_ar || "",
-                              nameEn: product?.name_en || "",
-                              nameHe: product?.name_he || "",
-                              description: product?.description_ar || "",
-                              descriptionEn: product?.description_en || "",
-                              descriptionHe: product?.description_he || "",
-                              price: item.price,
-                              originalPrice: product?.original_price,
-                              wholesalePrice: product?.wholesale_price,
-                              image: product?.image || "",
-                              images: product?.images || [],
-                              category: "", // fallback
-                              inStock: typeof product?.in_stock === "boolean" ? product.in_stock : true,
-                              rating: product?.rating || 0,
-                              reviews: 0, // fallback
-                              discount: product?.discount,
-                              featured: product?.featured,
-                              tags: product?.tags || [],
-                              stock_quantity: product?.stock_quantity,
-                              active: product?.active,
-                              created_at: product?.created_at,
-                            },
-                            profile?.user_type,
-                          );
+                          // استخدام السعر المحفوظ في الطلبية (بعد التعديل من الأدمن)
+                          const originalPrice = Number(item.price) || 0;
                           
                           // التحقق من وجود خصم على هذا المنتج من العروض
                           let hasDiscount = false;
@@ -391,33 +366,8 @@ const OrderDetailsPrint: React.FC<OrderDetailsPrintProps> = ({ order, t, profile
                       </td>
                       <td className="p-2 text-center font-semibold">
                         {(() => {
-                          const originalPrice = getDisplayPrice(
-                            {
-                              id: product?.id || "",
-                              name: product?.name_ar || "",
-                              nameEn: product?.name_en || "",
-                              nameHe: product?.name_he || "",
-                              description: product?.description_ar || "",
-                              descriptionEn: product?.description_en || "",
-                              descriptionHe: product?.description_he || "",
-                              price: item.price,
-                              originalPrice: product?.original_price,
-                              wholesalePrice: product?.wholesale_price,
-                              image: product?.image || "",
-                              images: product?.images || [],
-                              category: "", // fallback
-                              inStock: typeof product?.in_stock === "boolean" ? product.in_stock : true,
-                              rating: product?.rating || 0,
-                              reviews: 0, // fallback
-                              discount: product?.discount,
-                              featured: product?.featured,
-                              tags: product?.tags || [],
-                              stock_quantity: product?.stock_quantity,
-                              active: product?.active,
-                              created_at: product?.created_at,
-                            },
-                            profile?.user_type,
-                          );
+                          // استخدام السعر المحفوظ في الطلبية (بعد التعديل من الأدمن)
+                          const originalPrice = Number(item.price) || 0;
                           
                           // التحقق من وجود خصم على هذا المنتج من العروض
                           let hasDiscount = false;

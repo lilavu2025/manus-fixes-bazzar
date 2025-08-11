@@ -253,7 +253,7 @@ const Checkout: React.FC = () => {
         order_id: order.id,
         product_id: item.product.id,
         quantity: item.quantity,
-        price: item.product.price,
+        price: getDisplayPrice(item.product, profile?.user_type),
       }));
 
       const { error: itemsError } = await supabase

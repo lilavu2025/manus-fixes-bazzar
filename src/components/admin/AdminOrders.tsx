@@ -250,10 +250,15 @@ const AdminOrders: React.FC = () => {
     );
   };
 
-  const addOrderItem = () => setOrderForm((prev) => addOrderItemToForm(prev, products));
+  const addOrderItem = () => {
+    const userType = allowCustomClient ? 'retail' : (profile?.user_type || 'retail');
+    setOrderForm((prev) => addOrderItemToForm(prev, products, undefined, userType));
+  };
   const removeOrderItem = (itemId: string) => setOrderForm((prev) => removeOrderItemFromForm(prev, itemId));
-  const updateOrderItem = (itemId: string, field: keyof OrderItem, value: string | number) =>
-    setOrderForm((prev) => updateOrderItemInForm(prev, itemId, field, value, products));
+  const updateOrderItem = (itemId: string, field: keyof OrderItem, value: string | number) => {
+    const userType = allowCustomClient ? 'retail' : (profile?.user_type || 'retail');
+    setOrderForm((prev) => updateOrderItemInForm(prev, itemId, field, value, products, userType));
+  };
 
   // ================= Add Order =================
   const handleAddOrder = async () => {

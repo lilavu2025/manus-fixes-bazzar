@@ -212,31 +212,8 @@ const OrderDetailsDialog: React.FC<OrderDetailsDialogProps> = ({
                             if ((offer.offer?.offer_type === 'discount' || offer.offer?.offer_type === 'product_discount') 
                                 && offer.affectedProducts && offer.affectedProducts.includes(item.product_id)) {
                               hasDiscount = true;
-                              // حساب الخصم لهذا المنتج
-                              const originalPrice = getDisplayPrice({
-                                id: item.products?.id || "",
-                                name: item.products?.name_ar || "",
-                                nameEn: item.products?.name_en || "",
-                                nameHe: item.products?.name_he || "",
-                                description: item.products?.description_ar || "",
-                                descriptionEn: item.products?.description_en || "",
-                                descriptionHe: item.products?.description_he || "",
-                                price: item.price,
-                                originalPrice: item.products?.original_price,
-                                wholesalePrice: item.products?.wholesale_price,
-                                image: item.products?.image || "",
-                                images: item.products?.images || [],
-                                category: "",
-                                inStock: typeof item.products?.in_stock === "boolean" ? item.products.in_stock : true,
-                                rating: item.products?.rating || 0,
-                                reviews: 0,
-                                discount: item.products?.discount,
-                                featured: item.products?.featured,
-                                tags: item.products?.tags || [],
-                                stock_quantity: item.products?.stock_quantity,
-                                active: item.products?.active,
-                                created_at: item.products?.created_at,
-                              }, profile?.user_type);
+                              // حساب الخصم لهذا المنتج - استخدام السعر المحفوظ في الطلبية
+                              const originalPrice = Number(item.price) || 0;
                               
                               // حساب نسبة هذا المنتج من إجمالي الخصم
                               const totalAffectedValue = offer.affectedProducts.reduce((sum: number, productId: string) => {
@@ -272,30 +249,8 @@ const OrderDetailsDialog: React.FC<OrderDetailsDialogProps> = ({
                           // في حالة الخطأ، لا نطبق خصم
                         }
 
-                        const originalPrice = getDisplayPrice({
-                          id: item.products?.id || "",
-                          name: item.products?.name_ar || "",
-                          nameEn: item.products?.name_en || "",
-                          nameHe: item.products?.name_he || "",
-                          description: item.products?.description_ar || "",
-                          descriptionEn: item.products?.description_en || "",
-                          descriptionHe: item.products?.description_he || "",
-                          price: item.price,
-                          originalPrice: item.products?.original_price,
-                          wholesalePrice: item.products?.wholesale_price,
-                          image: item.products?.image || "",
-                          images: item.products?.images || [],
-                          category: "",
-                          inStock: typeof item.products?.in_stock === "boolean" ? item.products.in_stock : true,
-                          rating: item.products?.rating || 0,
-                          reviews: 0,
-                          discount: item.products?.discount,
-                          featured: item.products?.featured,
-                          tags: item.products?.tags || [],
-                          stock_quantity: item.products?.stock_quantity,
-                          active: item.products?.active,
-                          created_at: item.products?.created_at,
-                        }, profile?.user_type);
+                        // استخدام السعر المحفوظ في الطلبية (بعد التعديل من الأدمن)
+                        const originalPrice = Number(item.price) || 0;
 
                         const finalPrice = originalPrice - (discountAmount / item.quantity);
 

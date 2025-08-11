@@ -150,6 +150,17 @@ export async function deductOrderItemsFromStock(orderItems: any[], orderId?: str
     const productId = item.product?.id || item.product_id;
     const quantity = item.quantity;
     
+    // تجاهل المنتجات المجانية - سيتم التعامل معها بشكل منفصل
+    if (item.is_free) {
+      console.log(`🎁 تجاهل المنتج المجاني: ${productId} - الكمية: ${quantity} (سيتم خصمه عبر processOffersStockDeduction)`);
+      results.push({
+        success: true,
+        message: 'منتج مجاني - تم تجاهله',
+        item: item
+      });
+      continue;
+    }
+    
     console.log(`🔄 معالجة منتج عادي: ${productId} - الكمية: ${quantity}`);
     const result = await updateProductStock(productId, quantity, orderId);
     console.log(`📊 نتيجة خصم المنتج ${productId}:`, result);

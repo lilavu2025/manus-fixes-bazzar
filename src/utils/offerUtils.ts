@@ -35,8 +35,25 @@ export async function checkProductOfferEligibility(
     // فحص كل عرض
     for (const offer of offers) {
       const eligibility = await checkSingleOfferEligibility(offer, productId, quantity, currentItems, userType);
-      if (eligibility.isEligible) {
+      if (eligibility.isEligible && eligibility.canApply) {
         return eligibility;
+      }
+    }
+
+    // إذا لم يكن هناك عرض قابل للتطبيق، فحص إذا كان هناك عرض مطبق بالفعل
+    for (const offer of offers) {
+      if (isOfferAlreadyApplied(offer.id, currentItems)) {
+        // تحقق من أن الشروط لا تزال محققة للعرض المطبق
+        const eligibility = await checkSingleOfferEligibility(offer, productId, quantity, currentItems, userType);
+        if (!eligibility.isEligible && eligibility.message !== `تم تطبيق العرض: ${offer.title_ar || offer.title_en}`) {
+          // الشروط لم تعد محققة، لكن العرض مطبق
+          return {
+            isEligible: false,
+            offer,
+            message: `⚠️ العرض مطبق لكن الشروط لم تعد محققة: ${eligibility.message}`,
+            canApply: false
+          };
+        }
       }
     }
 
@@ -68,17 +85,11 @@ async function checkSingleOfferEligibility(
   userType: string
 ): Promise<OfferEligibility> {
   
-  // تحقق أولاً من أن العرض لم يتم تطبيقه بالفعل
-  if (isOfferAlreadyApplied(offer.id, currentItems)) {
-    return {
-      isEligible: true, // العرض مؤهل لكن مطبق بالفعل
-      offer,
-      message: `تم تطبيق العرض: ${offer.title_ar || offer.title_en}`,
-      canApply: false // لا يمكن تطبيقه مرة أخرى
-    };
-  }
+  // أولاً تحقق من الشروط، ثم تحقق من التطبيق
+  let conditionsMet = false;
+  let conditionsMessage = "";
   
-  // فحص نوع العرض
+  // فحص نوع العرض وشروطه
   if (offer.offer_type === "discount") {
     // عروض الخصم العامة - تطبق على جميع المنتجات
     const minQuantity = (offer as any).min_quantity || 1;
@@ -86,73 +97,64 @@ async function checkSingleOfferEligibility(
     
     // فحص الكمية الدنيا
     if (quantity < minQuantity) {
-      return {
-        isEligible: false,
-        offer,
-        message: `الكمية الدنيا المطلوبة: ${minQuantity}`,
-        canApply: false
-      };
-    }
-
-    // فحص المبلغ الأدنى (إذا كان محدد)
-    if (minAmount > 0) {
+      conditionsMessage = `الكمية الدنيا المطلوبة: ${minQuantity}`;
+    } else if (minAmount > 0) {
+      // فحص المبلغ الأدنى (إذا كان محدد)
       const currentTotal = currentItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
       if (currentTotal < minAmount) {
-        return {
-          isEligible: false,
-          offer,
-          message: `المبلغ الأدنى المطلوب: ${minAmount} ₪`,
-          canApply: false
-        };
+        conditionsMessage = `المبلغ الأدنى المطلوب: ${minAmount} ₪`;
+      } else {
+        conditionsMet = true;
+        conditionsMessage = `عرض خصم متاح: ${offer.title_ar || offer.title_en}`;
       }
+    } else {
+      conditionsMet = true;
+      conditionsMessage = `عرض خصم متاح: ${offer.title_ar || offer.title_en}`;
     }
-
-    return {
-      isEligible: true,
-      offer,
-      message: `عرض خصم متاح: ${offer.title_ar || offer.title_en}`,
-      canApply: true
-    };
-  }
-  
-  if (offer.offer_type === "buy_get") {
+  } else if (offer.offer_type === "buy_get") {
     // عروض اشتري واحصل
     const linkedProductId = (offer as any).linked_product_id;
     const buyQuantity = (offer as any).buy_quantity || 1;
     
     // تحقق من أن المنتج الحالي هو المنتج المربوط بالعرض
     if (productId !== linkedProductId) {
-      return {
-        isEligible: false,
-        offer,
-        message: "هذا العرض لمنتج آخر",
-        canApply: false
-      };
+      conditionsMessage = "هذا العرض لمنتج آخر";
+    } else if (quantity < buyQuantity) {
+      conditionsMessage = `اشتري ${buyQuantity} قطع للحصول على العرض`;
+    } else {
+      conditionsMet = true;
+      conditionsMessage = `عرض اشتري واحصل متاح: ${offer.title_ar || offer.title_en}`;
     }
-
-    // تحقق من الكمية المطلوبة
-    if (quantity < buyQuantity) {
-      return {
-        isEligible: false,
-        offer,
-        message: `اشتري ${buyQuantity} قطع للحصول على العرض`,
-        canApply: false
-      };
-    }
-
+  } else {
+    conditionsMessage = "نوع عرض غير مدعوم";
+  }
+  
+  // إذا لم تتحقق الشروط، ارجع فوراً
+  if (!conditionsMet) {
     return {
-      isEligible: true,
+      isEligible: false,
       offer,
-      message: `عرض اشتري واحصل متاح: ${offer.title_ar || offer.title_en}`,
-      canApply: true
+      message: conditionsMessage,
+      canApply: false
     };
   }
-
+  
+  // الآن تحقق من أن العرض لم يتم تطبيقه بالفعل
+  if (isOfferAlreadyApplied(offer.id, currentItems)) {
+    return {
+      isEligible: false, // الشروط محققة لكن العرض مطبق بالفعل
+      offer,
+      message: `تم تطبيق العرض: ${offer.title_ar || offer.title_en}`,
+      canApply: false // لا يمكن تطبيقه مرة أخرى
+    };
+  }
+  
+  // الشروط محققة والعرض غير مطبق
   return {
-    isEligible: false,
+    isEligible: true,
     offer,
-    message: "نوع عرض غير مدعوم",
-    canApply: false
+    message: conditionsMessage,
+    canApply: true
   };
 }
 
