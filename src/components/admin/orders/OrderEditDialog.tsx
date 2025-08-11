@@ -737,20 +737,35 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
   };
 
   // حذف صنف
-  function removeOrderItem(id: string) {
-    setEditOrderForm(f => {
-      if (!f) return f;
-      const items = f.items.filter(item => item.id !== id);
-      return { ...f, items };
-    });
-  }
-  function removeOrderItemByIndex(index: number) {
-    setEditOrderForm(f => {
-      if (!f) return f;
-      const items = f.items.filter((_, i) => i !== index);
-      return { ...f, items };
-    });
-  }
+  const removeOrderItem = useCallback(async (id: string) => {
+    if (!editOrderForm) return;
+    
+    const items = editOrderForm.items.filter(item => item.id !== id);
+    const userType = originalOrderForEdit?.profiles?.user_type || 'retail';
+    
+    try {
+      const { items: reconciledItems } = await reconcileAllOffersLive(items, products, userType);
+      setEditOrderForm(f => f ? { ...f, items: reconciledItems } : f);
+    } catch (error) {
+      console.error("Error reconciling offers after item removal:", error);
+      setEditOrderForm(f => f ? { ...f, items } : f);
+    }
+  }, [editOrderForm, originalOrderForEdit?.profiles?.user_type, products]);
+
+  const removeOrderItemByIndex = useCallback(async (index: number) => {
+    if (!editOrderForm) return;
+    
+    const items = editOrderForm.items.filter((_, i) => i !== index);
+    const userType = originalOrderForEdit?.profiles?.user_type || 'retail';
+    
+    try {
+      const { items: reconciledItems } = await reconcileAllOffersLive(items, products, userType);
+      setEditOrderForm(f => f ? { ...f, items: reconciledItems } : f);
+    } catch (error) {
+      console.error("Error reconciling offers after item removal:", error);
+      setEditOrderForm(f => f ? { ...f, items } : f);
+    }
+  }, [editOrderForm, originalOrderForEdit?.profiles?.user_type, products]);
 
   // تحديث أسعار عند الفتح/نوع المستخدم
   useEffect(() => {
@@ -1399,16 +1414,24 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
                             type="number"
                             min="1"
                             value={item.quantity === 0 ? "" : item.quantity}
-                            onChange={e =>
-                              setEditOrderForm(f => {
-                                if (!f) return f;
-                                const val = e.target.value === "" ? 0 : parseInt(e.target.value) || 1;
-                                const updatedItems = f.items.map((itm, idx) =>
-                                  idx === index ? { ...itm, quantity: val } : itm
-                                );
-                                return { ...f, items: updatedItems };
-                              })
-                            }
+                            onChange={async (e) => {
+                              if (!editOrderForm) return;
+                              
+                              const val = e.target.value === "" ? 0 : parseInt(e.target.value) || 1;
+                              const updatedItems = editOrderForm.items.map((itm, idx) =>
+                                idx === index ? { ...itm, quantity: val } : itm
+                              );
+                              
+                              const userType = originalOrderForEdit?.profiles?.user_type || 'retail';
+                              
+                              try {
+                                const { items: reconciledItems } = await reconcileAllOffersLive(updatedItems, products, userType);
+                                setEditOrderForm(f => f ? { ...f, items: reconciledItems } : f);
+                              } catch (error) {
+                                console.error("Error reconciling offers after quantity change:", error);
+                                setEditOrderForm(f => f ? { ...f, items: updatedItems } : f);
+                              }
+                            }}
                             required
                             disabled={qtyPriceDisabled}
                             className={isFree ? "bg-green-50 text-green-700" : isDiscounted ? "bg-yellow-50 text-yellow-700" : ""}
@@ -1451,13 +1474,13 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
                           {!isFree && (
                             <Button
                               type="button"
-                              onClick={() => {
+                              onClick={async () => {
                                 if (isFree) {
                                   if (window.confirm("هذا منتج مجاني من عرض مطبق. هل أنت متأكد من حذفه؟")) {
-                                    removeOrderItemByIndex(index);
+                                    await removeOrderItemByIndex(index);
                                   }
                                 } else {
-                                  removeOrderItem(item.id);
+                                  await removeOrderItem(item.id);
                                 }
                               }}
                               variant={"destructive"}
