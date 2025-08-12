@@ -373,7 +373,7 @@ async function ensureDiscountedQty(
   const currentDiscounted = discountedIndices.reduce((s, { it }) => s + qty(it.quantity), 0);
 
   // خطّ مدفوع (غير مخفّض) لنفس المنتج
-  const normalIndices = list
+  let normalIndices = list
     .map((it, i) => ({ it, i }))
     .filter(({ it }) => it.product_id === pid && !(it as any).is_free && (!(it as any).offer_applied || (it as any).offer_id !== offer.id));
 
@@ -420,6 +420,17 @@ async function ensureDiscountedQty(
   }
 
   const delta = expectedQty - currentDiscounted;
+
+  // عند الحاجة لزيادة المخفّض، فضّل تحويل السطور التي سعرها قريب من السعر المخفّض أصلاً
+  if (delta > 0 && normalIndices.length > 0) {
+    normalIndices = [...normalIndices].sort((a, b) => {
+      const ap = Number(a.it.price) || original;
+      const bp = Number(b.it.price) || original;
+      const da = Math.abs(ap - discountedUnit);
+      const db = Math.abs(bp - discountedUnit);
+      return da - db;
+    });
+  }
 
   // نحتاج نزيد المخفّض: حرّك من المدفوع → المخفّض
   if (delta > 0) {
@@ -484,13 +495,20 @@ async function ensureDiscountedQty(
 async function reconcileAllOffersLive(
   items: any[],
   products: any[],
-  userType?: string
+  userType?: string,
+  options?: { autoApplySimpleDiscounts?: boolean }
 ) {
   let list = [...items];
 
   // تنظيف أولي: إزالة علامات العروض السابقة لإعادة تقييمها
   list = list.map(item => {
     if ((item as any).is_free) return item; // المنتجات المجانية تبقى كما هي
+    // احتفظ بالبنود المخفّضة الموجودة سابقاً حتى لا نفقد حالتها ما لم نلغي ذلك صراحة
+    const preserveExisting = (item as any).offer_applied && (options?.autoApplySimpleDiscounts === false || options?.autoApplySimpleDiscounts === undefined);
+    if (preserveExisting) {
+      const { offer_trigger, offer_trigger_id, ...rest } = item as any;
+      return rest; // نحذف مؤشرات trigger فقط ونبقي الخصم الحالي
+    }
     const { offer_trigger, offer_trigger_id, offer_name, offer_applied, offer_id, ...cleanItem } = item as any;
     return cleanItem;
   });
@@ -580,16 +598,21 @@ async function reconcileAllOffersLive(
   }
 
   // === عروض discount / product_discount (تُطبّق على كامل الكميّة) ===
-  for (const a of appliedOffers) {
-    const off = a?.offer;
-    const t = (off as any)?.offer_type;
-    if (t !== "discount" && t !== "product_discount") continue;
-    const affected: string[] = Array.isArray(a?.affectedProducts) ? a.affectedProducts.map(String) : [];
-    for (const pid of affected) {
-      const totalQty = list
-        .filter(x => x.product_id === pid && !(x as any).is_free)
-        .reduce((s, x) => s + qty(x.quantity), 0);
-      list = await ensureDiscountedQty(list, products, pid, totalQty, off, userType);
+  // بشكل افتراضي، لا نطبّقها تلقائياً حتى لا يتم إجبار كل وحدة جديدة على السعر المخفّض (غير قابل للتعديل)
+  // يمكن تفعيلها بشكل صريح عبر options.autoApplySimpleDiscounts
+  if (options?.autoApplySimpleDiscounts) {
+    for (const a of appliedOffers) {
+      const off = a?.offer;
+      const t = (off as any)?.offer_type;
+      if (t !== "discount" && t !== "product_discount") continue;
+      const affected: string[] = Array.isArray(a?.affectedProducts) ? a.affectedProducts.map(String) : [];
+      for (const pid of affected) {
+        // طبّق الخصم على كامل الكمية غير المجانيّة، لكن دع ensureDiscountedQty يفضّل الخطوط الأقرب للسعر المخفّض
+        const totalQty = list
+          .filter(x => x.product_id === pid && !(x as any).is_free)
+          .reduce((s, x) => s + qty(x.quantity), 0);
+        list = await ensureDiscountedQty(list, products, pid, totalQty, off, userType);
+      }
     }
   }
 
@@ -723,7 +746,7 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
       autoAppliedOffersRef.current.add(eligibility.offer.id);
 
       // وصالح كل شيء حسب المنطق العام (للتكرارات/المجاني/الخصم)
-      const { items } = await reconcileAllOffersLive(updatedItems, products, userType);
+  const { items } = await reconcileAllOffersLive(updatedItems, products, userType, { autoApplySimpleDiscounts: false });
       setEditOrderForm(prev => prev ? { ...prev, items } : prev);
 
       setOfferEligibilities(prev => {
@@ -744,7 +767,7 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
     const userType = originalOrderForEdit?.profiles?.user_type || 'retail';
     
     try {
-      const { items: reconciledItems } = await reconcileAllOffersLive(items, products, userType);
+  const { items: reconciledItems } = await reconcileAllOffersLive(items, products, userType, { autoApplySimpleDiscounts: false });
       setEditOrderForm(f => f ? { ...f, items: reconciledItems } : f);
     } catch (error) {
       console.error("Error reconciling offers after item removal:", error);
@@ -759,7 +782,7 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
     const userType = originalOrderForEdit?.profiles?.user_type || 'retail';
     
     try {
-      const { items: reconciledItems } = await reconcileAllOffersLive(items, products, userType);
+  const { items: reconciledItems } = await reconcileAllOffersLive(items, products, userType, { autoApplySimpleDiscounts: false });
       setEditOrderForm(f => f ? { ...f, items: reconciledItems } : f);
     } catch (error) {
       console.error("Error reconciling offers after item removal:", error);
@@ -788,8 +811,8 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
         if ((item as any).is_free) {
           return { ...item, price: 0, original_price: base };
         }
-        // للمنتجات العادية، نحافظ على السعر المحفوظ في الطلبية بدلاً من إعادة تحديده
-        const savedPrice = Number(item.price) || base;
+        // للمنتجات العادية، نحافظ على السعر المحفوظ في الطلبية كما هو
+        const savedPrice = typeof item.price === 'number' ? item.price : base;
         return { ...item, price: savedPrice, original_price: base };
       });
       return { ...prev, items };
@@ -806,6 +829,10 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
           initialItemsSnapshotRef.current = JSON.parse(JSON.stringify(editOrderForm.items));
           initialFormSnapshotRef.current = JSON.parse(JSON.stringify(editOrderForm));
           console.log('🔍 Full form snapshot saved (ONCE):', initialFormSnapshotRef.current);
+          // امنع أول تشغيل لتصالح العروض من تعديل الأسعار اليدوية فور الفتح
+          try {
+            lastProcessedItemsRef.current = JSON.stringify(editOrderForm.items);
+          } catch {}
         }
       }, 100);
       
@@ -848,8 +875,8 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
       const currentItemsKey = JSON.stringify(editOrderForm.items);
       if (lastProcessedItemsRef.current === currentItemsKey) return;
       
-      const userType = originalOrderForEdit?.profiles?.user_type || 'retail';
-      const { items } = await reconcileAllOffersLive(editOrderForm.items, products, userType);
+  const userType = originalOrderForEdit?.profiles?.user_type || 'retail';
+  const { items } = await reconcileAllOffersLive(editOrderForm.items, products, userType, { autoApplySimpleDiscounts: false });
       
       // فقط إذا تغيرت العناصر فعلياً، حدث الـ state
       const itemsChanged = JSON.stringify(items) !== JSON.stringify(editOrderForm.items);
@@ -870,44 +897,35 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editOrderForm?.items, products]);
 
-  // تطبيع العناصر قبل الحفظ — نحافظ على السعر المعدّل للعناصر العادية
+  // تطبيع العناصر قبل الحفظ — احفظ كل سطر كما هو لتجنّب فقدان أسعار يدوية أو دمج غير مرغوب
   const normalizeItemsForSave = (items: any[]) => {
-    return mergeSimilarLines(items).map(it => {
+    return items.map(it => {
       const userType = originalOrderForEdit?.profiles?.user_type || 'retail';
       const basePriceForProduct = basePrice(products, it.product_id, userType);
-      
+
+      // مجاني: يظل مجاني وبسعر 0
       if ((it as any).is_free) {
         return {
           ...it,
-          price: 0, // المنتجات المجانية سعرها صفر
-          is_free: true, // نحافظ على علامة المجاني لتجنب الخصم المضاعف من المخزون
-          offer_applied: undefined,
-          offer_id: undefined,
-          offer_name: undefined,
-          original_price: undefined,
+          price: 0,
+          is_free: true,
         };
       }
+
+      // مخفّض: نحافظ على حالة الخصم والسعر المخفّض وoriginal_price
       if ((it as any).offer_applied) {
         return {
           ...it,
-          // نحفظ السعر الأساسي، OrderDetailsPrint سيحسب الخصم من applied_offers
-          price: basePriceForProduct,
-          offer_applied: undefined,
-          offer_id: undefined,
-          offer_name: undefined,
-          original_price: undefined,
-        };
+          price: typeof it.price === 'number' ? it.price : basePriceForProduct,
+          // أبقِ offer_applied/offer_id/offer_name/original_price كما هي
+        } as any;
       }
-      // عادي - نحافظ على السعر المعدّل إذا كان مختلف عن السعر الأساسي
+
+      // عادي: أبقِ السعر المعدّل إن وُجد، وإلا استخدم السعر الأساسي
       return {
         ...it,
-        price: it.price || basePriceForProduct, // نحافظ على السعر المعدّل
-        is_free: undefined,
-        offer_applied: undefined,
-        offer_id: undefined,
-        offer_name: undefined,
-        original_price: undefined,
-      };
+        price: typeof it.price === 'number' ? it.price : basePriceForProduct,
+      } as any;
     });
   };
 
@@ -949,15 +967,26 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
 
               // 2) صالح كل شيء نهائياً قبل التأكيد (يعتمد على applyOffers)
               const { items, appliedOffers, freeRefs, totalDiscount } =
-                await reconcileAllOffersLive(editOrderForm.items, products, userType);
+                await reconcileAllOffersLive(editOrderForm.items, products, userType, { autoApplySimpleDiscounts: true });
 
-              // 3) تغييرات التأكيد (مقارنة البيانات الأولية مع الجديدة)
-              console.log('🔍 Initial snapshot items:', initialSnapshot);
-              console.log('🔍 New reconciled items:', items);
-              
+              // 3) تغييرات التأكيد (قارن العرض الحالي على الشاشة مع الناتج بعد التصالح النهائي)
+              const displayedNow = JSON.parse(JSON.stringify(editOrderForm));
+              const originalDisplayedAtOpen = initialFormSnapshotRef.current
+                ? JSON.parse(JSON.stringify(initialFormSnapshotRef.current))
+                : JSON.parse(JSON.stringify(editOrderForm));
+
+              console.log('🔍 Original (at open) items:', originalDisplayedAtOpen.items);
+              console.log('🔍 Displayed now items:', displayedNow.items);
+              // طبّع المعروض الحالي بنفس قواعد التحرير قبل المقارنة لتجنب فروق بنيوية فقط
+              const { items: normalizedDisplayedItems } = await reconcileAllOffersLive(displayedNow.items, products, userType, { autoApplySimpleDiscounts: false });
+              const displayedNowNormalized = { ...displayedNow, items: normalizedDisplayedItems } as any;
+
+              const { items: normalizedOriginalItems } = await reconcileAllOffersLive(originalDisplayedAtOpen.items || [], products, userType, { autoApplySimpleDiscounts: false });
+              const originalNormalized = { ...originalDisplayedAtOpen, items: normalizedOriginalItems } as any;
+
               const confirmChanges = buildChangesForConfirm(
-                { ...initialFormSnapshot, items: initialSnapshot }, // البيانات الأولية بدون معالجة
-                { ...editOrderForm, items: items }, // البيانات الجديدة مع العروض
+                originalNormalized,
+                displayedNowNormalized,
                 products,
                 userType
               );
@@ -982,9 +1011,6 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
               const applied_offers_obj = appliedOffers;
               const free_items_obj = freeRefs;
 
-              const applied_offers = applied_offers_obj.length ? JSON.stringify(applied_offers_obj) : null;
-              const free_items = free_items_obj.length ? JSON.stringify(free_items_obj) : null;
-
               // 5) خزّن بالـ form (للدايلوج و AdminOrders)
               setEditOrderForm(f => f ? {
                 ...f,
@@ -992,8 +1018,7 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
                 applied_offers_obj,
                 free_items_obj,
                 offers_discount_total: totalDiscount,
-                applied_offers,
-                free_items,
+                // أبقِ الحقول الكائنية، ودع عملية الحفظ الخلفية تتكفل بأي تحويل لنص إذا لزم
               } as any : f);
 
               // خصم يدوي إن كان مطفّى
@@ -1427,7 +1452,7 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
                               const userType = originalOrderForEdit?.profiles?.user_type || 'retail';
                               
                               try {
-                                const { items: reconciledItems } = await reconcileAllOffersLive(updatedItems, products, userType);
+                                const { items: reconciledItems } = await reconcileAllOffersLive(updatedItems, products, userType, { autoApplySimpleDiscounts: false });
                                 setEditOrderForm(f => f ? { ...f, items: reconciledItems } : f);
                               } catch (error) {
                                 console.error("Error reconciling offers after quantity change:", error);
