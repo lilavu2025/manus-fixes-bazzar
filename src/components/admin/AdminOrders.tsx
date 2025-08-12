@@ -366,11 +366,14 @@ const AdminOrders: React.FC = () => {
       editOrderForm.items = itemsWithFree;
 
       // Totals
+      const total = calculateOrderTotalWithFreeItems(itemsWithFree);
+      
+      // حساب خصم العروض من العناصر المحفوظة
       const original_total = (itemsWithFree || []).reduce((sum, it: any) => {
+        if (it?.is_free) return sum; // تجاهل العناصر المجانية
         const unit = typeof it?.original_price === "number" ? it.original_price : (it.price || 0);
         return sum + unit * (it.quantity || 0);
       }, 0);
-      const total = calculateOrderTotalWithFreeItems(itemsWithFree);
       const discount_from_offers = Math.max(0, original_total - total);
 
       // Re-summarize from items (single source of truth)
@@ -379,7 +382,6 @@ const AdminOrders: React.FC = () => {
       const updateObj: any = {
         items: itemsWithFree as any,
         total,
-        original_total,
         discount_from_offers,
         applied_offers: JSON.stringify(applied_offers || []),
         free_items: JSON.stringify(free_items || []),
@@ -415,7 +417,7 @@ const AdminOrders: React.FC = () => {
         .map((item) => ({
           product_id: item.product_id,
           quantity: item.quantity,
-          price: item.price,
+          price: item.price, // السعر النهائي (بعد الخصم)
         }));
 
       editOrderMutation.mutate(

@@ -788,7 +788,9 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
         if ((item as any).is_free) {
           return { ...item, price: 0, original_price: base };
         }
-        return { ...item, price: base, original_price: base };
+        // للمنتجات العادية، نحافظ على السعر المحفوظ في الطلبية بدلاً من إعادة تحديده
+        const savedPrice = Number(item.price) || base;
+        return { ...item, price: savedPrice, original_price: base };
       });
       return { ...prev, items };
     });
@@ -1441,15 +1443,16 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
                           <Label className="text-xs text-gray-600 mb-1 block">
                             {t("price") || "السعر"} <span className="text-red-500">*</span>
                             {isFree && <span className="text-green-600 font-bold ml-1">مجاني</span>}
-                          </Label>
-                          <div className="flex flex-col gap-1">
-                            {((item as any).offer_applied &&
+                            {((item as any).offer_applied || isFree) && (
                               typeof (item as any).original_price === "number" &&
                               ((item as any).original_price > (item.price ?? 0))) && (
                               <span className="text-xs text-gray-500 line-through">
                                 {(item as any).original_price} ₪
                               </span>
                             )}
+                          </Label>
+                          <div className="flex flex-col gap-1">
+                            
                             <Input
                               type="number"
                               step="0.01"

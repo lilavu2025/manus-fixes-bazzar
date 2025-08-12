@@ -249,13 +249,52 @@ const OrderDetailsDialog: React.FC<OrderDetailsDialogProps> = ({
                           // في حالة الخطأ، لا نطبق خصم
                         }
 
-                        // استخدام السعر المحفوظ في الطلبية (بعد التعديل من الأدمن)
-                        const originalPrice = Number(item.price) || 0;
+                        // مقارنة السعر المحفوظ مع السعر الأصلي للمنتج
+                        const savedPrice = Number(item.price) || 0;
+                        
+                        // الحصول على السعر الأصلي للمنتج حسب نوع العميل
+                        let actualProductPrice = 0;
+                        if (item.products && products) {
+                          actualProductPrice = getDisplayPrice(
+                            {
+                              id: item.products.id || "",
+                              name: item.products.name_ar || "",
+                              nameEn: item.products.name_en || "",
+                              nameHe: item.products.name_he || "",
+                              description: item.products.description_ar || "",
+                              descriptionEn: item.products.description_en || "",
+                              descriptionHe: item.products.description_he || "",
+                              price: item.products.price || 0,
+                              originalPrice: item.products.original_price,
+                              wholesalePrice: item.products.wholesale_price,
+                              image: item.products.image || "",
+                              images: item.products.images || [],
+                              category: "",
+                              inStock: typeof item.products.in_stock === "boolean" ? item.products.in_stock : true,
+                              rating: item.products.rating || 0,
+                              reviews: 0,
+                              discount: item.products.discount,
+                              featured: item.products.featured,
+                              tags: item.products.tags || [],
+                              stock_quantity: item.products.stock_quantity,
+                              active: item.products.active,
+                              created_at: item.products.created_at,
+                            },
+                            profile?.user_type,
+                          );
+                        } else {
+                          actualProductPrice = savedPrice;
+                        }
 
-                        const finalPrice = originalPrice - (discountAmount / item.quantity);
+                        // إذا كان السعر الأصلي أكبر من السعر المحفوظ، فهناك خصم
+                        const hasRealDiscount = actualProductPrice > savedPrice;
+                        const originalPrice = hasRealDiscount ? actualProductPrice : savedPrice;
+
+                        const finalPrice = hasRealDiscount ? savedPrice : (originalPrice - (discountAmount / item.quantity));
+                        const showDiscount = hasRealDiscount || hasDiscount;
 
                         return (
-                        <div key={item.id} className={`border rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow duration-200 ${hasDiscount ? 'bg-green-50 border-green-200' : 'bg-white'}`}>
+                        <div key={item.id} className={`border rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow duration-200 ${showDiscount ? 'bg-green-50 border-green-200' : 'bg-white'}`}>
                           <div className="flex flex-col sm:flex-row gap-3">
                             {/* صورة المنتج */}
                             <div className="flex-shrink-0 mx-auto sm:mx-0 relative">
@@ -263,7 +302,7 @@ const OrderDetailsDialog: React.FC<OrderDetailsDialogProps> = ({
                                 className="w-16 h-16 bg-center bg-contain bg-no-repeat rounded-lg border shadow-sm"
                                 style={{ backgroundImage: `url(${item.products?.image})` }}
                               />
-                              {hasDiscount && (
+                              {showDiscount && (
                                 <div className="absolute -top-1 -right-1 bg-green-500 text-white text-xs px-1 py-0.5 rounded-full font-bold">
                                   خصم
                                 </div>
@@ -296,7 +335,7 @@ const OrderDetailsDialog: React.FC<OrderDetailsDialogProps> = ({
                                 </div>
                                 <div className="text-center">
                                   <span className="block font-medium text-gray-700 mb-1 text-xs">{t("unitPrice")}</span>
-                                  {hasDiscount ? (
+                                  {showDiscount ? (
                                     <div className="space-y-0.5">
                                       <div className="text-xs text-gray-500 line-through">
                                         {originalPrice.toFixed(2)} {t("currency")}
@@ -313,7 +352,7 @@ const OrderDetailsDialog: React.FC<OrderDetailsDialogProps> = ({
                                 </div>
                                 <div className="text-center">
                                   <span className="block font-medium text-gray-700 mb-1 text-xs">{t("total")}</span>
-                                  {hasDiscount ? (
+                                  {showDiscount ? (
                                     <div className="space-y-0.5">
                                       <div className="text-xs text-gray-500 line-through">
                                         {(originalPrice * item.quantity).toFixed(2)} {t("currency")}
@@ -329,7 +368,7 @@ const OrderDetailsDialog: React.FC<OrderDetailsDialogProps> = ({
                                   )}
                                 </div>
                                 <div className="text-center">
-                                  {hasDiscount ? (
+                                  {showDiscount ? (
                                     <div>
                                       <span className="block font-medium text-green-700 mb-1">نسبة الخصم</span>
                                       <span className="text-lg bg-green-500 text-white px-1 py-1 rounded font-bold">

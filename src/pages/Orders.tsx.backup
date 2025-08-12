@@ -575,7 +575,8 @@ const Orders: React.FC = () => {
                                     let actualProductPrice = 0;
                                     if (product) {
                                       // مراعاة نوع العميل (retail/wholesale) باستخدام getDisplayPrice
-                                      actualProductPrice = getDisplayPrice(product as any, profile?.user_type);
+                                      const userType = (order.profiles as any)?.user_type || 'retail';
+                                      actualProductPrice = getDisplayPrice(product as any, userType);
                                     }
                                     
                                     // إذا كان السعر المحفوظ أقل من السعر الفعلي، يعني هناك خصم
@@ -607,13 +608,13 @@ const Orders: React.FC = () => {
                                           const totalAffectedValue = offer.affectedProducts.reduce((sum: number, productId: string) => {
                                             const affectedItem = order.order_items?.find((oi: any) => oi.product_id === productId);
                                             if (affectedItem) {
-                                              return sum + (savedPrice * affectedItem.quantity);
+                                              return sum + (originalPrice * affectedItem.quantity);
                                             }
                                             return sum;
                                           }, 0);
                                           
                                           if (totalAffectedValue > 0) {
-                                            const itemValue = savedPrice * item.quantity;
+                                            const itemValue = originalPrice * item.quantity;
                                             const itemDiscountRatio = itemValue / totalAffectedValue;
                                             discountAmount += (offer.discountAmount || 0) * itemDiscountRatio;
                                           }
@@ -660,7 +661,8 @@ const Orders: React.FC = () => {
                                     let actualProductPrice = 0;
                                     if (product) {
                                       // مراعاة نوع العميل (retail/wholesale) باستخدام getDisplayPrice
-                                      actualProductPrice = getDisplayPrice(product as any, profile?.user_type);
+                                      const userType = (order.profiles as any)?.user_type || 'retail';
+                                      actualProductPrice = getDisplayPrice(product as any, userType);
                                     }
                                     
                                     // إذا كان السعر المحفوظ أقل من السعر الفعلي، يعني هناك خصم
@@ -698,13 +700,13 @@ const Orders: React.FC = () => {
                                           const totalAffectedValue = offer.affectedProducts.reduce((sum: number, productId: string) => {
                                             const affectedItem = order.order_items?.find((oi: any) => oi.product_id === productId);
                                             if (affectedItem) {
-                                              return sum + (savedPrice * affectedItem.quantity);
+                                              return sum + (originalPrice * affectedItem.quantity);
                                             }
                                             return sum;
                                           }, 0);
                                           
                                           if (totalAffectedValue > 0) {
-                                            const itemValue = savedPrice * item.quantity;
+                                            const itemValue = originalPrice * item.quantity;
                                             const itemDiscountRatio = itemValue / totalAffectedValue;
                                             discountAmount += (offer.discountAmount || 0) * itemDiscountRatio;
                                           }
