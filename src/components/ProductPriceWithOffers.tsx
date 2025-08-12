@@ -79,6 +79,11 @@ const ProductPriceWithOffers: React.FC<ProductPriceWithOffersProps> = ({
           {formatPrice(discountedPrice)}
         </span>
         
+        {!hasDiscount && (
+          <span className="text-sm text-gray-600">
+            {quantity} × {formatPrice(unitPrice)}
+          </span>
+        )}
         {hasDiscount && showSavings && (
           <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium">
             {t("youSave")} {formatPrice(appliedDiscount)}

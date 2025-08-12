@@ -1275,5 +1275,6 @@ export const heTranslations = {
   appliedOffers: "מבצעים מוחלים",
   youSave: "אתה חוסך",
   statisticsPeriod: "תקופת סטטיסטיקות",
+  freeProductsDiscount: "הנחת מוצרים חינמיים",
 
 };

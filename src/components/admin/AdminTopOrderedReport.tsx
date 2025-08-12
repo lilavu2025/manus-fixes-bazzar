@@ -39,10 +39,12 @@ const AdminTopOrderedReport = () => {
           className="ml-4 text-xs border-[hsl(var(--secondary))] text-[hsl(var(--primary))] hover:bg-[hsl(var(--secondary))]"
           onClick={async () => {
             try {
+              console.log('🔄 بدء تحديث المنتجات الأكثر مبيعاً...');
               await updateTopOrderedProducts();
               toast.success(t("updatedTopSelling"));
               window.location.reload();
             } catch (e) {
+              console.error('❌ خطأ في تحديث المنتجات:', e);
               toast.error(t("error"));
             }
           }}

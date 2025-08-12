@@ -30,15 +30,17 @@ const processedOrders = new Set<string>();
  */
 export async function updateProductStock(productId: string, quantityToDeduct: number, orderId?: string) {
   try {
-    const operationId = orderId ? `${orderId}-${productId}` : `${Date.now()}-${productId}`;
+    const timestamp = Date.now();
+    const operationId = orderId ? `${orderId}-${productId}-${timestamp}` : `${timestamp}-${productId}`;
     
-    // التحقق من الخصم المضاعف
-    if (orderId && processedOrders.has(operationId)) {
+    // التحقق من الخصم المضاعف (فقط للطلبيات الجديدة، ليس التعديل)
+    const isEditOperation = orderId?.includes('edit-');
+    if (orderId && !isEditOperation && processedOrders.has(operationId)) {
       console.warn(`⚠️ تجنب الخصم المضاعف للطلبية ${orderId} - المنتج ${productId}`);
       return { success: true, message: 'تم تجنب الخصم المضاعف' };
     }
     
-    if (orderId) {
+    if (orderId && !isEditOperation) {
       processedOrders.add(operationId);
       // حذف الذاكرة بعد 5 دقائق لتجنب تراكم البيانات
       setTimeout(() => processedOrders.delete(operationId), 5 * 60 * 1000);
@@ -64,9 +66,10 @@ export async function updateProductStock(productId: string, quantityToDeduct: nu
     }
 
     const currentStock = product.stock_quantity || 0;
-    const newStock = Math.max(0, currentStock - quantityToDeduct);
+    const quantityToUpdate = Math.abs(quantityToDeduct);
+    const newStock = Math.max(0, currentStock - quantityToUpdate);
 
-    console.log(`📦 ${product.name_ar} - المخزون الحالي: ${currentStock} | سيتم خصم: ${quantityToDeduct} | المخزون الجديد: ${newStock}`);
+    console.log(`📦 ${product.name_ar} - المخزون الحالي: ${currentStock} | سيتم خصم: ${quantityToUpdate} | المخزون الجديد: ${newStock}`);
 
     // تحديث المخزون
     const { error: updateError } = await supabase
@@ -146,6 +149,17 @@ export async function deductOrderItemsFromStock(orderItems: any[], orderId?: str
   for (const item of orderItems) {
     const productId = item.product?.id || item.product_id;
     const quantity = item.quantity;
+    
+    // تجاهل المنتجات المجانية - سيتم التعامل معها بشكل منفصل
+    if (item.is_free) {
+      console.log(`🎁 تجاهل المنتج المجاني: ${productId} - الكمية: ${quantity} (سيتم خصمه عبر processOffersStockDeduction)`);
+      results.push({
+        success: true,
+        message: 'منتج مجاني - تم تجاهله',
+        item: item
+      });
+      continue;
+    }
     
     console.log(`🔄 معالجة منتج عادي: ${productId} - الكمية: ${quantity}`);
     const result = await updateProductStock(productId, quantity, orderId);
@@ -275,6 +289,209 @@ export async function processOffersStockDeduction(orderId: string, appliedOffers
 }
 
 /**
+ * تحديث مخزون المنتجات المجانية عند تعديل الطلبية
+ * Update free products stock when editing an order
+ */
+export async function updateFreeProductsStockOnEdit(
+  orderId: string, 
+  newAppliedOffers?: string | null, 
+  newFreeItems?: string | null
+) {
+  try {
+    console.log(`🔄 بدء تحديث مخزون المنتجات المجانية عند تعديل الطلبية: ${orderId}`);
+    
+    // الحصول على البيانات القديمة للطلبية
+    const { data: oldOrder, error: orderError } = await supabase
+      .from('orders')
+      .select('applied_offers, free_items')
+      .eq('id', orderId)
+      .single();
+      
+    if (orderError) {
+      console.error('❌ خطأ في جلب تفاصيل الطلبية القديمة:', orderError);
+      return { success: false, error: orderError.message };
+    }
+    
+    // استخراج المنتجات المجانية القديمة
+    const oldFreeProducts = extractFreeProductsFromOrderData(oldOrder?.applied_offers, oldOrder?.free_items);
+    console.log('📦 المنتجات المجانية القديمة:', oldFreeProducts);
+    
+    // استخراج المنتجات المجانية الجديدة
+    const newFreeProducts = extractFreeProductsFromOrderData(newAppliedOffers, newFreeItems);
+    console.log('📦 المنتجات المجانية الجديدة:', newFreeProducts);
+    
+    // حساب الفروقات
+    const changes = calculateFreeProductChanges(oldFreeProducts, newFreeProducts);
+    console.log('📊 التغييرات المطلوبة:', changes);
+    
+    // تطبيق التغييرات على المخزون
+    const results = [];
+    for (const change of changes) {
+      if (change.quantityDiff > 0) {
+        // خصم من المخزون (منتجات مجانية إضافية)
+        console.log(`➖ خصم ${change.quantityDiff} من المنتج ${change.productId}`);
+        const result = await updateProductStock(change.productId, change.quantityDiff, `edit-deduct-${orderId}`);
+        results.push({ ...result, operation: 'deduct', productId: change.productId });
+      } else if (change.quantityDiff < 0) {
+        // إضافة للمخزون (منتجات مجانية أقل)
+        const restoreQuantity = Math.abs(change.quantityDiff);
+        console.log(`➕ إضافة ${restoreQuantity} للمنتج ${change.productId}`);
+        const result = await restoreProductStock(change.productId, restoreQuantity, `edit-restore-${orderId}`);
+        results.push({ ...result, operation: 'restore', productId: change.productId });
+      }
+    }
+    
+    const successCount = results.filter(r => r.success).length;
+    const failCount = results.filter(r => !r.success).length;
+    
+    console.log(`📊 نتائج تحديث المخزون: ${successCount} نجح، ${failCount} فشل`);
+    
+    return {
+      success: failCount === 0,
+      message: `تم تحديث مخزون ${successCount} منتج مجاني`,
+      results: results,
+      changes: changes
+    };
+    
+  } catch (error) {
+    console.error('❌ خطأ في تحديث مخزون المنتجات المجانية:', error);
+    return { success: false, error: 'خطأ في تحديث المخزون' };
+  }
+}
+
+/**
+ * استخراج المنتجات المجانية من بيانات الطلبية
+ */
+function extractFreeProductsFromOrderData(appliedOffers?: string | null, freeItems?: string | null) {
+  const products = new Map<string, number>();
+  
+  // استخراج من applied_offers
+  if (appliedOffers) {
+    try {
+      const offers = JSON.parse(appliedOffers);
+      if (Array.isArray(offers)) {
+        for (const offer of offers) {
+          if (offer.freeProducts && Array.isArray(offer.freeProducts)) {
+            for (const product of offer.freeProducts) {
+              const productId = product.productId || product.product_id;
+              const quantity = product.quantity || 1;
+              if (productId) {
+                products.set(productId, (products.get(productId) || 0) + quantity);
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('⚠️ خطأ في تحليل applied_offers:', e);
+    }
+  }
+  
+  // استخراج من free_items
+  if (freeItems) {
+    try {
+      const items = JSON.parse(freeItems);
+      if (Array.isArray(items)) {
+        for (const item of items) {
+          const productId = item.productId || item.product_id;
+          const quantity = item.quantity || 1;
+          if (productId) {
+            products.set(productId, (products.get(productId) || 0) + quantity);
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('⚠️ خطأ في تحليل free_items:', e);
+    }
+  }
+  
+  return Array.from(products.entries()).map(([productId, quantity]) => ({ productId, quantity }));
+}
+
+/**
+ * حساب التغييرات المطلوبة في المخزون
+ */
+function calculateFreeProductChanges(
+  oldProducts: { productId: string; quantity: number }[],
+  newProducts: { productId: string; quantity: number }[]
+) {
+  const changes = [];
+  
+  // تحويل إلى Map للبحث السريع
+  const oldMap = new Map(oldProducts.map(p => [p.productId, p.quantity]));
+  const newMap = new Map(newProducts.map(p => [p.productId, p.quantity]));
+  
+  // جميع المنتجات المتأثرة
+  const allProductIds = new Set([...oldMap.keys(), ...newMap.keys()]);
+  
+  for (const productId of allProductIds) {
+    const oldQuantity = oldMap.get(productId) || 0;
+    const newQuantity = newMap.get(productId) || 0;
+    const quantityDiff = newQuantity - oldQuantity;
+    
+    if (quantityDiff !== 0) {
+      changes.push({
+        productId,
+        oldQuantity,
+        newQuantity,
+        quantityDiff
+      });
+    }
+  }
+  
+  return changes;
+}
+
+/**
+ * إرجاع كمية معينة للمخزون
+ */
+async function restoreProductStock(productId: string, quantity: number, operationId: string) {
+  try {
+    console.log(`📦 إرجاع ${quantity} للمنتج ${productId}`);
+    
+    const { data: product, error: fetchError } = await supabase
+      .from('products')
+      .select('stock_quantity, name_ar')
+      .eq('id', productId)
+      .single();
+
+    if (fetchError) {
+      console.error('❌ خطأ في جلب بيانات المنتج:', fetchError);
+      return { success: false, error: fetchError.message };
+    }
+
+    const currentStock = product.stock_quantity || 0;
+    const newStock = currentStock + quantity;
+
+    console.log(`📦 ${product.name_ar} - المخزون الحالي: ${currentStock} | سيتم إضافة: ${quantity} | المخزون الجديد: ${newStock}`);
+
+    const { error: updateError } = await supabase
+      .from('products')
+      .update({ 
+        stock_quantity: newStock,
+        in_stock: newStock > 0
+      })
+      .eq('id', productId);
+
+    if (updateError) {
+      console.error('❌ خطأ في تحديث المخزون:', updateError);
+      return { success: false, error: updateError.message };
+    }
+
+    console.log(`✅ تم إرجاع مخزون ${product.name_ar} بنجاح - من ${currentStock} إلى ${newStock}`);
+    return { 
+      success: true, 
+      oldStock: currentStock, 
+      newStock: newStock,
+      productName: product.name_ar
+    };
+  } catch (error) {
+    console.error('❌ خطأ في إرجاع المخزون:', error);
+    return { success: false, error: 'خطأ في إرجاع المخزون' };
+  }
+}
+
+/**
  * إرجاع المنتجات المجانية للمخزون عند إلغاء الطلبية
  * Restore free products to stock when cancelling order
  */
@@ -285,7 +502,7 @@ export async function restoreFreeProductsStock(orderId: string) {
     // الحصول على تفاصيل الطلبية
     const { data: order, error: orderError } = await supabase
       .from('orders')
-      .select('applied_offers')
+      .select('applied_offers, free_items')
       .eq('id', orderId)
       .single();
       
@@ -294,34 +511,62 @@ export async function restoreFreeProductsStock(orderId: string) {
       return { success: false, error: orderError.message };
     }
     
-    if (!order?.applied_offers) {
-      console.log('ℹ️ لا توجد عروض مطبقة لإرجاع منتجاتها المجانية');
-      return { success: true, message: 'لا توجد عروض لإرجاعها' };
-    }
-    
-    // تحليل العروض المطبقة
-    const appliedOffers = JSON.parse(order.applied_offers);
-    console.log('📦 العروض المطبقة:', appliedOffers);
-    
     const freeProductsToRestore = [];
     
-    // استخراج المنتجات المجانية من كل عرض
-    for (const offer of appliedOffers) {
-      console.log('🔍 فحص العرض:', { offer });
-      if (offer.freeProducts && Array.isArray(offer.freeProducts)) {
-        console.log('🎁 منتجات مجانية في العرض:', offer.freeProducts);
-        for (const freeProduct of offer.freeProducts) {
-          console.log('🔍 فحص المنتج المجاني:', freeProduct);
-          // التحقق من وجود productId أو product_id
-          const productId = freeProduct.productId || freeProduct.product_id;
-          const quantity = freeProduct.quantity || 1;
-          
-          console.log(`🎁 تم العثور على منتج مجاني لإرجاعه: ${productId} - الكمية: ${quantity}`);
-          freeProductsToRestore.push({
-            product_id: productId,
-            quantity: quantity
-          });
+    // أولاً: استخراج المنتجات المجانية من حقل free_items
+    if (order?.free_items) {
+      try {
+        const freeItems = JSON.parse(order.free_items);
+        console.log('🎁 المنتجات المجانية من free_items:', freeItems);
+        
+        if (Array.isArray(freeItems)) {
+          for (const freeItem of freeItems) {
+            const productId = freeItem.productId || freeItem.product_id;
+            const quantity = freeItem.quantity || 1;
+            
+            if (productId) {
+              console.log(`🎁 تم العثور على منتج مجاني من free_items لإرجاعه: ${productId} - الكمية: ${quantity}`);
+              freeProductsToRestore.push({
+                product_id: productId,
+                quantity: quantity
+              });
+            }
+          }
         }
+      } catch (e) {
+        console.warn('⚠️ خطأ في تحليل free_items:', e);
+      }
+    }
+    
+    // ثانياً: استخراج المنتجات المجانية من العروض المطبقة
+    if (order?.applied_offers) {
+      try {
+        const appliedOffers = JSON.parse(order.applied_offers);
+        console.log('📦 العروض المطبقة:', appliedOffers);
+        
+        // استخراج المنتجات المجانية من كل عرض
+        for (const offer of appliedOffers) {
+          console.log('🔍 فحص العرض:', { offer });
+          if (offer.freeProducts && Array.isArray(offer.freeProducts)) {
+            console.log('🎁 منتجات مجانية في العرض:', offer.freeProducts);
+            for (const freeProduct of offer.freeProducts) {
+              console.log('🔍 فحص المنتج المجاني:', freeProduct);
+              // التحقق من وجود productId أو product_id
+              const productId = freeProduct.productId || freeProduct.product_id;
+              const quantity = freeProduct.quantity || 1;
+              
+              if (productId) {
+                console.log(`🎁 تم العثور على منتج مجاني من العرض لإرجاعه: ${productId} - الكمية: ${quantity}`);
+                freeProductsToRestore.push({
+                  product_id: productId,
+                  quantity: quantity
+                });
+              }
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('⚠️ خطأ في تحليل applied_offers:', e);
       }
     }
     

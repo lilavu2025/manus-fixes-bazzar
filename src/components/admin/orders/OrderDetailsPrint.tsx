@@ -301,35 +301,28 @@ const OrderDetailsPrint: React.FC<OrderDetailsPrintProps> = ({ order, t, profile
                       <td className="p-2 text-center">{item.quantity}</td>
                       <td className="p-2 text-center">
                         {(() => {
-                          const originalPrice = getDisplayPrice(
-                            {
-                              id: product?.id || "",
-                              name: product?.name_ar || "",
-                              nameEn: product?.name_en || "",
-                              nameHe: product?.name_he || "",
-                              description: product?.description_ar || "",
-                              descriptionEn: product?.description_en || "",
-                              descriptionHe: product?.description_he || "",
-                              price: item.price,
-                              originalPrice: product?.original_price,
-                              wholesalePrice: product?.wholesale_price,
-                              image: product?.image || "",
-                              images: product?.images || [],
-                              category: "", // fallback
-                              inStock: typeof product?.in_stock === "boolean" ? product.in_stock : true,
-                              rating: product?.rating || 0,
-                              reviews: 0, // fallback
-                              discount: product?.discount,
-                              featured: product?.featured,
-                              tags: product?.tags || [],
-                              stock_quantity: product?.stock_quantity,
-                              active: product?.active,
-                              created_at: product?.created_at,
-                            },
-                            profile?.user_type,
-                          );
+                          const savedPrice = Number(item.price) || 0;
                           
-                          // التحقق من وجود خصم على هذا المنتج من العروض
+                          // الحصول على السعر الحقيقي للمنتج من قاعدة البيانات
+                          const product = products.find((p) => p.id === item.product_id);
+                          let actualProductPrice = 0;
+                          if (product) {
+                            // مراعاة نوع العميل (retail/wholesale) باستخدام getDisplayPrice
+                            const userType = (order.profiles as any)?.user_type || 'retail';
+                            actualProductPrice = getDisplayPrice(product as any, userType);
+                          }
+                          
+                          // إذا كان السعر المحفوظ أقل من السعر الفعلي، يعني هناك خصم
+                          if (actualProductPrice > 0 && savedPrice < actualProductPrice) {
+                            return (
+                              <div>
+                                <span className="line-through text-gray-400 text-sm">{actualProductPrice.toFixed(2)} ₪</span>
+                                <div className="text-green-600 font-bold">{savedPrice.toFixed(2)} ₪</div>
+                              </div>
+                            );
+                          }
+                          
+                          // للطلبيات العادية (من الـ checkout) - استخدام الطريقة القديمة
                           let hasDiscount = false;
                           let discountAmount = 0;
                           try {
@@ -346,13 +339,15 @@ const OrderDetailsPrint: React.FC<OrderDetailsPrintProps> = ({ order, t, profile
                                 const totalAffectedValue = offer.affectedProducts.reduce((sum: number, productId: string) => {
                                   const affectedItem = order.items.find((oi: any) => oi.product_id === productId);
                                   if (affectedItem) {
-                                    return sum + (originalPrice * affectedItem.quantity);
+                                    const itemPrice = actualProductPrice || savedPrice;
+                                    return sum + (itemPrice * affectedItem.quantity);
                                   }
                                   return sum;
                                 }, 0);
                                 
                                 if (totalAffectedValue > 0) {
-                                  const itemValue = originalPrice * item.quantity;
+                                  const itemPrice = actualProductPrice || savedPrice;
+                                  const itemValue = itemPrice * item.quantity;
                                   const itemDiscountRatio = itemValue / totalAffectedValue;
                                   discountAmount += (offer.discountAmount || 0) * itemDiscountRatio;
                                 }
@@ -375,101 +370,38 @@ const OrderDetailsPrint: React.FC<OrderDetailsPrintProps> = ({ order, t, profile
                             // في حالة الخطأ، لا نطبق خصم
                           }
 
-                          const finalPrice = originalPrice - (discountAmount / item.quantity);
-                          
-                          if (hasDiscount && finalPrice < originalPrice) {
+                          if (hasDiscount && discountAmount > 0) {
+                            const basePrice = actualProductPrice || savedPrice;
+                            const finalPrice = basePrice - (discountAmount / item.quantity);
                             return (
                               <div>
-                                <span className="line-through text-gray-400 text-sm">{originalPrice.toFixed(2)} ₪</span>
+                                <span className="line-through text-gray-400 text-sm">{basePrice.toFixed(2)} ₪</span>
                                 <div className="text-green-600 font-bold">{finalPrice.toFixed(2)} ₪</div>
                               </div>
                             );
                           }
                           
-                          return `${originalPrice.toFixed(2)} ₪`;
+                          return `${savedPrice.toFixed(2)} ₪`;
                         })()}
                       </td>
                       <td className="p-2 text-center font-semibold">
                         {(() => {
-                          const originalPrice = getDisplayPrice(
-                            {
-                              id: product?.id || "",
-                              name: product?.name_ar || "",
-                              nameEn: product?.name_en || "",
-                              nameHe: product?.name_he || "",
-                              description: product?.description_ar || "",
-                              descriptionEn: product?.description_en || "",
-                              descriptionHe: product?.description_he || "",
-                              price: item.price,
-                              originalPrice: product?.original_price,
-                              wholesalePrice: product?.wholesale_price,
-                              image: product?.image || "",
-                              images: product?.images || [],
-                              category: "", // fallback
-                              inStock: typeof product?.in_stock === "boolean" ? product.in_stock : true,
-                              rating: product?.rating || 0,
-                              reviews: 0, // fallback
-                              discount: product?.discount,
-                              featured: product?.featured,
-                              tags: product?.tags || [],
-                              stock_quantity: product?.stock_quantity,
-                              active: product?.active,
-                              created_at: product?.created_at,
-                            },
-                            profile?.user_type,
-                          );
+                          const savedPrice = Number(item.price) || 0;
+                          const quantity = item.quantity || 0;
                           
-                          // التحقق من وجود خصم على هذا المنتج من العروض
-                          let hasDiscount = false;
-                          let discountAmount = 0;
-                          try {
-                            const appliedOffers = order.applied_offers 
-                              ? JSON.parse(order.applied_offers)
-                              : [];
-                            
-                            for (const offer of appliedOffers) {
-                              // للعروض العادية وعروض خصم المنتج
-                              if ((offer.offer?.offer_type === 'discount' || offer.offer?.offer_type === 'product_discount') 
-                                  && offer.affectedProducts && offer.affectedProducts.includes(item.product_id)) {
-                                hasDiscount = true;
-                                // حساب الخصم لهذا المنتج
-                                const totalAffectedValue = offer.affectedProducts.reduce((sum: number, productId: string) => {
-                                  const affectedItem = order.items.find((oi: any) => oi.product_id === productId);
-                                  if (affectedItem) {
-                                    return sum + (originalPrice * affectedItem.quantity);
-                                  }
-                                  return sum;
-                                }, 0);
-                                
-                                if (totalAffectedValue > 0) {
-                                  const itemValue = originalPrice * item.quantity;
-                                  const itemDiscountRatio = itemValue / totalAffectedValue;
-                                  discountAmount += (offer.discountAmount || 0) * itemDiscountRatio;
-                                }
-                              }
-                              
-                              // لعروض اشتري واحصل - فقط على المنتج المستهدف للخصم
-                              if (offer.offer?.offer_type === 'buy_get') {
-                                const getProductId = offer.offer?.get_product_id;
-                                const getDiscountType = offer.offer?.get_discount_type;
-                                
-                                // نطبق الخصم فقط على المنتج المستهدف وليس المنتج المطلوب شراؤه
-                                if (item.product_id === getProductId && getDiscountType !== 'free') {
-                                  hasDiscount = true;
-                                  // نطبق الخصم الكامل للعرض على هذا المنتج
-                                  discountAmount += offer.discountAmount || 0;
-                                }
-                              }
-                            }
-                          } catch (error) {
-                            // في حالة الخطأ، لا نطبق خصم
+                          // الحصول على السعر الحقيقي للمنتج من قاعدة البيانات
+                          const product = products.find((p) => p.id === item.product_id);
+                          let actualProductPrice = 0;
+                          if (product) {
+                            // مراعاة نوع العميل (retail/wholesale) باستخدام getDisplayPrice
+                            const userType = (order.profiles as any)?.user_type || 'retail';
+                            actualProductPrice = getDisplayPrice(product as any, userType);
                           }
-
-                          const finalPrice = originalPrice - (discountAmount / item.quantity);
-                          const finalTotal = finalPrice * item.quantity;
-                          const originalTotal = originalPrice * item.quantity;
                           
-                          if (hasDiscount && finalPrice < originalPrice) {
+                          // إذا كان السعر المحفوظ أقل من السعر الفعلي، يعني هناك خصم
+                          if (actualProductPrice > 0 && savedPrice < actualProductPrice) {
+                            const finalTotal = savedPrice * quantity;
+                            const originalTotal = actualProductPrice * quantity;
                             const savings = originalTotal - finalTotal;
                             return (
                               <div>
@@ -482,7 +414,72 @@ const OrderDetailsPrint: React.FC<OrderDetailsPrintProps> = ({ order, t, profile
                             );
                           }
                           
-                          return `${originalTotal.toFixed(2)} ₪`;
+                          // للطلبيات العادية (من الـ checkout) - استخدام الطريقة القديمة
+                          let hasDiscount = false;
+                          let discountAmount = 0;
+                          try {
+                            const appliedOffers = order.applied_offers 
+                              ? JSON.parse(order.applied_offers)
+                              : [];
+                            
+                            for (const offer of appliedOffers) {
+                              // للعروض العادية وعروض خصم المنتج
+                              if ((offer.offer?.offer_type === 'discount' || offer.offer?.offer_type === 'product_discount') 
+                                  && offer.affectedProducts && offer.affectedProducts.includes(item.product_id)) {
+                                hasDiscount = true;
+                                // حساب الخصم لهذا المنتج
+                                const totalAffectedValue = offer.affectedProducts.reduce((sum: number, productId: string) => {
+                                  const affectedItem = order.items.find((oi: any) => oi.product_id === productId);
+                                  if (affectedItem) {
+                                    const itemPrice = actualProductPrice || savedPrice;
+                                    return sum + (itemPrice * affectedItem.quantity);
+                                  }
+                                  return sum;
+                                }, 0);
+                                
+                                if (totalAffectedValue > 0) {
+                                  const itemPrice = actualProductPrice || savedPrice;
+                                  const itemValue = itemPrice * quantity;
+                                  const itemDiscountRatio = itemValue / totalAffectedValue;
+                                  discountAmount += (offer.discountAmount || 0) * itemDiscountRatio;
+                                }
+                              }
+                              
+                              // لعروض اشتري واحصل - فقط على المنتج المستهدف للخصم
+                              if (offer.offer?.offer_type === 'buy_get') {
+                                const getProductId = offer.offer?.get_product_id;
+                                const getDiscountType = offer.offer?.get_discount_type;
+                                
+                                // نطبق الخصم فقط على المنتج المستهدف وليس المنتج المطلوب شراؤه
+                                if (item.product_id === getProductId && getDiscountType !== 'free') {
+                                  hasDiscount = true;
+                                  // نطبق الخصم الكامل للعرض على هذا المنتج
+                                  discountAmount += offer.discountAmount || 0;
+                                }
+                              }
+                            }
+                          } catch (error) {
+                            // في حالة الخطأ، لا نطبق خصم
+                          }
+
+                          if (hasDiscount && discountAmount > 0) {
+                            const basePrice = actualProductPrice || savedPrice;
+                            const finalPrice = basePrice - (discountAmount / quantity);
+                            const finalTotal = finalPrice * quantity;
+                            const originalTotal = basePrice * quantity;
+                            const savings = originalTotal - finalTotal;
+                            return (
+                              <div>
+                                <span className="line-through text-gray-400 text-sm">{originalTotal.toFixed(2)} ₪</span>
+                                <div className="text-green-600 font-bold">{finalTotal.toFixed(2)} ₪</div>
+                                <div className="text-xs text-green-500">
+                                  ({t("saved") || "وفرت"}: {savings.toFixed(2)} ₪)
+                                </div>
+                              </div>
+                            );
+                          }
+                          
+                          return `${(savedPrice * quantity).toFixed(2)} ₪`;
                         })()}
                       </td>
                     </tr>

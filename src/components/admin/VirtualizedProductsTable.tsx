@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Edit, Trash, Eye } from "lucide-react";
 import { Product } from "@/types/product";
+import { useProductSalesCount } from "@/hooks/useProductSalesCount";
 import {
   AlertDialog,
   AlertDialogTrigger,
@@ -46,12 +47,22 @@ const PaginatedProductsTable: React.FC<PaginatedProductsTableProps> = ({
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
 
+  // حساب عدد المبيعات الحقيقي للمنتجات
+  const productIds = useMemo(() => products.map(p => p.id), [products]);
+  const { salesData, loading: salesLoading } = useProductSalesCount(productIds);
+
   // دالة لجلب اسم المنتج حسب اللغة
   const getProductName = (product: Product) => {
     if (language === "ar") return product.name;
     if (language === "en") return product.nameEn || product.name;
     if (language === "he") return product.nameHe || product.name;
     return product.name;
+  };
+
+  // دالة للحصول على بيانات المبيعات والتوزيعات
+  const getSalesData = (product: Product) => {
+    if (salesLoading) return { sales: product.sales_count ?? 0, free: 0, total: product.sales_count ?? 0 };
+    return salesData.get(product.id) ?? { sales: 0, free: 0, total: 0 };
   };
 
   // دالة لجلب اسم الفئة من id مع دعم التعدد اللغوي
@@ -139,7 +150,21 @@ const PaginatedProductsTable: React.FC<PaginatedProductsTableProps> = ({
                 <div className="flex flex-wrap items-center gap-2 mb-1">
                   <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">{getCategoryName(product.category || "")}</Badge>
                   <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">{formatPrice(product.price)}</Badge>
-                  <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">{t("salesCount")}: {product.sales_count ?? 0}</Badge>
+                  <Badge 
+                    variant="outline" 
+                    className={`text-xs border-purple-200 ${salesLoading ? 'bg-gray-50 text-gray-600' : 'bg-purple-50 text-purple-700'}`}
+                  >
+                    {salesLoading ? (
+                      `${t("salesCount")}: ...`
+                    ) : (
+                      <>
+                        {t("salesCount")}: {getSalesData(product).sales}
+                        {getSalesData(product).free > 0 && (
+                          <span className="text-green-600"> (+{getSalesData(product).free} مجاني)</span>
+                        )}
+                      </>
+                    )}
+                  </Badge>
                 </div>
                 
                 {/* Stock and Status Info */}
