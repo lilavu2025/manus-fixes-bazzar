@@ -129,10 +129,10 @@ export const useAdminUsers = () => {
     }
   };
 
-  // حذف مستخدم (كما هو: عبر Netlify Function)
+  // حذف مستخدم (مع fallback للتطوير)
   const deleteUser = async (userId: string) => {
-    let error = null;
     try {
+      // محاولة استخدام Netlify function أولاً (للإنتاج)
       const response = await fetch(
         "/.netlify/functions/delete-and-archive-user",
         {
@@ -145,19 +145,47 @@ export const useAdminUsers = () => {
           }),
         },
       );
-      const data = await response.json();
-      if (!response.ok) {
-        error = new Error(data.error || "فشل حذف المستخدم");
+
+      // إذا كانت الاستجابة ناجحة، استخدم الـ function
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          enhancedToast.adminSuccess('userDeleted');
+          refetch();
+          return;
+        }
       }
-    } catch (err) {
-      error = err;
-    }
-    if (error) {
-      enhancedToast.adminError('userDeleteFailed');
-      throw error;
-    } else {
+
+      // إذا فشلت الـ function (404 في التطوير أو مشكلة في الإنتاج)
+      // استخدم الحذف المباشر كـ fallback
+      console.warn("Netlify function غير متوفر، استخدام الحذف المباشر");
+      
+      // استيراد الدالة المباشرة
+      const { deleteUserDirectly } = await import('@/integrations/supabase/dataSenders');
+      const success = await deleteUserDirectly(userId);
+      
+      if (!success) {
+        throw new Error("فشل في حذف المستخدم");
+      }
+
+      // تسجيل النشاط
+      if (profile?.id) {
+        await logUserActivityMutation.mutateAsync({
+          adminId: profile.id,
+          userId,
+          action: "delete",
+          details: { deletedUser: true, method: "direct" },
+        });
+      }
+
       enhancedToast.adminSuccess('userDeleted');
-      refetch(); // تحديث القائمة بعد الحذف مباشرة
+      refetch();
+
+    } catch (err) {
+      console.error("خطأ في حذف المستخدم:", err);
+      const errorMessage = err instanceof Error ? err.message : "حدث خطأ غير متوقع";
+      enhancedToast.adminError('userDeleteFailed');
+      throw new Error(errorMessage);
     }
   };
 

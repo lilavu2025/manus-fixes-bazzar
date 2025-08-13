@@ -23,6 +23,7 @@ import {
   PackageOpen,
   UserPlus,
   Eye,
+  Gift,
 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
 import OrderStatusBadge from "@/components/ui/OrderStatusBadge";
@@ -46,6 +47,7 @@ import { mapOrderFromDb } from "../utils/orderUtils";
 import type { OrdersWithDetails } from "@/integrations/supabase/dataFetchers";
 import { decompressText } from "@/utils/commonUtils";
 import { ClearableInput } from "@/components/ui/ClearableInput";
+import { useProductsRealtime } from '@/hooks/useProductsRealtime';
 
 // أنواع الطلب وعناصر الطلب من Supabase
 type ProductDB = {
@@ -78,6 +80,7 @@ type OrderItemDB = {
   product_id: string;
   quantity: number;
   created_at: string;
+  product_name?: string; // Adding this field as optional
   products?: ProductDB;
 };
 
@@ -90,6 +93,7 @@ type OrderDB = Omit<Tables<"orders">, "items" | "shipping_address"> & {
 const Orders: React.FC = () => {
   const { t, isRTL, language } = useLanguage();
   const { user, profile } = useAuth();
+  const { products } = useProductsRealtime();
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [cancellingId, setCancellingId] = useState<string | null>(null);
@@ -535,109 +539,213 @@ const Orders: React.FC = () => {
                                 key={item.id}
                                 className="border-b hover:bg-gray-50"
                               >
-                                <td className="p-2 flex items-center gap-2">
-                                  <img
-                                    src={item.products?.image}
-                                    alt={
-                                      item.products?.name_ar ||
-                                      item.products?.name_en ||
-                                      item.products?.name_he ||
-                                      ""
-                                    }
-                                    className="w-10 h-10 object-cover rounded"
-                                  />
-                                  <span className="truncate">
-                                    {language === "ar"
-                                      ? item.products?.name_ar
-                                      : language === "he"
-                                      ? item.products?.name_he
-                                      : item.products?.name_en}
-                                  </span>
+                                <td className="p-2">
+                                  <div className="flex items-center gap-2">
+                                    <div 
+                                      className="w-10 h-10 bg-center bg-contain bg-no-repeat rounded border border-gray-200"
+                                      style={{ backgroundImage: `url(${item.products?.image})` }}
+                                    />
+                                    <div className="flex flex-col">
+                                      <span className="font-medium">
+                                        {language === "ar"
+                                          ? item.products?.name_ar
+                                          : language === "he"
+                                          ? item.products?.name_he
+                                          : item.products?.name_en || item.product_name}
+                                      </span>
+                                      <span className="text-xs text-gray-500 mt-0.5">
+                                        {language === "ar"
+                                          ? item.products?.description_ar
+                                          : language === "he"
+                                          ? item.products?.description_he
+                                          : item.products?.description_en}
+                                      </span>
+                                    </div>
+                                  </div>
                                 </td>
                                 <td className="p-2 text-center">
                                   {item.quantity}
                                 </td>
                                 <td className="p-2 text-center">
-                                  {getDisplayPrice(
-                                    {
-                                      id: item.products?.id || "",
-                                      name: item.products?.name_ar || "",
-                                      nameEn: item.products?.name_en || "",
-                                      nameHe: item.products?.name_he || "",
-                                      description:
-                                        item.products?.description_ar || "",
-                                      descriptionEn:
-                                        item.products?.description_en || "",
-                                      descriptionHe:
-                                        item.products?.description_he || "",
-                                      price: item.price,
-                                      originalPrice:
-                                        item.products?.original_price,
-                                      wholesalePrice:
-                                        item.products?.wholesale_price,
-                                      image: item.products?.image || "",
-                                      images: item.products?.images || [],
-                                      category: "", // fallback
-                                      inStock:
-                                        typeof item.products?.in_stock ===
-                                        "boolean"
-                                          ? item.products.in_stock
-                                          : true,
-                                      rating: item.products?.rating || 0,
-                                      reviews: 0, // fallback
-                                      discount: item.products?.discount,
-                                      featured: item.products?.featured,
-                                      tags: item.products?.tags || [],
-                                      stock_quantity:
-                                        item.products?.stock_quantity,
-                                      active: item.products?.active,
-                                      created_at: item.products?.created_at,
-                                    },
-                                    profile?.user_type,
-                                  )}{" "}
-                                  {t("currency")}
+                                  {(() => {
+                                    const savedPrice = Number(item.price) || 0;
+                                    
+                                    // الحصول على السعر الحقيقي للمنتج من قاعدة البيانات
+                                    const product = products.find((p) => p.id === item.product_id);
+                                    let actualProductPrice = 0;
+                                    if (product) {
+                                      // مراعاة نوع العميل (retail/wholesale) باستخدام getDisplayPrice
+                                      actualProductPrice = getDisplayPrice(product as any, profile?.user_type);
+                                    }
+                                    
+                                    // إذا كان السعر المحفوظ أقل من السعر الفعلي، يعني هناك خصم
+                                    if (actualProductPrice > 0 && savedPrice < actualProductPrice) {
+                                      return (
+                                        <div>
+                                          <span className="line-through text-gray-400 text-sm">{actualProductPrice.toFixed(2)} ₪</span>
+                                          <div className="text-green-600 font-bold">{savedPrice.toFixed(2)} ₪</div>
+                                        </div>
+                                      );
+                                    }
+                                    
+                                    // للطلبيات العادية (من الـ checkout) - استخدام الطريقة القديمة
+                                    let hasDiscount = false;
+                                    let discountAmount = 0;
+                                    try {
+                                      const appliedOffers = order.applied_offers 
+                                        ? (typeof order.applied_offers === 'string' 
+                                            ? JSON.parse(order.applied_offers) 
+                                            : order.applied_offers)
+                                        : [];
+                                      
+                                      for (const offer of appliedOffers) {
+                                        // للعروض العادية وعروض خصم المنتج
+                                        if ((offer.offer?.offer_type === 'discount' || offer.offer?.offer_type === 'product_discount') 
+                                            && offer.affectedProducts && offer.affectedProducts.includes(item.product_id)) {
+                                          hasDiscount = true;
+                                          // حساب الخصم لهذا المنتج
+                                          const totalAffectedValue = offer.affectedProducts.reduce((sum: number, productId: string) => {
+                                            const affectedItem = order.order_items?.find((oi: any) => oi.product_id === productId);
+                                            if (affectedItem) {
+                                              return sum + (savedPrice * affectedItem.quantity);
+                                            }
+                                            return sum;
+                                          }, 0);
+                                          
+                                          if (totalAffectedValue > 0) {
+                                            const itemValue = savedPrice * item.quantity;
+                                            const itemDiscountRatio = itemValue / totalAffectedValue;
+                                            discountAmount += (offer.discountAmount || 0) * itemDiscountRatio;
+                                          }
+                                        }
+                                        
+                                        // لعروض اشتري واحصل - فقط على المنتج المستهدف للخصم
+                                        if (offer.offer?.offer_type === 'buy_get') {
+                                          const getProductId = offer.offer?.get_product_id;
+                                          const getDiscountType = offer.offer?.get_discount_type;
+                                          
+                                          // نطبق الخصم فقط على المنتج المستهدف وليس المنتج المطلوب شراؤه
+                                          if (item.product_id === getProductId && getDiscountType !== 'free') {
+                                            hasDiscount = true;
+                                            // نطبق الخصم الكامل للعرض على هذا المنتج
+                                            discountAmount += offer.discountAmount || 0;
+                                          }
+                                        }
+                                      }
+                                    } catch (error) {
+                                      // في حالة الخطأ، لا نطبق خصم
+                                    }
+
+                                    if (hasDiscount && discountAmount > 0) {
+                                      const basePrice = actualProductPrice || savedPrice;
+                                      const finalPrice = basePrice - (discountAmount / item.quantity);
+                                      return (
+                                        <div>
+                                          <span className="line-through text-gray-400 text-sm">{basePrice.toFixed(2)} {t("currency")}</span>
+                                          <div className="text-green-600 font-bold">{finalPrice.toFixed(2)} {t("currency")}</div>
+                                        </div>
+                                      );
+                                    }
+                                    
+                                    return `${savedPrice.toFixed(2)} ${t("currency")}`;
+                                  })()}
                                 </td>
                                 <td className="p-2 text-center font-semibold">
-                                  {(
-                                    getDisplayPrice(
-                                      {
-                                        id: item.products?.id || "",
-                                        name: item.products?.name_ar || "",
-                                        nameEn: item.products?.name_en || "",
-                                        nameHe: item.products?.name_he || "",
-                                        description:
-                                          item.products?.description_ar || "",
-                                        descriptionEn:
-                                          item.products?.description_en || "",
-                                        descriptionHe:
-                                          item.products?.description_he || "",
-                                        price: item.price,
-                                        originalPrice:
-                                          item.products?.original_price,
-                                        wholesalePrice:
-                                          item.products?.wholesale_price,
-                                        image: item.products?.image || "",
-                                        images: item.products?.images || [],
-                                        category: "", // fallback
-                                        inStock:
-                                          typeof item.products?.in_stock ===
-                                          "boolean"
-                                            ? item.products.in_stock
-                                            : true,
-                                        rating: item.products?.rating || 0,
-                                        reviews: 0, // fallback
-                                        discount: item.products?.discount,
-                                        featured: item.products?.featured,
-                                        tags: item.products?.tags || [],
-                                        stock_quantity:
-                                          item.products?.stock_quantity,
-                                        active: item.products?.active,
-                                        created_at: item.products?.created_at,
-                                      },
-                                      profile?.user_type,
-                                    ) * item.quantity
-                                  ).toFixed(2)}{" "}
-                                  {t("currency")}
+                                  {(() => {
+                                    const savedPrice = Number(item.price) || 0;
+                                    const quantity = item.quantity || 0;
+                                    
+                                    // الحصول على السعر الحقيقي للمنتج من قاعدة البيانات
+                                    const product = products.find((p) => p.id === item.product_id);
+                                    let actualProductPrice = 0;
+                                    if (product) {
+                                      // مراعاة نوع العميل (retail/wholesale) باستخدام getDisplayPrice
+                                      actualProductPrice = getDisplayPrice(product as any, profile?.user_type);
+                                    }
+                                    
+                                    // إذا كان السعر المحفوظ أقل من السعر الفعلي، يعني هناك خصم
+                                    if (actualProductPrice > 0 && savedPrice < actualProductPrice) {
+                                      const finalTotal = savedPrice * quantity;
+                                      const originalTotal = actualProductPrice * quantity;
+                                      const savings = originalTotal - finalTotal;
+                                      return (
+                                        <div>
+                                          <span className="line-through text-gray-400 text-sm">{originalTotal.toFixed(2)} {t("currency")}</span>
+                                          <div className="text-green-600 font-bold">{finalTotal.toFixed(2)} {t("currency")}</div>
+                                          <div className="text-xs text-green-500">
+                                            ({t("saved") || "وفرت"}: {savings.toFixed(2)} {t("currency")})
+                                          </div>
+                                        </div>
+                                      );
+                                    }
+                                    
+                                    // للطلبيات العادية (من الـ checkout) - استخدام الطريقة القديمة
+                                    let hasDiscount = false;
+                                    let discountAmount = 0;
+                                    try {
+                                      const appliedOffers = order.applied_offers 
+                                        ? (typeof order.applied_offers === 'string' 
+                                            ? JSON.parse(order.applied_offers) 
+                                            : order.applied_offers)
+                                        : [];
+                                      
+                                      for (const offer of appliedOffers) {
+                                        // للعروض العادية وعروض خصم المنتج
+                                        if ((offer.offer?.offer_type === 'discount' || offer.offer?.offer_type === 'product_discount') 
+                                            && offer.affectedProducts && offer.affectedProducts.includes(item.product_id)) {
+                                          hasDiscount = true;
+                                          // حساب الخصم لهذا المنتج
+                                          const totalAffectedValue = offer.affectedProducts.reduce((sum: number, productId: string) => {
+                                            const affectedItem = order.order_items?.find((oi: any) => oi.product_id === productId);
+                                            if (affectedItem) {
+                                              return sum + (savedPrice * affectedItem.quantity);
+                                            }
+                                            return sum;
+                                          }, 0);
+                                          
+                                          if (totalAffectedValue > 0) {
+                                            const itemValue = savedPrice * item.quantity;
+                                            const itemDiscountRatio = itemValue / totalAffectedValue;
+                                            discountAmount += (offer.discountAmount || 0) * itemDiscountRatio;
+                                          }
+                                        }
+                                        
+                                        // لعروض اشتري واحصل - فقط على المنتج المستهدف للخصم
+                                        if (offer.offer?.offer_type === 'buy_get') {
+                                          const getProductId = offer.offer?.get_product_id;
+                                          const getDiscountType = offer.offer?.get_discount_type;
+                                          
+                                          // نطبق الخصم فقط على المنتج المستهدف وليس المنتج المطلوب شراؤه
+                                          if (item.product_id === getProductId && getDiscountType !== 'free') {
+                                            hasDiscount = true;
+                                            // نطبق الخصم الكامل للعرض على هذا المنتج
+                                            discountAmount += offer.discountAmount || 0;
+                                          }
+                                        }
+                                      }
+                                    } catch (error) {
+                                      // في حالة الخطأ، لا نطبق خصم
+                                    }
+
+                                    if (hasDiscount && discountAmount > 0) {
+                                      const basePrice = actualProductPrice || savedPrice;
+                                      const finalPrice = basePrice - (discountAmount / quantity);
+                                      const finalTotal = finalPrice * quantity;
+                                      const originalTotal = basePrice * quantity;
+                                      const savings = originalTotal - finalTotal;
+                                      return (
+                                        <div>
+                                          <span className="line-through text-gray-400 text-sm">{originalTotal.toFixed(2)} {t("currency")}</span>
+                                          <div className="text-green-600 font-bold">{finalTotal.toFixed(2)} {t("currency")}</div>
+                                          <div className="text-xs text-green-500">
+                                            ({t("saved") || "وفرت"}: {savings.toFixed(2)} {t("currency")})
+                                          </div>
+                                        </div>
+                                      );
+                                    }
+                                    
+                                    return `${(savedPrice * quantity).toFixed(2)} ${t("currency")}`;
+                                  })()}
                                 </td>
                               </tr>
                             ))
@@ -651,6 +759,155 @@ const Orders: React.FC = () => {
                               </td>
                             </tr>
                           )}
+                          
+                          {/* المنتجات المجانية */}
+                          {(() => {
+                            let allFreeItems = [];
+                            
+                            // الحصول على المنتجات المجانية من العروض المطبقة
+                            try {
+                              const appliedOffers = order.applied_offers 
+                                ? (typeof order.applied_offers === 'string' 
+                                    ? JSON.parse(order.applied_offers) 
+                                    : order.applied_offers)
+                                : [];
+                              
+                              appliedOffers.forEach((offer: any) => {
+                                if (offer.freeProducts && Array.isArray(offer.freeProducts)) {
+                                  allFreeItems = [...allFreeItems, ...offer.freeProducts];
+                                }
+                                if (offer.freeItems && Array.isArray(offer.freeItems)) {
+                                  allFreeItems = [...allFreeItems, ...offer.freeItems];
+                                }
+                              });
+                            } catch {}
+                            
+                            // إزالة المكررات
+                            const uniqueFreeItems = allFreeItems.reduce((acc: any[], current: any) => {
+                              const currentProductId = String(current.productId || current.product_id || current.id || '').trim();
+                              
+                              if (!currentProductId) return acc;
+                              
+                              const existing = acc.find(item => {
+                                const existingProductId = String(item.productId || item.product_id || item.id || '').trim();
+                                return existingProductId === currentProductId;
+                              });
+                              
+                              if (!existing) {
+                                acc.push(current);
+                              }
+                              return acc;
+                            }, []);
+                            
+                            return uniqueFreeItems.length > 0 && uniqueFreeItems.map((item: any, idx: number) => {
+                              // البحث عن المنتج في قاعدة البيانات مباشرة
+                              const product = products.find((p) => 
+                                p.id === item.productId || 
+                                p.id === item.product_id ||
+                                String(p.id) === String(item.productId) ||
+                                String(p.id) === String(item.product_id)
+                              );
+                              
+                              let productName = '';
+                              if (product) {
+                                productName = language === "ar" ? product.name_ar :
+                                            language === "he" ? product.name_he :
+                                            product.name_en || product.name_ar;
+                              }
+                              
+                              if (!productName) {
+                                productName = item.name_ar || item.name_en || item.name_he || 
+                                             item.name || item.productName || t("unknownProduct") || "منتج غير معروف";
+                              }
+                              
+                              if (!productName || productName.trim() === '') {
+                                return null;
+                              }
+                              
+                              const quantity = item.quantity || 1;
+                              
+                              // الحصول على السعر الأصلي
+                              let originalPrice = 0;
+                              if (product) {
+                                originalPrice = getDisplayPrice(
+                                  {
+                                    id: product.id || "",
+                                    name: product.name_ar || "",
+                                    nameEn: product.name_en || "",
+                                    nameHe: product.name_he || "",
+                                    description: product.description_ar || "",
+                                    descriptionEn: product.description_en || "",
+                                    descriptionHe: product.description_he || "",
+                                    price: product.price || 0,
+                                    originalPrice: product.original_price,
+                                    wholesalePrice: product.wholesale_price,
+                                    image: product.image || "",
+                                    images: product.images || [],
+                                    category: "",
+                                    inStock: typeof product.in_stock === "boolean" ? product.in_stock : true,
+                                    rating: product.rating || 0,
+                                    reviews: 0,
+                                    discount: product.discount,
+                                    featured: product.featured,
+                                    tags: product.tags || [],
+                                    stock_quantity: product.stock_quantity,
+                                    active: product.active,
+                                    created_at: product.created_at,
+                                  },
+                                  profile?.user_type,
+                                );
+                              } else {
+                                originalPrice = item.originalPrice || item.price || item.original_price || 0;
+                              }
+                              
+                              return (
+                                <tr key={`free-${idx}`} className="bg-green-50 border-green-200">
+                                  <td className="p-2">
+                                    <div className="flex items-center gap-2">
+                                      <div 
+                                        className="w-10 h-10 bg-center bg-contain bg-no-repeat rounded border border-gray-200"
+                                        style={{ backgroundImage: `url(${product?.image})` }}
+                                      />
+                                      <div className="flex flex-col">
+                                        <span className="font-medium text-green-800 flex items-center gap-1">
+                                          🎁 {productName}
+                                        </span>
+                                        <span className="text-xs text-green-600 mt-0.5">
+                                          {t("freeItem") || "منتج مجاني"} - {t("fromOffer") || "من العرض"}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="p-2 text-center font-bold text-green-700">
+                                    {quantity}
+                                  </td>
+                                  <td className="p-2 text-center">
+                                    {originalPrice > 0 ? (
+                                      <div>
+                                        <span className="line-through text-gray-400 text-sm">{originalPrice.toFixed(2)} {t("currency")}</span>
+                                        <div className="text-green-600 font-bold">{t("free") || "مجاني"}</div>
+                                      </div>
+                                    ) : (
+                                      <div className="text-green-600 font-bold">{t("free") || "مجاني"}</div>
+                                    )}
+                                  </td>
+                                  <td className="p-2 text-center font-semibold">
+                                    <div>
+                                      {originalPrice > 0 && (
+                                        <span className="line-through text-gray-400 text-sm">{(originalPrice * quantity).toFixed(2)} {t("currency")}</span>
+                                      )}
+                                      <div className="text-green-600 font-bold">0.00 {t("currency")}</div>
+                                      {originalPrice > 0 && (
+                                        <div className="text-xs text-green-500 mt-1">
+                                          💰 {t("saved") || "وفرت"}: {(originalPrice * quantity).toFixed(2)} {t("currency")}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            }).filter(Boolean);
+                          })()}
                         </tbody>
                       </table>
                     </div>
@@ -669,6 +926,57 @@ const Orders: React.FC = () => {
                         {t("viewOrderDetails") || "عرض تفاصيل الطلبية"}
                       </Button>
                     </div>
+                    
+                    {/* العروض المطبقة */}
+                    {(() => {
+                      try {
+                        const appliedOffers = order.applied_offers 
+                          ? (typeof order.applied_offers === 'string' 
+                              ? JSON.parse(order.applied_offers) 
+                              : order.applied_offers)
+                          : null;
+                        
+                        if (appliedOffers && appliedOffers.length > 0) {
+                          return (
+                            <div className="mt-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                              <h4 className="font-semibold text-orange-800 mb-2 flex items-center gap-2">
+                                <Gift className="h-4 w-4" />
+                                {t("appliedOffers") || "العروض المطبقة"}
+                              </h4>
+                              <div className="space-y-2">
+                                {appliedOffers.map((appliedOffer: any, index: number) => (
+                                  <div key={index} className="flex items-center justify-between bg-white p-2 rounded border border-orange-100">
+                                    <div className="flex-1">
+                                      <span className="text-sm font-medium text-orange-700">
+                                        {language === "ar" ? appliedOffer.offer?.title_ar : 
+                                         language === "he" ? appliedOffer.offer?.title_he : 
+                                         appliedOffer.offer?.title_en || "عرض خاص"}
+                                      </span>
+                                      <div className="text-xs text-orange-600">
+                                        {appliedOffer.offer?.offer_type === 'buy_get' ? t('buyGetOffer') || 'اشتري واحصل' : 
+                                         appliedOffer.offer?.offer_type === 'product_discount' ? t('productDiscount') || 'خصم على منتج' :
+                                         t('discount') || 'خصم'}
+                                      </div>
+                                    </div>
+                                    {appliedOffer.discountAmount > 0 && (
+                                      <div className="text-right">
+                                        <div className="text-sm font-bold text-orange-600">
+                                          -{appliedOffer.discountAmount.toFixed(2)} {t("currency")}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        }
+                        return null;
+                      } catch (error) {
+                        console.error('Error parsing applied offers:', error);
+                        return null;
+                      }
+                    })()}
                     
                     {/* ملخص الطلب */}
                     <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-2 mt-6 border-t pt-4">
@@ -736,13 +1044,94 @@ const Orders: React.FC = () => {
                             </div>
                           </>
                         ) : (
-                          /* السعر العادي بدون خصم */
-                          <div className="flex items-center gap-2 text-lg font-bold">
-                            <span>{t("orderTotal")}:</span>
-                            <span className="text-primary">
-                              {order.total?.toFixed(2) || "-"} {t("currency")}
-                            </span>
-                          </div>
+                          /* حساب خصم العروض وعرض السعر مثل OrderDetailsDialogSimple */
+                          (() => {
+                            // حساب إجمالي الخصم من العروض
+                            const appliedOffersData = order.applied_offers 
+                              ? (typeof order.applied_offers === 'string' 
+                                  ? JSON.parse(order.applied_offers) 
+                                  : order.applied_offers)
+                              : [];
+                            
+                            const totalOffersDiscount = appliedOffersData.reduce((sum: number, offer: any) => 
+                              sum + (offer.discountAmount || 0), 0);
+                            
+                            // حساب المجموع الكلي مع مراعاة الخصم اليدوي
+                            const subtotal = order.total || 0; // المجموع قبل الخصم اليدوي
+                            const hasManualDiscount = order.discount_type && order.discount_value > 0;
+                            const manualDiscountAmount = hasManualDiscount 
+                              ? (order.discount_type === 'percent' 
+                                  ? (subtotal * order.discount_value / 100) 
+                                  : order.discount_value)
+                              : 0;
+                              
+                            const finalTotal = hasManualDiscount && order.total_after_discount !== null
+                              ? order.total_after_discount
+                              : subtotal;
+                              
+                            const originalTotal = subtotal + totalOffersDiscount;
+                            const totalSavings = totalOffersDiscount + manualDiscountAmount;
+                            
+                            if (totalOffersDiscount > 0 || hasManualDiscount) {
+                              return (
+                                <div className="space-y-2">
+                                  {/* السعر الأصلي مشطوب */}
+                                  <div className="flex items-center gap-2 text-lg text-gray-500">
+                                    <span>{t("orderTotal")}:</span>
+                                    <span className="line-through">
+                                      {originalTotal.toFixed(2)} {t("currency")}
+                                    </span>
+                                  </div>
+                                  
+                                  {/* مجموع الخصومات */}
+                                  <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                                    {/* خصم العروض */}
+                                    {totalOffersDiscount > 0 && (
+                                      <div className="flex items-center justify-between text-sm">
+                                        <span className="font-medium text-green-700 flex items-center gap-1">
+                                          <Gift className="h-4 w-4" />
+                                          {t("offersDiscount") || "خصم العروض"}:
+                                        </span>
+                                        <span className="text-green-600 font-semibold">
+                                          -{totalOffersDiscount.toFixed(2)} {t("currency")}
+                                        </span>
+                                      </div>
+                                    )}
+                                    
+                                    {/* الخصم اليدوي */}
+                                    {hasManualDiscount && (
+                                      <div className="flex items-center justify-between text-sm">
+                                        <span className="font-medium text-green-700 flex items-center gap-1">
+                                          {order.discount_type === "percent" ? "%" : "₪"} 
+                                          {t("manualDiscount") || "الخصم اليدوي"}:
+                                        </span>
+                                        <span className="text-green-600 font-semibold">
+                                          -{manualDiscountAmount.toFixed(2)} {t("currency")}
+                                        </span>
+                                      </div>
+                                    )}
+                                    
+                                    {/* السعر النهائي */}
+                                    <div className="flex items-center justify-between text-base font-bold border-t border-green-200 pt-2 mt-2">
+                                      <span className="text-green-700">{t("totalAfterDiscount") || "الإجمالي بعد الخصم"}: </span>
+                                      <span className="text-green-600">
+                                        {finalTotal.toFixed(2)} {t("currency")}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            } else {
+                              return (
+                                <div className="flex items-center gap-2 text-lg font-bold">
+                                  <span>{t("orderTotal")}:</span>
+                                  <span className="text-primary">
+                                    {finalTotal.toFixed(2)} {t("currency")}
+                                  </span>
+                                </div>
+                              );
+                            }
+                          })()
                         )}
                       </div>
                       {canCancel(order) && (

@@ -22,6 +22,15 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
 }) => {
   const { isRTL } = useLanguage();
   const [inputValue, setInputValue] = useState(quantity.toString());
+  
+  // Calculate input width based on the number of digits
+  const getInputWidth = (value: string) => {
+    const digits = value.length;
+    // Base width + additional width per digit
+    const baseWidth = 3; // rem
+    const perDigitWidth = 0.6; // rem per digit
+    return Math.max(baseWidth, baseWidth + (digits - 1) * perDigitWidth);
+  };
 
   // Sync input value when quantity prop changes
   useEffect(() => {
@@ -94,7 +103,11 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
           e.stopPropagation();
           handleInputBlur();
         }}
-        className={`w-12 sm:w-16 text-center ${isRTL ? "text-right" : "text-left"}`}
+        className={`text-center ${isRTL ? "text-right" : "text-left"}`}
+        style={{ 
+          width: `${getInputWidth(inputValue)}rem`,
+          minWidth: '3rem'
+        }}
         min={min}
         max={max}
         dir={isRTL ? "rtl" : "ltr"}

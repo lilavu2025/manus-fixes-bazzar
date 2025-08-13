@@ -8,6 +8,9 @@ export const arTranslations = {
   storeSubtitle: "تسوق بثقة وراحة",
   readyText: "جاهز للاستخدام",
 
+  // Product Messages
+  exceededStockQuantity: "لا يمكن إضافة كمية أكثر من المخزون المتاح",
+
   // Navigation
   home: "الرئيسية",
   product: "المنتج",
@@ -345,6 +348,7 @@ export const arTranslations = {
 
   // Offers
   specialOffers: "عروض وخصومات خاصة",
+  specialOffer: "عرض خاص",
   productsOnSale: "منتجات في التخفيضات",
   limitedTimeOffers: "عروض لفترة محدودة",
   dontMissOut: "لا تفوت هذه الصفقات المذهلة!",
@@ -404,6 +408,7 @@ export const arTranslations = {
   errorLoadingData: "خطأ في تحميل البيانات",
   searchCategories: "ابحث في الفئات...",
   noCategoriesAvailable: "لا توجد فئات متاحة",
+  noItemsAvailable: "لا توجد عناصر متاحة",
   showing: "يتم عرض",
 
   // Product Actions
@@ -573,6 +578,10 @@ export const arTranslations = {
   titleArabic: "العنوان بالعربية",
   titleHebrew: "العنوان بالعبرية",
   discountPercent: "نسبة الخصم",
+  discountAmount: "مبلغ الخصم",
+  percentageDiscount: "خصم بالنسبة المئوية",
+  fixedAmountDiscount: "خصم بمبلغ ثابت",
+  invalidDiscountAmount: "مبلغ الخصم يجب أن يكون أكبر من 0",
   imageUrl: "رابط الصورة",
   startDate: "تاريخ البداية",
   endDate: "تاريخ النهاية",
@@ -720,7 +729,7 @@ export const arTranslations = {
   enterAdditionalNotesOptional: "أدخل ملاحظات إضافية (اختياري)",
   orderCreator: "منشئ الطلبية",
   orderCreatedFromAdminPanel:
-    "سيتم تمييز هذه الطلبية أنها أُنشئت من لوحة التحكم",
+    "تم إنشاء الطلب من قبل الأدمن",
   noFavorites: "لا يوجد منتجات مفضلة",
   addFavoritesHint: "أضف منتجات إلى المفضلة ليتم عرضها هنا",
   noFavoritesYet: "لم تقم بإضافة أي منتجات مفضلة بعد",
@@ -1247,4 +1256,81 @@ export const arTranslations = {
   paginationResults: "نتيجة",
   first: "الأول",
   last: "الأخير",
+  
+  // User Activity Labels
+  unknownUser: "مستخدم غير معروف",
+  unknownAdmin: "مدير غير معروف", 
+  emailNotAvailable: "البريد غير متوفر",
+  userUpdate: "تحديث بيانات المستخدم",
+  userDelete: "حذف المستخدم", 
+  userDisable: "تعطيل المستخدم",
+  userEnable: "تفعيل المستخدم",
+  createUser: "إنشاء مستخدم جديد",
+  userLogin: "دخول المستخدم",
+  userLogout: "خروج المستخدم",
+  profileUpdate: "تحديث الملف الشخصي",
+  userTypeChange: "تغيير نوع المستخدم",
+  userUnavailable: "مستخدم غير متوفر",
+
+  offerType: "نوع العرض",
+  regularDiscount: "خصم على كل المنتجات",
+  productDiscount: "خصم على منتج معين",
+  on: "على",
+  buyGetOffer: "اشترِ واحصل على عرض",
+  linkedProduct: "منتج مرتبط",
+  buyQuantity : "اشترِ كمية",
+  getProduct: "احصل على المنتج",
+  getDiscountType: "احصل على نوع الخصم",
+  discountPercentage: "نسبة الخصم",
+  fixedDiscount: "خصم ثابت",
+  getDiscount: "احصل على خصم",
+  getFree: "احصل على منتج مجاني",
+  buy: "اشترِ",
+
+  // نصوص العروض الإضافية
+  totalOffers: "إجمالي العروض",
+  appliedOffers: "العروض المطبقة",
+  youSave: "توفر",
+  offerAnalytics: "تحليلات العروض",
+  performanceScore: "نقاط الأداء",
+  usageCount: "عدد الاستخدامات",
+  totalDiscount: "إجمالي الخصم",
+  averageDiscount: "متوسط الخصم",
+  offerPerformance: "أداء العرض",
+  excellent: "ممتاز",
+  
+  // Product Details Offers
+  specialDiscount: "خصم خاص",
+  good: "جيد",
+  fair: "مقبول",
+  poor: "ضعيف",
+  noUsage: "لم يُستخدم بعد",
+  offText: "خصم",
+  offerValue: "قيمة",
+  offerStats: "إحصائيات العرض",
+  offerDiscount: "إجمالي الخصومات",
+  offerOrders: "عدد الطلبات",
+  offersDiscount: "خصم العروض",
+  overallStats: "الإحصائيات العامة",
+  activeOffers: "العروض النشطة", 
+  totalUsage: "إجمالي الاستخدامات",
+  totalSavings: "إجمالي التوفير",
+  bestPerformingOffer: "أفضل عرض أداءً",
+  expiringSoon: "تنتهي قريباً",
+  offersExpireWithinWeek: "عروض تنتهي خلال أسبوع",
+  usages: "مرات",
+  saved: "وفر",
+  moderate: "متوسط",
+  validFrom: "صالح من",
+  validTo: "صالح حتى",
+  performance: "الأداء",
+  freeItems: "عناصر مجانية",
+  freeItem: "عنصر مجاني",
+  fromOffer: "من العرض",
+  averageOrderValue: "متوسط قيمة الطلب",
+  conversionRate: "معدل التحويل",
+  statisticsPeriod: "فترة الإحصائيات",
+  value: "قيمة",
+
+  freeProductsDiscount: "خصم المنتجات المجانية"
 };

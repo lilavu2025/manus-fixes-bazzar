@@ -1,6 +1,7 @@
 import { OrderItem, NewOrderForm } from "./order.types";
+import { getDisplayPrice } from "@/utils/priceUtils";
 
-export function addOrderItemToForm(orderForm: NewOrderForm, products: any[], productId?: string): NewOrderForm {
+export function addOrderItemToForm(orderForm: NewOrderForm, products: any[], productId?: string, userType?: string): NewOrderForm {
   // إذا لم يتم تمرير productId، أضف عنصر فارغ كالسابق (للاستخدام في زر إضافة سطر فارغ)
   if (!productId) {
     const newItem: OrderItem = {
@@ -30,7 +31,30 @@ export function addOrderItemToForm(orderForm: NewOrderForm, products: any[], pro
       id: Date.now().toString(),
       product_id: productId,
       quantity: 1,
-      price: selectedProduct?.price || 0,
+      price: selectedProduct ? getDisplayPrice({
+        id: selectedProduct.id || "",
+        name: selectedProduct.name_ar || "",
+        nameEn: selectedProduct.name_en || "",
+        nameHe: selectedProduct.name_he || "",
+        description: selectedProduct.description_ar || "",
+        descriptionEn: selectedProduct.description_en || "",
+        descriptionHe: selectedProduct.description_he || "",
+        price: selectedProduct.price || 0,
+        originalPrice: selectedProduct.original_price,
+        wholesalePrice: selectedProduct.wholesale_price,
+        image: selectedProduct.image || "",
+        images: selectedProduct.images || [],
+        category: "",
+        inStock: typeof selectedProduct.in_stock === "boolean" ? selectedProduct.in_stock : true,
+        rating: selectedProduct.rating || 0,
+        reviews: 0,
+        discount: selectedProduct.discount,
+        featured: selectedProduct.featured,
+        tags: selectedProduct.tags || [],
+        stock_quantity: selectedProduct.stock_quantity,
+        active: selectedProduct.active,
+        created_at: selectedProduct.created_at,
+      }, userType || 'retail') : 0,
       product_name:
         selectedProduct?.name_ar ||
         selectedProduct?.name_en ||
@@ -56,7 +80,8 @@ export function updateOrderItemInForm(
   itemId: string,
   field: keyof OrderItem,
   value: string | number,
-  products: any[]
+  products: any[],
+  userType?: string
 ): NewOrderForm {
   // إذا كان التغيير هو product_id، تحقق إذا كان المنتج مكررًا في عنصر آخر
   if (field === "product_id") {
@@ -89,7 +114,30 @@ export function updateOrderItemInForm(
               selectedProduct.name_en ||
               selectedProduct.name_he ||
               selectedProduct.id;
-            updatedItem.price = selectedProduct.price;
+            updatedItem.price = getDisplayPrice({
+              id: selectedProduct.id || "",
+              name: selectedProduct.name_ar || "",
+              nameEn: selectedProduct.name_en || "",
+              nameHe: selectedProduct.name_he || "",
+              description: selectedProduct.description_ar || "",
+              descriptionEn: selectedProduct.description_en || "",
+              descriptionHe: selectedProduct.description_he || "",
+              price: selectedProduct.price || 0,
+              originalPrice: selectedProduct.original_price,
+              wholesalePrice: selectedProduct.wholesale_price,
+              image: selectedProduct.image || "",
+              images: selectedProduct.images || [],
+              category: "",
+              inStock: typeof selectedProduct.in_stock === "boolean" ? selectedProduct.in_stock : true,
+              rating: selectedProduct.rating || 0,
+              reviews: 0,
+              discount: selectedProduct.discount,
+              featured: selectedProduct.featured,
+              tags: selectedProduct.tags || [],
+              stock_quantity: selectedProduct.stock_quantity,
+              active: selectedProduct.active,
+              created_at: selectedProduct.created_at,
+            }, userType || 'retail');
           }
         }
         return updatedItem;

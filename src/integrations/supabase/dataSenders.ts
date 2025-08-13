@@ -4,6 +4,14 @@ import { supabase } from "./client";
 import type { Database, TablesInsert, TablesUpdate } from "./types";
 import type { Banner, ContactInfo } from "./dataFetchers";
 
+// ⬇️ خدمات المخزون والعروض (تأكّد من صحة المسار/الالياس @)
+import {
+  deductOrderItemsFromStock,
+  processOffersStockDeduction,
+  restoreFreeProductsStock,
+  updateFreeProductsStockOnEdit,
+} from "@/services/stockService";
+
 // مخزن مؤقت للطلبات المعلقة لمنع التكرار
 const pendingCartRequests = new Map<string, Promise<boolean>>();
 
@@ -86,25 +94,25 @@ export async function signUp(
   try {
     // تنظيف رقم الهاتف - تحويل string فارغ إلى null
     const cleanPhone = phone && phone.trim() !== '' ? phone.trim() : null;
-    
+
     console.log('Signup data:', { email, fullName, cleanPhone });
-    
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { 
-        data: { 
-          full_name: fullName, 
+      options: {
+        data: {
+          full_name: fullName,
           phone: cleanPhone
-        } 
+        }
       },
     });
-    
+
     if (error) {
       console.error('Supabase auth error:', error);
       throw error;
     }
-    
+
     console.log('Signup successful:', data);
     return data;
   } catch (error: unknown) {
@@ -131,7 +139,7 @@ export async function addToCart(
 ) {
   try {
     console.log(`Adding to cart: userId=${userId}, productId=${productId}, quantity=${quantity}`);
-    
+
     // تحقق إذا كان المنتج موجود مسبقاً
     const { data: existing, error: fetchError } = await supabase
       .from("cart")
@@ -139,9 +147,9 @@ export async function addToCart(
       .eq("user_id", userId)
       .eq("product_id", productId)
       .maybeSingle();
-    
+
     if (fetchError && fetchError.code !== "PGRST116") throw fetchError;
-    
+
     if (existing) {
       console.log(`Product exists in cart, updating quantity: ${existing.quantity} + ${quantity} = ${existing.quantity + quantity}`);
       await supabase
@@ -469,11 +477,29 @@ export async function updateOrderStatus(
       updateObj.cancelled_by_name =
         userMeta?.full_name || userMeta?.email || "أدمن";
     }
+
     const { error } = await supabase
       .from("orders")
       .update(updateObj)
       .eq("id", orderId);
     if (error) throw error;
+
+    // عند الإلغاء: إرجاع المنتجات المجانية فقط مرة واحدة
+    if (newStatus === "cancelled") {
+      console.log(`🎁 بدء إرجاع المنتجات المجانية للطلبية الملغية: ${orderId}`);
+      const freeStockResult = await restoreFreeProductsStock(orderId);
+      if (freeStockResult.success) {
+        console.log("✅ تم إرجاع المنتجات المجانية بنجاح");
+      } else {
+        console.warn("⚠️ خطأ أثناء إرجاع المنتجات المجانية:", freeStockResult.error);
+      }
+
+      // تحديث عدد المبيعات بعد إلغاء الطلبية
+      console.log("🔄 تحديث إحصائيات المبيعات بعد إلغاء الطلبية...");
+      await updateTopOrderedProducts();
+      console.log("✅ تم تحديث إحصائيات المبيعات");
+    }
+
     return true;
   } catch (err) {
     console.error("Error updating order status:", err);
@@ -483,28 +509,129 @@ export async function updateOrderStatus(
 
 // تحديث المنتجات الأكثر مبيعًا تلقائيًا بعد كل طلب جديد
 export async function updateTopOrderedProducts() {
-  // 1. احسب عدد مرات بيع كل منتج
-  const { data: orderItems, error: orderItemsError } = await supabase
-    .from('order_items')
-    .select('product_id, quantity');
-  if (orderItemsError) {
-    console.error('Error fetching order_items:', orderItemsError.message);
-    throw orderItemsError;
-  }
-  // حساب عدد مرات بيع كل منتج يدويًا
-  const salesCount = {};
-  for (const item of orderItems || []) {
-    if (!item.product_id) continue;
-    salesCount[item.product_id] = (salesCount[item.product_id] || 0) + (item.quantity || 0);
-  }
-  // ترتيب المنتجات حسب عدد المبيعات (مع تحويل القيم إلى أرقام)
-  const sorted = Object.entries(salesCount)
-    .sort((a, b) => Number(b[1]) - Number(a[1]));
-  // 3. حدث عمود top_ordered لجميع المنتجات
-  await supabase.from('products').update({ top_ordered: false, sales_count: 0 }).neq('top_ordered', false);
-  // 4. حدّث المنتجات الأكثر مبيعاً مع sales_count
-  for (const [productId, count] of sorted.slice(0, 10)) {
-    await supabase.from('products').update({ top_ordered: true, sales_count: count }).eq('id', productId);
+  try {
+    console.log('🔄 بدء تحديث إحصائيات المبيعات...');
+
+    // أولاً، دعنا نتحقق من هيكل جدول المنتجات
+    const { data: sampleProduct, error: sampleError } = await supabase
+      .from('products')
+      .select('*')
+      .limit(1)
+      .single();
+
+    if (sampleError) {
+      console.error('❌ خطأ في جلب عينة المنتج:', sampleError);
+    } else {
+      console.log('📋 هيكل المنتج:', Object.keys(sampleProduct || {}));
+      console.log('🔍 هل يحتوي على sales_count؟', 'sales_count' in (sampleProduct || {}));
+    }
+
+    // 1. احسب عدد مرات بيع كل منتج من الطلبات غير الملغاة فقط
+    const { data: orderItems, error: orderItemsError } = await supabase
+      .from('order_items')
+      .select(`
+        product_id, 
+        quantity,
+        order_id
+      `);
+
+    if (orderItemsError) {
+      console.error('Error fetching order_items:', orderItemsError.message);
+      throw orderItemsError;
+    }
+
+    // 2. جلب معلومات الطلبات للتحقق من الحالة
+    const { data: orders, error: ordersError } = await supabase
+      .from('orders')
+      .select('id, status');
+
+    if (ordersError) {
+      console.error('Error fetching orders:', ordersError.message);
+      throw ordersError;
+    }
+
+    // 3. إنشاء خريطة للطلبات وحالاتها
+    const orderStatusMap = new Map();
+    let cancelledOrdersCount = 0;
+    orders?.forEach(order => {
+      orderStatusMap.set(order.id, order.status);
+      if (order.status === 'cancelled') cancelledOrdersCount++;
+    });
+
+    console.log(`📊 إجمالي الطلبات: ${orders?.length || 0}`);
+    console.log(`❌ الطلبات الملغاة: ${cancelledOrdersCount}`);
+    console.log(`✅ الطلبات النشطة: ${(orders?.length || 0) - cancelledOrdersCount}`);
+
+    // 4. حساب عدد مرات بيع كل منتج (فقط من الطلبات غير الملغاة)
+    const salesCount: Record<string, number> = {};
+    let processedItems = 0;
+    let skippedItems = 0;
+    for (const item of orderItems || []) {
+      if (!item.product_id || !item.order_id) continue;
+
+      // تحقق من حالة الطلبية
+      const orderStatus = orderStatusMap.get(item.order_id);
+      if (orderStatus === 'cancelled') {
+        skippedItems++;
+        continue; // تجاهل المنتجات من الطلبات الملغاة
+      }
+
+      processedItems++;
+      salesCount[item.product_id] = (salesCount[item.product_id] || 0) + (item.quantity || 0);
+    }
+
+    console.log(`📦 إجمالي عناصر الطلبات: ${orderItems?.length || 0}`);
+    console.log(`✅ عناصر تم معالجتها: ${processedItems}`);
+    console.log(`❌ عناصر تم تجاهلها (من طلبات ملغاة): ${skippedItems}`);
+    console.log('📊 إحصائيات المبيعات المحسوبة:', Object.keys(salesCount).length, 'منتج');
+
+    // 5. ترتيب المنتجات حسب عدد المبيعات (مع تحويل القيم إلى أرقام)
+    const sorted = Object.entries(salesCount)
+      .sort((a, b) => Number(b[1]) - Number(a[1]));
+
+    console.log('🏆 أعلى 3 منتجات مبيعاً:', sorted.slice(0, 3));
+
+    // 6. تحديث المنتجات - أولاً نحاول تحديث top_ordered فقط
+    console.log('🔄 إعادة تعيين جميع المنتجات...');
+    const resetResult = await supabase.from('products').update({ top_ordered: false }).neq('top_ordered', false);
+    if (resetResult.error) {
+      console.error('❌ خطأ في إعادة تعيين المنتجات:', resetResult.error);
+    } else {
+      console.log('✅ تم إعادة تعيين المنتجات بنجاح');
+    }
+
+    // 7. تحديث أفضل المنتجات - سنحدث فقط top_ordered
+    console.log('🏆 تحديث أفضل 10 منتجات...');
+    for (const [productId] of sorted.slice(0, 10)) {
+      console.log(`- تحديث المنتج ${productId}`);
+      const updateResult = await supabase.from('products')
+        .update({ top_ordered: true })
+        .eq('id', productId);
+
+      if (updateResult.error) {
+        console.error(`❌ فشل تحديث top_ordered للمنتج ${productId}:`, updateResult.error);
+        continue;
+      }
+
+      console.log(`✅ تم تحديث top_ordered للمنتج ${productId}`);
+    }
+
+    // إعادة تعيين غير المتميّز (احتياطي، نفس القيمة false)
+    const topProductIds = sorted.slice(0, 10).map(([id]) => id);
+    const resetNonTopResult = await supabase.from('products')
+      .update({ top_ordered: false })
+      .not('id', 'in', `(${topProductIds.map(id => `'${id}'`).join(',')})`);
+
+    if (resetNonTopResult.error) {
+      console.warn('⚠️ تحذير: فشل إعادة تعيين المنتجات غير المتميزة:', resetNonTopResult.error);
+    } else {
+      console.log('✅ تم إعادة تعيين المنتجات غير المتميزة');
+    }
+
+    console.log('✅ تم الانتهاء من تحديث إحصائيات المبيعات');
+  } catch (error) {
+    console.error('❌ خطأ في تحديث إحصائيات المبيعات:', error);
+    throw error;
   }
 }
 
@@ -514,12 +641,15 @@ export async function addOrder(
   orderItems: Omit<TablesInsert<"order_items">, "order_id">[],
 ) {
   try {
+    // 1) إنشاء الطلب
     const { data: order, error: orderError } = await supabase
       .from("orders")
       .insert(orderInsertObj)
       .select()
       .single();
     if (orderError) throw orderError;
+
+    // 2) إدخال العناصر
     const itemsToInsert = orderItems.map((item) => ({
       ...item,
       order_id: order.id,
@@ -528,7 +658,22 @@ export async function addOrder(
       .from("order_items")
       .insert(itemsToInsert);
     if (itemsError) throw itemsError;
-    // تحديث المنتجات الأكثر مبيعًا بعد كل طلب جديد
+
+    // 3) خصم المخزون للعناصر العادية مرّة واحدة
+    try {
+      await deductOrderItemsFromStock(itemsToInsert, order.id);
+    } catch (e) {
+      console.warn("⚠️ تحذير: مشكلة في خصم مخزون العناصر العادية:", e);
+    }
+
+    // 4) خصم مخزون العناصر المجانية الناتجة عن العروض مرّة واحدة
+    try {
+      await processOffersStockDeduction(order.id, order.applied_offers as any, order.free_items as any);
+    } catch (e) {
+      console.warn("⚠️ تحذير: مشكلة في خصم مخزون العناصر المجانية:", e);
+    }
+
+    // 5) تحديث المنتجات الأكثر مبيعًا
     await updateTopOrderedProducts();
     return true;
   } catch (error) {
@@ -544,11 +689,27 @@ export async function editOrder(
   orderItems: Omit<TablesInsert<"order_items">, "order_id">[],
 ) {
   try {
+    // ✅ تحديث مخزون المنتجات المجانية فقط حسب الفروقات
+    // (تجنّب خصم/إرجاع العناصر العادية هنا حتى لا تتضاعف)
+    try {
+      const freeStockUpdate = await updateFreeProductsStockOnEdit(
+        editOrderId,
+        updateObj.applied_offers as any,
+        updateObj.free_items as any
+      );
+      console.log("📦 free stock on edit:", freeStockUpdate);
+    } catch (e) {
+      console.warn("⚠️ تحذير: مشكلة في تحديث مخزون المنتجات المجانية عند التعديل:", e);
+    }
+
+    // تحديث الطلب
     const { error } = await supabase
       .from("orders")
       .update(updateObj)
       .eq("id", editOrderId);
     if (error) throw error;
+
+    // إعادة بناء العناصر
     await supabase.from("order_items").delete().eq("order_id", editOrderId);
     if (orderItems.length > 0) {
       const itemsToInsert = orderItems.map((item) => ({
@@ -560,6 +721,7 @@ export async function editOrder(
         .insert(itemsToInsert);
       if (itemsError) throw itemsError;
     }
+
     return true;
   } catch (error) {
     console.error("Error editing order:", error);
@@ -570,12 +732,35 @@ export async function editOrder(
 // حذف طلب
 export async function deleteOrder(orderId: string) {
   try {
+    // ✅ إرجاع المنتجات المجانية قبل الحذف (مرة واحدة)
+    console.log(`🎁 بدء إرجاع المنتجات المجانية قبل حذف الطلبية: ${orderId}`);
+    try {
+      const freeStockResult = await restoreFreeProductsStock(orderId);
+      if (freeStockResult.success) {
+        console.log("✅ تم إرجاع المنتجات المجانية بنجاح قبل الحذف");
+      } else {
+        console.warn("⚠️ حدث خطأ في إرجاع المنتجات المجانية:", freeStockResult.error);
+      }
+    } catch (e) {
+      console.warn("⚠️ تحذير: مشكلة أثناء إرجاع المنتجات المجانية قبل الحذف:", e);
+    }
+
     // حذف العناصر المرتبطة أولاً
-    const { error: itemsError } = await supabase.from("order_items").delete().eq("order_id", orderId);
+    const { error: itemsError } = await supabase
+      .from("order_items")
+      .delete()
+      .eq("order_id", orderId);
     if (itemsError) throw itemsError;
+
     // ثم حذف الطلب نفسه
     const { error } = await supabase.from("orders").delete().eq("id", orderId);
     if (error) throw error;
+
+    // تحديث عدد المبيعات بعد حذف الطلبية
+    console.log("🔄 تحديث إحصائيات المبيعات بعد حذف الطلبية...");
+    await updateTopOrderedProducts();
+    console.log("✅ تم تحديث إحصائيات المبيعات");
+
     return true;
   } catch (error) {
     console.error("Error deleting order:", error);
@@ -616,7 +801,24 @@ export async function disableUserById(
   }
 }
 
-// تسجيل نشاط الأدمن على المستخدم
+// حذف مستخدم مباشرة (للاستخدام في التطوير فقط)
+// هذه الدالة تحذف المستخدم من profiles فقط ولا تؤرشف البيانات
+export async function deleteUserDirectly(userId: string): Promise<boolean> {
+  try {
+    // في وضع التطوير، نحذف المستخدم من جدول profiles مباشرة
+    const { error } = await supabase
+      .from("profiles")
+      .delete()
+      .eq("id", userId);
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error("Error deleting user directly:", error);
+    return false;
+  }
+}
+
+// تسجيل نشاط الأدمن على المستخدم مع حفظ معلومات الأدمن والمستخدم
 export async function logUserActivity(
   adminId: string,
   userId: string,
@@ -624,12 +826,47 @@ export async function logUserActivity(
   details: Record<string, unknown> = {},
 ): Promise<boolean> {
   try {
+    // جلب معلومات الأدمن
+    const { data: adminProfile } = await supabase
+      .from("profiles")
+      .select("full_name, email, phone")
+      .eq("id", adminId)
+      .single();
+
+    // جلب معلومات المستخدم المستهدف
+    let userProfile = null;
+    const { data: userFromProfiles } = await supabase
+      .from("profiles")
+      .select("full_name, email, phone")
+      .eq("id", userId)
+      .single();
+
+    if (userFromProfiles) {
+      userProfile = userFromProfiles;
+    } else {
+      // جرب من deleted_users
+      const { data: userFromDeleted } = await supabase
+        .from("deleted_users")
+        .select("full_name, email, phone")
+        .eq("user_id", userId)
+        .single();
+      if (userFromDeleted) {
+        userProfile = userFromDeleted;
+      }
+    }
+
     const { error } = await supabase.from("user_activity_log").insert([
       {
         admin_id: adminId,
         user_id: userId,
         action,
         details: details as any,
+        admin_name: adminProfile?.full_name || null,
+        admin_email: adminProfile?.email || null,
+        admin_phone: adminProfile?.phone || null,
+        target_user_name: userProfile?.full_name || null,
+        target_user_email: userProfile?.email || null,
+        target_user_phone: userProfile?.phone || null,
         created_at: new Date().toISOString(),
       },
     ]);
@@ -641,7 +878,7 @@ export async function logUserActivity(
   }
 }
 
-// تسجيل تحديث محدد مع القيم القديمة والجديدة
+// تسجيل تحديث محدد مع القيم القديمة والجديدة وحفظ معلومات الأدمن والمستخدم
 export async function logUserUpdateActivity(
   adminId: string,
   userId: string,
@@ -651,6 +888,35 @@ export async function logUserUpdateActivity(
   details: Record<string, unknown> = {},
 ): Promise<boolean> {
   try {
+    // جلب معلومات الأدمن
+    const { data: adminProfile } = await supabase
+      .from("profiles")
+      .select("full_name, email, phone")
+      .eq("id", adminId)
+      .single();
+
+    // جلب معلومات المستخدم المستهدف
+    let userProfile = null;
+    const { data: userFromProfiles } = await supabase
+      .from("profiles")
+      .select("full_name, email, phone")
+      .eq("id", userId)
+      .single();
+
+    if (userFromProfiles) {
+      userProfile = userFromProfiles;
+    } else {
+      // جرب من deleted_users
+      const { data: userFromDeleted } = await supabase
+        .from("deleted_users")
+        .select("full_name, email, phone")
+        .eq("user_id", userId)
+        .single();
+      if (userFromDeleted) {
+        userProfile = userFromDeleted;
+      }
+    }
+
     const { error } = await supabase.from("user_activity_log").insert([
       {
         admin_id: adminId,
@@ -660,6 +926,12 @@ export async function logUserUpdateActivity(
         old_value: oldValue?.toString() || null,
         new_value: newValue?.toString() || null,
         details: details as any,
+        admin_name: adminProfile?.full_name || null,
+        admin_email: adminProfile?.email || null,
+        admin_phone: adminProfile?.phone || null,
+        target_user_name: userProfile?.full_name || null,
+        target_user_email: userProfile?.email || null,
+        target_user_phone: userProfile?.phone || null,
         created_at: new Date().toISOString(),
       },
     ]);
@@ -719,11 +991,31 @@ export async function cancelUserOrder(
       cancelled_by_name:
         userMeta.full_name || userMeta.email || userMeta.displayName || "user",
     };
+
     const { error } = await supabase
       .from("orders")
       .update(updateObj)
       .eq("id", orderId);
     if (error) throw error;
+
+    // إرجاع المنتجات المجانية عند إلغاء الطلبية من قبل المستخدم (مرة واحدة)
+    console.log(`🎁 بدء إرجاع المنتجات المجانية للطلبية الملغية من قبل المستخدم: ${orderId}`);
+    try {
+      const freeStockResult = await restoreFreeProductsStock(orderId);
+      if (freeStockResult.success) {
+        console.log("✅ تم إرجاع المنتجات المجانية بنجاح");
+      } else {
+        console.warn("⚠️ حدث خطأ في إرجاع المنتجات المجانية:", freeStockResult.error);
+      }
+    } catch (e) {
+      console.warn("⚠️ تحذير: مشكلة أثناء إرجاع المنتجات المجانية:", e);
+    }
+
+    // تحديث عدد المبيعات بعد إلغاء الطلبية من قبل المستخدم
+    console.log('🔄 تحديث إحصائيات المبيعات بعد إلغاء الطلبية من قبل المستخدم...');
+    await updateTopOrderedProducts();
+    console.log('✅ تم تحديث إحصائيات المبيعات');
+
     return true;
   } catch (error) {
     console.error("Error cancelling user order:", error);
@@ -752,7 +1044,7 @@ export async function setCartQuantity(
   quantity: number,
 ) {
   const requestKey = `${userId}-${productId}`;
-  
+
   // إذا كان هناك طلب معلق لنفس المستخدم والمنتج، انتظره
   if (pendingCartRequests.has(requestKey)) {
     return await pendingCartRequests.get(requestKey)!;
@@ -761,13 +1053,13 @@ export async function setCartQuantity(
   const requestPromise = async (): Promise<boolean> => {
     try {
       console.log(`Setting cart quantity: userId=${userId}, productId=${productId}, quantity=${quantity}`);
-      
+
       if (quantity <= 0) {
         // إذا كانت الكمية 0 أو أقل، احذف المنتج
         await removeFromCart(userId, productId);
         return true;
       }
-      
+
       // تحقق إذا كان المنتج موجود مسبقاً
       const { data: existing, error: fetchError } = await supabase
         .from("cart")
@@ -775,9 +1067,9 @@ export async function setCartQuantity(
         .eq("user_id", userId)
         .eq("product_id", productId)
         .maybeSingle();
-      
+
       if (fetchError && fetchError.code !== "PGRST116") throw fetchError;
-      
+
       if (existing) {
         console.log(`Product exists, setting quantity to: ${quantity}`);
         await supabase
@@ -803,6 +1095,6 @@ export async function setCartQuantity(
 
   const promise = requestPromise();
   pendingCartRequests.set(requestKey, promise);
-  
+
   return await promise;
 }

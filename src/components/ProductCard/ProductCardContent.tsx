@@ -11,6 +11,8 @@ import QuantitySelector from "@/components/QuantitySelector";
 import { getLocalizedName, getLocalizedDescription } from "@/utils/getLocalizedName";
 import { getDisplayPrice } from "@/utils/priceUtils";
 import ProductCardBadges from "./ProductCardBadges";
+import ProductCardIncentives from "./ProductCardIncentives";
+import { toast } from "sonner";
 
 interface ProductCardContentProps {
   product: ProductFull;
@@ -61,6 +63,9 @@ const ProductCardContent: React.FC<ProductCardContentProps> = ({
         <div className="flex-shrink-0">
           <ProductCardBadges product={product} variant="belowName" />
         </div>
+
+        {/* تحفيزات العروض - متطابق مع صفحة التفاصيل */}
+        <ProductCardIncentives productId={product.id} />
 
         {/* وصف المنتج */}
         {description && (
@@ -133,8 +138,14 @@ const ProductCardContent: React.FC<ProductCardContentProps> = ({
             </span>
             <QuantitySelector
               quantity={quantity}
-              onQuantityChange={onQuantityChange}
-              max={99}
+              onQuantityChange={(newQuantity) => {
+                if (newQuantity > product.stock_quantity) {
+                  toast.error(t("exceededStockQuantity"));
+                } else {
+                  onQuantityChange(newQuantity);
+                }
+              }}
+              max={product.stock_quantity}
               min={1}
               disabled={!product.inStock || isLoading}
             />
@@ -146,7 +157,12 @@ const ProductCardContent: React.FC<ProductCardContentProps> = ({
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                onAddToCart();
+                const totalQuantityInCart = cartQuantity + quantity;
+                if (totalQuantityInCart > product.stock_quantity) {
+                  toast.error(t("exceededStockQuantity"));
+                } else {
+                  onAddToCart();
+                }
               }}
               disabled={!product.inStock || isLoading}
               className="w-full gap-1 sm:gap-2 font-semibold text-xs sm:text-sm py-1.5 sm:py-2"

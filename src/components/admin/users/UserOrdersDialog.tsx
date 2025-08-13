@@ -360,11 +360,12 @@ const UserOrdersDialog: React.FC<UserOrdersDialogProps> = ({
                       key={item.id}
                       className="rounded-lg border border-gray-100 bg-gray-50/60 p-3 flex flex-col sm:flex-row items-center gap-4 shadow-sm"
                     >
-                      <img
-                        src={item.products?.image || "/placeholder.svg"}
-                        alt={item.products?.name_ar}
-                        className="w-16 h-16 object-cover rounded mb-2 sm:mb-0 border border-gray-200"
-                      />
+                      <div className="w-16 h-16 rounded border border-gray-200 mb-2 sm:mb-0">
+                        <div
+                          className="w-full h-full bg-center bg-contain bg-no-repeat rounded"
+                          style={{ backgroundImage: `url(${item.products?.image || "/placeholder.svg"})` }}
+                        />
+                      </div>
                       <div className="flex-1 min-w-0 text-center sm:text-left">
                         <h4 className="font-medium truncate">
                           {language === "ar"

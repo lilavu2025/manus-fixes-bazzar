@@ -189,14 +189,14 @@ const AdminProductsTable: React.FC<AdminProductsTableProps> = ({
             {sortedProducts.map((product) => (
               <TableRow key={product.id}>
                 <TableCell>
-                  <img
-                    src={product.image || "/placeholder.svg"}
-                    alt={getProductName(product)}
-                    className="w-16 h-16 object-cover rounded-lg border shadow-sm bg-white mx-auto"
-                    onError={(e) => {
-                      e.currentTarget.src = "/placeholder.svg";
-                    }}
-                  />
+                  <div className="w-16 h-16 rounded-lg border shadow-sm bg-white mx-auto">
+                    <div
+                      className="w-full h-full bg-center bg-contain bg-no-repeat rounded-lg"
+                      style={{ 
+                        backgroundImage: `url(${product.image || "/placeholder.svg"})` 
+                      }}
+                    />
+                  </div>
                 </TableCell>
                 <TableCell className="font-medium max-w-[200px]">
                   <div className="product-name">

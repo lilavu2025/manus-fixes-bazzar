@@ -183,9 +183,16 @@ const ProductCardQuickView: React.FC<ProductCardQuickViewProps> = ({
             >
               <QuantitySelector
                 quantity={quantity}
-                onQuantityChange={onQuantityChange}
-                max={99}
+                onQuantityChange={(newQuantity) => {
+                  if (newQuantity > product.stock_quantity) {
+                    toast.error(t("exceededStockQuantity"));
+                  } else {
+                    onQuantityChange(newQuantity);
+                  }
+                }}
+                max={product.stock_quantity}
                 min={1}
+                disabled={!product.inStock}
               />
               <span className="text-sm sm:text-base text-gray-600 whitespace-nowrap">
                 {t("quantity")}:
@@ -194,7 +201,16 @@ const ProductCardQuickView: React.FC<ProductCardQuickViewProps> = ({
 
             <div className="flex gap-2">
               <Button
-                onClick={onAddToCart}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const totalQuantityInCart = cartQuantity + quantity;
+                  if (totalQuantityInCart > product.stock_quantity) {
+                    setTimeout(() => toast.error(t("exceededStockQuantity")), 0);
+                  } else {
+                    onAddToCart();
+                  }
+                }}
                 disabled={!product.inStock}
                 className="flex-1 gap-2"
                 variant={cartQuantity > 0 ? "secondary" : "default"}

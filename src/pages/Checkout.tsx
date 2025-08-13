@@ -20,6 +20,11 @@ import { compressText, decompressText } from "@/utils/commonUtils";
 import { getDisplayPrice } from "@/utils/priceUtils";
 import AddressSelector, { Address as UserAddress } from "@/components/addresses/AddressSelector";
 import { saveAddressIfNotExists } from "@/components/addresses/saveAddressIfNotExists";
+import { OfferService } from "@/services/offerService";
+import { deductOrderItemsFromStock, processOffersStockDeduction } from "@/services/stockService";
+import ProductPriceWithOffers from "@/components/ProductPriceWithOffers";
+import { Badge } from "@/components/ui/badge";
+import { Gift, Tag } from "lucide-react";
 
 // واجهة بيانات الشراء المباشر
 interface DirectBuyState {
@@ -88,6 +93,11 @@ const Checkout: React.FC = () => {
     apartment: "",
   });
   const [notes, setNotes] = useState("");
+  const [appliedOffers, setAppliedOffers] = useState<any[]>([]);
+  const [offersLoading, setOffersLoading] = useState(false);
+  const [originalTotal, setOriginalTotal] = useState(0);
+  const [discountAmount, setDiscountAmount] = useState(0);
+  const [freeItems, setFreeItems] = useState<any[]>([]);
 
   // تحديد العناصر المراد شراؤها (من السلة أو الشراء المباشر)
   const itemsToCheckout =
@@ -97,14 +107,58 @@ const Checkout: React.FC = () => {
         ? cartItems
         : state.items;
 
+  // تطبيق العروض على العناصر
+  useEffect(() => {
+    const applyOffersToCheckout = async () => {
+      if (itemsToCheckout.length === 0 || !user) return;
+
+      setOffersLoading(true);
+      try {
+        // تحويل العناصر إلى تنسيق يمكن للعروض فهمه
+        const cartItemsForOffers = itemsToCheckout.map(item => ({
+          id: `cart_${item.product.id}`,
+          product: item.product,
+          quantity: item.quantity
+        }));
+
+        const originalTotalCalc = cartItemsForOffers.reduce(
+          (sum: number, item) => sum + (getDisplayPrice(
+            normalizeProductForDisplay(item.product),
+            profile?.user_type
+          ) * item.quantity), 0
+        );
+        setOriginalTotal(originalTotalCalc);
+
+        // تطبيق العروض
+        const result = await OfferService.applyOffers(cartItemsForOffers, profile?.user_type);
+        setAppliedOffers(result.appliedOffers);
+        setDiscountAmount(result.totalDiscount);
+        setFreeItems(result.freeItems || []);
+      } catch (error) {
+        console.error("خطأ في تطبيق العروض:", error);
+      } finally {
+        setOffersLoading(false);
+      }
+    };
+
+    applyOffersToCheckout();
+  }, [itemsToCheckout, user, profile?.user_type]);
+
   // حساب السعر الإجمالي
-  const totalPrice =
-    (isDirectBuy && directProduct) || skipCart
+  const calculateTotal = () => {
+    const baseTotal = (isDirectBuy && directProduct) || skipCart
       ? getDisplayPrice(
           normalizeProductForDisplay(directProduct),
           profile?.user_type,
         ) * directQuantity
       : getTotalPrice();
+    
+    // إذا كان هناك خصم من العروض، نطبقه
+    return Math.max(0, baseTotal - discountAmount);
+  };
+
+  const totalPrice = calculateTotal();
+  const baseTotalForDisplay = originalTotal > 0 ? originalTotal : totalPrice + discountAmount;
 
   // عند اختيار عنوان من AddressSelector
   const handleAddressSelect = (addr: UserAddress) => {
@@ -161,12 +215,16 @@ const Checkout: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // إنشاء الطلب في قاعدة البيانات
+      // إنشاء الطلب في قاعدة البيانات مع معلومات العروض المطبقة
       const { data: order, error: orderError } = await supabase
         .from("orders")
         .insert({
           user_id: user.id,
           total: totalPrice,
+          original_total: baseTotalForDisplay,
+          discount_from_offers: discountAmount,
+          applied_offers: appliedOffers.length > 0 ? JSON.stringify(appliedOffers) : null,
+          free_items: freeItems.length > 0 ? JSON.stringify(freeItems) : null,
           payment_method: paymentMethod,
           shipping_address: JSON.stringify(shippingAddress),
           notes: notes ? compressText(notes) : null,
@@ -195,7 +253,7 @@ const Checkout: React.FC = () => {
         order_id: order.id,
         product_id: item.product.id,
         quantity: item.quantity,
-        price: item.product.price,
+        price: getDisplayPrice(item.product, profile?.user_type),
       }));
 
       const { error: itemsError } = await supabase
@@ -205,6 +263,19 @@ const Checkout: React.FC = () => {
       if (itemsError) {
         console.error("خطأ في إنشاء عناصر الطلب:", itemsError);
         throw itemsError;
+      }
+
+      // خصم المنتجات المجانية من المخزون (إن وجدت)
+      if (appliedOffers.length > 0) {
+        console.log("🎁 خصم المنتجات المجانية من العروض:", appliedOffers);
+        await processOffersStockDeduction(order.id, JSON.stringify(appliedOffers), JSON.stringify(freeItems));
+        console.log("✅ تم خصم المنتجات المجانية من المخزون");
+      }
+
+      // حفظ إحصائيات العروض المطبقة (مؤقتاً نستخدم جدول موجود)
+      if (appliedOffers.length > 0) {
+        // يمكن إضافة منطق حفظ الإحصائيات هنا بعد تحديث قاعدة البيانات
+        console.log('Applied offers saved with order:', appliedOffers);
       }
 
       // مسح السلة والتوجه لصفحة الطلبات (فقط إذا لم يكن شراء مباشر)
@@ -556,7 +627,7 @@ const Checkout: React.FC = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               {/* عرض المنتجات */}
-              <div className="space-y-3 max-h-64 overflow-y-auto">
+              <div className="space-y-3 max-h-128 overflow-y-auto">
                 {itemsToCheckout.map((item, index) => {
                   // Ensure all required Product fields are present for getDisplayPrice
                   const productForPrice = {
@@ -591,32 +662,179 @@ const Checkout: React.FC = () => {
                       key={item.product.id || `item-${index}`}
                       className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50"
                     >
-                      <img
-                        src={item.product.image}
-                        alt={item.product.name}
-                        className="w-12 h-12 object-cover rounded"
+                      <div 
+                        className="w-12 h-12 bg-center bg-contain bg-no-repeat rounded border border-gray-200 flex-shrink-0"
+                        style={{ backgroundImage: `url(${item.product.image})` }}
                       />
                       <div className="flex-1 min-w-0">
                         <h4 className="font-medium text-sm truncate">
                           {item.product.name}
                         </h4>
-                        <p className="text-xs text-gray-600">
-                          {item.quantity} ×{" "}
-                          {getDisplayPrice(productForPrice, profile?.user_type)}{" "}
-                          {t("currency")}
+                        {/* Product description */}
+                        <p className="text-gray-500 text-xs truncate mt-0.5">
+                          {item.product.description || item.product.descriptionEn || item.product.descriptionHe}
                         </p>
+                        <div>
+                          <div >
+                            <ProductPriceWithOffers 
+                              product={productForPrice}
+                              quantity={item.quantity}
+                              appliedDiscount={
+                                appliedOffers
+                                  .filter(offer => {
+                                    // للعروض العادية
+                                    if ((offer.offer as any).offer_type === 'discount' || (offer.offer as any).offer_type === 'product_discount') {
+                                      return offer.affectedProducts?.includes(item.product.id);
+                                    }
+                                    
+                                    // لعروض اشتري واحصل - فقط المنتج المستهدف للخصم
+                                    if ((offer.offer as any).offer_type === 'buy_get') {
+                                      const getProductId = (offer.offer as any).get_product_id;
+                                      const getDiscountType = (offer.offer as any).get_discount_type;
+                                      
+                                      // فقط إذا كان هذا المنتج هو المستهدف للخصم وليس منتج مجاني
+                                      return item.product.id === getProductId && getDiscountType !== 'free';
+                                    }
+                                    
+                                    return false;
+                                  })
+                                  .reduce((total, offer) => {
+                                    if ((offer.offer as any).offer_type === 'buy_get') {
+                                      // عرض اشتري واحصل - نطبق الخصم الكامل على المنتج المستهدف
+                                      return total + offer.discountAmount;
+                                    } else {
+                                      // عرض عادي - نحسب نسبة المنتج من إجمالي العرض
+                                      const productValue = getDisplayPrice(productForPrice, profile?.user_type) * item.quantity;
+                                      const totalOfferedProductsValue = offer.affectedProducts.reduce((sum, productId) => {
+                                        const checkoutItem = itemsToCheckout.find(ci => ci.product.id === productId);
+                                        if (checkoutItem) {
+                                          const itemProductForPrice = {
+                                            ...checkoutItem.product,
+                                            price: checkoutItem.product.price,
+                                            originalPrice: checkoutItem.product.originalPrice,
+                                            wholesalePrice: checkoutItem.product.wholesalePrice,
+                                          };
+                                          return sum + (getDisplayPrice(itemProductForPrice, profile?.user_type) * checkoutItem.quantity);
+                                        }
+                                        return sum;
+                                      }, 0);
+                                      
+                                      const productRatio = totalOfferedProductsValue > 0 ? productValue / totalOfferedProductsValue : 0;
+                                      return total + (offer.discountAmount * productRatio);
+                                    }
+                                  }, 0)
+                              }
+                              showOriginalPrice={true}
+                              reverseLayout={true}
+                              className="text-sm"
+                              showSavings={
+                                appliedOffers
+                                  .filter(offer => offer.affectedProducts?.includes(item.product.id))
+                                  .length > 0
+                              }
+                            />
+                          </div>
+                        </div>
+                        
+                        {/* عرض العروض المطبقة على هذا المنتج */}
+                        {appliedOffers.filter(offer => {
+                          // للعروض العادية
+                          if ((offer.offer as any).offer_type === 'discount' || (offer.offer as any).offer_type === 'product_discount') {
+                            return offer.affectedProducts?.includes(item.product.id);
+                          }
+                          
+                          // لعروض اشتري واحصل
+                          if ((offer.offer as any).offer_type === 'buy_get') {
+                            const linkedProductId = (offer.offer as any).linked_product_id;
+                            const getProductId = (offer.offer as any).get_product_id;
+                            const getDiscountType = (offer.offer as any).get_discount_type;
+                            
+                            // إظهار البادج على المنتج المحقق للشروط (بدون خصم)
+                            if (item.product.id === linkedProductId) {
+                              return true;
+                            }
+                            
+                            // إظهار البادج على المنتج المستهدف (مع خصم)
+                            if (item.product.id === getProductId && getDiscountType !== 'free') {
+                              return true;
+                            }
+                          }
+                          
+                          return false;
+                        }).map((appliedOffer, offerIndex) => {
+                          const offerType = (appliedOffer.offer as any).offer_type;
+                          const linkedProductId = (appliedOffer.offer as any).linked_product_id;
+                          const getProductId = (appliedOffer.offer as any).get_product_id;
+                          let offerText = (appliedOffer.offer as any).title_ar || (appliedOffer.offer as any).title_en || t("offer");
+                          
+                          // إذا كان عرض "اشتري واحصل" نوضح التفاصيل
+                          if (offerType === "buy_get") {
+                            const getDiscountType = (appliedOffer.offer as any).get_discount_type;
+                            const getDiscountValue = (appliedOffer.offer as any).get_discount_value;
+                            const buyQuantity = (appliedOffer.offer as any).buy_quantity || 1;
+                            
+                            if (item.product.id === linkedProductId) {
+                              // المنتج المحقق للشروط
+                              offerText = `${t("buyGetOffer")}: اشتري ${buyQuantity}`;
+                            } else if (item.product.id === getProductId) {
+                              // المنتج المستهدف للخصم
+                              if (getDiscountType === "percentage") {
+                                offerText = `${t("buyGetOffer")}: خصم ${getDiscountValue}%`;
+                              } else if (getDiscountType === "fixed") {
+                                offerText = `${t("buyGetOffer")}: خصم ${getDiscountValue} ${t("currency")}`;
+                              }
+                            }
+                          }
+                          
+                          return (
+                            <div key={offerIndex} className="mt-1">
+                              <Badge 
+                                variant="secondary" 
+                                className={`text-xs ${
+                                  item.product.id === linkedProductId 
+                                    ? 'bg-blue-100 text-blue-700' 
+                                    : 'bg-green-100 text-green-700'
+                                }`}
+                              >
+                                <Tag className="h-3 w-3 mr-1" />
+                                {offerText}
+                              </Badge>
+                            </div>
+                          );
+                        })}
                       </div>
-                      <p className="font-medium text-sm">
-                        {item.quantity *
-                          getDisplayPrice(
-                            productForPrice,
-                            profile?.user_type,
-                          )}{" "}
-                        {t("currency")}
-                      </p>
                     </div>
                   );
                 })}
+
+                {/* عرض العناصر المجانية */}
+                {freeItems.length > 0 && (
+                  <div className="border-t pt-3">
+                    <div className="text-xs font-medium text-green-800 mb-2 flex items-center gap-1">
+                      <Gift className="h-4 w-4" />
+                      {t("freeItems") || "عناصر مجانية"}
+                    </div>
+                    {freeItems.map((freeItem, index) => (
+                      <div key={index} className="flex items-center gap-3 p-2 rounded-lg bg-green-50 mb-1">
+                        <div 
+                          className="w-8 h-8 bg-center bg-contain bg-no-repeat rounded border border-green-200 flex-shrink-0"
+                          style={{ backgroundImage: `url(${freeItem.product.image})` }}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium text-green-800">
+                            {freeItem.product.name} x{freeItem.quantity}
+                          </div>
+                          <div className="text-xs text-green-600">
+                            {t("fromOffer") || "من العرض"} - {t("freeItem") || "عنصر مجاني"}
+                          </div>
+                        </div>
+                        <div className="text-sm font-medium text-green-600">
+                          {t("free") || "مجاناً"}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <Separator />
@@ -625,10 +843,24 @@ const Checkout: React.FC = () => {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span>{t("subtotal")}</span>
-                  <span>
-                    {totalPrice} {t("currency")}
+                  <span className={discountAmount > 0 ? "line-through text-gray-500" : ""}>
+                    {baseTotalForDisplay.toFixed(2)} {t("currency")}
                   </span>
                 </div>
+                
+                {/* عرض الخصومات من العروض */}
+                {discountAmount > 0 && (
+                  <div className="flex justify-between text-sm text-green-600">
+                    <span className="flex items-center gap-1">
+                      <Tag className="h-4 w-4" />
+                      {t("offersDiscount")}
+                    </span>
+                    <span>-{discountAmount.toFixed(2)} {t("currency")}</span>
+                  </div>
+                )}
+                
+
+                
                 <div className="flex justify-between text-sm">
                   <span>{t("shipping")}</span>
                   <span className="text-green-600">{t("free")}</span>
@@ -636,9 +868,16 @@ const Checkout: React.FC = () => {
                 <Separator />
                 <div className="flex justify-between items-center text-lg font-bold">
                   <span>{t("total")}</span>
-                  <span className="text-primary">
-                    {totalPrice} {t("currency")}
-                  </span>
+                  <div className="text-right">
+                    <span className="text-primary">
+                      {totalPrice.toFixed(2)} {t("currency")}
+                    </span>
+                    {discountAmount > 0 && (
+                      <div className="text-xs text-green-600 font-normal">
+                        {t("youSave")}: {discountAmount.toFixed(2)} {t("currency")}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 

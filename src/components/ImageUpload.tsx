@@ -218,10 +218,9 @@ const ImageUpload = ({
               key={index}
               className="relative group shadow-md rounded-xl border bg-white dark:bg-gray-800 hover:shadow-lg transition-all"
             >
-              <img
-                src={url}
-                alt={`Preview ${index + 1}`}
-                className="w-full h-28 object-cover rounded-t-xl border-b"
+              <div 
+                className="w-full h-28 bg-center bg-contain bg-no-repeat rounded-t-xl border-b"
+                style={{ backgroundImage: `url(${url})` }}
               />
               <div className="px-2 py-1 text-xs text-gray-600 dark:text-gray-300 flex flex-col gap-1 bg-gray-50 dark:bg-gray-900 rounded-b-xl">
                 <span>
@@ -253,10 +252,9 @@ const ImageUpload = ({
     } else if (typeof value === "string" && value) {
       return (
         <div className="relative group inline-block shadow-md rounded-xl border bg-white dark:bg-gray-800 hover:shadow-lg transition-all">
-          <img
-            src={value}
-            alt="Preview"
-            className="w-40 h-28 object-cover rounded-t-xl border-b"
+          <div 
+            className="w-40 h-28 bg-center bg-contain bg-no-repeat rounded-t-xl border-b"
+            style={{ backgroundImage: `url(${value})` }}
           />
           <div className="px-2 py-1 text-xs text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-900 rounded-b-xl">
             <a

@@ -1,12 +1,15 @@
 import React from "react";
 import { Card, CardHeader, CardContent } from "../../ui/card";
-import { Eye, Copy, UserPlus, XCircle } from "lucide-react";
+import { Eye, Copy, UserPlus, XCircle, Tag } from "lucide-react";
 import { Order, OrderItem, Address } from "@/orders/order.types";
 import { getPaymentMethodText, getStatusColor, safeDecompressNotes } from "@/orders/order.utils";
 import { mapOrderFromDb } from "@/orders/order.helpers";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { getDisplayPrice } from "@/utils/priceUtils";
 import OrderTotalDisplay from "@/components/OrderTotalDisplay";
+import OrderOffersDisplay from "@/components/orders/OrderOffersDisplay";
 
 interface OrderCardProps {
   order: Order;
@@ -92,7 +95,47 @@ const OrderCard: React.FC<OrderCardProps> = ({
             <div className="flex flex-wrap gap-2 items-center text-xs text-gray-500 mt-1">
               <span>{new Date(order.created_at).toLocaleDateString("en-GB")}</span>
               <span>|</span>
-              <OrderTotalDisplay order={order} t={t} />
+              {/* عرض الإجمالي مع خصم العروض والخصم اليدوي */}
+              {(() => {
+                const appliedOffersData = order.applied_offers 
+                  ? (typeof order.applied_offers === 'string' 
+                      ? JSON.parse(order.applied_offers) 
+                      : order.applied_offers)
+                  : [];
+                
+                const totalOffersDiscount = appliedOffersData.reduce((sum: number, offer: any) => 
+                  sum + (offer.discountAmount || 0), 0);
+                
+                // نحسب المجموع الكلي مع مراعاة الخصم اليدوي
+                const subtotal = order.total || 0; // المجموع قبل الخصم اليدوي
+                const hasManualDiscount = order.discount_type && order.discount_value > 0;
+                const manualDiscountAmount = hasManualDiscount 
+                  ? (order.discount_type === 'percent' 
+                      ? (subtotal * order.discount_value / 100) 
+                      : order.discount_value)
+                  : 0;
+                  
+                const finalTotal = hasManualDiscount && order.total_after_discount !== null
+                  ? order.total_after_discount
+                  : subtotal;
+                  
+                const originalTotal = subtotal + totalOffersDiscount;
+                const totalSavings = totalOffersDiscount + manualDiscountAmount;
+                
+                if (totalOffersDiscount > 0 || hasManualDiscount) {
+                  return (
+                    <span className="text-green-600 font-medium">
+                      <span className="line-through text-gray-500">{originalTotal.toFixed(2)}</span>
+                      {" "}
+                      <span>{finalTotal.toFixed(2)} {t("currency") || "₪"}</span>
+                      {" "}
+                      <span className="text-xs">({t("youSaved") || "وفرت"} {totalSavings.toFixed(2)})</span>
+                    </span>
+                  );
+                } else {
+                  return <span className="font-medium">{finalTotal.toFixed(2)} {t("currency") || "₪"}</span>;
+                }
+              })()}
               <span>|</span>
               <span>{getPaymentMethodText(order.payment_method, t)}</span>
               <span>|</span>
@@ -109,7 +152,119 @@ const OrderCard: React.FC<OrderCardProps> = ({
                 {t("orderNotes")}: {safeDecompressNotes(order.notes)}
               </div>
             )}
-            <div className="flex flex-wrap gap-2 text-xs text-gray-500"></div>
+            
+            {/* العروض المطبقة - عرض مبسط */}
+            {(() => {
+              // التحقق من وجود عروض أو عناصر مجانية أو خصم بشكل صحيح
+              const hasAppliedOffers = order.applied_offers && order.applied_offers.trim() !== '' && order.applied_offers !== '[]';
+              const hasFreeItems = order.free_items && order.free_items.trim() !== '' && order.free_items !== '[]';
+              const hasOffersDiscount = order.discount_from_offers && order.discount_from_offers > 0;
+              
+              if (!hasAppliedOffers && !hasFreeItems && !hasOffersDiscount) {
+                return null;
+              }
+              
+              return (
+                <div className="mt-3 p-3 bg-gradient-to-r from-green-50 to-blue-50 border-l-4 border-green-500 rounded-r-lg">
+                  
+                  {/* العناصر المجانية */}
+                  {(() => {
+                  try {
+                    let allFreeItems: any[] = [];
+                    
+                    // الحصول على المنتجات المجانية من العروض المطبقة أولاً
+                    if (order.applied_offers) {
+                      const appliedOffers = JSON.parse(order.applied_offers);
+                      appliedOffers.forEach((offer: any) => {
+                        if (offer.freeProducts && Array.isArray(offer.freeProducts)) {
+                          allFreeItems = [...allFreeItems, ...offer.freeProducts];
+                        }
+                        if (offer.freeItems && Array.isArray(offer.freeItems)) {
+                          allFreeItems = [...allFreeItems, ...offer.freeItems];
+                        }
+                      });
+                    }
+                    
+                    // إذا لم توجد منتجات مجانية في العروض، ابحث في order.free_items
+                    if (allFreeItems.length === 0 && order.free_items) {
+                      const freeItems = typeof order.free_items === 'string' ? JSON.parse(order.free_items) : order.free_items;
+                      if (Array.isArray(freeItems) && freeItems.length > 0) {
+                        allFreeItems = [...freeItems];
+                      }
+                    }
+                    
+                    // إزالة المكررات والعناصر بدون أسماء صحيحة
+                    const uniqueFreeItems = allFreeItems.reduce((acc: any[], current: any) => {
+                      const currentProductId = String(current.productId || current.product_id || current.id || '').trim();
+                      
+                      // تجاهل العناصر بدون معرف منتج
+                      if (!currentProductId) return acc;
+                      
+                      // الحصول على اسم المنتج
+                      let productName = '';
+                      productName = current.name_ar || current.name_en || current.name_he || current.name || current.productName || '';
+                      
+                      // تجاهل العناصر بدون اسم صحيح (أي التي ستصبح "منتج مجاني")
+                      if (!productName || productName.trim() === '') {
+                        return acc;
+                      }
+                      
+                      const existing = acc.find(item => {
+                        const existingProductId = String(item.productId || item.product_id || item.id || '').trim();
+                        return existingProductId === currentProductId;
+                      });
+                      
+                      if (!existing) {
+                        acc.push(current);
+                      }
+                      return acc;
+                    }, []);
+                    
+                    if (uniqueFreeItems.length === 0) {
+                      return null;
+                    }
+                    
+                    return (
+                      <div className="mb-2">
+                        <div className="text-xs text-blue-700 font-medium">🎁 عناصر مجانية:</div>
+                        <div className="text-sm text-blue-800 bg-blue-100 px-2 py-1 rounded mt-1">
+                          {(() => {
+                            const validItems = [];
+                            for (let i = 0; i < uniqueFreeItems.length; i++) {
+                              const item = uniqueFreeItems[i];
+                              let productName = item.name_ar || item.name_en || item.name_he || item.name || item.productName || '';
+                              
+                              if (productName && productName.trim() !== '') {
+                                const quantity = item.quantity || 1;
+                                validItems.push(
+                                  <div key={i}>
+                                    {productName} x{quantity}
+                                  </div>
+                                );
+                              }
+                            }
+                            return validItems;
+                          })()}
+                        </div>
+                      </div>
+                    );
+                  } catch {
+                    return null;
+                  }
+                })()}
+
+                {/* إجمالي الخصم */}
+                {order.discount_from_offers && order.discount_from_offers > 0 && (
+                  <div className="mt-2 pt-2 border-t border-green-200">
+                    <div className="flex justify-between items-center text-sm font-bold">
+                      <span className="text-orange-700">💰 إجمالي توفير من العروض:</span>
+                      <span className="text-orange-600 text-lg">-{order.discount_from_offers}₪</span>
+                    </div>
+                  </div>
+                )}
+                </div>
+              );
+            })()}
           </div>
           {/* أزرار التفاصيل والمشاركة */}
           <div className="flex flex-wrap gap-2 justify-center items-center mt-4 mb-2 w-full">

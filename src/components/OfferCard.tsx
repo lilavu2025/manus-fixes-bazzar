@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Percent, Calendar } from "lucide-react";
+import { Percent, Calendar, ShoppingCart, Gift } from "lucide-react";
 import LazyImage from "@/components/LazyImage";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,18 +11,52 @@ import {
 } from "@/components/ui/dialog";
 import { useLanguage } from "@/utils/languageContextUtils";
 import { useCart } from "@/hooks/useCart";
+import { useProductsRealtime } from "@/hooks/useProductsRealtime";
 import type { Database } from "@/integrations/supabase/types";
 import type { Product } from "@/types";
 
 interface OfferCardProps {
   offer: Database["public"]["Tables"]["offers"]["Row"];
+  showFullTitle?: boolean;
+  showDescriptionWithReadMore?: boolean;
+  equalHeight?: boolean;
 }
 
-const OfferCard: React.FC<OfferCardProps> = ({ offer }) => {
-  const { t } = useLanguage();
+const OfferCard: React.FC<OfferCardProps> = ({
+  offer,
+  showFullTitle,
+  showDescriptionWithReadMore,
+  equalHeight,
+}) => {
+  const { t, language } = useLanguage();
   const { addToCart } = useCart();
+  const { products: productsData } = useProductsRealtime();
   const [showDetails, setShowDetails] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [showMore, setShowMore] = useState(false);
+
+  // دالة لاختيار النص حسب اللغة الحالية
+  const getLocalizedText = (textAr: string, textEn: string, textHe: string) => {
+    switch (language) {
+      case 'en':
+        return textEn || textAr || textHe || "";
+      case 'he':
+        return textHe || textEn || textAr || "";
+      case 'ar':
+      default:
+        return textAr || textEn || textHe || "";
+    }
+  };
+
+  // دالة لتنسيق اسم المنتج حسب اللغة
+  const getProductDisplayName = (product: any) => {
+    if (!product) return "";
+    return getLocalizedText(product.name_ar, product.name_en, product.name_he);
+  };
+
+  // الحصول على معلومات المنتجات المرتبطة
+  const linkedProduct = productsData?.find(p => p.id === (offer as any).linked_product_id);
+  const getProduct = productsData?.find(p => p.id === (offer as any).get_product_id);
 
   // تحويل بيانات العرض إلى منتج متوافق مع السلة
   function offerToProduct(
@@ -30,13 +64,15 @@ const OfferCard: React.FC<OfferCardProps> = ({ offer }) => {
   ): Product {
     return {
       id: offer.id,
-      name: offer.title_ar || offer.title_en || "",
+      name: getLocalizedText(offer.title_ar, offer.title_en, offer.title_he),
       nameEn: offer.title_en || "",
       nameHe: offer.title_he || "",
-      description: offer.description_ar || "",
+      description: getLocalizedText(offer.description_ar, offer.description_en, offer.description_he),
       descriptionEn: offer.description_en || "",
       descriptionHe: offer.description_he || "",
-      price: offer.discount_percent || 0,
+      price: offer.discount_type === "fixed" 
+        ? (offer.discount_amount || 0) 
+        : (offer.discount_percentage || 0),
       originalPrice: undefined,
       wholesalePrice: undefined,
       image: offer.image_url,
@@ -45,7 +81,9 @@ const OfferCard: React.FC<OfferCardProps> = ({ offer }) => {
       inStock: true,
       rating: 0,
       reviews: 0,
-      discount: offer.discount_percent,
+      discount: offer.discount_type === "percentage" 
+        ? offer.discount_percentage 
+        : offer.discount_amount,
       featured: false,
       tags: [],
     };
@@ -57,33 +95,88 @@ const OfferCard: React.FC<OfferCardProps> = ({ offer }) => {
 
   return (
     <>
-      <div className="bg-white rounded-xl shadow-md p-4 flex flex-col items-center transition hover:shadow-lg group relative">
-        <LazyImage
-          src={offer.image_url}
-          alt={offer.title_ar || offer.title_en || t("specialOffer")}
-          className="w-full h-40 object-cover rounded mb-4 group-hover:scale-105 transition-transform duration-200"
+      <div
+        className={`bg-white rounded-xl shadow-md p-4 flex flex-col transition hover:shadow-lg group relative ${
+          equalHeight ? "h-full" : ""
+        }`}
+      >
+        <div 
+          className="w-full h-40 bg-center bg-contain bg-no-repeat rounded mb-4 group-hover:scale-105 transition-transform duration-200"
+          style={{ backgroundImage: `url(${offer.image_url})` }}
         />
-        <h3 className="text-xl font-bold mb-2 text-center w-full truncate">
-          {offer.title_ar || offer.title_en}
-        </h3>
-        <p className="text-gray-600 mb-2 text-center w-full line-clamp-2">
-          {offer.description_ar || offer.description_en}
-        </p>
-        <div className="flex items-center gap-2 mb-2">
-          <span className="text-lg font-bold text-primary">
-            {t("discount")}: {offer.discount_percent}%
-          </span>
+        
+        {/* المحتوى الذي يمكن أن يتمدد */}
+        <div className="flex flex-col flex-grow text-center">
+          <h3
+            className="text-xl font-bold mb-2 w-full text-center"
+          >
+            {getLocalizedText(offer.title_ar, offer.title_en, offer.title_he)}
+          </h3>
+          <p
+            className={`text-gray-600 mb-2 w-full ${
+              showDescriptionWithReadMore ? "" : "line-clamp-2"
+            }`}
+          >
+            {getLocalizedText(offer.description_ar, offer.description_en, offer.description_he)}
+            {showDescriptionWithReadMore && getLocalizedText(offer.description_ar, offer.description_en, offer.description_he).length > 100 && (
+              <span
+                className="text-primary cursor-pointer ml-2"
+                onClick={() => setShowMore(!showMore)}
+              >
+                {showMore ? t("showLess") : t("readMore")}
+              </span>
+            )}
+          </p>
+          <div className="flex items-center justify-center gap-2 mb-2">
+            {(offer as any).offer_type === "buy_get" ? (
+              <div className="text-center space-y-2">
+                <div className="flex items-center justify-center gap-2">
+                  <ShoppingCart className="h-4 w-4 text-blue-600" />
+                  <span className="text-sm font-bold text-blue-600">
+                    {t("buyGetOffer") || "اشتري واحصل"}
+                  </span>
+                </div>
+                <div className="text-sm text-gray-700">
+                  {t("buy") || "اشتري"} {(offer as any).buy_quantity || 1} {" "}
+                  {linkedProduct ? getProductDisplayName(linkedProduct) : (t("product") || "منتج")}
+                </div>
+                <div className="flex items-center justify-center gap-2">
+                  <Gift className="h-4 w-4 text-green-600" />
+                  <span className="text-sm font-bold text-green-600">
+                    {(offer as any).get_discount_type === "free" 
+                      ? (t("getFree") || "واحصل مجاناً على") 
+                      : `${t("getDiscount") || "واحصل على خصم"} ${(offer as any).get_discount_value}${(offer as any).get_discount_type === "percentage" ? "%" : " " + (t("currency") || "شيكل")}`
+                    }
+                  </span>
+                </div>
+                <div className="text-sm text-gray-700">
+                  {getProduct ? getProductDisplayName(getProduct) : (t("product") || "منتج")}
+                </div>
+              </div>
+            ) : (
+              <span className="text-lg font-bold text-primary">
+                {t("discount")}: {offer.discount_type === "percentage" 
+                  ? `${offer.discount_percentage}%` 
+                  : `${offer.discount_amount} ${t("currency") || "شيكل"}`
+                }
+              </span>
+            )}
+          </div>
+          <div className="text-sm text-gray-500 mb-4">
+            {t("validUntil")}:{" "}
+            {new Date(offer.end_date).toLocaleDateString("en-US", {
+              calendar: "gregory",
+            })}
+          </div>
         </div>
-        <div className="text-sm text-gray-500 mb-4">
-          {t("validUntil")}:{" "}
-          {new Date(offer.end_date).toLocaleDateString('en-US', { calendar: 'gregory' })}
-        </div>
+
+        {/* الزر مثبت في الأسفل */}
         <button
           onClick={(e) => {
             e.preventDefault();
             handleViewOffer();
           }}
-          className="mt-auto w-full bg-primary text-white rounded-lg py-2 font-bold hover:bg-primary/90 transition text-center block"
+          className="w-full bg-primary text-white rounded-lg py-2 font-bold hover:bg-primary/90 transition text-center block"
         >
           {t("viewOffer")}
         </button>
@@ -94,46 +187,88 @@ const OfferCard: React.FC<OfferCardProps> = ({ offer }) => {
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold mb-2 text-center">
-              {offer.title_ar || offer.title_en}
+              {getLocalizedText(offer.title_ar, offer.title_en, offer.title_he)}
             </DialogTitle>
             <DialogDescription className="text-center">
-              {offer.description_ar || offer.description_en}
+              {getLocalizedText(offer.description_ar, offer.description_en, offer.description_he)}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-6">
             {/* صورة العرض */}
             {offer.image_url && (
-              <div className="relative h-64 overflow-hidden rounded-lg">
-                <LazyImage
-                  src={offer.image_url}
-                  alt={offer.title_ar || offer.title_en || t("specialOffer")}
-                  className="w-full h-full object-cover"
-                />
-              </div>
+              <div 
+                className="relative h-64 bg-center bg-contain bg-no-repeat rounded-lg"
+                style={{ backgroundImage: `url(${offer.image_url})` }}
+              />
             )}
 
             {/* تفاصيل العرض */}
             <div className="space-y-4">
-              <div className="flex items-center justify-center gap-2">
-                <Percent className="h-6 w-6 text-primary" />
-                <span className="text-2xl font-bold text-primary">
-                  {offer.discount_percent} {t("discount")}
-                </span>
-              </div>
+              {(offer as any).offer_type === "buy_get" ? (
+                <div className="bg-gradient-to-r from-blue-50 to-green-50 p-4 rounded-lg">
+                  <div className="text-center space-y-3">
+                    <div className="flex items-center justify-center gap-2">
+                      <ShoppingCart className="h-5 w-5 text-blue-600" />
+                      <span className="text-lg font-bold text-blue-600">
+                        {t("buyGetOffer") || "اشتري واحصل"}
+                      </span>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="bg-blue-100 p-3 rounded-lg">
+                        <div className="text-sm text-blue-800 font-semibold mb-1">
+                          {t("buy") || "اشتري"}
+                        </div>
+                        <div className="text-lg font-bold text-blue-900">
+                          {(offer as any).buy_quantity || 1} × {" "}
+                          {linkedProduct ? getProductDisplayName(linkedProduct) : (t("product") || "منتج")}
+                        </div>
+                      </div>
+                      
+                      <div className="bg-green-100 p-3 rounded-lg">
+                        <div className="text-sm text-green-800 font-semibold mb-1">
+                          {(offer as any).get_discount_type === "free" 
+                            ? (t("getFree") || "احصل مجاناً على") 
+                            : `${t("getDiscount") || "احصل على خصم"} ${(offer as any).get_discount_value}${(offer as any).get_discount_type === "percentage" ? "%" : " " + (t("currency") || "شيكل")}`
+                          }
+                        </div>
+                        <div className="text-lg font-bold text-green-900">
+                          {getProduct ? getProductDisplayName(getProduct) : (t("product") || "منتج")}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center gap-2">
+                  <span className="text-2xl font-bold text-primary">
+                    {offer.discount_type === "percentage" 
+                      ? `${offer.discount_percentage}% ${t("discount")}` 
+                      : `${offer.discount_amount} ${t("currency") || "شيكل"} ${t("discount")}`
+                    }
+                  </span>
+                </div>
+              )}
 
               {/* تواريخ العرض */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
                 {offer.start_date && (
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4" />
-                    <span>{t("startDate")}: {new Date(offer.start_date).toLocaleDateString()}</span>
+                    <span>
+                      {t("startDate")}:{" "}
+                      {new Date(offer.start_date).toLocaleDateString()}
+                    </span>
                   </div>
                 )}
                 {offer.end_date && (
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4" />
-                    <span>{t("validUntil")}: {new Date(offer.end_date).toLocaleDateString()}</span>
+                    <span>
+                      {t("validUntil")}:{" "}
+                      {new Date(offer.end_date).toLocaleDateString()}
+                    </span>
                   </div>
                 )}
               </div>

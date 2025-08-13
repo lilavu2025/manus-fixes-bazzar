@@ -1,6 +1,6 @@
 import * as React from "react";
-import { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { ChevronLeft, ChevronRight, Play, Pause, Zap, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Banner } from "@/types";
 import LazyImage from "@/components/LazyImage";
@@ -14,16 +14,47 @@ interface BannerCarouselProps {
 
 const BannerCarousel: React.FC<BannerCarouselProps> = ({ banners }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [isHovered, setIsHovered] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState<boolean[]>(new Array(banners.length).fill(false));
+  const intervalRef = useRef<number | null>(null);
   const { t, isRTL } = useLanguage();
   const isMobile = useIsMobile();
 
+  // Auto-play logic with pause/play functionality
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % banners.length);
-    }, 5000);
+    if (isPlaying && !isHovered) {
+      intervalRef.current = setInterval(() => {
+        setCurrentSlide((prev) => (prev + 1) % banners.length);
+      }, 6000);
+    } else {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    }
 
-    return () => clearInterval(timer);
-  }, [banners.length]);
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [banners.length, isPlaying, isHovered]);
+
+  // Preload next image for smooth transitions
+  useEffect(() => {
+    const nextIndex = (currentSlide + 1) % banners.length;
+    const img = new Image();
+    img.src = banners[nextIndex]?.image;
+  }, [currentSlide, banners]);
+
+  const handleImageLoad = (index: number) => {
+    setImageLoaded(prev => {
+      const newState = [...prev];
+      newState[index] = true;
+      return newState;
+    });
+  };
 
   const nextSlide = () => {
     setCurrentSlide((prev) => (prev + 1) % banners.length);
@@ -31,6 +62,14 @@ const BannerCarousel: React.FC<BannerCarouselProps> = ({ banners }) => {
 
   const prevSlide = () => {
     setCurrentSlide((prev) => (prev - 1 + banners.length) % banners.length);
+  };
+
+  const togglePlayPause = () => {
+    setIsPlaying(!isPlaying);
+  };
+
+  const goToSlide = (index: number) => {
+    setCurrentSlide(index);
   };
 
   // إعداد السحب للبنرات
@@ -59,141 +98,303 @@ const BannerCarousel: React.FC<BannerCarouselProps> = ({ banners }) => {
 
   return (
     <div 
-      className="relative w-full h-48 sm:h-64 md:h-80 lg:h-96 rounded-xl overflow-hidden group select-none"
+      className="relative w-full h-64 sm:h-80 md:h-96 lg:h-[30rem] rounded-2xl overflow-hidden group select-none shadow-2xl border border-white/10"
       {...swipeHandlers}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       style={{ touchAction: 'manipulation' }}
     >
-      {/* تعريف الانيميشن داخل JSX */}
+      {/* Advanced CSS animations and effects */}
       <style>{`
-        @keyframes fadeInSlideUp {
+        @keyframes slideInFromRight {
           0% {
             opacity: 0;
-            transform: translateY(20px);
+            transform: translateX(60px) scale(0.95);
+          }
+          100% {
+            opacity: 1;
+            transform: translateX(0) scale(1);
+          }
+        }
+        
+        @keyframes slideInFromLeft {
+          0% {
+            opacity: 0;
+            transform: translateX(-60px) scale(0.95);
+          }
+          100% {
+            opacity: 1;
+            transform: translateX(0) scale(1);
+          }
+        }
+
+        @keyframes fadeInUp {
+          0% {
+            opacity: 0;
+            transform: translateY(40px);
           }
           100% {
             opacity: 1;
             transform: translateY(0);
           }
         }
-        .animate-fade-in {
-          animation: fadeInSlideUp 1s ease forwards;
-          animation-delay: 0.3s;
+
+        @keyframes scaleIn {
+          0% {
+            opacity: 0;
+            transform: scale(1.1);
+          }
+          100% {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+
+        @keyframes shimmer {
+          0% {
+            transform: translateX(-100%);
+          }
+          100% {
+            transform: translateX(100%);
+          }
+        }
+
+        @keyframes pulse {
+          0%, 100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.7;
+          }
+        }
+
+        .animate-slide-in-right {
+          animation: slideInFromRight 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+        }
+        
+        .animate-slide-in-left {
+          animation: slideInFromLeft 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+        }
+
+        .animate-fade-up {
+          animation: fadeInUp 1s ease-out forwards;
+          animation-delay: 0.4s;
+        }
+
+        .animate-scale-in {
+          animation: scaleIn 0.6s ease-out forwards;
+        }
+
+        .shimmer-effect::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+          animation: shimmer 2s infinite;
+          pointer-events: none;
+        }
+
+        .loading-skeleton {
+          background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+          background-size: 200% 100%;
+          animation: shimmer 1.5s infinite;
+        }
+
+        .glass-effect {
+          backdrop-filter: blur(12px);
+          background: rgba(0, 0, 0, 0.3);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-modern {
+          background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(255,255,255,0.2);
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .btn-modern:hover {
+          background: linear-gradient(135deg, rgba(255,255,255,0.2), rgba(255,255,255,0.1));
+          transform: scale(1.05) translateY(-2px);
+          box-shadow: 0 10px 25px rgba(0,0,0,0.3);
         }
       `}</style>
 
       {banners.map((banner, index) => (
         <div
           key={banner.id}
-          className={`absolute inset-0 transition-opacity duration-500 ${
-            index === currentSlide ? "opacity-100" : "opacity-0"
+          className={`absolute inset-0 transition-all duration-700 ease-in-out ${
+            index === currentSlide 
+              ? "opacity-100 z-20" 
+              : "opacity-0 z-10"
           }`}
         >
-          <LazyImage
-            src={banner.image}
-            alt={banner.title}
-            className="w-full h-full object-cover"
-            priority={index === 0}
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent" />
+          {/* Image with loading skeleton */}
+          <div className="relative w-full h-full">
+            {!imageLoaded[index] && (
+              <div className="absolute inset-0 loading-skeleton rounded-2xl" />
+            )}
+            <div
+              className={`w-full h-full bg-center bg-contain bg-no-repeat transition-all duration-700 ${
+                imageLoaded[index] ? 'animate-scale-in' : 'opacity-0'
+              }`}
+              style={{ backgroundImage: `url(${banner.image})` }}
+            />
+            {/* Hidden image for loading detection */}
+            <img
+              src={banner.image}
+              alt={banner.title}
+              onLoad={() => handleImageLoad(index)}
+              className="hidden"
+            />
+          </div>
 
-          <div className="absolute inset-0 flex items-center justify-start p-4 sm:p-6 md:p-8 pointer-events-none">
-            <div className="text-white max-w-xs sm:max-w-md animate-fade-in pointer-events-auto">
-              <div className="bg-black/30 sm:bg-black/70 rounded-lg p-1 sm:p-4 max-w-full">
-                <h2 className="text-lg sm:text-xl md:text-2xl lg:text-4xl font-bold mb-2 sm:mb-4">
+          {/* Multi-layer gradient overlay for depth - أخف */}
+          <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-black/20 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+          
+          {/* Content with minimal design */}
+          <div className={`absolute inset-0 flex items-end ${isRTL ? 'justify-end' : 'justify-start'} p-4 sm:p-6 md:p-8`}>
+            <div className={`text-white max-w-xs sm:max-w-md ${
+              index === currentSlide 
+                ? (isRTL ? 'animate-slide-in-left' : 'animate-slide-in-right')
+                : 'opacity-0'
+            }`}>
+              {/* تصميم مينيمال مع خلفية شفافة خفيفة */}
+              {/* <div className="bg-black/30 backdrop-blur-sm rounded-lg p-3 sm:p-4 space-y-2">
+                <h2 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold leading-tight">
                   {banner.title}
                 </h2>
-                <p className="text-sm sm:text-base md:text-lg lg:text-xl opacity-90 mb-3 sm:mb-6">
+                <p className="text-sm sm:text-base opacity-90 leading-relaxed">
                   {banner.subtitle}
                 </p>
-                {banner.link ? (
-                  <a
-                    href={banner.link}
-                    target={banner.link.startsWith("http") ? "_blank" : undefined}
-                    rel={banner.link.startsWith("http") ? "noopener" : undefined}
-                  >
-                    <Button
-                      size="sm"
-                      className="bg-primary hover:bg-primary/90 text-white font-semibold px-2 sm:px-6 md:px-8 text-xs sm:text-sm md:text-base"
+                
+                زر أنيق وصغير
+                {banner.link && (
+                  <div className="pt-2">
+                    <a
+                      href={banner.link}
+                      target={banner.link.startsWith("http") ? "_blank" : undefined}
+                      rel={banner.link.startsWith("http") ? "noopener" : undefined}
                     >
-                      {t("shopNow")}
-                    </Button>
-                  </a>
-                ) : (
-                  <Button
-                    size="sm"
-                    className="bg-primary hover:bg-primary/90 text-white font-semibold px-2 sm:px-6 md:px-8 text-xs sm:text-sm md:text-base"
-                    disabled
-                  >
-                    {t("shopNow")}
-                  </Button>
+                      <Button
+                        size="sm"
+                        className="bg-primary hover:bg-primary/90 text-white font-medium px-4 py-2 text-sm rounded-md shadow-md hover:shadow-lg transition-all duration-300"
+                      >
+                        {t("shopNow")} →
+                      </Button>
+                    </a>
+                  </div>
                 )}
-              </div>
+              </div> */}
             </div>
           </div>
         </div>
       ))}
 
-      {/* Navigation buttons - مخفية على الموبايل لأن السحب متوفر */}
+      {/* Modern navigation buttons for desktop */}
       {!isMobile && (
         <>
           <Button
             variant="ghost"
             size="icon"
             onClick={prevSlide}
-            className="absolute left-2 sm:left-4 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 sm:h-10 sm:w-10"
+            className={`absolute ${isRTL ? 'right-4' : 'left-4'} top-1/2 transform -translate-y-1/2 btn-modern text-white opacity-0 group-hover:opacity-100 transition-all duration-300 h-10 w-10 sm:h-12 sm:w-12 z-30`}
           >
-            <ChevronLeft className="h-4 w-4 sm:h-6 sm:w-6" />
+            {isRTL ? (
+              <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6" />
+            ) : (
+              <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
+            )}
           </Button>
 
           <Button
             variant="ghost"
             size="icon"
             onClick={nextSlide}
-            className="absolute right-2 sm:right-4 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 sm:h-10 sm:w-10"
+            className={`absolute ${isRTL ? 'left-4' : 'right-4'} top-1/2 transform -translate-y-1/2 btn-modern text-white opacity-0 group-hover:opacity-100 transition-all duration-300 h-10 w-10 sm:h-12 sm:w-12 z-30`}
           >
-            <ChevronRight className="h-4 w-4 sm:h-6 sm:w-6" />
+            {isRTL ? (
+              <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
+            ) : (
+              <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6" />
+            )}
           </Button>
         </>
       )}
 
-      {/* Navigation buttons للموبايل - تظهر دائماً */}
+      {/* Enhanced mobile navigation */}
       {isMobile && banners.length > 1 && (
         <>
           <Button
             variant="ghost"
             size="icon"
             onClick={prevSlide}
-            className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white transition-opacity h-8 w-8 z-10"
+            className={`absolute ${isRTL ? 'right-3' : 'left-3'} top-1/2 transform -translate-y-1/2 btn-modern text-white h-9 w-9 z-30 opacity-80`}
           >
-            <ChevronLeft className="h-4 w-4" />
+            {isRTL ? (
+              <ChevronRight className="h-4 w-4" />
+            ) : (
+              <ChevronLeft className="h-4 w-4" />
+            )}
           </Button>
 
           <Button
             variant="ghost"
             size="icon"
             onClick={nextSlide}
-            className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white transition-opacity h-8 w-8 z-10"
+            className={`absolute ${isRTL ? 'left-3' : 'right-3'} top-1/2 transform -translate-y-1/2 btn-modern text-white h-9 w-9 z-30 opacity-80`}
           >
-            <ChevronRight className="h-4 w-4" />
+            {isRTL ? (
+              <ChevronLeft className="h-4 w-4" />
+            ) : (
+              <ChevronRight className="h-4 w-4" />
+            )}
           </Button>
         </>
       )}
 
-      {/* Indicators مع نص توجيهي على الموبايل */}
-      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex flex-col items-center gap-2">
+      {/* Play/Pause control */}
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={togglePlayPause}
+        className="absolute top-4 right-4 btn-modern text-white opacity-0 group-hover:opacity-100 transition-all duration-300 h-8 w-8 z-30"
+      >
+        {isPlaying ? (
+          <Pause className="h-4 w-4" />
+        ) : (
+          <Play className="h-4 w-4" />
+        )}
+      </Button>
+
+      {/* Enhanced indicators with progress bars */}
+      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex flex-col items-center gap-3 z-30">
         <div className="flex gap-2">
           {banners.map((_, index) => (
             <button
               key={index}
-              onClick={() => setCurrentSlide(index)}
-              className={`w-3 h-3 rounded-full transition-all ${
+              onClick={() => goToSlide(index)}
+              className={`relative h-3 rounded-full transition-all duration-300 ${
                 index === currentSlide
-                  ? "bg-white"
-                  : "bg-white/50 hover:bg-white/70"
+                  ? "w-8 bg-white shadow-lg"
+                  : "w-3 bg-white/50 hover:bg-white/70"
               }`}
               aria-label={`Slide ${index + 1}`}
-            />
+            >
+              {index === currentSlide && isPlaying && (
+                <div className="absolute inset-0 bg-gradient-to-r from-primary to-primary/60 rounded-full animate-pulse" />
+              )}
+            </button>
           ))}
+        </div>
+        
+        {/* Slide counter */}
+        <div className="glass-effect px-3 py-1 rounded-full text-white text-xs font-medium">
+          {currentSlide + 1} / {banners.length}
         </div>
       </div>
     </div>

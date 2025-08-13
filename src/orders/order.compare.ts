@@ -51,7 +51,11 @@ export function getOrderEditChangesDetailed(
     const orig = origItemsMap.get(key);
     const edit = editItemsMap.get(key);
     if (!orig && edit) {
-      // منتج جديد أضيف
+      // منتج جديد أضيف - لكن تجاهل المنتجات المجانية إذا لم تتغير
+      if ((edit as any).is_free) {
+        // تجاهل المنتجات المجانية التي تمت إضافتها من العروض
+        return;
+      }
       changes.push({
         label: getProductName(edit),
         oldValue: '-',

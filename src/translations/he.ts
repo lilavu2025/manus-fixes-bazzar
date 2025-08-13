@@ -6,6 +6,9 @@ export const heTranslations = {
   storeDescription: config.descriptions.he,
   storeSubtitle: "קנה בביטחון ובנוחות",
   readyText: "מוכן לשימוש",
+  
+  // Product Messages
+  exceededStockQuantity: "כמות המלאי חורגת מהמותר",
 
   // Navigation
   home: "בית",
@@ -654,6 +657,10 @@ export const heTranslations = {
   offerDetails: "פרטי מבצע",
   dateAndStatus: "תאריך וסטטוס",
   discountPercent: "אחוז הנחה",
+  discountAmount: "סכום הנחה",
+  percentageDiscount: "הנחה באחוזים",
+  fixedAmountDiscount: "הנחה בסכום קבוע",
+  invalidDiscountAmount: "סכום ההנחה חייב להיות גדול מ-0",
   imageUrl: "כתובת URL של תמונה",
   startDate: "תאריך התחלה",
   endDate: "תאריך סיום",
@@ -1024,6 +1031,7 @@ export const heTranslations = {
   defaultAddress: "כתובת לא צוינה",
   errorLoadingData: "שגיאה בטעינת נתונים",
   noCategoriesAvailable: "אין קטגוריות זמינות",
+  noItemsAvailable: "אין פריטים זמינים",
   tracking: "מעקב",
   searchByCustomerOrOrder: "חפש לפי לקוח או הזמנה",
   fillAllRequiredFieldsCarefully: "אנא מלא את כל השדות הנדרשים בקפידה",
@@ -1244,4 +1252,29 @@ export const heTranslations = {
   paginationResults: "תוצאות",
   first: "ראשון",
   last: "אחרון",
+
+  offerType: "סוג מבצע",
+  regularDiscount: "הנחה על כל המוצרים",
+  buyGetOffer: "קנה וקבל",
+  linkedProduct: "מוצר מקושר",
+  buyQuantity : "קנה כמות",
+  getProduct: "קבל מוצר",
+  getDiscountType: "קבל סוג הנחה",
+  discountPercentage: "אחוז הנחה",
+  fixedDiscount: "הנחה קבועה",
+  getDiscount: "קבל הנחה",
+  getFree: "קבל מוצר חינם",
+  buy: "קנה",
+  freeItems: "פריטים חינמיים",
+  freeItem: "פריט חינמי",
+  fromOffer: "מהמבצע",
+  totalDiscount: "סה״כ הנחה",
+  averageOrderValue: "ערך הזמנה ממוצע",
+  conversionRate: "שיעור המרה",
+  offersDiscount: "הנחת מבצעים",
+  appliedOffers: "מבצעים מוחלים",
+  youSave: "אתה חוסך",
+  statisticsPeriod: "תקופת סטטיסטיקות",
+  freeProductsDiscount: "הנחת מוצרים חינמיים",
+
 };

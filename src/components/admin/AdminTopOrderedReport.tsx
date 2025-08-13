@@ -39,10 +39,12 @@ const AdminTopOrderedReport = () => {
           className="ml-4 text-xs border-[hsl(var(--secondary))] text-[hsl(var(--primary))] hover:bg-[hsl(var(--secondary))]"
           onClick={async () => {
             try {
+              console.log('🔄 بدء تحديث المنتجات الأكثر مبيعاً...');
               await updateTopOrderedProducts();
               toast.success(t("updatedTopSelling"));
               window.location.reload();
             } catch (e) {
+              console.error('❌ خطأ في تحديث المنتجات:', e);
               toast.error(t("error"));
             }
           }}
@@ -89,21 +91,40 @@ const AdminTopOrderedReport = () => {
                         <td>{idx + 1}</td>
                         <td>
                           {product.image ? (
-                            <img
-                              src={product.image}
-                              alt={product.name}
-                              className="w-12 h-12 object-cover rounded"
-                            />
+                            <div className="w-12 h-12 rounded">
+                              <div
+                                className="w-full h-full bg-center bg-contain bg-no-repeat rounded"
+                                style={{ backgroundImage: `url(${product.image})` }}
+                              />
+                            </div>
                           ) : (
                             <span className="text-gray-400">-</span>
                           )}
                         </td>
                         <td className="font-medium text-gray-800">
-                          {language === "ar" 
-                            ? product.name 
-                            : language === "he" 
-                            ? product.nameHe 
-                            : product.nameEn}
+                          <div>
+                            <div className="font-medium">
+                              {language === "ar" 
+                                ? product.name 
+                                : language === "he" 
+                                ? product.nameHe 
+                                : product.nameEn}
+                            </div>
+                            <div className="text-sm text-gray-500 mt-1">
+                              {(() => {
+                                const description = language === "ar" 
+                                  ? product.description 
+                                  : language === "he" 
+                                  ? product.descriptionHe 
+                                  : product.descriptionEn;
+                                
+                                // تحديد طول الوصف إلى 100 حرف
+                                return description.length > 100 
+                                  ? `${description.substring(0, 100)}...` 
+                                  : description;
+                              })()}
+                            </div>
+                          </div>
                         </td>
                         <td>{product.stock_quantity}</td>
                         <td>{product.inStock ? t("inStock") : t("outOfStock")}</td>

@@ -185,10 +185,9 @@ const BannerCard = ({
       <div className="relative">
         {banner.image ? (
           <div className="aspect-video bg-gray-100 overflow-hidden">
-            <img
-              src={banner.image}
-              alt={bannerTitle || t("banner") || "البانر"}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            <div
+              className="w-full h-full bg-center bg-contain bg-no-repeat group-hover:scale-105 transition-transform duration-300"
+              style={{ backgroundImage: `url(${banner.image})` }}
             />
           </div>
         ) : (
@@ -359,6 +358,7 @@ const BannerForm = ({
               en: "Enter banner title",
               he: "הכנס כותרת באנר"
             }}
+            required={false}
           />
           
           <MultiLanguageField
@@ -379,6 +379,7 @@ const BannerForm = ({
               he: "הכנס תיאור באנר"
             }}
             rows={3}
+            required={false}
           />
         </CardContent>
       </Card>
