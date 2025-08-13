@@ -261,7 +261,7 @@ const AdminOrders: React.FC = () => {
   };
 
   // ================= Add Order =================
-  const handleAddOrder = async () => {
+  const handleAddOrder = async (payload?: { items: any[]; applied_offers: any[]; free_items: any[]; totalDiscount: number }) => {
     try {
       setIsAddingOrder(true);
       if (!orderForm.user_id && !allowCustomClient) {
@@ -280,12 +280,17 @@ const AdminOrders: React.FC = () => {
         return;
       }
 
-      // Canonical summary
-      const { applied_offers, free_items } = summarizeOffersForSave(orderForm.items);
+  // العروض: إن تم تمرير payload من الدايالوج نستخدمه مباشرة، وإلا نستخدم ما في الفورم أو نلخّص
+  const baseItems = Array.isArray(payload?.items) && payload!.items.length > 0 ? payload!.items : orderForm.items;
+  const hasDialogApplied = Array.isArray(payload?.applied_offers) && payload!.applied_offers.length > 0;
+  const hasDialogFree = Array.isArray(payload?.free_items) && payload!.free_items.length > 0;
+  const summarized = summarizeOffersForSave(baseItems);
+  const applied_offers = hasDialogApplied ? payload!.applied_offers : summarized.applied_offers;
+  const free_items = hasDialogFree ? payload!.free_items : summarized.free_items;
       const total = calculateOrderTotalWithFreeItems(orderForm.items);
 
       const orderInsertObj: any = {
-        items: orderForm.items as any,
+  items: baseItems as any,
         total,
         status: orderForm.status,
         payment_method: orderForm.payment_method,
@@ -306,8 +311,8 @@ const AdminOrders: React.FC = () => {
                   : Math.max(total - orderForm.discountValue, 0),
             }
           : {}),
-        applied_offers: JSON.stringify(applied_offers || []),
-        free_items: JSON.stringify(free_items || []),
+  applied_offers: JSON.stringify(applied_offers || []),
+  free_items: JSON.stringify(free_items || []),
       };
 
       const orderItems = orderForm.items
@@ -376,8 +381,12 @@ const AdminOrders: React.FC = () => {
       }, 0);
       const discount_from_offers = Math.max(0, original_total - total);
 
-      // Re-summarize from items (single source of truth)
-      const { applied_offers, free_items } = summarizeOffersForSave(itemsWithFree);
+  // تفضيل شكل OfferService القادم من الدايالوج إن توفّر
+  const hasDialogAppliedEdit = Array.isArray((editOrderForm as any)?.applied_offers_obj) && (editOrderForm as any).applied_offers_obj.length > 0;
+  const hasDialogFreeEdit = Array.isArray((editOrderForm as any)?.free_items_obj) && (editOrderForm as any).free_items_obj.length > 0;
+  const summarizedEdit = summarizeOffersForSave(itemsWithFree);
+  const applied_offers = hasDialogAppliedEdit ? (editOrderForm as any).applied_offers_obj : summarizedEdit.applied_offers;
+  const free_items = hasDialogFreeEdit ? (editOrderForm as any).free_items_obj : summarizedEdit.free_items;
 
       const updateObj: any = {
         items: itemsWithFree as any,

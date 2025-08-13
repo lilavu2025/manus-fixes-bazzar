@@ -1008,6 +1008,7 @@ const OrderEditDialog: React.FC<OrderEditDialogProps> = ({
               const normalizedItems = normalizeItemsForSave(items);
 
               // 5) جهّز الحقول للعرض والحفظ
+              // خزّن العروض المطبقة بنفس شكل Checkout (النتيجة الخام من OfferService.applyOffers)
               const applied_offers_obj = appliedOffers;
               const free_items_obj = freeRefs;
 

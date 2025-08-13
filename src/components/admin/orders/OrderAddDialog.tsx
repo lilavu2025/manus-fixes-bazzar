@@ -424,14 +424,9 @@ async function reconcileAllOffersLive(
   return { items: mergeSimilarLines(list), appliedOffers, freeRefs: normalizeFreeRefs(freeItems), totalDiscount };
 }
 
-// توحيد اسم العرض قبل التخزين
-function normalizeOfferForStore(a: any, idx: number) {
-  const o = a?.offer || {};
-  const offer_name = a?.offer_name || o.title_ar || o.title_en || o.name || o.title || o.code || o.slug || `offer #${idx + 1}`;
-  const offer_code = a?.offer_code || o.code || o.slug || o.id;
-  const offer_id = a?.offer_id || o.id;
-  return { ...a, offer_name, offer_code, offer_id };
-}
+// ملاحظة: لا حاجة لتطبيع اسم العرض هنا.
+// سنحفظ applied_offers_obj بنفس شكل Checkout: المصفوفة الراجعة من OfferService.applyOffers
+// والتي تحتوي على كائن offer الكامل (بما فيه title_ar/title_en).
 
 /* ===================== Component ===================== */
 
@@ -449,7 +444,12 @@ interface OrderAddDialogProps {
   updateOrderItem: (id: string, field: keyof any, value: any) => void; // مُمرر
   handleSelectUser: (userId: string) => void; // مُمرر
   isAddingOrder: boolean;
-  handleAddOrder: () => void; // يستدعى عند إضافة الطلب
+  handleAddOrder: (payload?: {
+    items: any[];
+    applied_offers: any[];
+    free_items: any[];
+    totalDiscount: number;
+  }) => void; // يستدعى عند إضافة الطلب
   t: (key: string) => string;
 }
 
@@ -671,17 +671,24 @@ const OrderAddDialog: React.FC<OrderAddDialogProps> = ({
               const { items, appliedOffers, freeRefs, totalDiscount } = await reconcileAllOffersLive(orderForm.items, products, userType, { autoApplySimpleDiscounts: true });
               const normalizedItems = normalizeItemsForSave(items);
 
+              // حدّث الـ form (للاستعراض) ومرّر النسخة الموثوقة مباشرة لـ handleAddOrder لتفادي سباق الحالة
               setOrderForm(f => ({
                 ...f,
                 items: normalizedItems,
-                applied_offers_obj: Array.isArray(appliedOffers) ? appliedOffers.map((a,i)=>normalizeOfferForStore(a,i)) : [],
+                // نفس طريقة Checkout: خزّن المصفوفة كما هي من OfferService.applyOffers
+                applied_offers_obj: Array.isArray(appliedOffers) ? appliedOffers : [],
                 free_items_obj: freeRefs,
                 offers_discount_total: totalDiscount,
                 discountType: f.discountEnabled ? f.discountType : undefined,
                 discountValue: f.discountEnabled ? f.discountValue : 0,
               } as any));
 
-              handleAddOrder();
+              handleAddOrder({
+                items: normalizedItems,
+                applied_offers: Array.isArray(appliedOffers) ? appliedOffers : [],
+                free_items: freeRefs,
+                totalDiscount,
+              });
             }}
           >
             {/* اختيار العميل + طريقة الدفع */}
