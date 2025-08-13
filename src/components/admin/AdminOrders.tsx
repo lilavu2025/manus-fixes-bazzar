@@ -280,17 +280,27 @@ const AdminOrders: React.FC = () => {
         return;
       }
 
-  // العروض: إن تم تمرير payload من الدايالوج نستخدمه مباشرة، وإلا نستخدم ما في الفورم أو نلخّص
-  const baseItems = Array.isArray(payload?.items) && payload!.items.length > 0 ? payload!.items : orderForm.items;
-  const hasDialogApplied = Array.isArray(payload?.applied_offers) && payload!.applied_offers.length > 0;
-  const hasDialogFree = Array.isArray(payload?.free_items) && payload!.free_items.length > 0;
-  const summarized = summarizeOffersForSave(baseItems);
-  const applied_offers = hasDialogApplied ? payload!.applied_offers : summarized.applied_offers;
-  const free_items = hasDialogFree ? payload!.free_items : summarized.free_items;
+      // العروض: إن تم تمرير payload من الدايالوج نستخدمه مباشرة، وإلا نستخدم ما في الفورم أو نلخّص
+      const baseItems = Array.isArray(payload?.items) && payload!.items.length > 0 ? payload!.items : orderForm.items;
+      const hasDialogApplied = Array.isArray(payload?.applied_offers) && payload!.applied_offers.length > 0;
+      const hasDialogFree = Array.isArray(payload?.free_items) && payload!.free_items.length > 0;
+      const summarized = summarizeOffersForSave(baseItems);
+
+      // 1) نبني قائمة مجانية مبركنة (canonical) ومُزالة التكرار
+      const free_items = (hasDialogFree ? payload!.free_items : summarized.free_items) || [];
+
+      // 2) نخزّن العروض بدون أي freeProducts لمنع التكرار
+      const rawApplied = (hasDialogApplied ? payload!.applied_offers : summarized.applied_offers) || [];
+      const applied_offers = rawApplied.map((a: any) => ({
+        ...a,
+        freeProducts: [], // مهم: نفرغها دائماً
+      }));
+
+
       const total = calculateOrderTotalWithFreeItems(orderForm.items);
 
       const orderInsertObj: any = {
-  items: baseItems as any,
+        items: baseItems as any,
         total,
         status: orderForm.status,
         payment_method: orderForm.payment_method,
@@ -303,16 +313,16 @@ const AdminOrders: React.FC = () => {
           : { customer_name: orderForm.shipping_address.fullName }),
         ...(orderForm.discountEnabled && orderForm.discountValue && orderForm.discountType
           ? {
-              discount_type: orderForm.discountType,
-              discount_value: orderForm.discountValue,
-              total_after_discount:
-                orderForm.discountType === "percent"
-                  ? Math.max(total - (total * orderForm.discountValue) / 100, 0)
-                  : Math.max(total - orderForm.discountValue, 0),
-            }
+            discount_type: orderForm.discountType,
+            discount_value: orderForm.discountValue,
+            total_after_discount:
+              orderForm.discountType === "percent"
+                ? Math.max(total - (total * orderForm.discountValue) / 100, 0)
+                : Math.max(total - orderForm.discountValue, 0),
+          }
           : {}),
-  applied_offers: JSON.stringify(applied_offers || []),
-  free_items: JSON.stringify(free_items || []),
+        applied_offers: JSON.stringify(applied_offers || []),
+        free_items: JSON.stringify(free_items || []),
       };
 
       const orderItems = orderForm.items
@@ -372,7 +382,7 @@ const AdminOrders: React.FC = () => {
 
       // Totals
       const total = calculateOrderTotalWithFreeItems(itemsWithFree);
-      
+
       // حساب خصم العروض من العناصر المحفوظة
       const original_total = (itemsWithFree || []).reduce((sum, it: any) => {
         if (it?.is_free) return sum; // تجاهل العناصر المجانية
@@ -381,13 +391,20 @@ const AdminOrders: React.FC = () => {
       }, 0);
       const discount_from_offers = Math.max(0, original_total - total);
 
-  // تفضيل شكل OfferService القادم من الدايالوج إن توفّر
-  const hasDialogAppliedEdit = Array.isArray((editOrderForm as any)?.applied_offers_obj) && (editOrderForm as any).applied_offers_obj.length > 0;
-  const hasDialogFreeEdit = Array.isArray((editOrderForm as any)?.free_items_obj) && (editOrderForm as any).free_items_obj.length > 0;
-  const summarizedEdit = summarizeOffersForSave(itemsWithFree);
-  const applied_offers = hasDialogAppliedEdit ? (editOrderForm as any).applied_offers_obj : summarizedEdit.applied_offers;
-  const free_items = hasDialogFreeEdit ? (editOrderForm as any).free_items_obj : summarizedEdit.free_items;
+      // تفضيل شكل OfferService القادم من الدايالوج إن توفّر
+      const hasDialogAppliedEdit = Array.isArray((editOrderForm as any)?.applied_offers_obj) && (editOrderForm as any).applied_offers_obj.length > 0;
+      const hasDialogFreeEdit = Array.isArray((editOrderForm as any)?.free_items_obj) && (editOrderForm as any).free_items_obj.length > 0;
+      const summarizedEdit = summarizeOffersForSave(itemsWithFree);
 
+      // 1) canonical free_items
+      const free_items = (hasDialogFreeEdit ? (editOrderForm as any).free_items_obj : summarizedEdit.free_items) || [];
+
+      // 2) applied_offers بلا freeProducts
+      const rawAppliedEdit = (hasDialogAppliedEdit ? (editOrderForm as any).applied_offers_obj : summarizedEdit.applied_offers) || [];
+      const applied_offers = rawAppliedEdit.map((a: any) => ({
+        ...a,
+        freeProducts: [], // مهم جداً
+      }));
       const updateObj: any = {
         items: itemsWithFree as any,
         total,
@@ -411,13 +428,13 @@ const AdminOrders: React.FC = () => {
           (!editOrderForm.discountEnabled || !editOrderForm.discountValue)
             ? { discount_type: null, discount_value: null, total_after_discount: null }
             : {
-                discount_type: editOrderForm.discountType || "amount",
-                discount_value: Number(editOrderForm.discountValue) || 0,
-                total_after_discount:
-                  editOrderForm.discountType === "percent"
-                    ? Math.max(0, total - (total * (Number(editOrderForm.discountValue) || 0) / 100))
-                    : Math.max(0, total - (Number(editOrderForm.discountValue) || 0)),
-              }
+              discount_type: editOrderForm.discountType || "amount",
+              discount_value: Number(editOrderForm.discountValue) || 0,
+              total_after_discount:
+                editOrderForm.discountType === "percent"
+                  ? Math.max(0, total - (total * (Number(editOrderForm.discountValue) || 0) / 100))
+                  : Math.max(0, total - (Number(editOrderForm.discountValue) || 0)),
+            }
         )
       };
 
@@ -599,7 +616,7 @@ const AdminOrders: React.FC = () => {
         onResetFilters={() => {
           setStatusFilter("all"); setDateFrom(""); setDateTo(""); setPaymentFilter("all"); setSearchQuery("");
         }}
-        onExportExcel={() => {}}
+        onExportExcel={() => { }}
       />
 
       <AdminHeader
@@ -700,12 +717,12 @@ const AdminOrders: React.FC = () => {
                       ? (latestOrder as any).items
                       : (Array.isArray((latestOrder as any).order_items)
                         ? (latestOrder as any).order_items.map((item: any) => ({
-                            id: item.id || `item_${item.product_id}_${Date.now()}`,
-                            product_id: item.product_id,
-                            quantity: item.quantity,
-                            price: item.price,
-                            product_name: item.product_name || "",
-                          }))
+                          id: item.id || `item_${item.product_id}_${Date.now()}`,
+                          product_id: item.product_id,
+                          quantity: item.quantity,
+                          price: item.price,
+                          product_name: item.product_name || "",
+                        }))
                         : []);
 
                     const appliedOffers = (latestOrder as any).applied_offers
