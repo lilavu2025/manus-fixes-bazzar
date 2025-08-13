@@ -729,7 +729,7 @@ export const arTranslations = {
   enterAdditionalNotesOptional: "أدخل ملاحظات إضافية (اختياري)",
   orderCreator: "منشئ الطلبية",
   orderCreatedFromAdminPanel:
-    "سيتم تمييز هذه الطلبية أنها أُنشئت من لوحة التحكم",
+    "تم إنشاء الطلب من قبل الأدمن",
   noFavorites: "لا يوجد منتجات مفضلة",
   addFavoritesHint: "أضف منتجات إلى المفضلة ليتم عرضها هنا",
   noFavoritesYet: "لم تقم بإضافة أي منتجات مفضلة بعد",

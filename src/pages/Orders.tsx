@@ -1056,10 +1056,23 @@ const Orders: React.FC = () => {
                             const totalOffersDiscount = appliedOffersData.reduce((sum: number, offer: any) => 
                               sum + (offer.discountAmount || 0), 0);
                             
-                            const finalTotal = order.total || 0;
-                            const originalTotal = finalTotal + totalOffersDiscount;
+                            // حساب المجموع الكلي مع مراعاة الخصم اليدوي
+                            const subtotal = order.total || 0; // المجموع قبل الخصم اليدوي
+                            const hasManualDiscount = order.discount_type && order.discount_value > 0;
+                            const manualDiscountAmount = hasManualDiscount 
+                              ? (order.discount_type === 'percent' 
+                                  ? (subtotal * order.discount_value / 100) 
+                                  : order.discount_value)
+                              : 0;
+                              
+                            const finalTotal = hasManualDiscount && order.total_after_discount !== null
+                              ? order.total_after_discount
+                              : subtotal;
+                              
+                            const originalTotal = subtotal + totalOffersDiscount;
+                            const totalSavings = totalOffersDiscount + manualDiscountAmount;
                             
-                            if (totalOffersDiscount > 0) {
+                            if (totalOffersDiscount > 0 || hasManualDiscount) {
                               return (
                                 <div className="space-y-2">
                                   {/* السعر الأصلي مشطوب */}
@@ -1070,17 +1083,33 @@ const Orders: React.FC = () => {
                                     </span>
                                   </div>
                                   
-                                  {/* خصم العروض */}
+                                  {/* مجموع الخصومات */}
                                   <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                                    <div className="flex items-center justify-between text-sm">
-                                      <span className="font-medium text-green-700 flex items-center gap-1">
-                                        <Gift className="h-4 w-4" />
-                                        {t("offersDiscount") || "خصم العروض"}:
-                                      </span>
-                                      <span className="text-green-600 font-semibold">
-                                        -{totalOffersDiscount.toFixed(2)} {t("currency")}
-                                      </span>
-                                    </div>
+                                    {/* خصم العروض */}
+                                    {totalOffersDiscount > 0 && (
+                                      <div className="flex items-center justify-between text-sm">
+                                        <span className="font-medium text-green-700 flex items-center gap-1">
+                                          <Gift className="h-4 w-4" />
+                                          {t("offersDiscount") || "خصم العروض"}:
+                                        </span>
+                                        <span className="text-green-600 font-semibold">
+                                          -{totalOffersDiscount.toFixed(2)} {t("currency")}
+                                        </span>
+                                      </div>
+                                    )}
+                                    
+                                    {/* الخصم اليدوي */}
+                                    {hasManualDiscount && (
+                                      <div className="flex items-center justify-between text-sm">
+                                        <span className="font-medium text-green-700 flex items-center gap-1">
+                                          {order.discount_type === "percent" ? "%" : "₪"} 
+                                          {t("manualDiscount") || "الخصم اليدوي"}:
+                                        </span>
+                                        <span className="text-green-600 font-semibold">
+                                          -{manualDiscountAmount.toFixed(2)} {t("currency")}
+                                        </span>
+                                      </div>
+                                    )}
                                     
                                     {/* السعر النهائي */}
                                     <div className="flex items-center justify-between text-base font-bold border-t border-green-200 pt-2 mt-2">

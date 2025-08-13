@@ -95,7 +95,7 @@ const OrderCard: React.FC<OrderCardProps> = ({
             <div className="flex flex-wrap gap-2 items-center text-xs text-gray-500 mt-1">
               <span>{new Date(order.created_at).toLocaleDateString("en-GB")}</span>
               <span>|</span>
-              {/* عرض الإجمالي مع خصم العروض */}
+              {/* عرض الإجمالي مع خصم العروض والخصم اليدوي */}
               {(() => {
                 const appliedOffersData = order.applied_offers 
                   ? (typeof order.applied_offers === 'string' 
@@ -106,17 +106,30 @@ const OrderCard: React.FC<OrderCardProps> = ({
                 const totalOffersDiscount = appliedOffersData.reduce((sum: number, offer: any) => 
                   sum + (offer.discountAmount || 0), 0);
                 
-                const finalTotal = order.total || 0;
-                const originalTotal = finalTotal + totalOffersDiscount;
+                // نحسب المجموع الكلي مع مراعاة الخصم اليدوي
+                const subtotal = order.total || 0; // المجموع قبل الخصم اليدوي
+                const hasManualDiscount = order.discount_type && order.discount_value > 0;
+                const manualDiscountAmount = hasManualDiscount 
+                  ? (order.discount_type === 'percent' 
+                      ? (subtotal * order.discount_value / 100) 
+                      : order.discount_value)
+                  : 0;
+                  
+                const finalTotal = hasManualDiscount && order.total_after_discount !== null
+                  ? order.total_after_discount
+                  : subtotal;
+                  
+                const originalTotal = subtotal + totalOffersDiscount;
+                const totalSavings = totalOffersDiscount + manualDiscountAmount;
                 
-                if (totalOffersDiscount > 0) {
+                if (totalOffersDiscount > 0 || hasManualDiscount) {
                   return (
                     <span className="text-green-600 font-medium">
                       <span className="line-through text-gray-500">{originalTotal.toFixed(2)}</span>
                       {" "}
                       <span>{finalTotal.toFixed(2)} {t("currency") || "₪"}</span>
                       {" "}
-                      <span className="text-xs">(وفرت {totalOffersDiscount.toFixed(2)})</span>
+                      <span className="text-xs">({t("youSaved") || "وفرت"} {totalSavings.toFixed(2)})</span>
                     </span>
                   );
                 } else {

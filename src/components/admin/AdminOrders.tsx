@@ -402,12 +402,12 @@ const AdminOrders: React.FC = () => {
           (!editOrderForm.discountEnabled || !editOrderForm.discountValue)
             ? { discount_type: null, discount_value: null, total_after_discount: null }
             : {
-                discount_type: editOrderForm.discountType,
-                discount_value: editOrderForm.discountValue,
+                discount_type: editOrderForm.discountType || "amount",
+                discount_value: Number(editOrderForm.discountValue) || 0,
                 total_after_discount:
                   editOrderForm.discountType === "percent"
-                    ? Math.max(0, total - (total * (editOrderForm.discountValue || 0) / 100))
-                    : Math.max(0, total - (editOrderForm.discountValue || 0)),
+                    ? Math.max(0, total - (total * (Number(editOrderForm.discountValue) || 0) / 100))
+                    : Math.max(0, total - (Number(editOrderForm.discountValue) || 0)),
               }
         )
       };

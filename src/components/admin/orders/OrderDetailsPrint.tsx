@@ -93,24 +93,38 @@ const OrderDetailsPrint: React.FC<OrderDetailsPrintProps> = ({ order, t, profile
           {(() => {
             const appliedOffers = order.applied_offers ? JSON.parse(order.applied_offers) : [];
             const offersDiscount = appliedOffers.reduce((sum: number, offer: any) => sum + (offer.discountAmount || 0), 0);
-            const finalTotal = order.total;
-            const originalTotal = finalTotal + offersDiscount;
+            
+            // نحسب المجموع الكلي مع مراعاة الخصم اليدوي
+            const subtotal = order.total; // المجموع قبل الخصم اليدوي
+            const hasManualDiscount = order.discount_type && order.discount_value > 0;
+            const manualDiscountAmount = hasManualDiscount 
+              ? (order.discount_type === 'percent' 
+                  ? (subtotal * order.discount_value / 100) 
+                  : order.discount_value)
+              : 0;
+              
+            const finalTotal = hasManualDiscount && order.total_after_discount !== null
+              ? order.total_after_discount
+              : subtotal;
+              
+            const originalTotal = subtotal + offersDiscount;
+            const totalSavings = offersDiscount + manualDiscountAmount;
             
             return (
               <div className="text-right">
-                {offersDiscount > 0 ? (
+                {(offersDiscount > 0 || hasManualDiscount) ? (
                   <div className="space-y-1">
                     <div className="flex items-center gap-2 text-gray-500">
                       <span className="line-through text-base">{originalTotal.toFixed(2)} ₪</span>
                       <span className="text-xs bg-red-100 text-red-700 px-1.5 py-0.5 rounded font-bold">
-                        -{offersDiscount.toFixed(2)} ₪
+                        -{totalSavings.toFixed(2)} ₪
                       </span>
                     </div>
                     <div className="text-2xl font-bold text-green-600">
                       {finalTotal.toFixed(2)} ₪
                     </div>
                     <div className="text-xs text-green-600 font-medium">
-                      {t("youSaved") || "وفرت"} {offersDiscount.toFixed(2)} ₪
+                      {t("youSaved") || "وفرت"} {totalSavings.toFixed(2)} ₪
                     </div>
                   </div>
                 ) : (
