@@ -54,6 +54,12 @@ export interface Product {
   inStock: boolean;
   stock_quantity?: number;
   
+  // Variants
+  has_variants?: boolean;
+  // Attach optional variant data when loaded from products_with_variants
+  variants?: any[];
+  options?: any[];
+  
   // Reviews & Ratings
   rating: number;
   reviews: number;

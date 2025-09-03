@@ -400,16 +400,35 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
                         key={item.id}
                         className={`flex ${isRTL ? "flex-row-reverse" : "flex-row"} gap-4 p-4 bg-gray-50 rounded-lg shadow-md animate-fade-in relative`}
                       >
-                        <div 
-                          className="w-16 h-16 sm:w-20 sm:h-20 bg-center bg-contain bg-no-repeat rounded-lg flex-shrink-0 border border-gray-200"
-                          style={{ backgroundImage: `url(${item.product.image})` }}
-                        />
+                        {(() => {
+                          const va: any = (item as any).variantAttributes || (item as any).selectedVariant || {};
+                          const variantImg: string | undefined = va?.image;
+                          const imgUrl = (variantImg && String(variantImg).trim() !== "") ? variantImg : item.product.image;
+                          return (
+                            <div 
+                              className="w-16 h-16 sm:w-20 sm:h-20 bg-center bg-contain bg-no-repeat rounded-lg flex-shrink-0 border border-gray-200"
+                              style={{ backgroundImage: `url(${imgUrl})` }}
+                            />
+                          );
+                        })()}
 
-                        <div className={`flex-1 flex flex-col justify-between ${isRTL ? "items-end" : "items-start"}`}>
+                        <div className={`flex-1 flex flex-col justify-between items-stretch ${isRTL ? "items-end" : "items-start"}`}>
                           <div>
                             <h4 className="font-semibold text-sm sm:text-base mb-1 line-clamp-2">
                               {getLocalizedName(item.product, language)}
                             </h4>
+                            
+                            {/* عرض الفيرنتس المحددة */}
+                            {item.selectedVariant && Object.keys(item.selectedVariant).length > 0 && (
+                              <div className={`flex flex-wrap gap-1 mb-2 ${isRTL ? "flex-row-reverse" : "flex-row"}`}>
+                                {Object.entries(item.selectedVariant).map(([key, value]) => (
+                                  <Badge key={key} variant="outline" className="text-xs">
+                                    {key}: {String(value)}
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
+                            
                             {/* Product description */}
                             <p className={`text-gray-500 text-xs sm:text-sm mb-1 line-clamp-2 ${isRTL ? "text-right" : "text-left"}`}>
                               {item.product.description || item.product.descriptionEn || item.product.descriptionHe}
@@ -421,6 +440,7 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
                               appliedDiscount={productDiscount}
                               quantity={item.quantity}
                               className="text-sm"
+                              reverseLayout={isRTL}
                               showSavings={productDiscount > 0}
                             />
                             
@@ -504,12 +524,10 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
                                 <QuantitySelector 
                                   quantity={item.quantity}
                                   onQuantityChange={(newQuantity) => {
-                                    const totalQuantityInCart = cartItems.reduce((acc, cartItem) => {
-                                      return cartItem.id === item.id ? acc + newQuantity : acc + cartItem.quantity;
-                                    }, 0);
-
-                                    if (totalQuantityInCart > item.product.stock_quantity) {
-                                      enhancedToast.error(t("exceededStockQuantity"));
+                                    const stock = item.product.stock_quantity || 0;
+                                    if (newQuantity > stock) {
+                                      enhancedToast.error(`${isRTL ? 'الكمية المتوفرة من هذا المنتج هي' : 'Available quantity is'} ${stock}`);
+                                      updateQuantity(item.id, stock, item.product.id);
                                     } else {
                                       updateQuantity(item.id, newQuantity, item.product.id);
                                     }

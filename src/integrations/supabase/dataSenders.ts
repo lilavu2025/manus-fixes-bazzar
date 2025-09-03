@@ -10,6 +10,8 @@ import {
   processOffersStockDeduction,
   restoreFreeProductsStock,
   updateFreeProductsStockOnEdit,
+  deductVariantItemsStockForOrder,
+  restoreVariantItemsStockForOrder,
 } from "@/services/stockService";
 
 // مخزن مؤقت للطلبات المعلقة لمنع التكرار
@@ -136,32 +138,61 @@ export async function addToCart(
   userId: string,
   productId: string,
   quantity: number,
+  variantId?: string,
+  variantAttributes?: Record<string, any>
 ) {
   try {
-    console.log(`Adding to cart: userId=${userId}, productId=${productId}, quantity=${quantity}`);
+    console.log(`Adding to cart: userId=${userId}, productId=${productId}, quantity=${quantity}, variantId=${variantId}`);
 
-    // تحقق إذا كان المنتج موجود مسبقاً
-    const { data: existing, error: fetchError } = await supabase
+    // تحقق إذا كان المنتج موجود مسبقاً (مع نفس الفيرنت إن وجد)
+    let selectQuery = supabase
       .from("cart")
       .select("*")
       .eq("user_id", userId)
-      .eq("product_id", productId)
-      .maybeSingle();
+      .eq("product_id", productId);
+
+    // إذا لم يوجد variantId نستخدم IS NULL بدل eq.null لتجنب خطأ UUID
+    selectQuery = variantId
+      ? selectQuery.eq("variant_id", variantId)
+      : selectQuery.is("variant_id", null);
+
+    const { data: existing, error: fetchError } = await selectQuery.maybeSingle();
 
     if (fetchError && fetchError.code !== "PGRST116") throw fetchError;
 
     if (existing) {
       console.log(`Product exists in cart, updating quantity: ${existing.quantity} + ${quantity} = ${existing.quantity + quantity}`);
-      await supabase
+      let updateQuery = supabase
         .from("cart")
         .update({ quantity: existing.quantity + quantity })
         .eq("user_id", userId)
         .eq("product_id", productId);
+
+      updateQuery = variantId
+        ? updateQuery.eq("variant_id", variantId)
+        : updateQuery.is("variant_id", null);
+
+      await updateQuery;
     } else {
       console.log(`Product not in cart, inserting new item with quantity: ${quantity}`);
+      
+      const insertData: any = { 
+        user_id: userId, 
+        product_id: productId, 
+        quantity 
+      };
+      
+      if (variantId) {
+        insertData.variant_id = variantId;
+      }
+      
+      if (variantAttributes) {
+        insertData.variant_attributes = variantAttributes;
+      }
+
       await supabase
         .from("cart")
-        .insert({ user_id: userId, product_id: productId, quantity });
+        .insert(insertData);
     }
     return true;
   } catch (error: unknown) {
@@ -174,13 +205,25 @@ export async function updateCartItem(
   userId: string,
   productId: string,
   quantity: number,
+  variantId?: string | null,
 ) {
   try {
-    await supabase
+    console.log(`Updating cart item: userId=${userId}, productId=${productId}, quantity=${quantity}, variantId=${variantId}`);
+
+    // بناء شروط التحديث مع دعم IS NULL عند غياب الفيرنت
+    let updateQuery = supabase
       .from("cart")
       .update({ quantity })
       .eq("user_id", userId)
       .eq("product_id", productId);
+
+    updateQuery = variantId
+      ? updateQuery.eq("variant_id", variantId)
+      : updateQuery.is("variant_id", null);
+
+    const { error } = await updateQuery;
+
+    if (error) throw error;
     return true;
   } catch (error: unknown) {
     console.error("Error updating cart item:", error);
@@ -188,13 +231,28 @@ export async function updateCartItem(
   }
 }
 
-export async function removeFromCart(userId: string, productId: string) {
+export async function removeFromCart(
+  userId: string, 
+  productId: string, 
+  variantId?: string | null
+) {
   try {
-    await supabase
+    console.log(`Removing from cart: userId=${userId}, productId=${productId}, variantId=${variantId}`);
+
+    // بناء شروط الحذف مع دعم IS NULL عند غياب الفيرنت
+    let deleteQuery = supabase
       .from("cart")
       .delete()
       .eq("user_id", userId)
       .eq("product_id", productId);
+
+    deleteQuery = variantId
+      ? deleteQuery.eq("variant_id", variantId)
+      : deleteQuery.is("variant_id", null);
+
+    const { error } = await deleteQuery;
+
+    if (error) throw error;
     return true;
   } catch (error: unknown) {
     console.error("Error removing from cart:", error);
@@ -494,6 +552,13 @@ export async function updateOrderStatus(
         console.warn("⚠️ خطأ أثناء إرجاع المنتجات المجانية:", freeStockResult.error);
       }
 
+      // إرجاع مخزون الفيرنتس للعناصر التي تم خصمها
+      try {
+        await restoreVariantItemsStockForOrder(orderId);
+      } catch (e) {
+        console.warn("⚠️ تحذير: مشكلة في إرجاع مخزون الفيرنتس عند الإلغاء:", e);
+      }
+
       // تحديث عدد المبيعات بعد إلغاء الطلبية
       console.log("🔄 تحديث إحصائيات المبيعات بعد إلغاء الطلبية...");
       await updateTopOrderedProducts();
@@ -666,6 +731,13 @@ export async function addOrder(
       console.warn("⚠️ تحذير: مشكلة في خصم مخزون العناصر العادية:", e);
     }
 
+    // 3.1) خصم مخزون الفيرنتس للعناصر غير المجانية مرة واحدة
+    try {
+      await deductVariantItemsStockForOrder(order.id);
+    } catch (e) {
+      console.warn("⚠️ تحذير: مشكلة في خصم مخزون الفيرنتس:", e);
+    }
+
     // 4) خصم مخزون العناصر المجانية الناتجة عن العروض مرّة واحدة
     try {
       await processOffersStockDeduction(order.id, order.applied_offers as any, order.free_items as any);
@@ -689,7 +761,7 @@ export async function editOrder(
   orderItems: Omit<TablesInsert<"order_items">, "order_id">[],
 ) {
   try {
-    // ✅ تحديث مخزون المنتجات المجانية فقط حسب الفروقات
+    // 1) تحديث مخزون المنتجات المجانية فقط حسب الفروقات
     // (تجنّب خصم/إرجاع العناصر العادية هنا حتى لا تتضاعف)
     try {
       const freeStockUpdate = await updateFreeProductsStockOnEdit(
@@ -702,14 +774,23 @@ export async function editOrder(
       console.warn("⚠️ تحذير: مشكلة في تحديث مخزون المنتجات المجانية عند التعديل:", e);
     }
 
-    // تحديث الطلب
+    // 2) تحديث الطلب (orders)
     const { error } = await supabase
       .from("orders")
       .update(updateObj)
       .eq("id", editOrderId);
     if (error) throw error;
 
-    // إعادة بناء العناصر
+    // 3) قبل حذف العناصر القديمة: إرجاع مخزون الفيرنتس القديم (إن كان قد خُصِم)
+    // ملاحظة: هذه العملية تعتمد على order_items.stock_deducted=true
+    try {
+      console.log("🧮 Restoring previous variant stock before rebuilding order_items...");
+      await restoreVariantItemsStockForOrder(editOrderId);
+    } catch (e) {
+      console.warn("⚠️ تحذير: فشل إرجاع مخزون الفيرنتس قبل إعادة الإدراج:", e);
+    }
+
+    // 4) إعادة بناء العناصر (حذف القديم ثم إدراج الجديد)
     await supabase.from("order_items").delete().eq("order_id", editOrderId);
     if (orderItems.length > 0) {
       const itemsToInsert = orderItems.map((item) => ({
@@ -720,6 +801,14 @@ export async function editOrder(
         .from("order_items")
         .insert(itemsToInsert);
       if (itemsError) throw itemsError;
+    }
+
+    // 5) بعد إدراج العناصر الجديدة: خصم مخزون الفيرنتس للعناصر الجديدة (مرة واحدة)
+    try {
+      console.log("🧮 Deducting variant stock for new order_items after edit...");
+      await deductVariantItemsStockForOrder(editOrderId);
+    } catch (e) {
+      console.warn("⚠️ تحذير: فشل خصم مخزون الفيرنتس بعد التعديل:", e);
     }
 
     return true;
@@ -743,6 +832,13 @@ export async function deleteOrder(orderId: string) {
       }
     } catch (e) {
       console.warn("⚠️ تحذير: مشكلة أثناء إرجاع المنتجات المجانية قبل الحذف:", e);
+    }
+
+    // ✅ إرجاع مخزون الفيرنتس قبل الحذف
+    try {
+      await restoreVariantItemsStockForOrder(orderId);
+    } catch (e) {
+      console.warn("⚠️ تحذير: مشكلة أثناء إرجاع مخزون الفيرنتس قبل الحذف:", e);
     }
 
     // حذف العناصر المرتبطة أولاً
@@ -1011,6 +1107,13 @@ export async function cancelUserOrder(
       console.warn("⚠️ تحذير: مشكلة أثناء إرجاع المنتجات المجانية:", e);
     }
 
+    // إرجاع مخزون الفيرنتس للعناصر التي تم خصمها
+    try {
+      await restoreVariantItemsStockForOrder(orderId);
+    } catch (e) {
+      console.warn("⚠️ تحذير: مشكلة أثناء إرجاع مخزون الفيرنتس:", e);
+    }
+
     // تحديث عدد المبيعات بعد إلغاء الطلبية من قبل المستخدم
     console.log('🔄 تحديث إحصائيات المبيعات بعد إلغاء الطلبية من قبل المستخدم...');
     await updateTopOrderedProducts();
@@ -1042,8 +1145,10 @@ export async function setCartQuantity(
   userId: string,
   productId: string,
   quantity: number,
+  variantId?: string | null,
+  variantAttributes?: Record<string, any> | null,
 ) {
-  const requestKey = `${userId}-${productId}`;
+  const requestKey = `${userId}-${productId}-${variantId ?? 'no-variant'}`;
 
   // إذا كان هناك طلب معلق لنفس المستخدم والمنتج، انتظره
   if (pendingCartRequests.has(requestKey)) {
@@ -1056,32 +1161,40 @@ export async function setCartQuantity(
 
       if (quantity <= 0) {
         // إذا كانت الكمية 0 أو أقل، احذف المنتج
-        await removeFromCart(userId, productId);
+        await removeFromCart(userId, productId, variantId ?? undefined);
         return true;
       }
 
-      // تحقق إذا كان المنتج موجود مسبقاً
-      const { data: existing, error: fetchError } = await supabase
+      // تحقق إذا كان المنتج موجود مسبقاً (حسب الفيرنت إن وجد)
+      let selectQ = supabase
         .from("cart")
         .select("*")
         .eq("user_id", userId)
-        .eq("product_id", productId)
-        .maybeSingle();
+        .eq("product_id", productId);
+
+      selectQ = variantId ? selectQ.eq("variant_id", variantId) : selectQ.is("variant_id", null);
+
+      const { data: existing, error: fetchError } = await selectQ.maybeSingle();
 
       if (fetchError && fetchError.code !== "PGRST116") throw fetchError;
 
       if (existing) {
         console.log(`Product exists, setting quantity to: ${quantity}`);
-        await supabase
+        let updQ = supabase
           .from("cart")
           .update({ quantity })
           .eq("user_id", userId)
           .eq("product_id", productId);
+        updQ = variantId ? updQ.eq("variant_id", variantId) : updQ.is("variant_id", null);
+        await updQ;
       } else {
         console.log(`Product not in cart, inserting with quantity: ${quantity}`);
+        const insertData: any = { user_id: userId, product_id: productId, quantity };
+        if (variantId) insertData.variant_id = variantId;
+        if (variantAttributes) insertData.variant_attributes = variantAttributes;
         await supabase
           .from("cart")
-          .insert({ user_id: userId, product_id: productId, quantity });
+          .insert(insertData);
       }
       return true;
     } catch (error: unknown) {

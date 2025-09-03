@@ -29,6 +29,10 @@ export function mapProductFromDb(row: ProductRow): Product {
     active: typeof row.active === 'boolean' ? row.active : true,
     created_at: row.created_at ?? 'N/A', // Default to 'N/A' if undefined
     sales_count: row.sales_count ?? 0,
-    top_ordered: row.top_ordered ?? false,
+  top_ordered: row.top_ordered ?? false,
+  // تمرير بيانات الفيرنتس إن وُجدت (عند الجلب من products_with_variants)
+  has_variants: (row as any)?.has_variants ?? undefined,
+  variants: (row as any)?.variants ?? undefined,
+  options: (row as any)?.options ?? undefined,
   };
 }

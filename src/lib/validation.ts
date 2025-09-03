@@ -36,7 +36,7 @@ export const createProductSchema = () => {
   const availableLanguages = getAvailableLanguages();
   
   const schemaFields: any = {
-    price: z.number().positive('Price must be positive'),
+  price: z.number().positive('Price must be positive').optional(),
     original_price: z.number().positive('Original price must be positive').optional(),
     wholesale_price: z.number().positive('Wholesale price must be positive').optional(),
     discount: z.number().min(0).max(100).optional(),
@@ -44,6 +44,7 @@ export const createProductSchema = () => {
     in_stock: z.boolean(),
     featured: z.boolean(),
     active: z.boolean(),
+  has_variants: z.boolean().optional(),
   };
 
   // Add language fields based on availability
@@ -68,7 +69,16 @@ export const createProductSchema = () => {
     schemaFields.description_he = z.string().optional();
   }
 
-  return z.object(schemaFields);
+  const base = z.object(schemaFields);
+  return base.superRefine((data, ctx) => {
+    // If no variants, price must be provided and positive
+    if (!data.has_variants) {
+      const price = (data as any).price;
+      if (typeof price !== 'number' || !(price > 0)) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['price'], message: 'Price must be positive' });
+      }
+    }
+  });
 };
 
 export const createCategorySchema = () => {

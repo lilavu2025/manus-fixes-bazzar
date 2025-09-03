@@ -41,7 +41,7 @@ const ProductImageGallery = ({ product }: ProductImageGalleryProps) => {
   );
 
   // إعداد السحب للصور
-  const swipeHandlers = useSimpleSwipe(
+  const rawSwipeHandlers = useSimpleSwipe(
     () => {
       // السحب لليسار = الصورة التالية (في اللغة العربية)
       if (isRTL) {
@@ -63,6 +63,9 @@ const ProductImageGallery = ({ product }: ProductImageGalleryProps) => {
       preventDefaultDuringSwipe: true,
     }
   );
+
+  // حذف خاصية isSwiping قبل تمريرها لعناصر DOM لتجنب تحذير React
+  const { isSwiping: _omitIsSwiping, ...swipeHandlers } = rawSwipeHandlers as any;
 
   // التنقل بين الصور باستخدام لوحة المفاتيح
   useEffect(() => {
@@ -101,7 +104,7 @@ const ProductImageGallery = ({ product }: ProductImageGalleryProps) => {
       <div
         className="product-image-container responsive-product-image relative group cursor-zoom-in select-none"
         onClick={openModal}
-        {...swipeHandlers}
+  {...swipeHandlers}
         style={{ touchAction: 'pan-y pinch-zoom' }}
       >
         {images.length > 0 && (

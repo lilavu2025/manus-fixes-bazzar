@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Star, ShoppingCart, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,6 +13,8 @@ import { Product } from "@/types";
 import QuantitySelector from "@/components/QuantitySelector";
 import FavoriteButton from "@/components/ProductCard/FavoriteButton";
 import ProductInfo from "../ProductInfo";
+import { ProductVariantMiniSelector } from "@/components/ProductVariantMiniSelector";
+import { useProductVariants } from "@/hooks/useProductVariants";
 import {
   Popover,
   PopoverContent,
@@ -30,7 +32,7 @@ export interface ProductCardQuickViewProps {
   cartQuantity: number;
   isFavorite: boolean;
   onQuantityChange: React.Dispatch<React.SetStateAction<number>>;
-  onAddToCart: () => Promise<void>;
+  onAddToCart: (variantData?: { variantId?: string; selectedVariant?: Record<string, string> }) => Promise<void>;
   onFavorite: () => Promise<void>;
   onShare: () => Promise<void>;
 }
@@ -49,8 +51,21 @@ const ProductCardQuickView: React.FC<ProductCardQuickViewProps> = ({
 }) => {
   const { t, isRTL } = useLanguage();
   const { profile } = useAuth();
-  const [shareOpen, setShareOpen] = React.useState(false);
-  const [selectedImageIndex, setSelectedImageIndex] = React.useState(0);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [selectedVariantId, setSelectedVariantId] = useState<string | undefined>();
+  const [selectedVariantAttrs, setSelectedVariantAttrs] = useState<Record<string, string> | undefined>();
+  const [selectedVariantObj, setSelectedVariantObj] = useState<{ price: number; wholesale_price?: number | null; image?: string } | null>(null);
+  
+  // Variants hooks
+  const variantHook = useProductVariants({
+    productId: product.id,
+    options: [],
+    variants: [],
+    defaultPrice: product.price,
+    defaultWholesalePrice: product.wholesalePrice || 0,
+    defaultImage: product.image
+  });
   
   // إعادة تعيين الصورة المحددة عند فتح النافذة
   React.useEffect(() => {
@@ -60,10 +75,17 @@ const ProductCardQuickView: React.FC<ProductCardQuickViewProps> = ({
   }, [isOpen]);
   
   // تحسين عرض الصور - إعطاء الأولوية للصور المتعددة ثم الصورة الرئيسية
-  const images =
-    product.images && Array.isArray(product.images) && product.images.length > 0
-      ? product.images.filter((img) => img && img.trim() !== "")
-      : [product.image].filter((img) => img && img.trim() !== "");
+  const images = React.useMemo(() => {
+    const base = (product.images && Array.isArray(product.images) && product.images.length > 0
+      ? product.images
+      : [product.image]
+    ).filter((img) => img && img.trim() !== "");
+    const vimg = (selectedVariantObj as any)?.image || undefined;
+    if (vimg && vimg.trim() !== "") {
+      return [vimg, ...base.filter((b) => b !== vimg)];
+    }
+    return base;
+  }, [product.images, product.image, selectedVariantObj]);
       
   const productUrl = `${window.location.origin}/product/${product.id}`;
   const shareText = encodeURIComponent(
@@ -175,6 +197,31 @@ const ProductCardQuickView: React.FC<ProductCardQuickViewProps> = ({
                   descriptionHe:
                     (product as { descriptionHe?: string }).descriptionHe || "",
                 }}
+                selectedVariant={selectedVariantObj}
+              />
+            </div>
+
+            {/* عرض الفيرنتس إن وجدت */}
+            <div className="border-t pt-4">
+              <ProductVariantMiniSelector
+                productId={product.id}
+                compact={false}
+                className="space-y-3"
+                showSelectedInfo={false}
+                disabled={!product.inStock}
+        onVariantChange={(variant: any) => {
+                  if (variant) {
+                    setSelectedVariantId(variant.id);
+                    setSelectedVariantAttrs(variant.option_values || undefined);
+          setSelectedVariantObj({ price: variant.price, wholesale_price: variant.wholesale_price, image: (variant as any).image });
+          setSelectedImageIndex(0);
+                  } else {
+                    setSelectedVariantId(undefined);
+                    setSelectedVariantAttrs(undefined);
+          setSelectedVariantObj(null);
+          setSelectedImageIndex(0);
+                  }
+                }}
               />
             </div>
 
@@ -208,7 +255,10 @@ const ProductCardQuickView: React.FC<ProductCardQuickViewProps> = ({
                   if (totalQuantityInCart > product.stock_quantity) {
                     setTimeout(() => toast.error(t("exceededStockQuantity")), 0);
                   } else {
-                    onAddToCart();
+                    const variantData = (product as any).has_variants && selectedVariantId
+                      ? { variantId: selectedVariantId, selectedVariant: selectedVariantAttrs || {} }
+                      : undefined;
+                    onAddToCart(variantData);
                   }
                 }}
                 disabled={!product.inStock}

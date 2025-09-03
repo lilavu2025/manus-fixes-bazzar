@@ -34,6 +34,10 @@ export interface ProductRow {
   created_at?: string;
   sales_count?: number; // إضافة sales_count هنا
   top_ordered?: boolean; // إضافة top_ordered لدعم البادج
+  // حقول الفيرنتس (عند الجلب من products_with_variants)
+  has_variants?: boolean;
+  options?: any;
+  variants?: any;
 }
 export interface OrderItemRow {
   id: string;
@@ -41,6 +45,8 @@ export interface OrderItemRow {
   order_id: string;
   quantity: number;
   price: number;
+  variant_id?: string | null;
+  variant_attributes?: any;
   products?: ProductRow;
 }
 export interface OrderRow {
@@ -192,7 +198,7 @@ export async function fetchAllUsers(): Promise<UserProfile[]> {
 export async function fetchOrdersWithDetails(): Promise<OrdersWithDetails[]> {
   const { data, error } = await supabase
     .from('orders')
-    .select(`*, payment_method, shipping_address, cancelled_by, cancelled_by_name, applied_offers, free_items, discount_from_offers, profiles:profiles(id, full_name, email, phone, user_type), order_items(*, products(id, name_ar, name_en, name_he, image))`)
+    .select(`*, payment_method, shipping_address, cancelled_by, cancelled_by_name, applied_offers, free_items, discount_from_offers, profiles:profiles(id, full_name, email, phone, user_type), order_items(*, variant_id, variant_attributes, products(id, name_ar, name_en, name_he, image))`)
     .order('created_at', { ascending: false });
   if (error) throw error;
   if (!data) throw new Error('لم يتم العثور على بيانات الطلبات');
@@ -222,6 +228,9 @@ export async function fetchOrdersWithDetails(): Promise<OrdersWithDetails[]> {
           order_id: item.order_id,
           quantity: item.quantity,
           price: item.price ?? 0,
+          // تمرير معلومات الفيرنت إن وجدت
+          variant_id: item.variant_id ?? null,
+          variant_attributes: item.variant_attributes ?? null,
           products: item.products ? {
             id: item.products.id,
             name_ar: item.products.name_ar,
@@ -245,7 +254,7 @@ export async function fetchUserOrdersWithDetails(userId: string): Promise<Orders
   try {
     const { data, error } = await supabase
       .from('orders')
-      .select('*, payment_method, shipping_address, admin_created, admin_creator_name, total_after_discount, discount_type, discount_value, applied_offers, free_items, discount_from_offers, order_items(*, products(id, name_ar, name_en, name_he, description_ar, description_en, description_he, price, original_price, wholesale_price, image, images, category_id, in_stock, rating, reviews_count, discount, featured, tags, stock_quantity, active, created_at))')
+      .select('*, payment_method, shipping_address, admin_created, admin_creator_name, total_after_discount, discount_type, discount_value, applied_offers, free_items, discount_from_offers, order_items(*, variant_id, variant_attributes, products(id, name_ar, name_en, name_he, description_ar, description_en, description_he, price, original_price, wholesale_price, image, images, category_id, in_stock, rating, reviews_count, discount, featured, tags, stock_quantity, active, created_at))')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
     if (error) throw error;
@@ -263,12 +272,15 @@ export async function fetchUserOrdersWithDetails(userId: string): Promise<Orders
       profiles: order.profiles,
       shipping_address: typeof order.shipping_address === 'string' ? JSON.parse(order.shipping_address) : order.shipping_address,
       order_items: Array.isArray(order.order_items)
-        ? order.order_items.map((item: OrderItemRow) => ({
+        ? order.order_items.map((item: any) => ({
             id: item.id,
             product_id: item.product_id,
             order_id: item.order_id,
             quantity: item.quantity,
             price: item.price,
+            // تمرير معلومات الفيرنت للمستخدم
+            variant_id: item.variant_id ?? null,
+            variant_attributes: item.variant_attributes ?? null,
             product_name: item.products?.name_ar || item.products?.name_en || item.products?.name_he || item.product_id,
             products: item.products ? {
               id: item.products.id,
@@ -335,6 +347,8 @@ export interface OrdersWithDetails {
     quantity: number;
     price: number;
     product_name?: string;
+  variant_id?: string | null;
+  variant_attributes?: any;
     products?: {
       id: string;
       name_ar: string;
@@ -463,8 +477,8 @@ export async function fetchCategoriesWithAllProductsCount(): Promise<Category[]>
 export async function fetchProductDetails(productId: string): Promise<ProductRow | null> {
   try {
     const { data, error } = await supabase
-      .from('products')
-      .select(`*`)
+  .from('products_with_variants')
+  .select(`*`)
       .eq('id', productId)
       .single();
     if (error) throw error;
@@ -479,8 +493,8 @@ export async function fetchProductDetails(productId: string): Promise<ProductRow
 export async function fetchFeaturedProducts(): Promise<ProductRow[]> {
   try {
     const { data, error } = await supabase
-      .from('products')
-      .select(`*`)
+  .from('products_with_variants')
+  .select(`*`)
       .eq('featured', true)
       .order('created_at', { ascending: false });
     if (error) throw error;
@@ -495,8 +509,8 @@ export async function fetchFeaturedProducts(): Promise<ProductRow[]> {
 export async function fetchProductsByCategory(categoryId: string): Promise<ProductRow[]> {
   try {
     const { data, error } = await supabase
-      .from('products')
-      .select(`*`)
+  .from('products_with_variants')
+  .select(`*`)
       .eq('category_id', categoryId)
       .order('created_at', { ascending: false });
     if (error) throw error;
@@ -510,8 +524,8 @@ export async function fetchProductsByCategory(categoryId: string): Promise<Produ
 // جلب جميع المنتجات
 export async function fetchAllProducts(): Promise<ProductRow[]> {
   const { data, error } = await supabase
-    .from('products')
-    .select(`*`)
+  .from('products_with_variants')
+  .select(`*`)
     .order('created_at', { ascending: false });
   if (error) throw error;
   if (!data) throw new Error('لم يتم العثور على بيانات المنتجات');
@@ -544,6 +558,7 @@ export async function fetchUserCart(userId: string): Promise<Tables<"cart">[]> {
       .order("added_at", { ascending: false });
     
     if (error) throw error;
+    console.log("Raw cart data from database:", data);
     return data || [];
   } catch (error) {
     console.error("Error fetching user cart:", error);

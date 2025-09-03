@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Star, ShoppingCart, ChevronDown, ChevronUp } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/useAuth";
 import type { Product as ProductFull } from "@/types/product";
 import { Product } from "@/types";
 import QuantitySelector from "@/components/QuantitySelector";
+import { ProductVariantMiniSelector } from "@/components/ProductVariantMiniSelector";
 import { getLocalizedName, getLocalizedDescription } from "@/utils/getLocalizedName";
 import { getDisplayPrice } from "@/utils/priceUtils";
 import ProductCardBadges from "./ProductCardBadges";
@@ -19,9 +20,10 @@ interface ProductCardContentProps {
   quantity: number;
   cartQuantity: number;
   onQuantityChange: (quantity: number) => void;
-  onAddToCart: () => void;
+  onAddToCart: (variantData?: { variantId?: string; selectedVariant?: Record<string, string> }) => void;
   isLoading?: boolean;
   onProductClick?: () => void;
+  onVariantImageChange?: (imageUrl?: string) => void;
 }
 
 const ProductCardContent: React.FC<ProductCardContentProps> = ({
@@ -32,12 +34,28 @@ const ProductCardContent: React.FC<ProductCardContentProps> = ({
   onAddToCart,
   isLoading = false,
   onProductClick,
+  onVariantImageChange,
 }) => {
   const { t, isRTL, language } = useLanguage();
   const { profile } = useAuth();
   const [showFullDescription, setShowFullDescription] = React.useState(false);
+  const [selectedVariantId, setSelectedVariantId] = useState<string | undefined>();
+  const [selectedVariantAttrs, setSelectedVariantAttrs] = useState<Record<string, string> | undefined>();
+  const [selectedVariant, setSelectedVariant] = useState<any | null>(null);
+
+  // جلب خيارات الفيرنتس للمنتج
+  const hasVariants = product.has_variants;
+  const isVariantSelectionComplete = !hasVariants || !!selectedVariantId;
 
   const displayPrice = getDisplayPrice(product, profile?.user_type);
+  const variantDisplayPrice = React.useMemo(() => {
+    if (!selectedVariant) return null;
+    const w = Number(selectedVariant?.wholesale_price || 0);
+    const p = Number(selectedVariant?.price || 0);
+    const userType = profile?.user_type;
+    if ((userType === 'wholesale' || userType === 'admin') && w > 0) return w;
+    return p;
+  }, [selectedVariant, profile?.user_type]);
   const description = getLocalizedDescription(product, language);
 
   return (
@@ -66,6 +84,30 @@ const ProductCardContent: React.FC<ProductCardContentProps> = ({
 
         {/* تحفيزات العروض - متطابق مع صفحة التفاصيل */}
         <ProductCardIncentives productId={product.id} />
+
+        {/* اختيار الفيرنتس المصغر */}
+        <div className="flex-shrink-0">
+          <ProductVariantMiniSelector
+            productId={product.id}
+            compact={true}
+            className="bg-gray-50 dark:bg-gray-700 p-2 rounded-md"
+            showSelectedInfo={false}
+            disabled={!product.inStock}
+      onVariantChange={(variant: any) => {
+              if (variant) {
+                setSelectedVariantId(variant.id);
+                setSelectedVariantAttrs(variant.option_values || undefined);
+                setSelectedVariant(variant);
+        onVariantImageChange?.(variant.image);
+              } else {
+                setSelectedVariantId(undefined);
+                setSelectedVariantAttrs(undefined);
+                setSelectedVariant(null);
+        onVariantImageChange?.(undefined);
+              }
+            }}
+          />
+        </div>
 
         {/* وصف المنتج */}
         {description && (
@@ -109,13 +151,14 @@ const ProductCardContent: React.FC<ProductCardContentProps> = ({
           <div
             className={`flex items-center gap-4 w-full ${isRTL ? "flex-row-reverse justify-end" : "justify-start"}`}
           >
-            {product.originalPrice !== displayPrice && (
+            {/* عند وجود فيرنت محدد، نعرض سعره فقط بدون السعر المشطوب الخاص بالمنتج */}
+            {!selectedVariant && product.originalPrice !== displayPrice && (
               <span className="text-sm sm:text-base text-gray-500 line-through">
                 {product.originalPrice} {t("currency")}
               </span>
             )}
             <span className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-primary">
-              {displayPrice} {t("currency")}
+              {(variantDisplayPrice ?? displayPrice)} {t("currency")}
             </span>
           </div>
         </div>
@@ -147,7 +190,7 @@ const ProductCardContent: React.FC<ProductCardContentProps> = ({
               }}
               max={product.stock_quantity}
               min={1}
-              disabled={!product.inStock || isLoading}
+              disabled={!product.inStock || isLoading || !isVariantSelectionComplete}
             />
           </div>
 
@@ -161,10 +204,14 @@ const ProductCardContent: React.FC<ProductCardContentProps> = ({
                 if (totalQuantityInCart > product.stock_quantity) {
                   toast.error(t("exceededStockQuantity"));
                 } else {
-                  onAddToCart();
+                  const variantData = product.has_variants && selectedVariantId
+                    ? { variantId: selectedVariantId, selectedVariant: selectedVariantAttrs || {} }
+                    : undefined;
+                  onAddToCart(variantData);
                 }
               }}
-              disabled={!product.inStock || isLoading}
+              disabled={!product.inStock || isLoading || !isVariantSelectionComplete}
+              title={!isVariantSelectionComplete ? (t("pleaseSelectAllVariants") || "يرجى اختيار جميع المواصفات المطلوبة") : undefined}
               className="w-full gap-1 sm:gap-2 font-semibold text-xs sm:text-sm py-1.5 sm:py-2"
               variant={cartQuantity > 0 ? "secondary" : "default"}
             >
@@ -173,6 +220,11 @@ const ProductCardContent: React.FC<ProductCardContentProps> = ({
                 ? `${t("inCart")} (${cartQuantity})`
                 : t("addToCart")}
             </Button>
+            {!isVariantSelectionComplete && (
+              <div className="text-[11px] sm:text-xs text-amber-600 mt-1">
+                {t("pleaseSelectAllVariants") || "يرجى اختيار جميع المواصفات المطلوبة"}
+              </div>
+            )}
           </div>
         </div>
       )}

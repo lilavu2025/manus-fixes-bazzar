@@ -15,6 +15,7 @@ interface AdminProductsDialogsProps {
   categories: Category[];
   onSuccess: () => void;
   setProducts: React.Dispatch<React.SetStateAction<Product[]>>;
+  onRequestVariants?: () => void; // افتح مدير الفيرنتس للمنتج الحالي
 }
 
 const AdminProductsDialogs: React.FC<AdminProductsDialogsProps> = ({
@@ -28,6 +29,7 @@ const AdminProductsDialogs: React.FC<AdminProductsDialogsProps> = ({
   categories,
   onSuccess,
   setProducts,
+  onRequestVariants,
 }) => {
   return (
     <>
@@ -48,11 +50,23 @@ const AdminProductsDialogs: React.FC<AdminProductsDialogsProps> = ({
             categories={categories}
             onSuccess={onSuccess} // تحديث المنتجات من السيرفر بعد التعديل
             setProducts={setProducts}
+            onRequestVariants={() => {
+              setShowEditDialog(false);
+              onRequestVariants && onRequestVariants();
+            }}
           />
           <ViewProductDialog
             open={showViewDialog}
             onOpenChange={setShowViewDialog}
             product={selectedProduct}
+            onRequestEdit={() => {
+              setShowViewDialog(false);
+              setShowEditDialog(true);
+            }}
+            onRequestVariants={() => {
+              setShowViewDialog(false);
+              onRequestVariants && onRequestVariants();
+            }}
           />
         </>
       )}

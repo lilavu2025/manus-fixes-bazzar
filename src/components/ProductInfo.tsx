@@ -12,12 +12,29 @@ import type { Product as ProductFull } from '@/types/product';
 
 interface ProductInfoProps {
   product: ProductFull;
+  // اختياري: تمرير الفيرنت المحدد لعرض سعره بدلاً من سعر المنتج العام
+  selectedVariant?: {
+    price: number;
+    wholesale_price?: number | null;
+  } | null;
 }
 
-const ProductInfo = ({ product }: ProductInfoProps) => {
+const ProductInfo = ({ product, selectedVariant }: ProductInfoProps) => {
   const { t, isRTL, language } = useLanguage();
   const { profile } = useAuth();
-  const displayPrice = getDisplayPrice(product, profile?.user_type);
+  // السعر الأساسي حسب نوع المستخدم
+  const baseDisplayPrice = getDisplayPrice(product, profile?.user_type);
+  // إذا تم اختيار فيرنت، نستخدم سعره مع مراعاة نوع المستخدم (جملة/إدمن)
+  const variantDisplayPrice = React.useMemo(() => {
+    if (!selectedVariant) return undefined;
+    const userType = profile?.user_type;
+    const wholesale = selectedVariant.wholesale_price ?? null;
+    if ((userType === 'wholesale' || userType === 'admin') && typeof wholesale === 'number' && wholesale > 0) {
+      return wholesale;
+    }
+    return selectedVariant.price;
+  }, [selectedVariant, profile?.user_type]);
+  const displayPrice = typeof variantDisplayPrice === 'number' ? variantDisplayPrice : baseDisplayPrice;
 
   return (
     <div className={`space-y-4 sm:space-y-6 product-info-section`}>

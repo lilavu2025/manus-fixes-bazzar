@@ -1,4 +1,5 @@
 import React, { useEffect, useContext, useState, useRef, useCallback } from "react";
+import { renderVariantInfo } from "@/utils/variantUtils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Plus, Trash2, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -54,11 +55,35 @@ function basePrice(products: any[], pid: string, userType?: string) {
   return p ? getDisplayPrice(p, userType) : 0;
 }
 
+// Normalize variant attributes (object or JSON string)
+function normalizeVariantAttributes(raw: any): Record<string, any> | null {
+  if (!raw) return null;
+  let obj = raw;
+  if (typeof raw === "string") {
+    try { obj = JSON.parse(raw); }
+    catch { return null; }
+  }
+  if (typeof obj !== "object" || Array.isArray(obj)) return null;
+  return obj as Record<string, any>;
+}
+
+// Stable signature for variant identity
+function variantSignatureFromItem(it: any): string {
+  const vid = it?.variant_id || it?.variant?.id;
+  if (vid) return `vid:${String(vid)}`;
+  const va = normalizeVariantAttributes(it?.variant_attributes || it?.variant);
+  if (!va) return "no-variant";
+  const keys = Object.keys(va).sort();
+  const parts = keys.map(k => `${k}:${typeof va[k] === "object" ? JSON.stringify(va[k]) : String(va[k])}`);
+  return `va:${parts.join(",")}`;
+}
+
 function lineKeySignature(it: any) {
   return [
     String(it.product_id || ""),
     !!it.is_free ? "free" : (!!it.offer_applied ? `disc:${it.offer_id || ""}` : "norm"),
-    !!it.offer_trigger ? `trigger:${it.offer_trigger_id || ""}` : "no-trigger"
+    !!it.offer_trigger ? `trigger:${it.offer_trigger_id || ""}` : "no-trigger",
+    variantSignatureFromItem(it)
   ].join("|");
 }
 
@@ -476,6 +501,26 @@ const OrderAddDialog: React.FC<OrderAddDialogProps> = ({
   const [nextOrderNumber, setNextOrderNumber] = useState<number | null>(null);
   const isRTL = computeRTL(language);
 
+  // Helper: compute unit price for a product item respecting variant selection and user type
+  const computeUnitBasePrice = useCallback((product: any, item: any, userType: string) => {
+    if (!product) return 0;
+    // If variant selected, prefer variant price
+    const variants = Array.isArray(product.variants) ? product.variants : [];
+    const va = (item as any)?.variant_attributes || {};
+    const matchedVar = variants.find((v: any) => {
+      const ov = v?.option_values || {};
+      return Array.isArray(product.options) && product.options.every((o: any) => String(ov[o.name] || '') === String(va[o.name] || ''));
+    });
+    if (matchedVar) {
+      const w = Number(matchedVar?.wholesale_price || 0);
+      const p = Number(matchedVar?.price || 0);
+      if ((userType === 'wholesale' || userType === 'admin') && w > 0) return w;
+      return p;
+    }
+    // Fallback to product-level price
+    return getDisplayPrice(product, userType);
+  }, []);
+
   const getUserType = () => {
     const u = users?.find((x: any) => x.id === orderForm?.user_id);
     return u?.user_type || 'retail';
@@ -487,7 +532,8 @@ const OrderAddDialog: React.FC<OrderAddDialogProps> = ({
       && (!!a.offer_applied === !!b.offer_applied)
       && String(a.offer_id || "") === String(b.offer_id || "")
       && !!a.offer_trigger === !!b.offer_trigger
-      && String(a.offer_trigger_id || "") === String(b.offer_trigger_id || "");
+      && String(a.offer_trigger_id || "") === String(b.offer_trigger_id || "")
+      && variantSignatureFromItem(a) === variantSignatureFromItem(b);
   };
 
   // تهيئة خصم الفورم (مرة واحدة)
@@ -517,7 +563,7 @@ const OrderAddDialog: React.FC<OrderAddDialogProps> = ({
       const items = prev.items.map(item => {
         const p = productOf(products, item.product_id);
         if (!p) return item;
-        const base = getDisplayPrice(p, userType);
+  const base = computeUnitBasePrice(p, item, userType);
         if ((item as any).offer_applied) {
           return { ...item, original_price: typeof (item as any).original_price === "number" ? (item as any).original_price : base };
         }
@@ -635,7 +681,8 @@ const OrderAddDialog: React.FC<OrderAddDialogProps> = ({
   const normalizeItemsForSave = (items: any[]) => {
     const userType = getUserType();
     return items.map(it => {
-      const basePriceForProduct = basePrice(products, it.product_id, userType);
+  const p = productOf(products, it.product_id);
+  const basePriceForProduct = computeUnitBasePrice(p, it, userType);
       if ((it as any).is_free) {
         return { ...it, price: 0, is_free: true };
       }
@@ -927,6 +974,9 @@ const OrderAddDialog: React.FC<OrderAddDialogProps> = ({
                                     product_name: val,
                                     price: matched ? priceBase : 0,
                                     original_price: matched ? priceBase : 0,
+                                    // reset variant fields when product changes
+                                    variant_id: null,
+                                    variant_attributes: null,
                                     offer_applied: undefined,
                                     offer_id: undefined,
                                     offer_name: undefined,
@@ -942,6 +992,61 @@ const OrderAddDialog: React.FC<OrderAddDialogProps> = ({
                             />
                           )}
                         </div>
+                        {/* اختيار الفيرنتس للمنتجات التي تحتوي خيارات */}
+                        {(() => {
+                          const p = products.find((pp: any) => pp.id === item.product_id);
+                          const isFreeOrDiscounted = (item as any).is_free || (item as any).offer_applied;
+                          if (!p || !p.has_variants || !Array.isArray(p.options) || p.options.length === 0 || isFreeOrDiscounted) return null;
+                          const va = (item as any).variant_attributes || {};
+                          return (
+                            <div className="flex-1 min-w-[260px] -mt-1 space-y-2">
+                              {p.options.map((opt: any) => (
+                                <div key={opt.id} className="flex items-center gap-2">
+                                  <Label className="text-xs text-gray-600 min-w-[70px]">{opt.name}</Label>
+                                  <Select
+                                    value={va?.[opt.name] || ""}
+                                    onValueChange={(value) => {
+                                      setOrderForm(f => {
+                                        const userType = getUserType();
+                                        const updated = f.items.map((itm, idx) => {
+                                          if (idx !== index) return itm;
+                                          const currentVA = { ...(itm as any).variant_attributes, [opt.name]: value };
+                                          const variants = Array.isArray(p.variants) ? p.variants : [];
+                                          const matchedVar = variants.find((v: any) => {
+                                            const ov = v?.option_values || {};
+                                            return p.options.every((o: any) => String(ov[o.name] || '') === String(currentVA[o.name] || ''));
+                                          });
+                                          const nextPrice = matchedVar
+                                            ? ((userType === 'wholesale' || userType === 'admin') && typeof matchedVar.wholesale_price === 'number' && matchedVar.wholesale_price > 0
+                                                ? matchedVar.wholesale_price
+                                                : matchedVar.price)
+                                            : (typeof (itm as any).original_price === 'number' ? (itm as any).original_price : getDisplayPrice(p, userType));
+                                          return {
+                                            ...itm,
+                                            variant_attributes: currentVA,
+                                            variant_id: matchedVar ? matchedVar.id : null,
+                                            ...( !(itm as any).is_free && !(itm as any).offer_applied ? { price: nextPrice, original_price: nextPrice } : {}),
+                                          };
+                                        });
+                                        return { ...f, items: updated };
+                                      });
+                                    }}
+                                  >
+                                    <SelectTrigger className="h-9 w-[180px]"><SelectValue placeholder={t('select') || 'اختر'} /></SelectTrigger>
+                                    <SelectContent>
+                                      {Array.isArray(opt.option_values) && opt.option_values.map((val: string) => (
+                                        <SelectItem key={val} value={val}>{val}</SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              ))}
+                              {(item as any)?.variant_attributes ? (
+                                <div className="-mt-1">{renderVariantInfo((item as any).variant_attributes)}</div>
+                              ) : null}
+                            </div>
+                          );
+                        })()}
                         <div className="w-24">
                           <Label className="text-xs text-gray-600 mb-1 block">{t("quantity") || "الكمية"} <span className="text-red-500">*</span></Label>
                           <Input
@@ -1063,7 +1168,14 @@ const OrderAddDialog: React.FC<OrderAddDialogProps> = ({
                     const userType = getUserType();
                     const subtotalBeforeDiscounts = orderForm.items
                       .filter((it: any) => !it.is_free)
-                      .reduce((sum, it: any) => sum + (basePrice(products, it.product_id, userType) * (it.quantity || 0)), 0);
+                      .reduce((sum, it: any) => {
+                        const p = productOf(products, it.product_id);
+                        // Prefer original_price if present; else compute variant-aware base
+                        const unit = typeof it.original_price === 'number' && it.original_price > 0
+                          ? it.original_price
+                          : computeUnitBasePrice(p, it, userType);
+                        return sum + unit * (it.quantity || 0);
+                      }, 0);
 
                     const itemDiscounts = orderForm.items
                       .filter((it: any) => it.offer_applied && typeof it.original_price === 'number')

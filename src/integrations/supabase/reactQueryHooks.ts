@@ -16,8 +16,19 @@ const { disableUserById, logUserActivity, cancelUserOrder } = senders;
 export function useAddToCart() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ userId, productId, quantity }: { userId: string; productId: string; quantity: number }) =>
-      senders.addToCart(userId, productId, quantity),
+    mutationFn: ({ 
+      userId, 
+      productId, 
+      quantity, 
+      variantId, 
+      variantAttributes 
+    }: { 
+      userId: string; 
+      productId: string; 
+      quantity: number; 
+      variantId?: string; 
+      variantAttributes?: Record<string, any> 
+    }) => senders.addToCart(userId, productId, quantity, variantId, variantAttributes),
     onSuccess: (_, { userId }) => {
       // تحديث cache السلة بعد الإضافة الناجحة
       queryClient.invalidateQueries({ queryKey: ['userCart', userId] });
@@ -29,8 +40,8 @@ export function useAddToCart() {
 export function useUpdateCartItem() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ userId, productId, quantity }: { userId: string; productId: string; quantity: number }) =>
-      senders.updateCartItem(userId, productId, quantity),
+    mutationFn: ({ userId, productId, quantity, variantId }: { userId: string; productId: string; quantity: number; variantId?: string | null }) =>
+      senders.updateCartItem(userId, productId, quantity, variantId),
     onSuccess: (_, { userId }) => {
       // تحديث cache السلة بعد التحديث الناجح
       queryClient.invalidateQueries({ queryKey: ['userCart', userId] });
@@ -42,8 +53,20 @@ export function useUpdateCartItem() {
 export function useSetCartQuantity() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ userId, productId, quantity }: { userId: string; productId: string; quantity: number }) =>
-      senders.setCartQuantity(userId, productId, quantity),
+    mutationFn: ({ 
+      userId, 
+      productId, 
+      quantity,
+      variantId,
+      variantAttributes,
+    }: { 
+      userId: string; 
+      productId: string; 
+      quantity: number; 
+      variantId?: string | null;
+      variantAttributes?: Record<string, any> | null;
+    }) =>
+      senders.setCartQuantity(userId, productId, quantity, variantId, variantAttributes),
     onSuccess: (_, { userId }) => {
       // تحديث cache السلة بعد التعيين الناجح
       queryClient.invalidateQueries({ queryKey: ['userCart', userId] });
@@ -55,8 +78,16 @@ export function useSetCartQuantity() {
 export function useRemoveFromCart() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ userId, productId }: { userId: string; productId: string }) =>
-      senders.removeFromCart(userId, productId),
+    mutationFn: ({ 
+      userId, 
+      productId, 
+      variantId 
+    }: { 
+      userId: string; 
+      productId: string; 
+      variantId?: string | null; 
+    }) =>
+      senders.removeFromCart(userId, productId, variantId),
     onSuccess: (_, { userId }) => {
       // تحديث cache السلة بعد الحذف الناجح
       queryClient.invalidateQueries({ queryKey: ['userCart', userId] });

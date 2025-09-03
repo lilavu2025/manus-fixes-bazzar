@@ -41,18 +41,19 @@ const ProductCard: React.FC<ProductCardProps> = memo(
     const [quantity, setQuantity] = useState(1);
     const [showQuickView, setShowQuickView] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    const [shareOpen, setShareOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [overrideImage, setOverrideImage] = useState<string | undefined>(undefined);
 
     // الحصول على كمية المنتج في السلة
     const cartQuantity = getItemQuantity(product.id);
 
     // وظيفة إضافة المنتج إلى السلة مع تحديث فوري للواجهة
-    const handleAddToCart = useCallback(async () => {
+  const handleAddToCart = useCallback(async (variantData?: { variantId?: string; selectedVariant?: Record<string, string> }) => {
       if (isLoading) return;
 
       try {
         setIsLoading(true);
-        await addItem(product, quantity);
+    await addItem(product, quantity, variantData);
         toast.success(t("addedToCart"));
       } catch (error) {
         console.error(
@@ -63,7 +64,7 @@ const ProductCard: React.FC<ProductCardProps> = memo(
       } finally {
         setIsLoading(false);
       }
-    }, [addItem, product, quantity, isLoading, t]);
+  }, [addItem, product, quantity, isLoading, t]);
 
 
 
@@ -263,6 +264,7 @@ const ProductCard: React.FC<ProductCardProps> = memo(
           {/* صورة المنتج */}
           <ProductCardImage
             product={product}
+            overrideImage={overrideImage}
             isFavorite={isFav}
             onQuickView={handleQuickView}
             //onFavorite={handleFavorite}
@@ -281,7 +283,9 @@ const ProductCard: React.FC<ProductCardProps> = memo(
             onQuantityChange={setQuantity}
             onAddToCart={handleAddToCart}
             isLoading={isLoading}
-            onProductClick={handleCardClick}        />
+            onProductClick={handleCardClick}
+            onVariantImageChange={setOverrideImage}
+          />
       </Card>
 
       {/* مودال العرض السريع للمنتج */}

@@ -3,7 +3,7 @@ import { isRTL, useLanguage } from "../../utils/languageContextUtils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Trash, Eye, MoreVertical } from "lucide-react";
+import { Edit, Trash, Eye, MoreVertical, Settings } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -39,6 +39,7 @@ interface AdminProductsTableProps {
   onViewProduct: (product: Product) => void;
   onEditProduct: (product: Product) => void;
   onDeleteProduct: (productId: string, productName: string) => void;
+  onManageVariants?: (product: Product) => void;
   categories?: AdminCategory[]; // دعم جميع الحقول اللغوية
 }
 
@@ -47,6 +48,7 @@ const AdminProductsTable: React.FC<AdminProductsTableProps> = ({
   onViewProduct,
   onEditProduct,
   onDeleteProduct,
+  onManageVariants,
   categories = [], // افتراضي مصفوفة فارغة
 }) => {
   const { t, language } = useLanguage();
@@ -254,6 +256,17 @@ const AdminProductsTable: React.FC<AdminProductsTableProps> = ({
                           >
                             <Edit className="h-4 w-4 mr-2" /> {t("edit")}
                           </Button>
+                          {onManageVariants && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => onManageVariants(product)}
+                              className="w-full px-4 py-2 text-left hover:bg-purple-50 text-purple-600"
+                            >
+                              <Settings className="h-4 w-4 mr-2" /> 
+                              {t("manageVariants") || "إدارة الفيرنتس"}
+                            </Button>
+                          )}
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button

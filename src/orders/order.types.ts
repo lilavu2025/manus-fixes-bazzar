@@ -59,6 +59,9 @@ export interface OrderItem {
   price: number;
   product_name: string;
   products?: Product;
+  // Variant-related properties
+  variant_id?: string | null;
+  variant_attributes?: string | null;
   // Offer-related properties
   is_free?: boolean;
   offer_applied?: boolean;

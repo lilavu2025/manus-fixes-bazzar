@@ -2,6 +2,20 @@ import config from "@/configs/activeConfig";
 import type { Order } from "./order.types";
 import { getOrderDisplayTotal } from "./order.displayTotal";
 import { getDisplayPrice } from "@/utils/priceUtils";
+import type { OrderItem } from "./order.types";
+
+function renderVariantInfoHtml(variant: any): string {
+  if (!variant) return "";
+  try {
+    const obj = typeof variant === 'string' ? JSON.parse(variant) : variant;
+    if (!obj || typeof obj !== 'object') return "";
+    const chips = Object.entries(obj).map(([k, v]) => `
+      <span style="display:inline-block;background:#eef2ff;color:#1e40af;border:1px solid #c7d2fe;border-radius:9999px;padding:2px 8px;margin:2px;font-size:11px;">
+        ${k}: ${String(v)}
+      </span>`).join("");
+    return chips ? `<div style="margin-top:4px;">${chips}</div>` : "";
+  } catch { return ""; }
+}
 
 export async function orderPrint(
   order: Order,
@@ -134,12 +148,14 @@ export async function orderPrint(
             </div>`
           : `${originalTotal.toFixed(2)} ₪`;
         
+        const variantHtml = renderVariantInfoHtml((item as any).variant_attributes);
         return `
       <tr>
         <td>
           <div style="margin-bottom: 4px;">
             <strong>${productName}</strong>
           </div>
+          ${variantHtml}
           ${productDescription ? `<div style="font-size: 12px; color: #666; line-height: 1.3;">${productDescription}</div>` : ''}
         </td>
         <td>${item.quantity}</td>

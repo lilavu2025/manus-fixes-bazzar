@@ -1,5 +1,6 @@
 // صفحة الدفع والشراء - تتيح للمستخدم إتمام عملية الشراء
-import React, { useState, useEffect } from "react";
+import { renderVariantInfo } from "@/utils/variantUtils";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/useAuth";
 import { useLanguage } from "@/utils/languageContextUtils";
@@ -254,6 +255,9 @@ const Checkout: React.FC = () => {
         product_id: item.product.id,
         quantity: item.quantity,
         price: getDisplayPrice(item.product, profile?.user_type),
+        // حفظ تفاصيل الفيرنت في عناصر الطلب إن وجدت
+        variant_id: (item as any).variantId ?? null,
+        variant_attributes: (item as any).variantAttributes ?? null,
       }));
 
       const { error: itemsError } = await supabase
@@ -670,6 +674,8 @@ const Checkout: React.FC = () => {
                         <h4 className="font-medium text-sm truncate">
                           {item.product.name}
                         </h4>
+                        {/* عرض معلومات الفيرنت إذا كان موجوداً */}
+                        {renderVariantInfo((item as any).variantAttributes, "text-gray-600")}
                         {/* Product description */}
                         <p className="text-gray-500 text-xs truncate mt-0.5">
                           {item.product.description || item.product.descriptionEn || item.product.descriptionHe}

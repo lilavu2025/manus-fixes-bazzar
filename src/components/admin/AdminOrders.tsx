@@ -327,7 +327,14 @@ const AdminOrders: React.FC = () => {
 
       const orderItems = orderForm.items
         .filter((it: any) => !it?.is_free)
-        .map((item) => ({ product_id: item.product_id, quantity: item.quantity, price: item.price }));
+        .map((item) => ({
+          product_id: item.product_id,
+          quantity: item.quantity,
+          price: item.price,
+          // keep variant data if present
+          ...(item as any).variant_id ? { variant_id: (item as any).variant_id } : {},
+          ...(item as any).variant_attributes ? { variant_attributes: (item as any).variant_attributes } : {},
+        }));
 
       addOrderMutation.mutate(
         { orderInsertObj, orderItems: orderItems as any[] },
@@ -444,6 +451,8 @@ const AdminOrders: React.FC = () => {
           product_id: item.product_id,
           quantity: item.quantity,
           price: item.price, // السعر النهائي (بعد الخصم)
+          ...(item as any).variant_id ? { variant_id: (item as any).variant_id } : {},
+          ...(item as any).variant_attributes ? { variant_attributes: (item as any).variant_attributes } : {},
         }));
 
       editOrderMutation.mutate(
@@ -455,6 +464,7 @@ const AdminOrders: React.FC = () => {
             setEditOrderForm(null);
             setEditOrderId(null);
             setShowConfirmEditDialog(false);
+            // Stocks are reconciled inside editOrder() now (restore old variants before delete, deduct after insert)
             refetchOrders();
             queryClient.invalidateQueries({ queryKey: ["admin-orders-stats"] });
           },
@@ -683,6 +693,19 @@ const AdminOrders: React.FC = () => {
               } else if (Array.isArray((latestOrder as any).items)) {
                 items = (latestOrder as any).items;
               }
+              // في حال لم تكن items مخزنة (طلبات قادمة من الـ Checkout)، نبنيها من order_items
+              if ((!items || items.length === 0) && Array.isArray((latestOrder as any).order_items)) {
+                items = (latestOrder as any).order_items.map((item: any) => ({
+                  id: item.id || `item_${item.product_id}_${Date.now()}`,
+                  product_id: item.product_id,
+                  quantity: item.quantity,
+                  price: item.price,
+                  product_name: item.product_name || item.products?.name_ar || item.products?.name_en || "",
+                  // تمرير معلومات الفيرنت إن وجدت
+                  variant_id: item.variant_id ?? null,
+                  variant_attributes: item.variant_attributes ?? null,
+                }));
+              }
 
               let shipping_address: any = (latestOrder as any).shipping_address;
               if (typeof shipping_address === "string") {
@@ -713,7 +736,7 @@ const AdminOrders: React.FC = () => {
                   onEdit={(order) => {
                     setEditOrderId(order.id);
 
-                    const itemsFromDb = Array.isArray((latestOrder as any).items)
+        const itemsFromDb = Array.isArray((latestOrder as any).items)
                       ? (latestOrder as any).items
                       : (Array.isArray((latestOrder as any).order_items)
                         ? (latestOrder as any).order_items.map((item: any) => ({
@@ -722,6 +745,9 @@ const AdminOrders: React.FC = () => {
                           quantity: item.quantity,
                           price: item.price,
                           product_name: item.product_name || "",
+          // تمرير الفيرنت إلى نموذج التعديل
+          variant_id: item.variant_id ?? null,
+          variant_attributes: item.variant_attributes ?? null,
                         }))
                         : []);
 

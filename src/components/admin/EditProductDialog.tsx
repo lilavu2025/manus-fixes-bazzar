@@ -25,6 +25,7 @@ import {
 import { mapProductToFormData } from "./productMappingUtils";
 import { useProductsRealtime } from "@/hooks/useProductsRealtime";
 import { createProductSchema, validateForm } from "@/lib/validation";
+import { useProductVariants } from "@/hooks/useVariantsAPI";
 
 interface EditProductDialogProps {
   open: boolean;
@@ -33,6 +34,7 @@ interface EditProductDialogProps {
   categories: Category[];
   onSuccess: () => void;
   setProducts: React.Dispatch<React.SetStateAction<Product[]>>;
+  onRequestVariants?: () => void; // فتح إدارة الفيرنتس من نافذة التعديل
 }
 
 const EditProductDialog: React.FC<EditProductDialogProps> = ({
@@ -42,6 +44,7 @@ const EditProductDialog: React.FC<EditProductDialogProps> = ({
   categories,
   onSuccess,
   setProducts,
+  onRequestVariants,
 }) => {
   const { isRTL, t, language } = useLanguage();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -65,7 +68,10 @@ const EditProductDialog: React.FC<EditProductDialogProps> = ({
     active: true,
     tags: [],
     stock_quantity: 0,
+  has_variants: false,
   });
+  const { data: variants = [] } = useProductVariants(product?.id || "");
+  const hasVariants = Boolean((product as any)?.has_variants) || (variants?.length ?? 0) > 0;
   const { refetch } = useProductsRealtime();
 
   // تهيئة البيانات فقط عند فتح الديالوج لأول مرة أو تغيير المنتج
@@ -101,6 +107,7 @@ const EditProductDialog: React.FC<EditProductDialogProps> = ({
         active: product.active ?? true,
         tags: product.tags || [],
         stock_quantity: product.stock_quantity || 0,
+  has_variants: (product as any).has_variants ?? false,
       });
       setIsInitialized(true);
     }
@@ -119,8 +126,9 @@ const EditProductDialog: React.FC<EditProductDialogProps> = ({
     
     try {
       // تحقق من صحة البيانات قبل الإرسال باستخدام الـ schema الديناميكي
-      const dynamicProductSchema = createProductSchema();
-      const validation = validateForm(dynamicProductSchema, formData);
+  const dynamicProductSchema = createProductSchema();
+  // Ensure validation knows whether this product effectively has variants
+  const validation = validateForm(dynamicProductSchema, { ...formData, has_variants: hasVariants } as any);
       
       if (!validation.success) {
         // عرض أخطاء التحقق
@@ -149,15 +157,22 @@ const EditProductDialog: React.FC<EditProductDialogProps> = ({
         });
       }
       
+      // Build update payload. If product has variants, do NOT update base price/stock fields.
+      const { stock_quantity, price, original_price, wholesale_price, discount, ...rest } = formData as any;
+      const updatePayload: any = {
+        ...rest,
+        ...(hasVariants ? {} : { stock_quantity, price, original_price, wholesale_price, discount }),
+        // تأكيد حالة وجود الفيرنتس حتى لا يتم مسحها بالخطأ
+        has_variants: hasVariants,
+        images: allImages,
+        image: formData.image || (allImages.length > 0 ? allImages[0] : ""),
+        category_id: formData.category_id,
+        updated_at: new Date().toISOString(),
+      };
+
       const { data, error } = await supabase
         .from("products")
-        .update({
-          ...formData,
-          images: allImages,
-          image: formData.image || (allImages.length > 0 ? allImages[0] : ""),
-          category_id: formData.category_id,
-          updated_at: new Date().toISOString(),
-        })
+        .update(updatePayload)
         .eq("id", product.id)
         .select();
       if (error) throw error;
@@ -194,6 +209,8 @@ const EditProductDialog: React.FC<EditProductDialogProps> = ({
           stock_quantity: p.stock_quantity ?? 0,
           active: p.active ?? true,
           created_at: p.created_at,
+          // حافظ على حالة الفيرنتس في الذاكرة بعد التعديل
+          has_variants: Boolean(p.has_variants),
         };
         setProducts((prev) =>
           prev.map((prod) => (prod.id === product.id ? mapped : prod)),
@@ -339,12 +356,41 @@ const EditProductDialog: React.FC<EditProductDialogProps> = ({
             <div className="space-y-6">
               
               {/* الأسعار */}
-              <div className="bg-white dark:bg-gray-900 rounded-lg p-4 border">
-                <h3 className="text-lg font-semibold mb-4 text-primary border-b pb-2">
-                  {t("prices") || "الأسعار"}
-                </h3>
-                <ProductPricingFields formData={formData} setFormData={setFormData} />
-              </div>
+              {!hasVariants ? (
+                <div className="bg-white dark:bg-gray-900 rounded-lg p-4 border">
+                  <h3 className="text-lg font-semibold mb-4 text-primary border-b pb-2">
+                    {t("prices") || "الأسعار"}
+                  </h3>
+                  <ProductPricingFields formData={formData} setFormData={setFormData} />
+                </div>
+              ) : (
+                <div className="bg-white dark:bg-gray-900 rounded-lg p-4 border">
+                  <h3 className="text-lg font-semibold mb-2 text-primary border-b pb-2">
+                    {t("prices") || "الأسعار"}
+                  </h3>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                      {language === 'ar'
+                        ? 'هذا المنتج يحتوي على فيرنتس. الأسعار والكمية تُدار لكل فيرنتس من شاشة إدارة الفيرنتس.'
+                        : language === 'he'
+                        ? 'למוצר זה יש וריאנטים. המחיר והמלאי מנוהלים לכל וריאנט במסך ניהול הווריאנטים.'
+                        : 'This product has variants. Prices and stock are managed per variant in the variants manager.'}
+                    </p>
+                    {onRequestVariants && (
+                      <Button
+                        type="button"
+                        onClick={() => {
+                          onOpenChange(false);
+                          onRequestVariants();
+                        }}
+                        className="self-start sm:self-auto bg-purple-600 hover:bg-purple-700 text-white font-medium px-4"
+                      >
+                        {t('manageVariants')}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* صور المنتج */}
               <div className="bg-white dark:bg-gray-900 rounded-lg p-4 border">
