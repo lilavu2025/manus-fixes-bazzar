@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useLanguage } from "@/utils/languageContextUtils";
 import { useAuth } from "@/contexts/useAuth";
+import { renderVariantInfo } from "@/utils/variantUtils";
 import {
   Card,
   CardContent,
@@ -553,6 +554,8 @@ const Orders: React.FC = () => {
                                           ? item.products?.name_he
                                           : item.products?.name_en || item.product_name}
                                       </span>
+                                      {/* عرض معلومات الفيرنت إذا كان موجوداً */}
+                                      {renderVariantInfo((item as any).variant_attributes)}
                                       <span className="text-xs text-gray-500 mt-0.5">
                                         {language === "ar"
                                           ? item.products?.description_ar

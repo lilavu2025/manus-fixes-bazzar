@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/hooks/useCart";
@@ -10,10 +10,13 @@ import ProductImageGallery from "@/components/ProductImageGallery";
 import ProductInfo from "@/components/ProductInfo";
 import ProductActions from "@/components/ProductActions";
 import RelatedProducts from "@/components/RelatedProducts";
+import ProductVariantSelector from "@/components/ProductVariantSelector";
 import { getLocalizedName } from "@/utils/getLocalizedName";
 import type { Product } from "@/types/index";
 import { useProductsRealtime } from "@/hooks/useProductsRealtime";
 import { mapProductFromDb } from "@/types/mapProductFromDb";
+import { useProductOptions, useProductVariants } from "@/hooks/useVariantsAPI";
+import { useProductVariants as useVariantSelection } from "@/hooks/useProductVariants";
 
 const ProductDetails = () => {
   const { id } = useParams();
@@ -29,6 +32,21 @@ const ProductDetails = () => {
     ? products.map(mapProductFromDb)
     : [];
   const product = productsArray.find((p) => p.id === id);
+
+  // جلب بيانات الفيرنتس إذا كان المنتج يحتوي على فيرنتس
+  const { data: options = [] } = useProductOptions(product?.id || '');
+  const { data: variants = [] } = useProductVariants(product?.id || '');
+
+  // استخدام hook إدارة الفيرنتس
+  const variantSelection = useVariantSelection({
+    productId: product?.id || '',
+    options,
+    variants,
+    defaultPrice: product?.price || 0,
+    defaultWholesalePrice: product?.wholesalePrice || 0,
+    defaultImage: product?.image || '',
+    defaultStockQuantity: product?.stock_quantity || 0
+  });
 
   if (loading) {
     return (
@@ -126,8 +144,20 @@ const ProductDetails = () => {
           {/* صورة المنتج */}
           <div className="order-1 lg:order-none">
             <div className="w-full max-w-lg mx-auto lg:max-w-none">
-              <ProductImageGallery
-                product={{
+              {(() => {
+                // Build gallery images prioritizing selected variant image if available
+                const baseImages = (product.images && product.images.length > 0
+                  ? product.images
+                  : [product.image]
+                ).filter((img) => !!img && img.trim() !== "");
+
+                const variantImg = variantSelection.selectedVariant.variant?.image;
+                const hasVariantImg = !!variantImg && variantImg.trim() !== "";
+                const galleryImages = hasVariantImg
+                  ? [variantImg as string, ...baseImages.filter((img) => img !== variantImg)]
+                  : baseImages;
+
+                const galleryProduct = {
                   id: product.id,
                   name: getLocalizedName(product, language),
                   nameEn: product.nameEn,
@@ -135,8 +165,8 @@ const ProductDetails = () => {
                   description: product.description,
                   descriptionEn: product.descriptionEn,
                   descriptionHe: product.descriptionHe,
-                  image: product.image,
-                  images: product.images,
+                  image: galleryImages[0] || product.image,
+                  images: galleryImages,
                   discount: product.discount,
                   inStock: product.inStock,
                   price: product.price,
@@ -145,8 +175,15 @@ const ProductDetails = () => {
                   category: product.category,
                   rating: product.rating,
                   reviews: product.reviews,
-                }}
-              />
+                } as const;
+
+                // Force re-mount when selected variant changes so we show its image immediately
+                const galleryKey = `${product.id}-${variantSelection.selectedVariant.variant?.id || 'base'}`;
+
+                return (
+                  <ProductImageGallery key={galleryKey} product={galleryProduct} />
+                );
+              })()}
             </div>
           </div>
           {/* معلومات المنتج */}
@@ -154,10 +191,42 @@ const ProductDetails = () => {
             className={`order-2 lg:order-none space-y-4 sm:space-y-6 flex flex-col justify-start ${isRTL ? "items-center lg:items-start" : "items-center lg:items-start"} px-4 lg:px-0`}
           >
             <div className="w-full max-w-lg lg:max-w-none">
-              <ProductInfo product={product} />
+              <ProductInfo 
+                product={product}
+                selectedVariant={variantSelection.hasVariants ? {
+                  price: variantSelection.selectedVariant.price,
+                  wholesale_price: variantSelection.selectedVariant.wholesale_price ?? (variantSelection.selectedVariant as any).wholesalePrice ?? undefined
+                } : undefined}
+              />
             </div>
+            
+            {/* اختيار الفيرنتس */}
+            {variantSelection.hasVariants && (
+              <div className="w-full max-w-lg lg:max-w-none">
+                <ProductVariantSelector
+                  options={options}
+                  selection={variantSelection.selection}
+                  onSelectionChange={variantSelection.updateSelection}
+                  getAvailableValues={variantSelection.getAvailableOptionValues}
+                  disabled={!product.inStock}
+                  className="bg-white dark:bg-gray-800 p-4 rounded-lg border"
+                />
+              </div>
+            )}
+            
             <div className="w-full max-w-lg lg:max-w-none">
-              <ProductActions product={product} />
+              <ProductActions 
+                product={{
+                  ...product,
+                  price: variantSelection.selectedVariant.price,
+                  inStock: variantSelection.selectedVariant.isAvailable,
+                  stock_quantity: variantSelection.selectedVariant.stock_quantity,
+                  image: variantSelection.selectedVariant.image
+                }}
+                selectedVariantId={variantSelection.getSelectedVariantId()}
+                selectedVariantData={variantSelection.selection}
+                isVariantSelectionComplete={!variantSelection.hasVariants || variantSelection.isSelectionComplete}
+              />
             </div>
           </div>
         </div>

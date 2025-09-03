@@ -25,6 +25,7 @@ interface MultiLanguageFieldProps {
   rows?: number;
   className?: string;
   required?: boolean; // إضافة خاصية للتحكم في كون الحقل مطلوب أم لا
+  inline?: boolean; // عرض الحقول لكل اللغات في نفس السطر
 }
 
 const MultiLanguageField: React.FC<MultiLanguageFieldProps> = ({
@@ -36,9 +37,10 @@ const MultiLanguageField: React.FC<MultiLanguageFieldProps> = ({
   placeholder,
   rows = 3,
   className = '',
-  required = false // قيمة افتراضية
+  required = false, // قيمة افتراضية
+  inline = false
 }) => {
-  const { language: currentLang } = useLanguage();
+  const { language: currentLang, isRTL } = useLanguage();
 
   const languages: Language[] = ['ar', 'en', 'he'];
   const visibleLanguages = languages.filter(lang => shouldShowLanguageField(lang));
@@ -49,7 +51,7 @@ const MultiLanguageField: React.FC<MultiLanguageFieldProps> = ({
     const isFieldRequired = required && isLanguageFieldRequired(lang);
     
     return (
-      <div className={className}>
+      <div className={className} dir={isRTL ? 'rtl' : 'ltr'}>
         <Label htmlFor={`${fieldName}_${lang}`}>
           {label} {isFieldRequired && <span className="text-red-500">*</span>}
         </Label>
@@ -61,6 +63,7 @@ const MultiLanguageField: React.FC<MultiLanguageFieldProps> = ({
             placeholder={placeholder?.[lang]}
             rows={rows}
             required={isFieldRequired}
+            className={isRTL ? 'text-right' : 'text-left'}
           />
         ) : (
           <Input
@@ -69,41 +72,87 @@ const MultiLanguageField: React.FC<MultiLanguageFieldProps> = ({
             onChange={(e) => onChange(lang, e.target.value)}
             placeholder={placeholder?.[lang]}
             required={isFieldRequired}
+            className={isRTL ? 'text-right' : 'text-left'}
           />
         )}
       </div>
     );
   }
 
-  // إذا كان هناك أكثر من لغة، عرض التبويبات
+  // إذا كان هناك أكثر من لغة، عرض الحقول إما عموديًا (افتراضي) أو أفقيًا (inline)
+  if (!inline) {
+    return (
+      <div className={className} dir={isRTL ? 'rtl' : 'ltr'}>
+        <div className="space-y-4">
+          {visibleLanguages.map((lang) => {
+            const isFieldRequired = required && isLanguageFieldRequired(lang);
+            const langName = getLanguageName(lang, currentLang);
+            return (
+              <div key={lang}>
+                <Label htmlFor={`${fieldName}_${lang}`} className="text-sm">
+                  {langName} {isFieldRequired && <span className="text-red-500">*</span>}
+                </Label>
+                {type === 'textarea' ? (
+                  <Textarea
+                    id={`${fieldName}_${lang}`}
+                    value={values[lang] || ''}
+                    onChange={(e) => onChange(lang, e.target.value)}
+                    placeholder={placeholder?.[lang]}
+                    rows={rows}
+                    required={isFieldRequired}
+                    className={isRTL ? 'text-right' : 'text-left'}
+                  />
+                ) : (
+                  <Input
+                    id={`${fieldName}_${lang}`}
+                    value={values[lang] || ''}
+                    onChange={(e) => onChange(lang, e.target.value)}
+                    placeholder={placeholder?.[lang]}
+                    required={isFieldRequired}
+                    className={isRTL ? 'text-right' : 'text-left'}
+                  />
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  // inline layout: شبكة بثلاثة أعمدة (عربي/إنجليزي/عبري) في نفس السطر
   return (
-    <div className={className}>
-      <div className="space-y-4">
+    <div className={className} dir={isRTL ? 'rtl' : 'ltr'}>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
         {visibleLanguages.map((lang) => {
           const isFieldRequired = required && isLanguageFieldRequired(lang);
           const langName = getLanguageName(lang, currentLang);
-          
+          // نجعل وسم اللغة كـ aria-label ونستعمل placeholder المختصر
           return (
             <div key={lang}>
-              <Label htmlFor={`${fieldName}_${lang}`} className="text-sm">
+              <Label htmlFor={`${fieldName}_${lang}`} className="text-[11px] text-gray-600 mb-1 block">
                 {langName} {isFieldRequired && <span className="text-red-500">*</span>}
               </Label>
               {type === 'textarea' ? (
                 <Textarea
+                  aria-label={langName}
                   id={`${fieldName}_${lang}`}
                   value={values[lang] || ''}
                   onChange={(e) => onChange(lang, e.target.value)}
-                  placeholder={placeholder?.[lang]}
+                  placeholder={placeholder?.[lang] || langName}
                   rows={rows}
                   required={isFieldRequired}
+                  className={isRTL ? 'text-right' : 'text-left'}
                 />
               ) : (
                 <Input
+                  aria-label={langName}
                   id={`${fieldName}_${lang}`}
                   value={values[lang] || ''}
                   onChange={(e) => onChange(lang, e.target.value)}
-                  placeholder={placeholder?.[lang]}
+                  placeholder={placeholder?.[lang] || langName}
                   required={isFieldRequired}
+                  className={isRTL ? 'text-right' : 'text-left'}
                 />
               )}
             </div>

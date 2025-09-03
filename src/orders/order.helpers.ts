@@ -53,6 +53,8 @@ export function mapOrderFromDb(order: Record<string, unknown>): Order {
       product_id: string;
       quantity: number;
       price: number;
+  variant_id?: string | null;
+  variant_attributes?: any;
       products?: { name_ar?: string; name_en?: string; name_he?: string };
     };
     items = (order["order_items"] as OrderItemDB[]).map((item) => ({
@@ -60,6 +62,8 @@ export function mapOrderFromDb(order: Record<string, unknown>): Order {
       product_id: item.product_id,
       quantity: item.quantity,
       price: item.price,
+  variant_id: item.variant_id ?? null,
+  variant_attributes: item.variant_attributes ?? null,
       product_name:
         item.products?.name_ar ||
         item.products?.name_en ||

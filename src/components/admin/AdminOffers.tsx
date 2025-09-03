@@ -513,7 +513,12 @@ const AdminOffers: React.FC = () => {
         description_en: selectedOffer.description_en || "",
         description_ar: selectedOffer.description_ar || "",
         description_he: selectedOffer.description_he || "",
-        discount_type: selectedOffer.discount_type || "percentage",
+        discount_type:
+          selectedOffer.discount_type === "percentage"
+            ? "percentage"
+            : selectedOffer.discount_type === "fixed"
+            ? "fixed"
+            : "percentage",
         discount_percent: String(selectedOffer.discount_percentage || ""),
         discount_amount: String(selectedOffer.discount_amount || ""),
         image_url: selectedOffer.image_url || "",

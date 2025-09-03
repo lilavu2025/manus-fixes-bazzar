@@ -1,9 +1,13 @@
 import type { Product } from '@/types';
+import type { VariantSelection } from '@/types/variant';
 
 export interface CartItem {
   id: string;
   product: Product;
   quantity: number;
+  selectedVariant?: Record<string, string>; // خصائص الفيرنت المحددة
+  variantId?: string; // معرف الفيرنت المحدد
+  variantAttributes?: Record<string, any>; // خصائص إضافية للفيرنت
 }
 
 export interface CartState {
@@ -14,7 +18,7 @@ export interface CartState {
 
 export type CartContextType = {
   state: CartState;
-  addItem: (product: Product, quantity?: number) => void;
+  addItem: (product: Product, quantity?: number, variantData?: { variantId?: string; selectedVariant?: Record<string, string> }) => void;
   removeItem: (id: string, productId?: string) => void;
   updateQuantity: (id: string, quantity: number, productId?: string) => void;
   clearCart: () => void;
@@ -30,7 +34,7 @@ export type CartContextType = {
 };
 
 export type CartAction =
-  | { type: 'ADD_ITEM'; payload: { product: Product; quantity?: number } }
+  | { type: 'ADD_ITEM'; payload: { product: Product; quantity?: number; variantData?: { variantId?: string; selectedVariant?: Record<string, string> } } }
   | { type: 'REMOVE_ITEM'; payload: { id: string } }
   | { type: 'UPDATE_QUANTITY'; payload: { id: string; quantity: number } }
   | { type: 'CLEAR_CART' }

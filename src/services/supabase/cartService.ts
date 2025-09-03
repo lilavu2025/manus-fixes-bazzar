@@ -17,55 +17,102 @@ export class CartService {
     return data || [];
   }
 
-  /** إضافة منتج للعربة */
-  static async addToCart(userId: string, productId: string, quantity: number) {
-    // تحقق إذا كان المنتج موجود مسبقاً
-    const { data: existing, error: fetchError } = await supabase
+  /** إضافة منتج للعربة مع دعم الفيرنتس */
+  static async addToCart(
+    userId: string, 
+    productId: string, 
+    quantity: number, 
+    variantId?: string,
+    variantAttributes?: Record<string, any>
+  ) {
+    // تحقق إذا كان المنتج موجود مسبقاً (مع نفس الفيرنت إن وجد)
+    let selectQuery = supabase
       .from("cart")
       .select("*")
       .eq("user_id", userId)
-      .eq("product_id", productId)
-      .maybeSingle();
+      .eq("product_id", productId);
+
+    selectQuery = variantId
+      ? selectQuery.eq("variant_id", variantId)
+      : selectQuery.is("variant_id", null);
+
+    const { data: existing, error: fetchError } = await selectQuery.maybeSingle();
     
     if (fetchError && fetchError.code !== "PGRST116") throw fetchError;
     
     if (existing) {
       // تحديث الكمية إذا كان المنتج موجود
-      const { error } = await supabase
+      let updateQuery = supabase
         .from("cart")
         .update({ quantity: existing.quantity + quantity })
         .eq("user_id", userId)
         .eq("product_id", productId);
-      
+
+      updateQuery = variantId
+        ? updateQuery.eq("variant_id", variantId)
+        : updateQuery.is("variant_id", null);
+
+      const { error } = await updateQuery;
       if (error) throw error;
     } else {
       // إضافة منتج جديد
+      const insertData: any = { 
+        user_id: userId, 
+        product_id: productId, 
+        quantity 
+      };
+      
+      if (variantId) {
+        insertData.variant_id = variantId;
+      }
+      
+      if (variantAttributes) {
+        insertData.variant_attributes = variantAttributes;
+      }
+
       const { error } = await supabase
         .from("cart")
-        .insert({ user_id: userId, product_id: productId, quantity });
+        .insert(insertData);
       
       if (error) throw error;
     }
   }
 
   /** تحديث كمية منتج في العربة */
-  static async updateCartItem(userId: string, productId: string, quantity: number) {
-    const { error } = await supabase
+  static async updateCartItem(
+    userId: string, 
+    productId: string, 
+    quantity: number,
+    variantId?: string
+  ) {
+    let updateQuery = supabase
       .from("cart")
       .update({ quantity })
       .eq("user_id", userId)
       .eq("product_id", productId);
+
+    updateQuery = variantId
+      ? updateQuery.eq("variant_id", variantId)
+      : updateQuery.is("variant_id", null);
+
+    const { error } = await updateQuery;
     
     if (error) throw error;
   }
 
   /** حذف منتج من العربة */
-  static async removeFromCart(userId: string, productId: string) {
-    const { error } = await supabase
+  static async removeFromCart(userId: string, productId: string, variantId?: string) {
+    let deleteQuery = supabase
       .from("cart")
       .delete()
       .eq("user_id", userId)
       .eq("product_id", productId);
+
+    deleteQuery = variantId
+      ? deleteQuery.eq("variant_id", variantId)
+      : deleteQuery.is("variant_id", null);
+
+    const { error } = await deleteQuery;
     
     if (error) throw error;
   }

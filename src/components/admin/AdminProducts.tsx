@@ -10,6 +10,7 @@ import AdminProductsHeader from "./AdminProductsHeader";
 import AdminProductsEmptyState from "./AdminProductsEmptyState";
 import PaginatedProductsTable from "./VirtualizedProductsTable"; // استخدام الجدول المحسن
 import AdminProductsDialogs from "./AdminProductsDialogs";
+import ProductVariantsManager from "./ProductVariantsManager";
 import AdminHeader from "./AdminHeader";
 import {
   ProductWithOptionalFields,
@@ -24,6 +25,8 @@ import { mapProductFromDb } from "@/types/mapProductFromDb";
 import { Card, CardContent } from "@/components/ui/card";
 import { ClearableInput } from "@/components/ui/ClearableInput"; // استيراد المكون الجديد
 import { fetchTopOrderedProducts } from "@/integrations/supabase/dataSenders";
+import { useProductOptions, useProductVariants, useSaveProductVariants } from "@/hooks/useVariantsAPI";
+import { ProductOption, ProductVariant } from "@/types/variant";
 
 const AdminProducts: React.FC = () => {
   const { isRTL, t, language } = useLanguage();
@@ -33,8 +36,11 @@ const AdminProducts: React.FC = () => {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showViewDialog, setShowViewDialog] = useState(false);
+  const [showVariantsDialog, setShowVariantsDialog] = useState(false);
   const [selectedProduct, setSelectedProduct] =
     useState<AdminProductForm | null>(null);
+  const [selectedProductForVariants, setSelectedProductForVariants] =
+    useState<Product | null>(null);
   const {
     products: productsRaw,
     loading: productsLoading,
@@ -42,8 +48,19 @@ const AdminProducts: React.FC = () => {
     setProducts,
     refetch,
   } = useProductsRealtime();
+  // خرائط المنتجات مع دعم بيانات الفيرنتس القادمة من products_with_variants
   const products: ProductWithOptionalFields[] = Array.isArray(productsRaw)
-    ? productsRaw.map(mapProductFromDb)
+    ? productsRaw.map((row: any) => {
+        const base = mapProductFromDb(row as any) as any; // إرجاع خصائص الأساسية
+        // إرفاق بيانات الفيرنتس إن وُجدت في الـ view
+        return {
+          ...base,
+          has_variants: typeof row?.has_variants === 'boolean' ? row.has_variants : base.has_variants,
+          // options ليست مطلوبة هنا لعرض المخزون، لكن نبقيها إن لزم
+          options: Array.isArray(row?.options) ? row.options : base.options,
+          variants: Array.isArray(row?.variants) ? row.variants : base.variants,
+        } as ProductWithOptionalFields;
+      })
     : [];
   const { data: categoriesData } = useCategories();
   // Accept both Category[] types for now, but cast to any to avoid type error
@@ -80,6 +97,26 @@ const AdminProducts: React.FC = () => {
   const handleEditProduct = (product: Product) => {
     setSelectedProduct(mapProductToFormData(product));
     setShowEditDialog(true);
+  };
+
+  const handleManageVariants = (product: Product) => {
+    setSelectedProductForVariants(product);
+    setShowVariantsDialog(true);
+  };
+
+  // جلب بيانات الفيرنتس للمنتج المحدد
+  const { data: productOptions = [] } = useProductOptions(selectedProductForVariants?.id || '');
+  const { data: productVariants = [] } = useProductVariants(selectedProductForVariants?.id || '');
+  const saveVariantsMutation = useSaveProductVariants();
+
+  const handleSaveVariants = async (options: ProductOption[], variants: ProductVariant[]) => {
+    if (!selectedProductForVariants) return;
+    
+    await saveVariantsMutation.mutateAsync({
+      productId: selectedProductForVariants.id,
+      options,
+      variants
+    });
   };
 
   const [filterCategory, setFilterCategory] = useState<string>("all");
@@ -455,6 +492,7 @@ const AdminProducts: React.FC = () => {
           onViewProduct={handleViewProduct}
           onEditProduct={handleEditProduct}
           onDeleteProduct={handleDeleteProduct}
+          onManageVariants={handleManageVariants}
           categories={productCategories}
         />
       ) : (
@@ -463,6 +501,7 @@ const AdminProducts: React.FC = () => {
           onViewProduct={handleViewProduct}
           onEditProduct={handleEditProduct}
           onDeleteProduct={handleDeleteProduct}
+          onManageVariants={handleManageVariants}
           categories={productCategories}
         />
       )}
@@ -478,7 +517,70 @@ const AdminProducts: React.FC = () => {
         categories={productCategories}
         onSuccess={onSuccess} // تحديث المنتجات من السيرفر بعد التعديل
         setProducts={setProducts}
+        onRequestVariants={() => {
+          // Open the variants manager for the currently selected product
+          if (selectedProduct) {
+            setSelectedProductForVariants({
+              id: selectedProduct.id,
+              name: selectedProduct.name_ar || selectedProduct.name_en || selectedProduct.name_he || '',
+              nameEn: selectedProduct.name_en || '',
+              nameHe: selectedProduct.name_he || '',
+              description: selectedProduct.description_ar || '',
+              descriptionEn: selectedProduct.description_en || '',
+              descriptionHe: selectedProduct.description_he || '',
+              price: selectedProduct.price,
+              originalPrice: selectedProduct.original_price,
+              wholesalePrice: selectedProduct.wholesale_price,
+              image: selectedProduct.image,
+              images: selectedProduct.images,
+              category: selectedProduct.category_id,
+              inStock: selectedProduct.in_stock,
+              rating: 0,
+              reviews: 0,
+              discount: selectedProduct.discount,
+              featured: selectedProduct.featured,
+              tags: selectedProduct.tags,
+              stock_quantity: selectedProduct.stock_quantity,
+              active: selectedProduct.active,
+              created_at: selectedProduct.created_at,
+            } as any);
+            setShowVariantsDialog(true);
+          }
+        }}
       />
+
+      {/* مدير الفرق */}
+      {selectedProductForVariants && (
+        <ProductVariantsManager
+          open={showVariantsDialog}
+          onOpenChange={(open) => {
+            setShowVariantsDialog(open);
+            if (!open) {
+              setSelectedProductForVariants(null);
+            }
+          }}
+          productId={selectedProductForVariants.id}
+          productName={selectedProductForVariants.name || selectedProductForVariants.nameEn || selectedProductForVariants.nameHe || ''}
+          options={productOptions}
+          variants={productVariants}
+          onSave={async (options, variants) => {
+            try {
+              await saveVariantsMutation.mutateAsync({
+                productId: selectedProductForVariants.id,
+                options,
+                variants
+              });
+              enhancedToast.success(t("variantsSaved"));
+              setShowVariantsDialog(false);
+              setSelectedProductForVariants(null);
+            } catch (error) {
+              console.error('Error saving variants:', error);
+              enhancedToast.error(t("errorSavingVariants"));
+            }
+          }}
+          loading={saveVariantsMutation.isPending}
+        />
+      )}
     </div>
   );
 };

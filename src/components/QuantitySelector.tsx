@@ -1,9 +1,10 @@
 import * as React from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Minus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useLanguage } from "@/utils/languageContextUtils";
+import { toast } from "sonner";
 
 interface QuantitySelectorProps {
   quantity: number;
@@ -22,6 +23,8 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
 }) => {
   const { isRTL } = useLanguage();
   const [inputValue, setInputValue] = useState(quantity.toString());
+  const debounceRef = useRef<number | null>(null);
+  const isDisabled = disabled || max <= 0; // auto-disable when out of stock (max <= 0)
   
   // Calculate input width based on the number of digits
   const getInputWidth = (value: string) => {
@@ -32,33 +35,60 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
     return Math.max(baseWidth, baseWidth + (digits - 1) * perDigitWidth);
   };
 
-  // Sync input value when quantity prop changes
+  // Sync local input when external props change (do not emit change here)
   useEffect(() => {
-    setInputValue(quantity.toString());
-  }, [quantity]);
+    let q = quantity;
+    if (q < min) q = min;
+    if (q > max) q = max;
+    setInputValue(q.toString());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quantity, min, max]);
+
+  // Cleanup debounce on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) {
+        window.clearTimeout(debounceRef.current);
+      }
+    };
+  }, []);
+
+  const commitValue = (raw: string, reason: "debounce" | "blur" | "enter") => {
+    const sanitized = raw.replace(/[^0-9]/g, "");
+    // If empty, fallback to min on commit
+    if (sanitized === "") {
+      setInputValue(min.toString());
+      if (quantity !== min) onQuantityChange(min);
+      return;
+    }
+    const numValue = parseInt(sanitized, 10);
+    const clamped = Math.min(max, Math.max(min, isNaN(numValue) ? min : numValue));
+    if (!isNaN(numValue) && numValue > max) {
+      toast.error(`${isRTL ? 'الكمية المتوفرة من هذا المنتج هي' : 'Available quantity is'} ${max}`);
+    }
+    setInputValue(clamped.toString());
+    if (clamped !== quantity) onQuantityChange(clamped);
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    setInputValue(value);
-
-    const numValue = parseInt(value);
-    if (!isNaN(numValue) && numValue >= min && numValue <= max) {
-      onQuantityChange(numValue);
-    }
+    // Allow only digits to be displayed during typing
+    const sanitized = value.replace(/[^0-9]/g, "");
+    setInputValue(sanitized);
+    // Debounce committing the value to avoid mid-typing clamp (e.g., typing 500 quickly)
+    if (debounceRef.current) window.clearTimeout(debounceRef.current);
+    debounceRef.current = window.setTimeout(() => {
+      commitValue(sanitized, "debounce");
+    }, 300);
   };
 
   const handleInputBlur = () => {
-    const numValue = parseInt(inputValue);
-    if (isNaN(numValue) || numValue < min) {
-      setInputValue(min.toString());
-      onQuantityChange(min);
-    } else if (numValue > max) {
-      setInputValue(max.toString());
-      onQuantityChange(max);
-    }
+    if (debounceRef.current) window.clearTimeout(debounceRef.current);
+    commitValue(inputValue, "blur");
   };
 
   const increment = () => {
+    if (isDisabled) return;
     if (quantity < max) {
       const newQuantity = quantity + 1;
       setInputValue(newQuantity.toString());
@@ -67,6 +97,7 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
   };
 
   const decrement = () => {
+    if (isDisabled) return;
     if (quantity > min) {
       const newQuantity = quantity - 1;
       setInputValue(newQuantity.toString());
@@ -75,7 +106,7 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
   };
 
   return (
-    <div className={`flex items-center gap-1 ${isRTL ? "flex-row" : ""}`}>
+    <div className={`flex items-center gap-1 ${isRTL ? "flex-row-reverse" : "flex-row"}`}>
       <Button
         size="icon"
         variant="outline"
@@ -85,23 +116,21 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
           e.stopPropagation();
           decrement();
         }}
-        disabled={quantity <= min || disabled}
+        disabled={quantity <= min || isDisabled}
       >
         <Minus className="h-4 w-4" />
       </Button>
 
       <Input
-        type="number"
+        type="text" // Use text to avoid native number quirks while still showing numeric keypad via inputMode
         value={inputValue}
-        onChange={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          handleInputChange(e);
-        }}
-        onBlur={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          handleInputBlur();
+        onChange={handleInputChange}
+        onBlur={handleInputBlur}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            if (debounceRef.current) window.clearTimeout(debounceRef.current);
+            commitValue(inputValue, 'enter');
+          }
         }}
         className={`text-center ${isRTL ? "text-right" : "text-left"}`}
         style={{ 
@@ -110,8 +139,10 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
         }}
         min={min}
         max={max}
+        inputMode="numeric"
+        pattern="[0-9]*"
         dir={isRTL ? "rtl" : "ltr"}
-        disabled={disabled}
+        disabled={isDisabled}
       />
 
       <Button
@@ -123,7 +154,7 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
           e.stopPropagation();
           increment();
         }}
-        disabled={quantity >= max || disabled}
+        disabled={quantity >= max || isDisabled}
       >
         <Plus className="h-4 w-4" />
       </Button>

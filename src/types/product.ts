@@ -1,3 +1,5 @@
+import { ProductVariant, ProductOption } from './variant';
+
 export interface Product {
   id: string;
   name: string;
@@ -23,6 +25,9 @@ export interface Product {
   created_at?: string;
   sales_count?: number; // تمت الإضافة لدعم إحصائيات المبيعات
   top_ordered?: boolean; // تمت الإضافة لدعم إظهار البادج
+  has_variants?: boolean; // إضافة دعم الفيرنتس
+  options?: ProductOption[]; // خيارات المنتج
+  variants?: ProductVariant[]; // فيرنتس المنتج
 }
 
 export interface ProductFormData {
@@ -44,6 +49,7 @@ export interface ProductFormData {
   discount: number;
   tags: string[];
   stock_quantity: number;
+  has_variants?: boolean; // إضافة دعم الفيرنتس
 }
 
 export type AdminProductForm = ProductFormData & { id: string; category_id: string; category: string; created_at?: string };

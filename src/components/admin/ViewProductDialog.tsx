@@ -14,22 +14,51 @@ import { useCategoriesRealtime } from "@/hooks/useCategoriesRealtime";
 import ProductImageGallery from "@/components/ProductImageGallery";
 import { shouldShowLanguageField, getLanguageName } from "@/utils/fieldVisibilityUtils";
 import { Language } from "@/types/language";
+import { useProductOptions, useProductVariants } from "@/hooks/useVariantsAPI";
 
 interface ViewProductDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   product: AdminProductForm;
+  onRequestEdit?: () => void; // فتح نافذة التعديل من نافذة العرض
+  onRequestVariants?: () => void; // فتح إدارة الفيرنتس من نافذة العرض
 }
 
 const ViewProductDialog: React.FC<ViewProductDialogProps> = ({
   open,
   onOpenChange,
   product,
+  onRequestEdit,
+  onRequestVariants,
 }) => {
   const { t, language, isRTL } = useLanguage();
   const { categories } = useCategoriesRealtime();
+  const { data: options = [] } = useProductOptions(product?.id || "");
+  const { data: variants = [] } = useProductVariants(product?.id || "");
 
   if (!product) return null;
+
+  // Helpers to display multilingual JSON strings nicely based on site language
+  const tryParseI18n = (val?: string | null): { ar?: string; en?: string; he?: string } | null => {
+    if (!val) return null;
+    try {
+      const parsed = JSON.parse(val);
+      if (parsed && typeof parsed === 'object' && ('ar' in parsed || 'en' in parsed || 'he' in parsed)) {
+        return parsed as any;
+      }
+    } catch {}
+    return null;
+  };
+  const toDisplay = (val: any): string => {
+    const s = String(val ?? "");
+    const obj = tryParseI18n(s);
+    if (!obj) return s;
+    return (language === 'en'
+      ? (obj.en || obj.ar || obj.he)
+      : language === 'he'
+      ? (obj.he || obj.en || obj.ar)
+      : (obj.ar || obj.en || obj.he)) || '';
+  };
 
   // Get the category name based on the current language
   let categoryName = product.category;
@@ -123,6 +152,63 @@ const ViewProductDialog: React.FC<ViewProductDialogProps> = ({
                 <h3 className="text-lg font-semibold mb-3">{t("category")}</h3>
                 <p className="text-gray-700 font-medium">{categoryName}</p>
               </div>
+
+              {/* Compact Variants Summary */}
+              {(product.has_variants || (variants && variants.length > 0)) && (
+                <div className="bg-white dark:bg-gray-900 rounded-lg p-4 border" dir={isRTL ? 'rtl' : 'ltr'}>
+                  <h3 className="text-lg font-semibold mb-3">{t('variants')}</h3>
+                  {variants && variants.length > 0 ? (
+                    <>
+                      {/* Metrics row */}
+                      <div className="flex flex-wrap items-center gap-2 mb-3">
+                        <Badge variant="secondary" className="px-2 py-1 text-xs">
+                          {t('variants')}: {variants.length}
+                        </Badge>
+                        <Badge variant="outline" className="px-2 py-1 text-xs">
+                          {t('stockQuantity')}: {variants.reduce((sum, v) => sum + (v.stock_quantity ?? 0), 0)}
+                        </Badge>
+                        {(() => {
+                          const inStock = variants.filter(v => (v.stock_quantity ?? 0) > 0).length;
+                          const outStock = variants.length - inStock;
+                          return (
+                            <>
+                              <Badge variant="outline" className="px-2 py-1 text-xs text-green-700">
+                                {t('inStock')}: {inStock}
+                              </Badge>
+                              <Badge variant="outline" className="px-2 py-1 text-xs text-red-700">
+                                {t('outOfStock')}: {outStock}
+                              </Badge>
+                            </>
+                          );
+                        })()}
+                      </div>
+
+                      {/* Sample chips of variants (first 4) */}
+                      <div className="flex flex-wrap gap-2">
+                        {variants.slice(0, 4).map(v => {
+                          const attrs = v.option_values || ({} as Record<string, string>);
+                          const label = Object.entries(attrs)
+                            .map(([k, val]) => `${toDisplay(k)}: ${toDisplay(val)}`)
+                            .join(' · ');
+                          return (
+                            <div key={v.id} className="text-xs bg-gray-50 dark:bg-gray-800 border rounded px-2 py-1">
+                              <span className="font-medium">{label || '—'}</span>
+                              <span className={isRTL ? 'mr-2' : 'ml-2'}>
+                                • {t('stockQuantity')}: {v.stock_quantity ?? 0}
+                              </span>
+                            </div>
+                          );
+                        })}
+                        {variants.length > 4 && (
+                          <Badge variant="outline" className="text-xs px-2 py-1">+{variants.length - 4}</Badge>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-sm text-gray-500">{t('noVariantsYet') || 'لا توجد فيرنتس'}</div>
+                  )}
+                </div>
+              )}
 
               {/* Tags */}
               {product.tags && product.tags.length > 0 && (
@@ -245,6 +331,96 @@ const ViewProductDialog: React.FC<ViewProductDialogProps> = ({
             </div>
           </div>
 
+          {/* Variants (options and list) */}
+          {(product.has_variants || options.length > 0 || variants.length > 0) && (
+            <div className="mt-6 bg-white dark:bg-gray-900 rounded-lg p-4 border" dir={isRTL ? "rtl" : "ltr"}>
+              <h3 className="text-lg font-semibold mb-4">{t("variants")}</h3>
+
+              {options.length > 0 && (
+                <div className="mb-4">
+                  <h4 className="text-sm font-semibold mb-2">{t("options")}</h4>
+                  <div className="flex flex-wrap gap-3">
+                    {options
+                      .sort((a, b) => (a.option_position ?? 0) - (b.option_position ?? 0))
+                      .map((opt) => (
+                        <div key={opt.id} className="bg-gray-50 dark:bg-gray-800 rounded-md p-2">
+                          <div className="text-xs text-gray-600 dark:text-gray-300 mb-1 font-medium">
+                            {toDisplay(opt.name)}
+                          </div>
+                          <div className="flex flex-wrap gap-1">
+                            {(opt.option_values || []).map((val) => (
+                              <Badge key={val} variant="outline" className="text-xs px-2 py-0.5">
+                                {toDisplay(val)}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
+
+              {variants.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full text-sm border-collapse">
+                    <thead>
+                      <tr className="bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+                        <th className="px-3 py-2 text-start border-b">{t("variants")}</th>
+                        <th className="px-3 py-2 text-center border-b">SKU</th>
+                        <th className="px-3 py-2 text-center border-b">{t("price")}</th>
+                        <th className="px-3 py-2 text-center border-b">{t("wholesalePrice")}</th>
+                        <th className="px-3 py-2 text-center border-b">{t("stockQuantity")}</th>
+                        <th className="px-3 py-2 text-center border-b">{t("active")}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {variants.map((v) => {
+                        const attrs = v.option_values || {};
+                        const attrEntries = Object.entries(attrs);
+                        return (
+                          <tr key={v.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                            <td className="px-3 py-2 align-top border-b">
+                              <div className="text-gray-900 dark:text-gray-100">
+                                {attrEntries.length > 0 ? (
+                                  attrEntries.map(([k, val]) => (
+                                    <div key={k}>{toDisplay(k)}: {toDisplay(val)}</div>
+                                  ))
+                                ) : (
+                                  "-"
+                                )}
+                              </div>
+                            </td>
+                            <td className="px-3 py-2 text-center border-b">
+                              <span className="font-mono text-xs text-gray-700 dark:text-gray-300">{v.sku || "-"}</span>
+                            </td>
+                            <td className="px-3 py-2 text-center border-b">
+                              {(v.price ?? 0).toFixed(2)} {t("currency")}
+                            </td>
+                            <td className="px-3 py-2 text-center border-b">
+                              {(v.wholesale_price ?? 0).toFixed(2)} {t("currency")}
+                            </td>
+                            <td className="px-3 py-2 text-center border-b">
+                              <Badge variant={v.stock_quantity > 0 ? "secondary" : "destructive"}>
+                                {v.stock_quantity ?? 0}
+                              </Badge>
+                            </td>
+                            <td className="px-3 py-2 text-center border-b">
+                              <Badge variant={v.active ? "default" : "destructive"}>
+                                {v.active ? t("active") : t("inactive")}
+                              </Badge>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="text-sm text-gray-500">{t("noVariantsYet") || "لا توجد فيرنتس"}</div>
+              )}
+            </div>
+          )}
+
           {/* Creation Date */}
           {product.created_at && (
             <div className="mt-6 bg-white dark:bg-gray-900 rounded-lg p-4 border">
@@ -266,10 +442,35 @@ const ViewProductDialog: React.FC<ViewProductDialogProps> = ({
           )}
         </div>
 
-        <DialogFooter className="px-6 py-4 bg-gray-50 dark:bg-gray-800 border-t">
+        <DialogFooter className="px-6 py-4 bg-gray-50 dark:bg-gray-800 border-t flex flex-col sm:flex-row gap-2 sm:gap-3 justify-between">
+          <div className="flex gap-2">
+            {onRequestEdit && (
+              <Button
+                onClick={() => {
+                  onOpenChange(false);
+                  onRequestEdit();
+                }}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4"
+              >
+                {t("edit")}
+              </Button>
+            )}
+            {onRequestVariants && (
+              <Button
+                onClick={() => {
+                  onOpenChange(false);
+                  onRequestVariants();
+                }}
+                className="bg-purple-600 hover:bg-purple-700 text-white font-medium px-4"
+              >
+                {t("manageVariants")}
+              </Button>
+            )}
+          </div>
           <Button
             onClick={() => onOpenChange(false)}
-            className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-white font-medium px-8"
+            variant="outline"
+            className="w-full sm:w-auto"
           >
             {t("close")}
           </Button>

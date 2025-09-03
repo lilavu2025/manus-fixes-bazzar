@@ -17,9 +17,12 @@ import {
 
 interface ProductActionsProps {
   product: Product;
+  selectedVariantId?: string | null;
+  selectedVariantData?: Record<string, string>;
+  isVariantSelectionComplete?: boolean;
 }
 
-const ProductActions = ({ product }: ProductActionsProps) => {
+const ProductActions = ({ product, selectedVariantId, selectedVariantData, isVariantSelectionComplete = true }: ProductActionsProps) => {
   const { t } = useLanguage();
   const [quantity, setQuantity] = useState(1);
   const { addToCart, getItemQuantity } = useCart();
@@ -29,14 +32,29 @@ const ProductActions = ({ product }: ProductActionsProps) => {
 
   const handleAddToCart = async () => {
     console.log("Add to cart clicked with quantity:", quantity);
+    console.log("Selected variant ID:", selectedVariantId);
+    
+    if (!isVariantSelectionComplete) {
+      toast.error(t("pleaseSelectAllVariants") || "يرجى اختيار جميع المواصفات المطلوبة");
+      return;
+    }
+    
     if (!product.inStock) {
       toast.error(t("productOutOfStock"));
       return;
     }
 
     try {
-      await addToCart(product, quantity);
-      console.log("Product added to cart successfully");
+      // إعداد بيانات الفيرنت إذا كان متوفرًا
+      const variantData = selectedVariantId 
+        ? {
+            variantId: selectedVariantId,
+            selectedVariant: selectedVariantData || {}
+          }
+        : undefined;
+        
+      await addToCart(product, quantity, variantData);
+      console.log("Product added to cart successfully with variant:", variantData);
       setQuantity(1);
     } catch (error) {
       console.error(
@@ -111,6 +129,8 @@ const ProductActions = ({ product }: ProductActionsProps) => {
     setShareOpen(false);
   };
 
+  const isAddDisabled = !product.inStock || !isVariantSelectionComplete;
+
   return (
     <div className="space-y-4 sm:space-y-6 product-actions-responsive">
       {/* Quantity & Add to Cart */}
@@ -135,7 +155,7 @@ const ProductActions = ({ product }: ProductActionsProps) => {
             }}
             max={product.stock_quantity}
             min={1}
-            disabled={!product.inStock}
+            disabled={!product.inStock || !isVariantSelectionComplete}
           />
         </div>
 
@@ -151,7 +171,8 @@ const ProductActions = ({ product }: ProductActionsProps) => {
             }}
             className="flex-1 gap-2 text-sm sm:text-base py-2 sm:py-3"
             size="lg"
-            disabled={!product.inStock}
+            disabled={isAddDisabled}
+            title={!isVariantSelectionComplete ? (t("pleaseSelectAllVariants") || "يرجى اختيار جميع المواصفات المطلوبة") : undefined}
           >
             <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
             {t("addToCart")}
@@ -161,6 +182,11 @@ const ProductActions = ({ product }: ProductActionsProps) => {
               </Badge>
             )}
           </Button>
+          {!isVariantSelectionComplete && (
+            <div className="text-xs text-amber-600 mt-1">
+              {t("pleaseSelectAllVariants") || "يرجى اختيار جميع المواصفات المطلوبة"}
+            </div>
+          )}
         </div>
       </div>
 

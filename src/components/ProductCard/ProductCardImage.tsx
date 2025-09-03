@@ -5,6 +5,7 @@ import ProductCardBadges from './ProductCardBadges';
 
 export interface ProductCardImageProps {
   product: Product;
+  overrideImage?: string;
   isFavorite: boolean;
   onQuickView: () => void;
   onFavorite: () => Promise<void>;
@@ -14,6 +15,7 @@ export interface ProductCardImageProps {
 
 const ProductCardImage: React.FC<ProductCardImageProps> = ({
   product,
+  overrideImage,
   isFavorite,
   onQuickView,
   onFavorite,
@@ -30,7 +32,7 @@ const ProductCardImage: React.FC<ProductCardImageProps> = ({
       >
         <div
           className="w-full h-full bg-center bg-contain bg-no-repeat"
-          style={{ backgroundImage: `url(${product.image})` }}
+          style={{ backgroundImage: `url(${overrideImage || product.image})` }}
         />
         {/* Overlay للتأثير على Hover */}
         <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity" />

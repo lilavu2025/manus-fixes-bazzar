@@ -26,8 +26,11 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 const cartReducer = (state: CartState, action: CartAction): CartState => {
   switch (action.type) {
     case "ADD_ITEM": {
-      const { product, quantity = 1 } = action.payload;
-      const itemId = `${product.id}`;
+      const { product, quantity = 1, variantData } = action.payload;
+      // إنشاء ID فريد يشمل الفيرنت إذا وجد
+      const itemId = variantData?.variantId 
+        ? `${product.id}_${variantData.variantId}` 
+        : `${product.id}`;
 
       const existingItem = state.items.find((item) => item.id === itemId);
 
@@ -53,6 +56,9 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
           id: itemId,
           product,
           quantity,
+          variantId: variantData?.variantId,
+          selectedVariant: variantData?.selectedVariant,
+          variantAttributes: variantData?.selectedVariant,
         };
 
         const updatedItems = [...state.items, newItem];
@@ -211,7 +217,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
       console.log("Loading cart from database...");
       // تحويل البيانات من قاعدة البيانات إلى تنسيق CartItem
       const cartItems: CartItem[] = dbCartData.map((dbItem: any) => ({
-        id: dbItem.product_id,
+        id: dbItem.variant_id ? `${dbItem.product_id}_${dbItem.variant_id}` : dbItem.product_id,
         product: {
           id: dbItem.product.id,
           name: dbItem.product.name_ar,
@@ -237,6 +243,9 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
           created_at: dbItem.product.created_at,
         },
         quantity: dbItem.quantity,
+        variantId: dbItem.variant_id,
+        selectedVariant: dbItem.variant_attributes ? JSON.parse(JSON.stringify(dbItem.variant_attributes)) : undefined,
+        variantAttributes: dbItem.variant_attributes ? JSON.parse(JSON.stringify(dbItem.variant_attributes)) : undefined,
       }));
       dispatch({ type: "LOAD_CART", payload: cartItems });
       setHasLoadedFromDB(true);
@@ -249,7 +258,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
     if (isLoggedIn && dbCartData && hasLoadedFromDB) {
       console.log("Reloading cart from database due to data change...");
       const cartItems: CartItem[] = dbCartData.map((dbItem: any) => ({
-        id: dbItem.product_id,
+        id: dbItem.variant_id ? `${dbItem.product_id}_${dbItem.variant_id}` : dbItem.product_id,
         product: {
           id: dbItem.product.id,
           name: dbItem.product.name_ar,
@@ -275,6 +284,9 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
           created_at: dbItem.product.created_at,
         },
         quantity: dbItem.quantity,
+        variantId: dbItem.variant_id,
+        selectedVariant: dbItem.variant_attributes ? JSON.parse(JSON.stringify(dbItem.variant_attributes)) : undefined,
+        variantAttributes: dbItem.variant_attributes ? JSON.parse(JSON.stringify(dbItem.variant_attributes)) : undefined,
       }));
       dispatch({ type: "LOAD_CART", payload: cartItems });
     }
@@ -343,10 +355,14 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
                   }
                   
                   console.log("Migrating item:", item.product.id, "quantity:", item.quantity);
+                  const anyItem: any = item as any;
                   await setCartQuantityMutation.mutateAsync({
                     userId,
                     productId: item.product.id,
                     quantity: item.quantity,
+                    // تمرير بيانات الفيرنت إن وجدت
+                    variantId: anyItem.variantId ?? (item.id?.includes('_') ? item.id.split('_')[1] : undefined),
+                    variantAttributes: anyItem.variantAttributes ?? anyItem.selectedVariant ?? undefined,
                   });
                   return { success: true };
                 } catch (error) {
@@ -480,7 +496,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
   }, [isLoggedIn, userId]);
 
   // إضافة منتج للسلة - Optimistic Updates
-  const addItem = async (product: Product, quantity = 1) => {
+  const addItem = async (product: Product, quantity = 1, variantData?: { variantId?: string; selectedVariant?: Record<string, string> }) => {
     if (userId) {
       // للمستخدمين المسجلين: حدث قاعدة البيانات مباشرة
       // React Query سيحدث الواجهة تلقائياً عبر invalidateQueries
@@ -489,6 +505,8 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
           userId,
           productId: product.id,
           quantity,
+          variantId: variantData?.variantId,
+          variantAttributes: variantData?.selectedVariant,
         });
         // لا نحتاج تحديث الحالة المحلية - سيتم تحديثها من dbCartData
       } catch (error) {
@@ -496,7 +514,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
       }
     } else {
       // للمستخدمين غير المسجلين: حدث الحالة المحلية
-      dispatch({ type: "ADD_ITEM", payload: { product, quantity } });
+      dispatch({ type: "ADD_ITEM", payload: { product, quantity, variantData } });
     }
   };
 
@@ -505,7 +523,9 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
     if (userId && productId) {
       // للمستخدمين المسجلين: حدث قاعدة البيانات مباشرة
       try {
-        await removeFromCartMutation.mutateAsync({ userId, productId });
+        // إذا كان id يحتوي على "_" فهذا يعني أن له variantId
+        const variantId = id.includes('_') ? id.split('_')[1] : null;
+        await removeFromCartMutation.mutateAsync({ userId, productId, variantId });
         // لا نحتاج تحديث الحالة المحلية - سيتم تحديثها من dbCartData
       } catch (error) {
         console.error("Error removing from cart:", error);
@@ -526,9 +546,13 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
       // للمستخدمين المسجلين: حدث قاعدة البيانات مباشرة
       try {
         if (quantity <= 0) {
-          await removeFromCartMutation.mutateAsync({ userId, productId });
+          // إذا كان id يحتوي على "_" فهذا يعني أن له variantId
+          const variantId = id.includes('_') ? id.split('_')[1] : null;
+          await removeFromCartMutation.mutateAsync({ userId, productId, variantId });
         } else {
-          await updateCartItemMutation.mutateAsync({ userId, productId, quantity });
+          // تمرير variantId إن وجد للتحديث الصحيح
+          const variantId = id.includes('_') ? id.split('_')[1] : null;
+          await updateCartItemMutation.mutateAsync({ userId, productId, quantity, variantId });
         }
         // لا نحتاج تحديث الحالة المحلية - سيتم تحديثها من dbCartData
       } catch (error) {

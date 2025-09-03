@@ -8,6 +8,7 @@ import type { Order, OrderItem } from "@/orders/order.types";
 import type { Product } from "@/types";
 import OrderTotalDisplay from "@/components/OrderTotalDisplay";
 import { LanguageContext } from '@/contexts/LanguageContext.context';
+import { renderVariantInfo } from "@/utils/variantUtils";
 import { useProductsRealtime } from '@/hooks/useProductsRealtime';
 import { isRTL, useLanguage } from "@/utils/languageContextUtils";
 
@@ -310,6 +311,8 @@ const OrderDetailsPrint: React.FC<OrderDetailsPrintProps> = ({ order, t, profile
                               {productDescription}
                             </span>
                           )}
+                          {/* عرض معلومات الفيرنت إذا كان موجوداً */}
+                          {renderVariantInfo((item as any).variant_attributes, "text-blue-600 print:text-black")}
                         </div>
                       </td>
                       <td className="p-2 text-center">{item.quantity}</td>

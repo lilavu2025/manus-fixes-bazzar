@@ -3,7 +3,7 @@ import { useLanguage } from "../../utils/languageContextUtils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Trash, Eye } from "lucide-react";
+import { Edit, Trash, Eye, Palette } from "lucide-react";
 import { Product } from "@/types/product";
 import { useProductSalesCount } from "@/hooks/useProductSalesCount";
 import {
@@ -30,6 +30,7 @@ interface PaginatedProductsTableProps {
   onViewProduct: (product: Product) => void;
   onEditProduct: (product: Product) => void;
   onDeleteProduct: (productId: string, productName: string) => void;
+  onManageVariants?: (product: Product) => void;
   categories?: AdminCategory[];
 }
 
@@ -40,6 +41,7 @@ const PaginatedProductsTable: React.FC<PaginatedProductsTableProps> = ({
   onViewProduct,
   onEditProduct,
   onDeleteProduct,
+  onManageVariants,
   categories = [],
 }) => {
   const { t, language, isRTL } = useLanguage();
@@ -91,6 +93,34 @@ const PaginatedProductsTable: React.FC<PaginatedProductsTableProps> = ({
 
   const goToPage = (page: number) => {
     setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+  };
+
+  // Helpers to display multilingual JSON strings nicely based on site language
+  const tryParseI18n = (val?: string | null): { ar?: string; en?: string; he?: string } | null => {
+    if (!val) return null;
+    try {
+      const parsed = JSON.parse(val);
+      if (
+        parsed &&
+        typeof parsed === "object" &&
+        ("ar" in parsed || "en" in parsed || "he" in parsed)
+      ) {
+        return parsed as any;
+      }
+    } catch {}
+    return null;
+  };
+  const toDisplay = (val: any): string => {
+    const s = String(val ?? "");
+    const obj = tryParseI18n(s);
+    if (!obj) return s;
+    return (
+      language === "en"
+        ? obj.en || obj.ar || obj.he
+        : language === "he"
+        ? obj.he || obj.en || obj.ar
+        : obj.ar || obj.en || obj.he
+    ) || "";
   };
 
   if (products.length === 0) {
@@ -169,8 +199,46 @@ const PaginatedProductsTable: React.FC<PaginatedProductsTableProps> = ({
                 
                 {/* Stock and Status Info */}
                 <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
-                  <span>{t("stockQuantity")}: <span className="font-semibold text-gray-700">{product.stock_quantity ?? 0}</span></span>
-                  <span>{t("status")}: <span className={product.active ? "text-green-600 font-bold" : "text-red-600 font-bold"}>{product.active ? t("active") : t("inactive")}</span></span>
+                  {product.has_variants && (product.variants?.length ?? 0) > 0 ? (
+                    <>
+                      {(() => {
+                        const variants = product.variants || [];
+                        const totalVariantQty = variants.reduce((sum, v) => sum + (v?.stock_quantity ?? 0), 0);
+                        const labelFor = (v: any) => {
+                          const values = v?.option_values ? Object.values(v.option_values) : [];
+                          // عرض قيم الخيارات فقط لتبسيط السطر مع دعم التعدد اللغوي (مثل: أحمر / كبير)
+                          const localized = values.map((val) => toDisplay(val));
+                          return localized.length ? localized.join(" / ") : (v?.sku || "Variant");
+                        };
+                        return (
+                          <>
+                            <span>
+                              {t("stockQuantity")}: <span className="font-semibold text-gray-700">{totalVariantQty}</span>
+                            </span>
+                            {/* تفصيل بسيط لكميات كل فيرنتس */}
+                            <div className="w-full flex flex-wrap gap-1 mt-1">
+                              {variants.slice(0, 4).map((v) => (
+                                <span key={v.id} className="inline-block bg-gray-100 text-gray-700 px-2 py-0.5 rounded">
+                                  {labelFor(v)}: {v?.stock_quantity ?? 0}
+                                </span>
+                              ))}
+                              {variants.length > 4 && (
+                                <span className="text-[11px] text-gray-500">+{variants.length - 4} ...</span>
+                              )}
+                            </div>
+                          </>
+                        );
+                      })()}
+                      <span>
+                        {t("status")}: <span className={product.active ? "text-green-600 font-bold" : "text-red-600 font-bold"}>{product.active ? t("active") : t("inactive")}</span>
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span>{t("stockQuantity")}: <span className="font-semibold text-gray-700">{product.stock_quantity ?? 0}</span></span>
+                      <span>{t("status")}: <span className={product.active ? "text-green-600 font-bold" : "text-red-600 font-bold"}>{product.active ? t("active") : t("inactive")}</span></span>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -194,6 +262,17 @@ const PaginatedProductsTable: React.FC<PaginatedProductsTableProps> = ({
                 >
                   <Edit className="h-5 w-5" />
                 </Button>
+                {onManageVariants && (
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="rounded-full border-purple-200 text-purple-700 hover:bg-purple-50"
+                    onClick={() => onManageVariants(product)}
+                    aria-label={t("manageVariants")}
+                  >
+                    <Palette className="h-5 w-5" />
+                  </Button>
+                )}
                 <AlertDialog open={deleteDialogOpen && productToDelete?.id === product.id} onOpenChange={(open) => {
                   setDeleteDialogOpen(open);
                   if (!open) setProductToDelete(null);

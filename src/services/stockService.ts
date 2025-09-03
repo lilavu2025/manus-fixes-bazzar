@@ -236,6 +236,268 @@ export async function processOffersStockDeduction(orderId: string, appliedOffers
 }
 
 /**
+ * خصم مخزون الفيرنتس لعناصر الطلبية (مرة واحدة لكل عنصر)
+ * Deduct stock for variant items in an order (idempotent via order_items.stock_deducted)
+ */
+export async function deductVariantItemsStockForOrder(orderId: string) {
+  try {
+    console.log(`🧩 خصم مخزون الفيرنتس للطلبية: ${orderId}`);
+
+    // 0) محاولة الخصم عبر دالة آمنة على الخادم (تتجاوز RLS)
+    let rpcApplied = false;
+    try {
+      const { data: applyData, error: applyErr } = await supabase
+        .rpc('apply_order_variant_deduction' as any, { p_order_id: orderId });
+      if (!applyErr) {
+        console.log('🛡️ تم خصم مخزون الفيرنتس عبر الدالة الآمنة:', applyData);
+        rpcApplied = true;
+      } else {
+        console.warn('⚠️ فشل apply_order_variant_deduction، سنتابع بالخطة الحالية:', applyErr?.message || applyErr);
+      }
+    } catch (e) {
+      console.warn('⚠️ استثناء أثناء استدعاء apply_order_variant_deduction، سنتابع بالخطة الحالية:', (e as any)?.message || e);
+    }
+
+    // 1) جلب عناصر الطلبية لتحديد الفيرنتات المتأثرة
+    const { data: items, error: fetchError } = await supabase
+      .from('order_items')
+      .select('id, variant_id, quantity, is_free, stock_deducted')
+      .eq('order_id', orderId);
+    if (fetchError) throw fetchError;
+    console.log('📝 عناصر الطلبية (order_items) المسترجعة لهذا الطلب:', items);
+    const target = (items || []).filter(
+      (it) => it.variant_id && !it.is_free && !it.stock_deducted
+    ) as Array<{ id: string; variant_id: string; quantity: number }>;
+    const allVariantIds = Array.from(new Set((items || []).map((it: any) => it.variant_id).filter(Boolean))) as string[];
+
+    // إذا نجح مسار ال-RPC، لا نكرر الخصم؛ فقط نزامن مخزون المنتج الأب من الفيرنتس ونخرج
+    if (rpcApplied) {
+      await refreshParentProductStockForVariants(allVariantIds);
+      return { success: true, processed: 'rpc', variants: allVariantIds.length } as any;
+    }
+
+    if (target.length === 0) {
+      console.log('ℹ️ لا توجد عناصر فيرنتس بحاجة لخصم المخزون');
+      return { success: true, processed: 0 };
+    }
+
+    // 2) تجميع حسب variant_id
+    const byVariant = new Map<string, { totalQty: number; rowIds: string[] }>();
+  for (const it of target) {
+      const entry = byVariant.get(it.variant_id) || { totalQty: 0, rowIds: [] };
+      entry.totalQty += Number(it.quantity || 0);
+      entry.rowIds.push(it.id);
+      byVariant.set(it.variant_id, entry);
+    }
+
+  console.log('📦 التجميع حسب الفيرنت:', Array.from(byVariant.entries()).map(([vid, v]) => ({ variantId: vid, totalQty: v.totalQty, rows: v.rowIds.length })));
+
+    // 3) خصم لكل فيرنت
+    let ok = 0; let fail = 0; const results: any[] = [];
+    for (const [variantId, { totalQty, rowIds }] of byVariant.entries()) {
+      try {
+        // استدعاء الدالة المخزنة لخصم مخزون الفيرنت
+        const { error: rpcError } = await supabase.rpc('decrease_variant_stock' as any, {
+          variant_id: variantId,
+          quantity: totalQty,
+        });
+
+        // في حال فشل الـ RPC (مثلاً بسبب RLS)، ننفذ خطة بديلة بتحديث مباشر
+        if (rpcError) {
+          console.warn(`⚠️ decrease_variant_stock RPC فشل للفيرنت ${variantId}، سنحاول التحديث المباشر.`, rpcError?.message || rpcError);
+          const { data: variant, error: fetchErr } = await supabase
+            .from('product_variants')
+            .select('stock_quantity')
+            .eq('id', variantId)
+            .single();
+          if (fetchErr) throw fetchErr;
+          const current = Number(variant?.stock_quantity || 0);
+          const newStock = Math.max(0, current - Number(totalQty || 0));
+          const { error: directUpdErr } = await supabase
+            .from('product_variants')
+            .update({ stock_quantity: newStock })
+            .eq('id', variantId);
+          if (directUpdErr) throw directUpdErr;
+        }
+
+        // تعليم صفوف العناصر بأنها خُصمت
+        const { error: updError } = await supabase
+          .from('order_items')
+          .update({ stock_deducted: true })
+          .in('id', rowIds);
+        if (updError) throw updError;
+        ok++;
+        results.push({ variantId, deducted: totalQty, rows: rowIds.length });
+      } catch (e: any) {
+        console.error(`❌ فشل خصم مخزون الفيرنت ${variantId}:`, e?.message || e);
+        fail++;
+        results.push({ variantId, error: e?.message || String(e) });
+      }
+    }
+
+    console.log(`📊 نتائج خصم مخزون الفيرنتس: نجح ${ok}، فشل ${fail}`);
+  // مزامنة مخزون المنتج الأب (products.stock_quantity) ليعكس مجموع الفيرنتس
+  await refreshParentProductStockForVariants(Array.from(byVariant.keys()));
+  return { success: fail === 0, ok, fail, results };
+  } catch (error) {
+    console.error('❌ خطأ عام في خصم مخزون الفيرنتس:', error);
+    return { success: false, error: 'خطأ في خصم مخزون الفيرنتس' };
+  }
+}
+
+/**
+ * إرجاع مخزون الفيرنتس لعناصر الطلبية عند الإلغاء/الحذف (مرة واحدة)
+ * Restore variant stock for order items on cancel/delete (idempotent using stock_deducted)
+ */
+export async function restoreVariantItemsStockForOrder(orderId: string) {
+  try {
+    console.log(`🧩 إرجاع مخزون الفيرنتس للطلبية: ${orderId}`);
+
+    // 0) محاولة الإرجاع عبر دالة آمنة على الخادم (تتجاوز RLS)
+    let rpcRestored = false;
+    try {
+      const { data: restoreData, error: restoreErr } = await supabase
+        .rpc('restore_order_variant_stock' as any, { p_order_id: orderId });
+      if (!restoreErr) {
+        console.log('🛡️ تم إرجاع مخزون الفيرنتس عبر الدالة الآمنة:', restoreData);
+        rpcRestored = true;
+      } else {
+        console.warn('⚠️ فشل restore_order_variant_stock، سنتابع بالخطة الحالية:', restoreErr?.message || restoreErr);
+      }
+    } catch (e) {
+      console.warn('⚠️ استثناء أثناء استدعاء restore_order_variant_stock، سنتابع بالخطة الحالية:', (e as any)?.message || e);
+    }
+
+    // 1) جلب عناصر الطلبية لتحديد الفيرنتات المتأثرة
+    const { data: items, error: fetchError } = await supabase
+      .from('order_items')
+      .select('id, variant_id, quantity, is_free, stock_deducted')
+      .eq('order_id', orderId);
+    if (fetchError) throw fetchError;
+
+    const target = (items || []).filter(
+      (it) => it.variant_id && !it.is_free && it.stock_deducted
+    ) as Array<{ id: string; variant_id: string; quantity: number }>;
+    const allVariantIds = Array.from(new Set((items || []).map((it: any) => it.variant_id).filter(Boolean))) as string[];
+
+    // إذا نجح مسار ال-RPC، لا نكرر الإرجاع؛ فقط نزامن مخزون المنتج الأب من الفيرنتس ونخرج
+    if (rpcRestored) {
+      await refreshParentProductStockForVariants(allVariantIds);
+      return { success: true, processed: 'rpc', variants: allVariantIds.length } as any;
+    }
+
+    if (target.length === 0) {
+      console.log('ℹ️ لا توجد عناصر فيرنتس بحاجة لإرجاع المخزون');
+      return { success: true, processed: 0 };
+    }
+
+    // 2) تجميع حسب variant_id
+    const byVariant = new Map<string, { totalQty: number; rowIds: string[] }>();
+    for (const it of target) {
+      const entry = byVariant.get(it.variant_id) || { totalQty: 0, rowIds: [] };
+      entry.totalQty += Number(it.quantity || 0);
+      entry.rowIds.push(it.id);
+      byVariant.set(it.variant_id, entry);
+    }
+
+    // 3) إرجاع المخزون عبر تحديث القيمة الحالية + الكمية المرجّعة
+    let ok = 0; let fail = 0; const results: any[] = [];
+    for (const [variantId, { totalQty, rowIds }] of byVariant.entries()) {
+      try {
+        // جلب المخزون الحالي للفيرنت
+        const { data: variant, error: varErr } = await supabase
+          .from('product_variants')
+          .select('stock_quantity')
+          .eq('id', variantId)
+          .single();
+        if (varErr) throw varErr;
+        const current = Number(variant?.stock_quantity || 0);
+        const newStock = current + Number(totalQty || 0);
+
+        // تحديث عبر الدالة المخزنة (أو بديلًا via update)
+        const { error: rpcError } = await supabase.rpc('update_variant_stock' as any, {
+          variant_id: variantId,
+          stock_quantity: newStock,
+        });
+        // في حال فشل الـ RPC (مثلاً بسبب RLS)، ننفذ تحديثًا مباشرًا كخطة بديلة
+        if (rpcError) {
+          console.warn(`⚠️ update_variant_stock RPC فشل للفيرنت ${variantId}، سنحاول التحديث المباشر.`, rpcError?.message || rpcError);
+          const { error: directUpdErr } = await supabase
+            .from('product_variants')
+            .update({ stock_quantity: newStock })
+            .eq('id', variantId);
+          if (directUpdErr) throw directUpdErr;
+        }
+
+        // تعليم صفوف العناصر بأنها لم تعد مخصومة
+        const { error: updError } = await supabase
+          .from('order_items')
+          .update({ stock_deducted: false })
+          .in('id', rowIds);
+        if (updError) throw updError;
+        ok++;
+        results.push({ variantId, restored: totalQty, rows: rowIds.length });
+      } catch (e: any) {
+        console.error(`❌ فشل إرجاع مخزون الفيرنت ${variantId}:`, e?.message || e);
+        fail++;
+        results.push({ variantId, error: e?.message || String(e) });
+      }
+    }
+
+    console.log(`📊 نتائج إرجاع مخزون الفيرنتس: نجح ${ok}، فشل ${fail}`);
+    // مزامنة مخزون المنتج الأب (products.stock_quantity) ليعكس مجموع الفيرنتس
+    await refreshParentProductStockForVariants(Array.from(byVariant.keys()));
+    return { success: fail === 0, ok, fail, results };
+  } catch (error) {
+    console.error('❌ خطأ عام في إرجاع مخزون الفيرنتس:', error);
+    return { success: false, error: 'خطأ في إرجاع مخزون الفيرنتس' };
+  }
+}
+
+/**
+ * مزامنة stock_quantity في جدول المنتجات ليعكس مجموع مخزون الفيرنتس
+ */
+async function refreshParentProductStockForVariants(variantIds: string[]) {
+  try {
+    if (!variantIds || variantIds.length === 0) return;
+    // جلب product_id لكل variant
+    const { data: variants, error: vErr } = await supabase
+      .from('product_variants')
+      .select('id, product_id')
+      .in('id', variantIds);
+    if (vErr) {
+      console.warn('⚠️ فشل جلب product_id للفيريئنتس للمزامنة:', vErr?.message || vErr);
+      return;
+    }
+    const productIds = Array.from(new Set((variants || []).map((v: any) => v?.product_id).filter(Boolean)));
+    for (const pid of productIds) {
+      // جمع المجموع من جميع الفيرنتس لهذا المنتج
+      const { data: sumData, error: sErr } = await supabase
+        .from('product_variants')
+        .select('stock_quantity, id')
+        .eq('product_id', pid);
+      if (sErr) {
+        console.warn(`⚠️ فشل جلب مجموع مخزون الفيرنتس للمنتج ${pid}:`, sErr?.message || sErr);
+        continue;
+      }
+      const total = (sumData || []).reduce((acc: number, row: any) => acc + Number(row?.stock_quantity || 0), 0);
+      // تحديث المنتج لعرض المجموع على مستوى المنتج (لأغراض العرض في لوحات الأدمن)
+      const { error: updErr } = await supabase
+        .from('products')
+        .update({ stock_quantity: total, in_stock: total > 0 })
+        .eq('id', pid);
+      if (updErr) {
+        console.warn(`⚠️ فشل تحديث stock_quantity للمنتج ${pid}:`, updErr?.message || updErr);
+      } else {
+        console.log(`🔄 تمت مزامنة stock_quantity للمنتج ${pid} = ${total}`);
+      }
+    }
+  } catch (e) {
+    console.warn('⚠️ فشل مزامنة مخزون المنتج من الفيرنتس:', (e as any)?.message || e);
+  }
+}
+
+/**
  * تحديث مخزون المنتجات المجانية عند تعديل الطلبية
  * Update free products stock when editing an order
  */
@@ -300,7 +562,7 @@ export async function updateFreeProductsStockOnEdit(
 /**
  * استخراج المنتجات المجانية من بيانات الطلبية
  */
-function extractFreeProductsFromOrderData(appliedOffers?: string | null, freeItems?: string | null) {
+function extractFreeProductsFromOrderData(appliedOffers?: any, freeItems?: any) {
   const products = new Map<string, number>();
   const safeParse = (raw: any) => { try { return typeof raw === 'string' ? JSON.parse(raw) : raw; } catch { return null; } };
 

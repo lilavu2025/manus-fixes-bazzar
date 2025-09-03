@@ -14,8 +14,9 @@ import { mapOrderFromDb } from "@/utils/orderUtils";
 import type { OrdersWithDetails } from "@/integrations/supabase/dataFetchers";
 import { decompressText } from "@/utils/commonUtils";
 import { getDisplayPrice } from "@/utils/priceUtils";
-import { useAuth } from "@/contexts/useAuth";
+import { renderVariantInfo } from "@/utils/variantUtils";
 import { useProductsRealtime } from '@/hooks/useProductsRealtime';
+import { useAuth } from "@/contexts/useAuth";
 
 interface OrderDetailsDialogProps {
   order: OrdersWithDetails | null;
@@ -322,6 +323,8 @@ const OrderDetailsDialog: React.FC<OrderDetailsDialogProps> = ({
                                    language === "he" ? item.products?.description_he : 
                                    item.products?.description_en}
                                 </p>
+                                {/* عرض معلومات الفيرنت إذا كان موجوداً */}
+                                {renderVariantInfo((item as any).variant_attributes)}
                               </div>
                               
                               <div className="grid grid-cols-4 gap-2 text-xs bg-gray-50 p-1 rounded-lg">

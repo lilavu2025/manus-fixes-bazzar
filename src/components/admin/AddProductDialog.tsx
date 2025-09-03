@@ -58,6 +58,7 @@ const AddProductDialog: React.FC<AddProductDialogProps> = ({
     active: true,
     discount: 0,
     tags: [],
+    has_variants: false,
   });
 
   const insertProductMutation = useInsertProduct();
@@ -482,6 +483,27 @@ const AddProductDialog: React.FC<AddProductDialogProps> = ({
                     />
                     <Label htmlFor="active" className="font-medium text-green-700 dark:text-green-300">{t("active")}</Label>
                   </div>
+                  
+                  <div className="flex items-center space-x-2 rtl:space-x-reverse p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                    <Switch
+                      id="has_variants"
+                      checked={formData.has_variants}
+                      onCheckedChange={(checked) =>
+                        setFormData((prev) => ({ ...prev, has_variants: checked }))
+                      }
+                    />
+                    <Label htmlFor="has_variants" className="font-medium text-purple-700 dark:text-purple-300">
+                      {t("hasVariants") || "يحتوي على فيرنتس"}
+                    </Label>
+                  </div>
+                  
+                  {formData.has_variants && (
+                    <div className="p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+                      <p className="text-sm text-orange-700 dark:text-orange-300">
+                        {t("variantsNote") || "ملاحظة: يمكنك إدارة الفيرنتس بعد إضافة المنتج من خلال قائمة المنتجات"}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

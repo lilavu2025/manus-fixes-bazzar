@@ -38,6 +38,105 @@ function normalizeJson(x: any) {
   return x;
 }
 
+// ===== Helpers for variant comparison/rendering =====
+function normalizeVariantAttrs(raw: any): Record<string, string> | null {
+  const obj = normalizeJson(raw);
+  if (obj && typeof obj === 'object') return obj as Record<string, string>;
+  return null;
+}
+
+function sortObjectKeys<T extends Record<string, any>>(obj: T): T {
+  return Object.keys(obj)
+    .sort((a, b) => a.localeCompare(b))
+    .reduce((acc: any, k) => { acc[k] = obj[k]; return acc; }, {});
+}
+
+function stringifyVariant(attrs?: Record<string, string> | null): string {
+  if (!attrs || Object.keys(attrs).length === 0) return "(بدون مواصفات)";
+  const sorted = sortObjectKeys(attrs);
+  return Object.entries(sorted)
+    .map(([k, v]) => `${k}: ${v}`)
+    .join(', ');
+}
+
+function getVariantKey(item: any): string {
+  const variantId = item?.variant_id || item?.variantId || null;
+  const attrs = normalizeVariantAttrs(item?.variant_attributes) || normalizeVariantAttrs(item?.variantAttributes);
+  if (variantId) return `id:${variantId}`;
+  if (attrs) return `attrs:${JSON.stringify(sortObjectKeys(attrs))}`;
+  return 'base';
+}
+
+function buildVariantDiffChanges(itemsBefore?: any[], itemsAfter?: any[], products?: any[]): Change[] {
+  const before = Array.isArray(itemsBefore) ? itemsBefore : [];
+  const after  = Array.isArray(itemsAfter)  ? itemsAfter  : [];
+
+  // Group by product_id
+  const getPid = (it: any) => String(it?.product_id || it?.productId || it?.product?.id || '');
+  const group = (arr: any[]) => {
+    const m = new Map<string, any[]>();
+    for (const it of arr) {
+      const pid = getPid(it);
+      if (!m.has(pid)) m.set(pid, []);
+      m.get(pid)!.push(it);
+    }
+    return m;
+  };
+
+  const gPrev = group(before);
+  const gNow  = group(after);
+
+  const allPids = new Set<string>([...gPrev.keys(), ...gNow.keys()]);
+  const out: Change[] = [];
+
+  const pname = (pid: string) => productName(products || [], pid);
+
+  for (const pid of allPids) {
+    const prevList = gPrev.get(pid) || [];
+    const nowList  = gNow.get(pid)  || [];
+
+    // Simple case: exactly one before and one after
+    if (prevList.length === 1 && nowList.length === 1) {
+      const a = prevList[0];
+      const b = nowList[0];
+      const aKey = getVariantKey(a);
+      const bKey = getVariantKey(b);
+      if (aKey !== bKey) {
+        const aAttrs = normalizeVariantAttrs(a?.variant_attributes) || normalizeVariantAttrs(a?.variantAttributes);
+        const bAttrs = normalizeVariantAttrs(b?.variant_attributes) || normalizeVariantAttrs(b?.variantAttributes);
+        out.push({
+          label: `${pname(pid)} • Variant`,
+          oldValue: stringifyVariant(aAttrs),
+          newValue: stringifyVariant(bAttrs),
+        });
+      }
+      continue;
+    }
+
+    // Complex case: multiple lines per product
+    // Create sets of keys for matching
+    const prevKeys = new Set(prevList.map(getVariantKey));
+    const nowKeys  = new Set(nowList.map(getVariantKey));
+    const unmatchedPrev = [...prevKeys].filter(k => !nowKeys.has(k));
+    const unmatchedNow  = [...nowKeys].filter(k => !prevKeys.has(k));
+
+    // If there's exactly one unmatched on both sides, we assume variant changed
+    if (unmatchedPrev.length === 1 && unmatchedNow.length === 1) {
+      const prevIt = prevList.find(it => getVariantKey(it) === unmatchedPrev[0]);
+      const nowIt  = nowList.find(it => getVariantKey(it) === unmatchedNow[0]);
+      const aAttrs = normalizeVariantAttrs(prevIt?.variant_attributes) || normalizeVariantAttrs(prevIt?.variantAttributes);
+      const bAttrs = normalizeVariantAttrs(nowIt?.variant_attributes)  || normalizeVariantAttrs(nowIt?.variantAttributes);
+      out.push({
+        label: `${pname(pid)} • Variant`,
+        oldValue: stringifyVariant(aAttrs),
+        newValue: stringifyVariant(bAttrs),
+      });
+    }
+  }
+
+  return out;
+}
+
 function normalizeFreeRefs(raw: any): FreeRef[] {
   const arr = normalizeJson(raw);
   if (!Array.isArray(arr)) return [];
@@ -98,7 +197,7 @@ const ConfirmEditOrderDialog: React.FC<ConfirmEditOrderDialogProps> = ({
   products,
   discountFromOffers,
 }) => {
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
 
   // ===== Canonicalize free items prev/now =====
   // لو ما اجت props، طلعها من appliedOffers/prevAppliedOffers أو من itemsBefore/itemsAfter
@@ -165,9 +264,22 @@ const ConfirmEditOrderDialog: React.FC<ConfirmEditOrderDialogProps> = ({
     return "normal";
   };
 
+  // ===== Combine incoming changes with computed variant changes (avoid duplicates loosely) =====
+  const variantChanges = useMemo(() => buildVariantDiffChanges(itemsBefore, itemsAfter, products), [itemsBefore, itemsAfter, products]);
+  const allChanges = useMemo(() => {
+    // naive de-dup: combine and remove exact same label+old+new
+    const seen = new Set<string>();
+    const merged: Change[] = [];
+    for (const c of [...(changes || []), ...variantChanges]) {
+      const key = `${c.label}|${c.oldValue}|${c.newValue}`;
+      if (!seen.has(key)) { seen.add(key); merged.push(c); }
+    }
+    return merged;
+  }, [changes, variantChanges]);
+
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onCancel()}>
-      <DialogContent>
+      <DialogContent dir={isRTL ? 'rtl' : 'ltr'}>
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold mb-1 text-primary text-center">
             {t("confirmEditOrder") || "تأكيد تعديل الطلبية"}
@@ -222,7 +334,7 @@ const ConfirmEditOrderDialog: React.FC<ConfirmEditOrderDialogProps> = ({
 
         {/* جدول التغييرات المفصّلة مع تمييز مجاني/مخفّض (بدون إيموجي هنا) */}
         <div className="mb-4 text-gray-700">
-          <p>{t("areYouSureYouWantToSaveTheFollowingChanges") || "هل أنت متأكد أنك تريد حفظ التعديلات التالية؟"}</p>
+          <p className={isRTL ? 'text-right' : 'text-left'}>{t("areYouSureYouWantToSaveTheFollowingChanges") || "هل أنت متأكد أنك تريد حفظ التعديلات التالية؟"}</p>
           <table className="w-full mt-4 border text-sm">
             <thead>
               <tr className="bg-gray-100">
@@ -232,15 +344,15 @@ const ConfirmEditOrderDialog: React.FC<ConfirmEditOrderDialogProps> = ({
               </tr>
             </thead>
             <tbody>
-              {changes.length > 0 ? (
-                changes.map((change, idx) => {
+              {allChanges.length > 0 ? (
+                allChanges.map((change, idx) => {
                   const kind = classifyRow(change); // "free" | "discount" | "normal"
                   const cellBg =
                     kind === "free"
                       ? "bg-green-50"
                       : kind === "discount"
                       ? "bg-yellow-50"
-                      : "";
+                      : change.label?.includes('Variant') ? 'bg-blue-50' : "";
                   const cellStyle = kind === "free" ? { backgroundColor: "#ecfdf5" } : undefined; // fallback
 
                   return (
