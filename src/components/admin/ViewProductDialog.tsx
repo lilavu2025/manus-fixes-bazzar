@@ -38,6 +38,28 @@ const ViewProductDialog: React.FC<ViewProductDialogProps> = ({
 
   if (!product) return null;
 
+  // Helpers to display multilingual JSON strings nicely based on site language
+  const tryParseI18n = (val?: string | null): { ar?: string; en?: string; he?: string } | null => {
+    if (!val) return null;
+    try {
+      const parsed = JSON.parse(val);
+      if (parsed && typeof parsed === 'object' && ('ar' in parsed || 'en' in parsed || 'he' in parsed)) {
+        return parsed as any;
+      }
+    } catch {}
+    return null;
+  };
+  const toDisplay = (val: any): string => {
+    const s = String(val ?? "");
+    const obj = tryParseI18n(s);
+    if (!obj) return s;
+    return (language === 'en'
+      ? (obj.en || obj.ar || obj.he)
+      : language === 'he'
+      ? (obj.he || obj.en || obj.ar)
+      : (obj.ar || obj.en || obj.he)) || '';
+  };
+
   // Get the category name based on the current language
   let categoryName = product.category;
   const foundCategory = categories.find(
@@ -164,9 +186,9 @@ const ViewProductDialog: React.FC<ViewProductDialogProps> = ({
                       {/* Sample chips of variants (first 4) */}
                       <div className="flex flex-wrap gap-2">
                         {variants.slice(0, 4).map(v => {
-                          const attrs = v.option_values || {} as Record<string, string>;
+                          const attrs = v.option_values || ({} as Record<string, string>);
                           const label = Object.entries(attrs)
-                            .map(([k, val]) => `${k}: ${val}`)
+                            .map(([k, val]) => `${toDisplay(k)}: ${toDisplay(val)}`)
                             .join(' · ');
                           return (
                             <div key={v.id} className="text-xs bg-gray-50 dark:bg-gray-800 border rounded px-2 py-1">
@@ -323,12 +345,12 @@ const ViewProductDialog: React.FC<ViewProductDialogProps> = ({
                       .map((opt) => (
                         <div key={opt.id} className="bg-gray-50 dark:bg-gray-800 rounded-md p-2">
                           <div className="text-xs text-gray-600 dark:text-gray-300 mb-1 font-medium">
-                            {opt.name}
+                            {toDisplay(opt.name)}
                           </div>
                           <div className="flex flex-wrap gap-1">
                             {(opt.option_values || []).map((val) => (
                               <Badge key={val} variant="outline" className="text-xs px-2 py-0.5">
-                                {val}
+                                {toDisplay(val)}
                               </Badge>
                             ))}
                           </div>
@@ -361,7 +383,7 @@ const ViewProductDialog: React.FC<ViewProductDialogProps> = ({
                               <div className="text-gray-900 dark:text-gray-100">
                                 {attrEntries.length > 0 ? (
                                   attrEntries.map(([k, val]) => (
-                                    <div key={k}>{k}: {String(val)}</div>
+                                    <div key={k}>{toDisplay(k)}: {toDisplay(val)}</div>
                                   ))
                                 ) : (
                                   "-"

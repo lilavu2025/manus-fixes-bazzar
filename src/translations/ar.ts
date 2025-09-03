@@ -1404,5 +1404,13 @@ export const arTranslations = {
   newPrice: "سعر جديد",
   newWholesalePrice: "سعر جملة جديد",
   newStockQuantity: "كمية جديدة",
-  applyBulkEdit: "تطبيق التحرير المجمع"
+  applyBulkEdit: "تطبيق التحرير المجمع",
+
+  optionNameHebrew: "اسم الخيار (بالعبرية)",
+  optionNameEnglish: "اسم الخيار (بالإنجليزية)",
+  enterEnglishName: "يرجى إدخال اسم الخيار (بالإنجليزية)",
+  enterHebrewName: "يرجى إدخال اسم الخيار (بالعبرية)",
+  valueHebrewPlaceholder: "مثل: אדום, גדול",
+  valueEnglishPlaceholder: "مثل: Red, Large",
+
 };

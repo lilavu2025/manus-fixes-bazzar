@@ -95,6 +95,34 @@ const PaginatedProductsTable: React.FC<PaginatedProductsTableProps> = ({
     setCurrentPage(Math.max(1, Math.min(page, totalPages)));
   };
 
+  // Helpers to display multilingual JSON strings nicely based on site language
+  const tryParseI18n = (val?: string | null): { ar?: string; en?: string; he?: string } | null => {
+    if (!val) return null;
+    try {
+      const parsed = JSON.parse(val);
+      if (
+        parsed &&
+        typeof parsed === "object" &&
+        ("ar" in parsed || "en" in parsed || "he" in parsed)
+      ) {
+        return parsed as any;
+      }
+    } catch {}
+    return null;
+  };
+  const toDisplay = (val: any): string => {
+    const s = String(val ?? "");
+    const obj = tryParseI18n(s);
+    if (!obj) return s;
+    return (
+      language === "en"
+        ? obj.en || obj.ar || obj.he
+        : language === "he"
+        ? obj.he || obj.en || obj.ar
+        : obj.ar || obj.en || obj.he
+    ) || "";
+  };
+
   if (products.length === 0) {
     return (
       <Card>
@@ -178,8 +206,9 @@ const PaginatedProductsTable: React.FC<PaginatedProductsTableProps> = ({
                         const totalVariantQty = variants.reduce((sum, v) => sum + (v?.stock_quantity ?? 0), 0);
                         const labelFor = (v: any) => {
                           const values = v?.option_values ? Object.values(v.option_values) : [];
-                          // عرض قيم الخيارات فقط لتبسيط السطر (مثل: أحمر / كبير)
-                          return values.length ? values.join(" / ") : (v?.sku || "Variant");
+                          // عرض قيم الخيارات فقط لتبسيط السطر مع دعم التعدد اللغوي (مثل: أحمر / كبير)
+                          const localized = values.map((val) => toDisplay(val));
+                          return localized.length ? localized.join(" / ") : (v?.sku || "Variant");
                         };
                         return (
                           <>

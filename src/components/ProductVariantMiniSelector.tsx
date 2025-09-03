@@ -40,6 +40,21 @@ const ProductVariantMiniSelector: React.FC<ProductVariantMiniSelectorProps> = ({
   disabled = false
 }) => {
   const { t, isRTL, language } = useLanguage();
+  const tryParseI18n = (val?: string | null): { ar?: string; en?: string; he?: string } | null => {
+    if (!val) return null;
+    try {
+      const parsed = JSON.parse(val);
+      if (parsed && typeof parsed === 'object' && ('ar' in parsed || 'en' in parsed || 'he' in parsed)) {
+        return parsed as any;
+      }
+    } catch {}
+    return null;
+  };
+  const toDisplay = (val: string): string => {
+    const obj = tryParseI18n(val);
+    if (!obj) return val;
+    return (language === 'en' ? (obj.en || obj.ar || obj.he) : language === 'he' ? (obj.he || obj.en || obj.ar) : (obj.ar || obj.en || obj.he)) || '';
+  };
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
 
@@ -98,7 +113,7 @@ const ProductVariantMiniSelector: React.FC<ProductVariantMiniSelectorProps> = ({
           <div key={option.id} className="space-y-1">
             <div className="flex flex-wrap gap-1">
               <label className="text-xs font-medium text-gray-700">
-                {option.name+":"}
+                {toDisplay(option.name) + ":"}
               </label>
               {option.option_values.slice(0, 3).map((value) => {
                 const isSelected = selectedOptions[option.name] === value;
@@ -116,7 +131,7 @@ const ProductVariantMiniSelector: React.FC<ProductVariantMiniSelectorProps> = ({
                       handleOptionSelect(option.name, value);
                     }}
                   >
-                    {value}
+                    {toDisplay(value)}
                   </Button>
                 );
               })}
@@ -138,7 +153,7 @@ const ProductVariantMiniSelector: React.FC<ProductVariantMiniSelectorProps> = ({
       {options.map((option) => (
         <div key={option.id} className="space-y-2">
           <label className="text-sm font-medium text-gray-900">
-            {option.name}
+            {toDisplay(option.name)}
           </label>
           <div className="flex flex-wrap gap-2">
             {option.option_values.map((value) => {
@@ -157,7 +172,7 @@ const ProductVariantMiniSelector: React.FC<ProductVariantMiniSelectorProps> = ({
                     handleOptionSelect(option.name, value);
                   }}
                 >
-                  {value}
+                  {toDisplay(value)}
                 </Button>
               );
             })}

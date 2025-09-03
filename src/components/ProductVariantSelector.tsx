@@ -22,7 +22,24 @@ const ProductVariantSelector: React.FC<ProductVariantSelectorProps> = ({
   className,
   disabled = false,
 }) => {
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, language } = useLanguage();
+
+  const tryParseI18n = (val?: string | null): { ar?: string; en?: string; he?: string } | null => {
+    if (!val) return null;
+    try {
+      const parsed = JSON.parse(val);
+      if (parsed && (typeof parsed === 'object') && ('ar' in parsed || 'en' in parsed || 'he' in parsed)) {
+        return parsed as any;
+      }
+    } catch {}
+    return null;
+  };
+
+  const toDisplay = (val: string): string => {
+    const obj = tryParseI18n(val);
+    if (!obj) return val;
+    return (language === 'en' ? (obj.en || obj.ar || obj.he) : language === 'he' ? (obj.he || obj.en || obj.ar) : (obj.ar || obj.en || obj.he)) || '';
+  };
 
   if (!options.length) return null;
 
@@ -36,6 +53,7 @@ const ProductVariantSelector: React.FC<ProductVariantSelectorProps> = ({
         .map((option) => {
           const availableValues = getAvailableValues(option.name);
           const selectedValue = selection[option.name];
+          const optionLabel = toDisplay(option.name);
           return (
             <div key={option.id} className="space-y-2">
               <div
@@ -50,7 +68,7 @@ const ProductVariantSelector: React.FC<ProductVariantSelectorProps> = ({
                     isRTL ? 'text-right' : 'text-left'
                   )}
                 >
-                  {option.name} {selectedValue && `(${selectedValue})` + ':'}
+                  {optionLabel} {selectedValue && `(${toDisplay(selectedValue)})` + ':'}
                 </label>
                 {option.option_values.map((value) => {
                   const isAvailable = availableValues.includes(value);
@@ -72,7 +90,7 @@ const ProductVariantSelector: React.FC<ProductVariantSelectorProps> = ({
                         (!isAvailable || disabled) && 'opacity-50 cursor-not-allowed'
                       )}
                     >
-                      {value}
+                      {toDisplay(value)}
                     </Button>
                   );
                 })}

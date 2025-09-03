@@ -1339,5 +1339,12 @@ export const heTranslations = {
   newWholesalePrice: "מחיר סיטונאי חדש",
   newStockQuantity: "כמות חדשה",
   applyBulkEdit: "החל עריכה קבוצתית",
+  optionNameHebrew: "שם אפשרות (בעברית)",
+
+  optionNameEnglish: "שם אפשרות (באנגלית)",
+  enterEnglishName: "אנא הכנס שם אפשרות (באנגלית)",
+  enterHebrewName: "אנא הכנס שם אפשרות (בעברית)",
+  valueHebrewPlaceholder: "למשל: אדום, גדול",
+  valueEnglishPlaceholder: "למשל: Red, Large",
 
 };

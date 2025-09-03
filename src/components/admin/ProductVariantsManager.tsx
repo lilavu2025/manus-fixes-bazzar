@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils';
 import { Trash2, Plus, Save, X, ChevronDown } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAllProductOptions } from '@/hooks/useVariantsAPI';
+import MultiLanguageField from '@/components/ui/MultiLanguageField';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,12 +47,13 @@ const ProductVariantsManager: React.FC<ProductVariantsManagerProps> = ({
   onSave,
   loading = false
 }) => {
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, language } = useLanguage();
   
   const [options, setOptions] = useState<ProductOption[]>(initialOptions);
   const [variants, setVariants] = useState<ProductVariant[]>(initialVariants);
-  const [newOptionName, setNewOptionName] = useState('');
-  const [newOptionValues, setNewOptionValues] = useState<string[]>(['']); // تغيير لقائمة من القيم
+  // دعم إدخال متعدد اللغات لاسم الخيار والقيم (نخزن كسلاسل JSON في قاعدة البيانات)
+  const [newOptionName, setNewOptionName] = useState<{ ar?: string; en?: string; he?: string }>({ ar: '', en: '', he: '' });
+  const [newOptionValues, setNewOptionValues] = useState<Array<{ ar?: string; en?: string; he?: string }>>([{ ar: '', en: '', he: '' }]);
   const [editingOption, setEditingOption] = useState<ProductOption | null>(null); // لتعديل الخيارات
   const [editingVariant, setEditingVariant] = useState<ProductVariant | null>(null);
   const [generatingVariants, setGeneratingVariants] = useState(false);
@@ -71,7 +73,7 @@ const ProductVariantsManager: React.FC<ProductVariantsManagerProps> = ({
 
   // إضافة قيمة جديدة لخيار
   const addOptionValue = useCallback(() => {
-    setNewOptionValues(prev => [...prev, '']);
+    setNewOptionValues(prev => [...prev, { ar: '', en: '', he: '' }]);
   }, []);
 
   // حذف قيمة من خيار
@@ -80,28 +82,89 @@ const ProductVariantsManager: React.FC<ProductVariantsManagerProps> = ({
   }, []);
 
   // تحديث قيمة خيار
-  const updateOptionValue = useCallback((index: number, value: string) => {
-    setNewOptionValues(prev => prev.map((v, i) => i === index ? value : v));
+  const updateOptionValue = useCallback((index: number, lang: 'ar'|'en'|'he', value: string) => {
+    setNewOptionValues(prev => prev.map((v, i) => i === index ? { ...v, [lang]: value } : v));
   }, []);
+
+  // أدوات تحويل/عرض نصوص متعددة اللغات المخزنة كسلاسل JSON
+  const tryParseI18n = (val?: string | null): { ar?: string; en?: string; he?: string } | null => {
+    if (!val) return null;
+    try {
+      const parsed = JSON.parse(val);
+      if (parsed && (typeof parsed === 'object') && ('ar' in parsed || 'en' in parsed || 'he' in parsed)) {
+        return parsed as any;
+      }
+    } catch {}
+    return null;
+  };
+
+  const toDisplay = (val: string): string => {
+    const obj = tryParseI18n(val);
+    if (!obj) return val;
+    return (language === 'en' ? (obj.en || obj.ar || obj.he) : language === 'he' ? (obj.he || obj.en || obj.ar) : (obj.ar || obj.en || obj.he)) || '';
+  };
+
+  // Helpers for generating clean SKUs from multilingual values
+  const slugify = (s: string) =>
+    (s || '')
+      .normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 32);
+  const shortHash = (s: string) => {
+    let h = 0;
+    for (let i = 0; i < s.length; i++) {
+      h = ((h << 5) - h) + s.charCodeAt(i);
+      h |= 0;
+    }
+    return Math.abs(h).toString(36);
+  };
+  const skuPart = (raw: string): string => {
+    const obj = tryParseI18n(raw);
+    const base = (obj?.en || obj?.ar || obj?.he || raw || '').toString();
+    const slug = slugify(base);
+    return slug || shortHash(raw || '');
+  };
+  const skuFromCombo = (combo: Record<string, string>): string => {
+    // Use option values (in options order as created) to build a compact, stable SKU part
+    return `${productId}-${Object.values(combo).map(v => skuPart(String(v))).join('-')}`;
+  };
+
+  const namesEqual = (a: string, bObj: { ar?: string; en?: string; he?: string }) => {
+    const aObj = tryParseI18n(a);
+    if (aObj) {
+      return (aObj.ar || '').trim().toLowerCase() === (bObj.ar || '').trim().toLowerCase()
+        && (aObj.en || '').trim().toLowerCase() === (bObj.en || '').trim().toLowerCase()
+        && (aObj.he || '').trim().toLowerCase() === (bObj.he || '').trim().toLowerCase();
+    }
+    // مقارنة باسم نصي بسيط مع أي من اللغات المدخلة
+    const bCandidates = [bObj.ar, bObj.en, bObj.he].filter(Boolean).map(s => (s as string).trim().toLowerCase());
+    return bCandidates.includes((a || '').trim().toLowerCase());
+  };
 
   // إضافة خيار جديد أو تحديث موجود
   const addOrUpdateOption = useCallback(() => {
-    if (!newOptionName.trim()) {
+    const anyName = (newOptionName.ar || newOptionName.en || newOptionName.he || '').trim();
+    if (!anyName) {
       toast.error(t('pleaseEnterOptionName') || 'يرجى إدخال اسم الخيار');
       return;
     }
 
-    const values = newOptionValues.map(v => v.trim()).filter(Boolean);
+    const values = newOptionValues
+      .map(v => ({ ...v, // تنظيف الفراغات
+        ar: (v.ar || '').trim(), en: (v.en || '').trim(), he: (v.he || '').trim()
+      }))
+      .filter(v => (v.ar || v.en || v.he))
+      .map(v => JSON.stringify(v));
     if (values.length === 0) {
       toast.error(t('pleaseEnterValidValues') || 'يرجى إدخال قيم صحيحة');
       return;
     }
 
     // التحقق من وجود خيار بنفس الاسم (باستثناء الخيار المُحرر حالياً)
-    const existingOption = options.find(opt => 
-      opt.name.toLowerCase() === newOptionName.trim().toLowerCase() && 
-      opt.id !== editingOption?.id
-    );
+    const existingOption = options.find(opt => namesEqual(opt.name, newOptionName) && opt.id !== editingOption?.id);
 
     if (existingOption) {
       // إضافة القيم الجديدة للخيار الموجود
@@ -118,7 +181,7 @@ const ProductVariantsManager: React.FC<ProductVariantsManagerProps> = ({
       // تحديث خيار موجود
       const updatedOptions = options.map(opt => 
         opt.id === editingOption.id 
-          ? { ...opt, name: newOptionName.trim(), option_values: values }
+          ? { ...opt, name: JSON.stringify({ ar: (newOptionName.ar||'').trim(), en: (newOptionName.en||'').trim(), he: (newOptionName.he||'').trim() }), option_values: values }
           : opt
       );
       setOptions(updatedOptions);
@@ -128,7 +191,7 @@ const ProductVariantsManager: React.FC<ProductVariantsManagerProps> = ({
       const newOption: ProductOption = {
         id: `temp_${Date.now()}`,
         product_id: productId,
-        name: newOptionName.trim(),
+        name: JSON.stringify({ ar: (newOptionName.ar||'').trim(), en: (newOptionName.en||'').trim(), he: (newOptionName.he||'').trim() }),
         option_values: values,
         option_position: options.length,
         created_at: new Date().toISOString()
@@ -138,22 +201,24 @@ const ProductVariantsManager: React.FC<ProductVariantsManagerProps> = ({
     }
 
     // إعادة تعيين النموذج
-    setNewOptionName('');
-    setNewOptionValues(['']);
+    setNewOptionName({ ar: '', en: '', he: '' });
+    setNewOptionValues([{ ar: '', en: '', he: '' }]);
     setEditingOption(null);
   }, [newOptionName, newOptionValues, options, editingOption, productId, t]);
 
   // بدء تعديل خيار
   const startEditingOption = useCallback((option: ProductOption) => {
-    setNewOptionName(option.name);
-    setNewOptionValues(option.option_values);
+    const parsedName = tryParseI18n(option.name) || { ar: option.name, en: option.name, he: option.name };
+    setNewOptionName(parsedName);
+    const parsedValues = option.option_values.map(v => tryParseI18n(v) || { ar: v, en: v, he: v });
+    setNewOptionValues(parsedValues);
     setEditingOption(option);
   }, []);
 
   // إلغاء تعديل خيار
   const cancelEditingOption = useCallback(() => {
-    setNewOptionName('');
-    setNewOptionValues(['']);
+    setNewOptionName({ ar: '', en: '', he: '' });
+    setNewOptionValues([{ ar: '', en: '', he: '' }]);
     setEditingOption(null);
   }, []);
 
@@ -251,7 +316,7 @@ const ProductVariantsManager: React.FC<ProductVariantsManagerProps> = ({
     const newVariants: ProductVariant[] = combinations.map((combo, index) => ({
       id: `temp_${Date.now()}_${index}`,
       product_id: productId,
-      sku: `${productId}-${Object.values(combo).join('-')}`,
+      sku: skuFromCombo(combo),
       price: 0,
       wholesale_price: 0,
       stock_quantity: 0,
@@ -265,6 +330,15 @@ const ProductVariantsManager: React.FC<ProductVariantsManagerProps> = ({
     setGeneratingVariants(false);
     toast.success(t('variantsGenerated') || 'تم توليد الفيرنتس');
   }, [options, productId, t]);
+
+  // إعادة توليد أكواد SKU للفيرنتس الحالية بناءً على القيم متعددة اللغات (لتنظيف أي JSON قد يظهر داخل SKU)
+  const regenerateSkus = useCallback(() => {
+    setVariants(prev => prev.map(v => ({
+      ...v,
+      sku: skuFromCombo(v.option_values || {} as Record<string, string>)
+    })));
+    toast.success(t('skusRegenerated') || 'تم إعادة توليد أكواد SKU');
+  }, [t]);
 
   // تحديث فيرنت
   const updateVariant = useCallback((variantId: string, updates: Partial<ProductVariant>) => {
@@ -350,23 +424,26 @@ const ProductVariantsManager: React.FC<ProductVariantsManagerProps> = ({
                             size="sm"
                             className="text-xs bg-white dark:bg-gray-800"
                           >
-                            {prevOption.name}
+                            {toDisplay(prevOption.name)}
                             <ChevronDown className={cn('w-3 h-3', isRTL ? 'mr-1' : 'ml-1')} />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent>
                           <DropdownMenuItem
                             onClick={() => {
-                              setNewOptionName(prevOption.name);
-                              setNewOptionValues(prevOption.option_values);
+                              const parsedName = tryParseI18n(prevOption.name) || { ar: prevOption.name, en: prevOption.name, he: prevOption.name };
+                              setNewOptionName(parsedName);
+                              const parsedValues = prevOption.option_values.map(v => tryParseI18n(v) || { ar: v, en: v, he: v });
+                              setNewOptionValues(parsedValues);
                             }}
                           >
-                            استخدام كامل ({prevOption.option_values.join(', ')})
+                            استخدام كامل ({prevOption.option_values.map(v => toDisplay(v)).join(', ')})
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => {
-                              setNewOptionName(prevOption.name);
-                              setNewOptionValues(['']);
+                              const parsedName = tryParseI18n(prevOption.name) || { ar: prevOption.name, en: prevOption.name, he: prevOption.name };
+                              setNewOptionName(parsedName);
+                              setNewOptionValues([{ ar: '', en: '', he: '' }]);
                             }}
                           >
                             اسم الخيار فقط
@@ -399,10 +476,13 @@ const ProductVariantsManager: React.FC<ProductVariantsManagerProps> = ({
               <div className="space-y-3">
                 <div>
                   <Label>{t('optionName') || 'اسم الخيار'}</Label>
-                  <Input
-                    value={newOptionName}
-                    onChange={(e) => setNewOptionName(e.target.value)}
-                    placeholder={t('optionNamePlaceholder') || 'مثل: اللون، الحجم'}
+                  <MultiLanguageField
+                    fieldName="optionName"
+                    label={t('optionName') || 'اسم الخيار'}
+                    values={{ ar: newOptionName.ar || '', en: newOptionName.en || '', he: newOptionName.he || '' }}
+                    onChange={(lang, value) => setNewOptionName(prev => ({ ...prev, [lang]: value }))}
+                    placeholder={{ ar: t('optionNamePlaceholder') || 'مثل: اللون', en: 'e.g. Color', he: 'לדוגמה: צבע' }}
+                    inline
                   />
                 </div>
                 
@@ -422,20 +502,24 @@ const ProductVariantsManager: React.FC<ProductVariantsManagerProps> = ({
                   
                   <div className="space-y-2">
                     {newOptionValues.map((value, index) => (
-                      <div key={index} className="flex gap-2">
-                        <Input
-                          value={value}
-                          onChange={(e) => updateOptionValue(index, e.target.value)}
-                          placeholder={t('optionValuePlaceholder') || 'مثل: أحمر، كبير'}
-                          className="flex-1"
-                        />
+                      <div key={index} className="flex gap-2 items-start">
+                        <div className="flex-1">
+                          <MultiLanguageField
+                            fieldName={`optionValue_${index}`}
+                            label={t('optionValue') || 'قيمة الخيار'}
+                            values={{ ar: value.ar || '', en: value.en || '', he: value.he || '' }}
+                            onChange={(lang, v) => updateOptionValue(index, lang, v)}
+                            placeholder={{ ar: t('optionValuePlaceholder') || 'مثل: أحمر', en: 'e.g. Red', he: 'לדוגמה: אדום' }}
+                            inline
+                          />
+                        </div>
                         {newOptionValues.length > 1 && (
                           <Button
                             type="button"
                             variant="outline"
                             size="sm"
                             onClick={() => removeOptionValue(index)}
-                            className="text-red-600 hover:text-red-700"
+                            className="text-red-600 hover:text-red-700 mt-6"
                           >
                             <X className="w-4 h-4" />
                           </Button>
@@ -468,14 +552,14 @@ const ProductVariantsManager: React.FC<ProductVariantsManagerProps> = ({
                 <div key={option.id} className="bg-white dark:bg-gray-900 p-4 rounded-lg border">
                   <div className={cn("flex justify-between items-start", isRTL && "flex-row-reverse") }>
                     <div className="flex-1">
-                      <h5 className="font-semibold text-lg">{option.name}</h5>
+                      <h5 className="font-semibold text-lg">{toDisplay(option.name)}</h5>
                       <div className="flex flex-wrap gap-2 mt-2" dir={isRTL ? "rtl" : "ltr"}>
                         {option.option_values.map((value) => (
                           <span
                             key={value}
                             className="px-2 py-1 bg-primary/10 text-primary rounded text-sm"
                           >
-                            {value}
+                            {toDisplay(value)}
                           </span>
                         ))}
                       </div>
@@ -525,6 +609,14 @@ const ProductVariantsManager: React.FC<ProductVariantsManagerProps> = ({
                 <div className={cn("flex items-center justify-between mb-3", isRTL && "flex-row-reverse") }>
                   <h4 className="font-semibold">{t('bulkEdit') || 'تعديل جماعي'}</h4>
                   <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={regenerateSkus}
+                      title={t('regenerateSkus') || 'إعادة توليد أكواد SKU'}
+                    >
+                      {t('regenerateSkus') || 'إعادة توليد SKU'}
+                    </Button>
                     <Button
                       variant="outline"
                       size="sm"
@@ -670,11 +762,27 @@ const VariantCard: React.FC<VariantCardProps> = ({
   isSelected = false,
   onToggleSelection 
 }) => {
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, language } = useLanguage();
   const [expanded, setExpanded] = useState(false);
 
+  const tryParseI18n = (val?: string | null): { ar?: string; en?: string; he?: string } | null => {
+    if (!val) return null;
+    try {
+      const parsed = JSON.parse(val);
+      if (parsed && (typeof parsed === 'object') && ('ar' in parsed || 'en' in parsed || 'he' in parsed)) {
+        return parsed as any;
+      }
+    } catch {}
+    return null;
+  };
+  const toDisplay = (val: string): string => {
+    const obj = tryParseI18n(val);
+    if (!obj) return val;
+    return (language === 'en' ? (obj.en || obj.ar || obj.he) : language === 'he' ? (obj.he || obj.en || obj.ar) : (obj.ar || obj.en || obj.he)) || '';
+  };
+
   const variantName = Object.entries(variant.option_values)
-    .map(([key, value]) => `${key}: ${value}`)
+    .map(([key, value]) => `${toDisplay(key)}: ${toDisplay(String(value))}`)
     .join(' - ');
 
   return (

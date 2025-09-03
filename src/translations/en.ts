@@ -1389,5 +1389,12 @@ export const enTranslations = {
   newPrice: "New Price",
   newWholesalePrice: "New Wholesale Price",
   newStockQuantity: "New Stock Quantity",
-  applyBulkEdit: "Apply Bulk Edit"
+  applyBulkEdit: "Apply Bulk Edit",
+
+  optionNameHebrew: "שם אפשרות (בעברית)",
+  optionNameEnglish: "Option Name (English)",
+  enterEnglishName: "Please enter option name (English)",
+  enterHebrewName: "Please enter option name (Hebrew)",
+  valueHebrewPlaceholder: "e.g.: אדום, גדול",
+  valueEnglishPlaceholder: "e.g.: Red, Large",
 };
