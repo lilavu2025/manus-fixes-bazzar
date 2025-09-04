@@ -7,6 +7,7 @@ export interface CartItem {
   id: string;
   product: Product;
   quantity: number;
+  variantId?: string;
 }
 
 export const useOffers = () => {

@@ -1412,5 +1412,12 @@ export const arTranslations = {
   enterHebrewName: "يرجى إدخال اسم الخيار (بالعبرية)",
   valueHebrewPlaceholder: "مثل: אדום, גדול",
   valueEnglishPlaceholder: "مثل: Red, Large",
+  regenerateSkus: "إعادة توليد SKUs",
+  skusRegenerated: "تم إعادة توليد SKUs",
+  fullUsage: "استخدام كامل",
+  optionNameOnly: "اسم الخيار فقط",
+  getVariantScope: "الحصول على نطاق الفيرنت",
+  specificVariants: "فيرنتس محددة",
+  allVariants: "جميع الفيرنتس",
 
 };

@@ -22,11 +22,13 @@ interface OrderDetailsPrintProps {
 
 const OrderDetailsPrint: React.FC<OrderDetailsPrintProps> = ({ order, t, profile, generateOrderPrint: generateOrderPrint, onDownloadPdf }) => {
   const { language } = useContext(LanguageContext) ?? { language: 'ar' };
+  const rtl = isRTL(language as any);
   const { products } = useProductsRealtime();
 
   return (
     <div
-      className={`space-y-6 px-6 py-6 print:p-0 print:space-y-4 print:bg-white print:text-black print:rounded-none print:shadow-none print:w-full print:max-w-full print:mx-0 print:my-0 ${isRTL ? "text-right" : "text-left"}`}
+      className={`space-y-6 px-6 py-6 print:p-0 print:space-y-4 print:bg-white print:text-black print:rounded-none print:shadow-none print:w-full print:max-w-full print:mx-0 print:my-0 ${rtl ? "text-right" : "text-left"}`}
+      dir={rtl ? 'rtl' : 'ltr'}
       id="print-order-details"
     >
       {/* رأس الورقة للطباعة */}
@@ -214,12 +216,12 @@ const OrderDetailsPrint: React.FC<OrderDetailsPrintProps> = ({ order, t, profile
                     <div className="flex flex-wrap gap-2 text-sm">
                       {offer.discountAmount > 0 && (
                         <span className="bg-red-100 text-red-700 px-2 py-1 rounded print:bg-gray-100 print:text-black">
-                          💰 خصم: {offer.discountAmount.toFixed(2)} ₪
+                          💰 {t("discount") || "خصم"}: {offer.discountAmount.toFixed(2)} ₪
                         </span>
                       )}
                       {(offer.freeProducts || offer.freeItems) && (offer.freeProducts?.length > 0 || offer.freeItems?.length > 0) && (
                         <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded print:bg-gray-100 print:text-black">
-                          🎁 عناصر مجانية: {(offer.freeProducts || offer.freeItems)?.length}
+                          🎁 {t("freeItems") || "منتجات مجانية"}: {(offer.freeProducts || offer.freeItems)?.length}
                         </span>
                       )}
                     </div>
@@ -253,7 +255,7 @@ const OrderDetailsPrint: React.FC<OrderDetailsPrintProps> = ({ order, t, profile
                           return (
                             <div key={freeIndex} className="flex items-center gap-2 text-sm">
                               <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                              <span>{freeProductName}</span>
+                              <span className="font-bold">{freeProductName}</span>
                               <span className="text-gray-500">({freeItem.quantity || 1}x)</span>
                             </div>
                           );
@@ -280,7 +282,7 @@ const OrderDetailsPrint: React.FC<OrderDetailsPrintProps> = ({ order, t, profile
             <thead>
               <tr className="bg-gray-100 print:bg-gray-200">
                 <th className="p-2 font-bold">#</th>
-                <th className="p-2 font-bold text-right">{t("product") || "المنتج"}</th>
+                <th className={`p-2 font-bold ${rtl ? 'text-right' : 'text-left'}`}>{t("product") || "المنتج"}</th>
                 <th className="p-2 font-bold text-center">{t("quantity") || "الكمية"}</th>
                 <th className="p-2 font-bold text-center">{t("price") || "السعر"}</th>
                 <th className="p-2 font-bold text-center">{t("total") || "المجموع"}</th>
@@ -303,8 +305,8 @@ const OrderDetailsPrint: React.FC<OrderDetailsPrintProps> = ({ order, t, profile
                   return (
                     <tr key={item.id} className="border-b hover:bg-gray-50 print:hover:bg-transparent">
                       <td className="p-2 text-center">{idx + 1}</td>
-                      <td className="p-2 text-right">
-                        <div className="flex flex-col">
+                      <td className={`p-2 ${rtl ? 'text-right' : 'text-left'}`}>
+                        <div className="flex flex-col" dir={rtl ? 'rtl' : 'ltr'}>
                           <span className="font-bold text-gray-900">{productName}</span>
                           {productDescription && (
                             <span className="text-xs text-gray-600 mt-1 print:text-sm print:leading-tight">
@@ -312,7 +314,7 @@ const OrderDetailsPrint: React.FC<OrderDetailsPrintProps> = ({ order, t, profile
                             </span>
                           )}
                           {/* عرض معلومات الفيرنت إذا كان موجوداً */}
-                          {renderVariantInfo((item as any).variant_attributes, "text-blue-600 print:text-black")}
+                          {renderVariantInfo((item as any).variant_attributes, "text-blue-600 print:text-black", language as any)}
                         </div>
                       </td>
                       <td className="p-2 text-center">{item.quantity}</td>
@@ -510,76 +512,59 @@ const OrderDetailsPrint: React.FC<OrderDetailsPrintProps> = ({ order, t, profile
               
               {/* المنتجات المجانية */}
               {(() => {
-                let allFreeItems = [];
-                
-                // الحصول على المنتجات المجانية من العروض المطبقة أولاً
+                // 1) من applied_offers
+                const fromOffers: any[] = [];
                 if (order.applied_offers) {
                   try {
                     const appliedOffers = JSON.parse(order.applied_offers);
                     appliedOffers.forEach((offer: any) => {
-                      if (offer.freeProducts && Array.isArray(offer.freeProducts)) {
-                        allFreeItems = [...allFreeItems, ...offer.freeProducts];
-                      }
-                      if (offer.freeItems && Array.isArray(offer.freeItems)) {
-                        allFreeItems = [...allFreeItems, ...offer.freeItems];
-                      }
+                      if (Array.isArray(offer.freeProducts)) fromOffers.push(...offer.freeProducts);
+                      if (Array.isArray(offer.freeItems)) fromOffers.push(...offer.freeItems);
                     });
                   } catch {}
                 }
-                
-                // إذا لم توجد منتجات مجانية في العروض، ابحث في order.free_items
-                if (allFreeItems.length === 0 && order.free_items) {
+
+                // 2) من order.free_items
+                const fromOrder: any[] = (() => {
+                  if (!order.free_items) return [];
                   try {
-                    const freeItems = typeof order.free_items === 'string' ? JSON.parse(order.free_items) : order.free_items;
-                    if (Array.isArray(freeItems) && freeItems.length > 0) {
-                      allFreeItems = [...freeItems];
+                    const val = typeof order.free_items === 'string' ? JSON.parse(order.free_items) : order.free_items;
+                    return Array.isArray(val) ? val : [];
+                  } catch { return []; }
+                })();
+
+                // 3) دمج مع تفضيل variantAttributes
+                const map = new Map<string, any>();
+                const makeKey = (it: any) => {
+                  const pid = String(it.productId || it.product_id || it.id || '').trim();
+                  const vid = String(it.variantId || (it.variant_id ?? '') || '').trim();
+                  return `${pid}|${vid}`;
+                };
+                const merge = (target: any, src: any) => {
+                  const result: any = { ...target };
+                  for (const k of Object.keys(src || {})) {
+                    if (result[k] == null || result[k] === '') result[k] = src[k];
+                  }
+                  if (!result.variantAttributes && src.variantAttributes) result.variantAttributes = src.variantAttributes;
+                  if (!result.variant_attributes && src.variant_attributes) result.variant_attributes = src.variant_attributes;
+                  if (!result.variantId && src.variantId) result.variantId = src.variantId;
+                  return result;
+                };
+                const pushOrMerge = (arr: any[]) => {
+                  for (const it of arr) {
+                    const key = makeKey(it);
+                    if (!key.startsWith('|')) {
+                      if (map.has(key)) map.set(key, merge(map.get(key), it));
+                      else map.set(key, { ...it });
                     }
-                  } catch {}
-                }
-                
-                // إزالة المكررات والعناصر بدون أسماء صحيحة
-                const uniqueFreeItems = allFreeItems.reduce((acc: any[], current: any) => {
-                  const currentProductId = String(current.productId || current.product_id || current.id || '').trim();
-                  
-                  // تجاهل العناصر بدون معرف منتج
-                  if (!currentProductId) return acc;
-                  
-                  // البحث عن المنتج في قاعدة البيانات للتأكد من وجود اسم
-                  const product = products.find((p) => 
-                    p.id === current.productId || 
-                    p.id === current.product_id || 
-                    p.id === current.id ||
-                    String(p.id) === String(current.productId) ||
-                    String(p.id) === String(current.product_id) ||
-                    String(p.id) === String(current.id)
-                  );
-                  
-                  // الحصول على اسم المنتج
-                  let productName = '';
-                  if (product) {
-                    productName = product[`name_${language}`] || product.name_ar || product.name_en || product.name_he || '';
                   }
-                  if (!productName) {
-                    productName = current.name_ar || current.name_en || current.name_he || current.name || current.productName || '';
-                  }
-                  
-                  // تجاهل العناصر بدون اسم صحيح (أي التي ستصبح "منتج مجاني")
-                  if (!productName || productName.trim() === '') {
-                    return acc;
-                  }
-                  
-                  const existing = acc.find(item => {
-                    const existingProductId = String(item.productId || item.product_id || item.id || '').trim();
-                    return existingProductId === currentProductId;
-                  });
-                  
-                  if (!existing) {
-                    acc.push(current);
-                  }
-                  return acc;
-                }, []);
-                
-                return uniqueFreeItems.length > 0 && uniqueFreeItems.map((item: any, idx: number) => {
+                };
+                pushOrMerge(fromOffers);
+                pushOrMerge(fromOrder);
+
+                const mergedFreeItems = Array.from(map.values());
+
+                return mergedFreeItems.length > 0 && mergedFreeItems.map((item: any, idx: number) => {
                     // البحث عن المنتج في قاعدة البيانات للحصول على الاسم
                     const product = products.find((p) => 
                       p.id === item.productId || 
@@ -652,9 +637,40 @@ const OrderDetailsPrint: React.FC<OrderDetailsPrintProps> = ({ order, t, profile
                             🎁
                           </span>
                         </td>
-                        <td className="p-2 text-right">
+                        <td className={`p-2 ${rtl ? 'text-right' : 'text-left'}`}>
                           <div className="flex flex-col">
                             <span className="font-bold text-green-800 print:text-black">{productName}</span>
+                            {(() => {
+                              try {
+                                const v = (item as any).variant_attributes || (item as any).variantAttributes;
+                                if (!v) return null;
+                                const attrs = typeof v === 'string' ? JSON.parse(v) : v;
+                                if (!attrs || typeof attrs !== 'object') return null;
+                                const dir = rtl ? 'rtl' : 'ltr';
+                                const toDisplay = (val: any) => {
+                                  if (val == null) return '';
+                                  if (typeof val === 'object') {
+                                    const o = val as any;
+                                    if (o.ar || o.en || o.he) {
+                                      if ((language as any) === 'en') return o.en || o.ar || o.he || '';
+                                      if ((language as any) === 'he') return o.he || o.en || o.ar || '';
+                                      return o.ar || o.en || o.he || '';
+                                    }
+                                  }
+                                  if (typeof val === 'string') { try { const p = JSON.parse(val); return toDisplay(p); } catch { return val; } }
+                                  try { return String(val); } catch { return ''; }
+                                };
+                                return (
+                                  <div className="mt-1" dir={dir}>
+                                    {Object.entries(attrs).map(([k, v]) => (
+                                      <span key={String(k)} className={`inline-block bg-blue-100 text-blue-800 border border-blue-200 rounded-full px-2 py-0.5 text-[11px] ${rtl ? 'ml-1' : 'mr-1'}`}>
+                                        {toDisplay(k)}: {toDisplay(v)}
+                                      </span>
+                                    ))}
+                                  </div>
+                                );
+                              } catch { return null; }
+                            })()}
                             <span className="text-xs text-green-600 print:text-gray-600 mt-1">
                               🎁 {t("freeItem") || "منتج مجاني"} - {t("fromOffer") || "من العرض"}
                             </span>

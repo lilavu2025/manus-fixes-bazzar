@@ -44,6 +44,7 @@ import OrderEditDialog from "./orders/OrderEditDialog";
 import { orderPrint } from "@/orders/order.print";
 import { downloadInvoicePdf } from "@/orders/order.pdf";
 import VirtualScrollList from "../VirtualScrollList";
+import { exportOrdersToExcel } from "@/orders/order.export";
 
 // ================= Helpers =================
 
@@ -626,7 +627,14 @@ const AdminOrders: React.FC = () => {
         onResetFilters={() => {
           setStatusFilter("all"); setDateFrom(""); setDateTo(""); setPaymentFilter("all"); setSearchQuery("");
         }}
-        onExportExcel={() => { }}
+        onExportExcel={() => {
+          try {
+            // Export what the user currently sees (after all filters)
+            exportOrdersToExcel(advancedFilteredOrdersMemo as any);
+          } catch (e) {
+            console.error("Export Excel failed", e);
+          }
+        }}
       />
 
       <AdminHeader
