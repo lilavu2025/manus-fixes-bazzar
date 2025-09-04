@@ -1408,6 +1408,7 @@ export const enTranslations = {
   getVariantScope: "Get Variant Scope",
   specificVariants: "Specific Variants",
   allVariants: "All Variants",
+  youSaved: "You saved",
   
 
 };

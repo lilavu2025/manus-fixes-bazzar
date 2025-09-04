@@ -1419,5 +1419,6 @@ export const arTranslations = {
   getVariantScope: "الحصول على نطاق الفيرنت",
   specificVariants: "فيرنتس محددة",
   allVariants: "جميع الفيرنتس",
+  youSaved: "لقد وفرت",
 
 };

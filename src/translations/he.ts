@@ -1357,5 +1357,6 @@ export const heTranslations = {
   getVariantScope: "קבל את טווח הווריאנט",
   specificVariants: "וריאציות ספציפיות",
   allVariants: "כל הווריאציות",
+  youSaved: "אתה חוסך",
 
 };
