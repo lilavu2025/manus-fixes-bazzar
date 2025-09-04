@@ -146,7 +146,6 @@ export async function orderPrint(
             <strong>${productName}</strong>
           </div>
           ${variantHtml}
-          ${productDescription ? `<div style="font-size: 12px; color: #666; line-height: 1.3;">${productDescription}</div>` : ''}
         </td>
         <td>${item.quantity}</td>
         <td>${priceDisplay}</td>
@@ -400,10 +399,12 @@ export async function orderPrint(
           </div>
 
           <div class="info">
-            <div>${t("orderNumber")}: ${order.order_number}</div>
-            <div>${t("date")}: ${new Date(order.created_at).toLocaleDateString("en-GB")}</div>
-            <div>${t("customer")}: ${profile.full_name || "-"}</div>
-            <div>${t("phone")}: ${profile.phone || "-"}</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 6px 24px;">
+              <div style="width: calc(50% - 12px); box-sizing: border-box;">${t("orderNumber")}: ${order.order_number}</div>
+              <div style="width: calc(50% - 12px); box-sizing: border-box;">${t("date")}: ${new Date(order.created_at).toLocaleDateString("en-GB")}</div>
+              <div style="width: calc(50% - 12px); box-sizing: border-box;">${t("customer")}: ${profile.full_name || "-"}</div>
+              <div style="width: calc(50% - 12px); box-sizing: border-box;">${t("phone")}: ${profile.phone || "-"}</div>
+            </div>
             ${order.notes ? `<div><strong>${t("notes") || "ملاحظات"}:</strong><div class="notes">${order.notes}</div></div>` : ""}
             
             ${order.applied_offers ? (() => {
