@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React, { useContext, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Copy, MapPin, Package, UserPlus } from "lucide-react";
 import { getDisplayPrice } from "@/utils/priceUtils";
@@ -24,6 +24,8 @@ const OrderDetailsPrint: React.FC<OrderDetailsPrintProps> = ({ order, t, profile
   const { language } = useContext(LanguageContext) ?? { language: 'ar' };
   const rtl = isRTL(language as any);
   const { products } = useProductsRealtime();
+  // توسيع/طي وصف المنتج لكل عنصر على حدة
+  const [expandedDescriptions, setExpandedDescriptions] = useState<Record<string, boolean>>({});
 
   return (
     <div
@@ -309,9 +311,35 @@ const OrderDetailsPrint: React.FC<OrderDetailsPrintProps> = ({ order, t, profile
                         <div className="flex flex-col" dir={rtl ? 'rtl' : 'ltr'}>
                           <span className="font-bold text-gray-900">{productName}</span>
                           {productDescription && (
-                            <span className="text-xs text-gray-600 mt-1 print:text-sm print:leading-tight">
-                              {productDescription}
-                            </span>
+                            <div className="text-xs text-gray-600 mt-1 print:text-sm print:leading-tight">
+                              {(() => {
+                                const limit = 30;
+                                const idKey = String((item as any).id ?? `${(item as any).product_id}-${idx}`);
+                                const isLong = productDescription.length > limit;
+                                const isExpanded = !!expandedDescriptions[idKey];
+                                return (
+                                  <>
+                                    {/* شاشة: إظهار مختصر مع زر "عرض المزيد" */}
+                                    <span className="print:hidden">
+                                      {isLong && !isExpanded ? `${productDescription.slice(0, limit)}...` : productDescription}
+                                      {isLong && (
+                                        <button
+                                          type="button"
+                                          className={`inline text-blue-600 hover:underline font-medium ${rtl ? 'mr-1' : 'ml-1'}`}
+                                          onClick={() =>
+                                            setExpandedDescriptions((prev) => ({ ...prev, [idKey]: !isExpanded }))
+                                          }
+                                        >
+                                          {isExpanded ? (t("showLess") || "عرض أقل") : (t("showMore") || "عرض المزيد")}
+                                        </button>
+                                      )}
+                                    </span>
+                                    {/* طباعة: إظهار الوصف كاملاً دائمًا */}
+                                    <span className="hidden print:inline">{productDescription}</span>
+                                  </>
+                                );
+                              })()}
+                            </div>
                           )}
                           {/* عرض معلومات الفيرنت إذا كان موجوداً */}
                           {renderVariantInfo((item as any).variant_attributes, "text-blue-600 print:text-black", language as any)}
