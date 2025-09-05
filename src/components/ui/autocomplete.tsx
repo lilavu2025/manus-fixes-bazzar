@@ -1,6 +1,5 @@
 import React from "react";
-import { ClearableInput } from "./ClearableInput";
-import { isRTL } from "@/utils/languageContextUtils";
+import { useLanguage } from "@/utils/languageContextUtils";
 
 interface AutocompleteProps {
   value: string;
@@ -23,8 +22,8 @@ const Autocomplete: React.FC<AutocompleteProps> = ({
 }) => {
   const [showOptions, setShowOptions] = React.useState(false);
   const [inputValue, setInputValue] = React.useState(value || "");
-  const inputRef = React.useRef<HTMLInputElement>(null);
   const editableDivRef = React.useRef<HTMLDivElement>(null); // إضافة ref للعنصر contentEditable
+  const { isRTL } = useLanguage();
 
   React.useEffect(() => {
     setInputValue(value || "");
@@ -49,6 +48,8 @@ const Autocomplete: React.FC<AutocompleteProps> = ({
         contentEditable
         suppressContentEditableWarning={true}
         data-placeholder={!inputValue ? placeholder : ''}
+        aria-placeholder={placeholder}
+        aria-required={required}
         onInput={(e) => {
           const text = e.currentTarget.textContent || '';
           setInputValue(text);
@@ -98,7 +99,7 @@ const Autocomplete: React.FC<AutocompleteProps> = ({
                 if (editableDivRef.current) {
                   editableDivRef.current.textContent = option;
                 }
-                inputRef.current?.blur();
+                editableDivRef.current?.blur();
               }}
             >
               <div title={option}>

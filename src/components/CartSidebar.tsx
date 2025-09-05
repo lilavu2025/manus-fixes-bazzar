@@ -32,6 +32,36 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
   const { applyOffersToCart } = useOffers();
   
+  // Helpers to display i18n JSON strings/objects nicely based on current language
+  const tryParseI18n = (val?: unknown): { ar?: string; en?: string; he?: string } | null => {
+    if (val == null) return null;
+    if (typeof val === 'string') {
+      try {
+        const parsed = JSON.parse(val);
+        if (parsed && typeof parsed === 'object' && ('ar' in parsed || 'en' in parsed || 'he' in parsed)) {
+          return parsed as any;
+        }
+      } catch {
+        // not JSON, return null to fallback to raw string
+      }
+      return null;
+    }
+    if (typeof val === 'object' && val !== null) {
+      const obj = val as any;
+      if ('ar' in obj || 'en' in obj || 'he' in obj) return obj as any;
+    }
+    return null;
+  };
+  const toDisplay = (val: unknown): string => {
+    const obj = tryParseI18n(val);
+    if (!obj) return String(val ?? '');
+    return language === 'en'
+      ? (obj.en || obj.ar || obj.he || '')
+      : language === 'he'
+        ? (obj.he || obj.en || obj.ar || '')
+        : (obj.ar || obj.en || obj.he || '');
+  };
+  
   // حالة العروض المطبقة
   const [appliedOffers, setAppliedOffers] = useState({
     appliedOffers: [],
@@ -419,11 +449,11 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
                             </h4>
                             
                             {/* عرض الفيرنتس المحددة */}
-                            {item.selectedVariant && Object.keys(item.selectedVariant).length > 0 && (
+              {item.selectedVariant && Object.keys(item.selectedVariant).length > 0 && (
                               <div className={`flex flex-wrap gap-1 mb-2 ${isRTL ? "flex-row-reverse" : "flex-row"}`}>
-                                {Object.entries(item.selectedVariant).map(([key, value]) => (
+                {Object.entries(item.selectedVariant).map(([key, value]) => (
                                   <Badge key={key} variant="outline" className="text-xs">
-                                    {key}: {String(value)}
+                  {toDisplay(key)}: {toDisplay(value)}
                                   </Badge>
                                 ))}
                               </div>
@@ -705,6 +735,16 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
                           <h4 className="font-semibold text-sm sm:text-base mb-1 line-clamp-2">
                             {getLocalizedName(freeItem.product, language)}
                           </h4>
+                          {/* عرض الفيرنتس لعناصر مجانية إن وجدت */}
+                          {freeItem.variantAttributes && Object.keys(freeItem.variantAttributes).length > 0 && (
+                            <div className={`flex flex-wrap gap-1 mb-1 ${isRTL ? "flex-row-reverse" : "flex-row"}`}>
+                              {Object.entries(freeItem.variantAttributes).map(([k, v]) => (
+                                <Badge key={String(k)} variant="outline" className="text-[10px]">
+                                  {toDisplay(k)}: {toDisplay(v)}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
                           <p className={`text-gray-500 text-xs sm:text-sm mb-1 ${isRTL ? "text-right" : "text-left"}`}>
                             {t("quantity")}: {freeItem.quantity}
                           </p>

@@ -566,6 +566,8 @@ async function reconcileAllOffersLive(
   const cart = Array.from(agg.entries())
     .map(([pid, q]) => {
       const p = productOf(products, pid);
+      // إذا كان هناك سطور فيها variant_id لنفس المنتج، نحاول تمريرها، لكن cart هنا مُجمَّع per product
+      // سنترك variantId فارغ في الملخص لأن الخصم يُحسَب لاحقاً على مستوى السطور التفصيلية
       return p ? { id: `cart_${pid}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, product: p, quantity: q } : null;
     })
     .filter(Boolean) as any[];

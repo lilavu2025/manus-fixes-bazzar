@@ -437,7 +437,7 @@ const ProductVariantsManager: React.FC<ProductVariantsManagerProps> = ({
                               setNewOptionValues(parsedValues);
                             }}
                           >
-                            استخدام كامل ({prevOption.option_values.map(v => toDisplay(v)).join(', ')})
+                            {t("fullUsage") || "استخدام كامل"} ({prevOption.option_values.map(v => toDisplay(v)).join(', ')})
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => {
@@ -446,7 +446,7 @@ const ProductVariantsManager: React.FC<ProductVariantsManagerProps> = ({
                               setNewOptionValues([{ ar: '', en: '', he: '' }]);
                             }}
                           >
-                            اسم الخيار فقط
+                            {t("optionNameOnly") || "اسم الخيار فقط"}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>

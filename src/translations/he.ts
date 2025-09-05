@@ -1346,5 +1346,17 @@ export const heTranslations = {
   enterHebrewName: "אנא הכנס שם אפשרות (בעברית)",
   valueHebrewPlaceholder: "למשל: אדום, גדול",
   valueEnglishPlaceholder: "למשל: Red, Large",
+  regenerateSkus: "שחזר SKUs",
+  skusRegenerated: "SKUs שוחזרו",
+  fullUsage: "שימוש מלא",
+  optionNameOnly: "שם אפשרות בלבד",
+  previouslyUsedOptions: "אפשרויות שנעשה בהן שימוש בעבר",
+  addOption: "הוסף אפשרות",
+  optionValuePlaceholder: "למשל: קטן, בינוני, גדול",
+  addValue: "הוסף ערך",
+  getVariantScope: "קבל את טווח הווריאנט",
+  specificVariants: "וריאציות ספציפיות",
+  allVariants: "כל הווריאציות",
+  youSaved: "אתה חוסך",
 
 };

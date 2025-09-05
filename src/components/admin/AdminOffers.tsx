@@ -29,6 +29,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import ImageUpload from "@/components/ImageUpload";
 import MultiLanguageField from "@/components/ui/MultiLanguageField";
@@ -47,6 +49,7 @@ import { ClearableInput } from "@/components/ui/ClearableInput";
 import Autocomplete from "@/components/ui/autocomplete";
 import OfferStatsCard from "@/components/OfferStatsCard";
 import OfferSummaryStats from "@/components/admin/OfferSummaryStats";
+import { useProductVariants } from "@/hooks/useVariantsAPI";
 
 const AdminOffers: React.FC = () => {
   const { t, isRTL, language } = useLanguage();
@@ -60,6 +63,14 @@ const AdminOffers: React.FC = () => {
   const [loadingSetting, setLoadingSetting] = useState(true);
   const [searchName, setSearchName] = useState(""); // بحث بالاسم
   const [isEditFormInitialized, setIsEditFormInitialized] = useState(false);
+  // نطاق الفيرنتس إن كان المنتج لديه فيرنتس
+  const [variantScope, setVariantScope] = useState<'all' | 'specific'>('all');
+  const [selectedVariantIds, setSelectedVariantIds] = useState<string[]>([]);
+  // نطاقات فيرنتس لعروض اشتري واحصل
+  const [buyVariantScope, setBuyVariantScope] = useState<'all' | 'specific'>('all');
+  const [selectedBuyVariantIds, setSelectedBuyVariantIds] = useState<string[]>([]);
+  const [getVariantScope, setGetVariantScope] = useState<'all' | 'specific'>('all');
+  const [selectedGetVariantIds, setSelectedGetVariantIds] = useState<string[]>([]);
 
   // نموذج العرض مع جميع الحقول المطلوبة
   const initialForm = useMemo(
@@ -130,8 +141,17 @@ const AdminOffers: React.FC = () => {
           image_url: shouldUpdateImage ? selectedProduct.image : prev.image_url
         };
       });
+  setVariantScope('all');
+  setSelectedVariantIds([]);
+  // إعادة ضبط نطاقات buy_get (الشراء)
+  setBuyVariantScope('all');
+  setSelectedBuyVariantIds([]);
     } else {
       setForm(prev => ({ ...prev, linked_product_id: "" }));
+  setVariantScope('all');
+  setSelectedVariantIds([]);
+  setBuyVariantScope('all');
+  setSelectedBuyVariantIds([]);
     }
   };
 
@@ -152,8 +172,13 @@ const AdminOffers: React.FC = () => {
           image_url: shouldUpdateImage ? selectedProduct.image : prev.image_url
         };
       });
+  // إعادة ضبط نطاقات buy_get (الحصول)
+  setGetVariantScope('all');
+  setSelectedGetVariantIds([]);
     } else {
       setForm(prev => ({ ...prev, get_product_id: "" }));
+  setGetVariantScope('all');
+  setSelectedGetVariantIds([]);
     }
   };
 
@@ -167,6 +192,34 @@ const AdminOffers: React.FC = () => {
 
   // إعداد أسماء المنتجات للقائمة
   const productOptions = productsData.map(getProductDisplayName).filter(Boolean);
+
+  // جلب فيرنتس المنتج المختار لعرض نطاق التطبيق (لنوع خصم على منتج)
+  const { data: linkedProductVariants = [] } = useProductVariants(
+    form.offer_type === "product_discount" ? form.linked_product_id : ""
+  );
+  // فيرنتس للمنتجات في عروض اشتري واحصل
+  const { data: buyProductVariants = [] } = useProductVariants(
+    form.offer_type === "buy_get" ? form.linked_product_id : ""
+  );
+  const { data: getProductVariants = [] } = useProductVariants(
+    form.offer_type === "buy_get" ? form.get_product_id : ""
+  );
+
+  // أدوات عرض نصوص JSON متعددة اللغات داخل خصائص الفيرنتس
+  const tryParseI18n = (val?: string | null): { ar?: string; en?: string; he?: string } | null => {
+    if (!val) return null;
+    try {
+      const parsed = JSON.parse(val);
+      if (parsed && typeof parsed === 'object' && ('ar' in parsed || 'en' in parsed || 'he' in parsed)) return parsed as any;
+    } catch {}
+    return null;
+  };
+  const toDisplay = (val: any): string => {
+    const s = String(val ?? "");
+    const obj = tryParseI18n(s);
+    if (!obj) return s;
+    return (language === 'en' ? (obj.en || obj.ar || obj.he) : language === 'he' ? (obj.he || obj.en || obj.ar) : (obj.ar || obj.en || obj.he)) || '';
+  };
 
   // ربط hooks العروض
   const addOfferMutation = useAddOffer();
@@ -341,6 +394,40 @@ const AdminOffers: React.FC = () => {
     console.log('🔍 Object keys:', Object.keys(offerData));
     console.log('🔍 Object values:', Object.values(offerData));
 
+    // تخزين نطاق الفيرنتس داخل terms_and_conditions
+    if (form.offer_type === 'product_discount' && linkedProductVariants.length > 0) {
+      if (variantScope === 'specific' && selectedVariantIds.length === 0) {
+        toast.error(t('pleaseSelectVariants') || 'يرجى اختيار فيرنتس لتطبيق العرض عليها');
+        return;
+      }
+      const tc: any = { variant_scope: variantScope };
+      if (variantScope === 'specific') tc.variant_ids = selectedVariantIds;
+      (offerData as any).terms_and_conditions = JSON.stringify(tc);
+    } else if (form.offer_type === 'buy_get') {
+      const tc: any = {};
+      // شراء: إن كان للمنتج فيرنتس
+      if (Array.isArray(buyProductVariants) && buyProductVariants.length > 0) {
+        if (buyVariantScope === 'specific' && selectedBuyVariantIds.length === 0) {
+          toast.error(t('pleaseSelectVariants') || 'يرجى اختيار فيرنتس لتطبيق شرط الشراء عليها');
+          return;
+        }
+        tc.buy_variant_scope = buyVariantScope;
+        if (buyVariantScope === 'specific') tc.buy_variant_ids = selectedBuyVariantIds;
+      }
+      // الحصول: إن كان للمنتج فيرنتس
+      if (Array.isArray(getProductVariants) && getProductVariants.length > 0) {
+        if (getVariantScope === 'specific' && selectedGetVariantIds.length === 0) {
+          toast.error(t('pleaseSelectVariants') || 'يرجى اختيار فيرنتس لتطبيق الخصم/المجاني عليها');
+          return;
+        }
+        tc.get_variant_scope = getVariantScope;
+        if (getVariantScope === 'specific') tc.get_variant_ids = selectedGetVariantIds;
+      }
+      if (Object.keys(tc).length > 0) {
+        (offerData as any).terms_and_conditions = JSON.stringify(tc);
+      }
+    }
+
     addOfferMutation.mutate(offerData, {
       onSuccess: (data) => {
         console.log('تم إضافة العرض بنجاح - البيانات المُستلمة:', data);
@@ -483,6 +570,41 @@ const AdminOffers: React.FC = () => {
       const descValue = form[descField] as string;
       updateData[descField] = descValue && descValue.trim() ? descValue : null;
     });
+    // حفظ نطاق الفيرنتس داخل terms_and_conditions
+    if (form.offer_type === 'product_discount' && (Array.isArray(linkedProductVariants) && linkedProductVariants.length > 0)) {
+      if (variantScope === 'specific' && selectedVariantIds.length === 0) {
+        toast.error(t('pleaseSelectVariants') || 'يرجى اختيار فيرنتس لتطبيق العرض عليها');
+        return;
+      }
+      const tc: any = { variant_scope: variantScope };
+      if (variantScope === 'specific') tc.variant_ids = selectedVariantIds;
+      (updateData as any).terms_and_conditions = JSON.stringify(tc);
+    } else if (form.offer_type === 'buy_get') {
+      const tc: any = {};
+      if (Array.isArray(buyProductVariants) && buyProductVariants.length > 0) {
+        if (buyVariantScope === 'specific' && selectedBuyVariantIds.length === 0) {
+          toast.error(t('pleaseSelectVariants') || 'يرجى اختيار فيرنتس لتطبيق شرط الشراء عليها');
+          return;
+        }
+        tc.buy_variant_scope = buyVariantScope;
+        if (buyVariantScope === 'specific') tc.buy_variant_ids = selectedBuyVariantIds;
+      }
+      if (Array.isArray(getProductVariants) && getProductVariants.length > 0) {
+        if (getVariantScope === 'specific' && selectedGetVariantIds.length === 0) {
+          toast.error(t('pleaseSelectVariants') || 'يرجى اختيار فيرنتس لتطبيق الخصم/المجاني عليها');
+          return;
+        }
+        tc.get_variant_scope = getVariantScope;
+        if (getVariantScope === 'specific') tc.get_variant_ids = selectedGetVariantIds;
+      }
+      if (Object.keys(tc).length > 0) {
+        (updateData as any).terms_and_conditions = JSON.stringify(tc);
+      } else {
+        (updateData as any).terms_and_conditions = null;
+      }
+    } else {
+      (updateData as any).terms_and_conditions = null;
+    }
     
     updateOfferMutation.mutate(
       { id: selectedOffer.id, updateData },
@@ -546,11 +668,60 @@ const AdminOffers: React.FC = () => {
       setGetProductSearch(getProduct ? getProductDisplayName(getProduct) : "");
       
       setIsEditFormInitialized(true);
+      // قراءة نطاقات الفيرنتس من terms_and_conditions
+      try {
+        const tcRaw = (selectedOffer as any).terms_and_conditions;
+        if (tcRaw) {
+          const tc = JSON.parse(tcRaw);
+          if (tc && (tc.variant_scope === 'all' || tc.variant_scope === 'specific')) {
+            setVariantScope(tc.variant_scope);
+            setSelectedVariantIds(Array.isArray(tc.variant_ids) ? tc.variant_ids : []);
+          } else {
+            setVariantScope('all');
+            setSelectedVariantIds([]);
+          }
+          // اشتري واحصل: نطاقات الشراء والحصول
+          if (tc && (tc.buy_variant_scope === 'all' || tc.buy_variant_scope === 'specific')) {
+            setBuyVariantScope(tc.buy_variant_scope);
+            setSelectedBuyVariantIds(Array.isArray(tc.buy_variant_ids) ? tc.buy_variant_ids : []);
+          } else {
+            setBuyVariantScope('all');
+            setSelectedBuyVariantIds([]);
+          }
+          if (tc && (tc.get_variant_scope === 'all' || tc.get_variant_scope === 'specific')) {
+            setGetVariantScope(tc.get_variant_scope);
+            setSelectedGetVariantIds(Array.isArray(tc.get_variant_ids) ? tc.get_variant_ids : []);
+          } else {
+            setGetVariantScope('all');
+            setSelectedGetVariantIds([]);
+          }
+        } else {
+          setVariantScope('all');
+          setSelectedVariantIds([]);
+          setBuyVariantScope('all');
+          setSelectedBuyVariantIds([]);
+          setGetVariantScope('all');
+          setSelectedGetVariantIds([]);
+        }
+      } catch {
+        setVariantScope('all');
+        setSelectedVariantIds([]);
+        setBuyVariantScope('all');
+        setSelectedBuyVariantIds([]);
+        setGetVariantScope('all');
+        setSelectedGetVariantIds([]);
+      }
     } else if (!showEdit && !showAdd) {
       setForm(initialForm);
       setLinkedProductSearch("");
       setGetProductSearch("");
       setIsEditFormInitialized(false);
+      setVariantScope('all');
+      setSelectedVariantIds([]);
+      setBuyVariantScope('all');
+      setSelectedBuyVariantIds([]);
+      setGetVariantScope('all');
+      setSelectedGetVariantIds([]);
     }
   }, [showEdit, selectedOffer, showAdd, productsData, isEditFormInitialized]);
 
@@ -1066,6 +1237,8 @@ const AdminOffers: React.FC = () => {
                           onClear={() => {
                             setLinkedProductSearch("");
                             setForm(prev => ({ ...prev, linked_product_id: "" }));
+                            setVariantScope('all');
+                            setSelectedVariantIds([]);
                           }}
                           options={productOptions}
                           placeholder={t("selectProduct") || "اختر المنتج..."}
@@ -1132,6 +1305,47 @@ const AdminOffers: React.FC = () => {
                             required
                             className="border-purple-200 focus:border-purple-500"
                           />
+                        </div>
+                      )}
+                      {/* نطاق التطبيق على الفيرنتس */}
+                      {form.linked_product_id && Array.isArray(linkedProductVariants) && linkedProductVariants.length > 0 && (
+                        <div className="md:col-span-3">
+                          <Label className="text-sm font-medium text-purple-700 mb-2 block">
+                            {t('applyToVariants') || 'تطبيق على'}
+                          </Label>
+                          <RadioGroup
+                            value={variantScope}
+                            onValueChange={(val) => setVariantScope(val as any)}
+                            className="flex flex-col gap-2"
+                          >
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem id="scope_all" value="all" />
+                              <Label htmlFor="scope_all" className="text-sm">{t('allVariants') || 'كل الفيرنتس'}</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem id="scope_specific" value="specific" />
+                              <Label htmlFor="scope_specific" className="text-sm">{t('specificVariants') || 'فيرنتس محددة'}</Label>
+                            </div>
+                          </RadioGroup>
+                          {variantScope === 'specific' && (
+                            <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2 max-h-56 overflow-auto p-2 border rounded-md">
+                              {linkedProductVariants.map((v: any) => {
+                                const label = Object.entries(v.option_values || {}).map(([k, val]) => `${toDisplay(k)}: ${toDisplay(val as any)}`).join(' • ');
+                                const checked = selectedVariantIds.includes(v.id);
+                                return (
+                                  <label key={v.id} className="flex items-center gap-2 text-sm">
+                                    <Checkbox
+                                      checked={checked}
+                                      onCheckedChange={(ch) => {
+                                        setSelectedVariantIds(prev => ch ? [...prev, v.id] : prev.filter(id => id !== v.id));
+                                      }}
+                                    />
+                                    <span className="truncate">{label || (v.sku || 'Variant')}</span>
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -1259,6 +1473,89 @@ const AdminOffers: React.FC = () => {
                           bucket="product-images"
                         />
                       </div>
+
+                      {/* نطاقات الفيرنتس لعروض اشتري واحصل */}
+                      {form.linked_product_id && Array.isArray(buyProductVariants) && buyProductVariants.length > 0 && (
+                        <div className="">
+                          <Label className="text-sm font-medium text-purple-700 mb-2 block">
+                            {t('buyVariantScope') || 'تطبيق شرط الشراء على'}
+                          </Label>
+                          <RadioGroup
+                            value={buyVariantScope}
+                            onValueChange={(val) => setBuyVariantScope(val as any)}
+                            className="flex flex-col gap-2"
+                          >
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem id="buy_scope_all" value="all" />
+                              <Label htmlFor="buy_scope_all" className="text-sm">{t('allVariants') || 'كل الفيرنتس'}</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem id="buy_scope_specific" value="specific" />
+                              <Label htmlFor="buy_scope_specific" className="text-sm">{t('specificVariants') || 'فيرنتس محددة'}</Label>
+                            </div>
+                          </RadioGroup>
+                          {buyVariantScope === 'specific' && (
+                            <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2 max-h-56 overflow-auto p-2 border rounded-md">
+                              {buyProductVariants.map((v: any) => {
+                                const label = Object.entries(v.option_values || {}).map(([k, val]) => `${toDisplay(k)}: ${toDisplay(val as any)}`).join(' • ');
+                                const checked = selectedBuyVariantIds.includes(v.id);
+                                return (
+                                  <label key={v.id} className="flex items-center gap-2 text-sm">
+                                    <Checkbox
+                                      checked={checked}
+                                      onCheckedChange={(ch) => {
+                                        setSelectedBuyVariantIds(prev => ch ? [...prev, v.id] : prev.filter(id => id !== v.id));
+                                      }}
+                                    />
+                                    <span className="truncate">{label || (v.sku || 'Variant')}</span>
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {form.get_product_id && Array.isArray(getProductVariants) && getProductVariants.length > 0 && (
+                        <div className="">
+                          <Label className="text-sm font-medium text-purple-700 mb-2 block">
+                            {t('getVariantScope') || 'تطبيق الحصول/الخصم على'}
+                          </Label>
+                          <RadioGroup
+                            value={getVariantScope}
+                            onValueChange={(val) => setGetVariantScope(val as any)}
+                            className="flex flex-col gap-2"
+                          >
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem id="get_scope_all" value="all" />
+                              <Label htmlFor="get_scope_all" className="text-sm">{t('allVariants') || 'كل الفيرنتس'}</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem id="get_scope_specific" value="specific" />
+                              <Label htmlFor="get_scope_specific" className="text-sm">{t('specificVariants') || 'فيرنتس محددة'}</Label>
+                            </div>
+                          </RadioGroup>
+                          {getVariantScope === 'specific' && (
+                            <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2 max-h-56 overflow-auto p-2 border rounded-md">
+                              {getProductVariants.map((v: any) => {
+                                const label = Object.entries(v.option_values || {}).map(([k, val]) => `${toDisplay(k)}: ${toDisplay(val as any)}`).join(' • ');
+                                const checked = selectedGetVariantIds.includes(v.id);
+                                return (
+                                  <label key={v.id} className="flex items-center gap-2 text-sm">
+                                    <Checkbox
+                                      checked={checked}
+                                      onCheckedChange={(ch) => {
+                                        setSelectedGetVariantIds(prev => ch ? [...prev, v.id] : prev.filter(id => id !== v.id));
+                                      }}
+                                    />
+                                    <span className="truncate">{label || (v.sku || 'Variant')}</span>
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1545,6 +1842,8 @@ const AdminOffers: React.FC = () => {
                           onClear={() => {
                             setLinkedProductSearch("");
                             setForm(prev => ({ ...prev, linked_product_id: "" }));
+                            setVariantScope('all');
+                            setSelectedVariantIds([]);
                           }}
                           options={productOptions}
                           placeholder={t("selectProduct") || "اختر المنتج..."}
@@ -1611,6 +1910,47 @@ const AdminOffers: React.FC = () => {
                             required
                             className="border-purple-200 focus:border-purple-500"
                           />
+                        </div>
+                      )}
+                      {/* نطاق التطبيق على الفيرنتس */}
+                      {form.linked_product_id && Array.isArray(linkedProductVariants) && linkedProductVariants.length > 0 && (
+                        <div className="md:col-span-3">
+                          <Label className="text-sm font-medium text-purple-700 mb-2 block">
+                            {t('applyToVariants') || 'تطبيق على'}
+                          </Label>
+                          <RadioGroup
+                            value={variantScope}
+                            onValueChange={(val) => setVariantScope(val as any)}
+                            className="flex flex-col gap-2"
+                          >
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem id="scope_all_edit" value="all" />
+                              <Label htmlFor="scope_all_edit" className="text-sm">{t('allVariants') || 'كل الفيرنتس'}</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem id="scope_specific_edit" value="specific" />
+                              <Label htmlFor="scope_specific_edit" className="text-sm">{t('specificVariants') || 'فيرنتس محددة'}</Label>
+                            </div>
+                          </RadioGroup>
+                          {variantScope === 'specific' && (
+                            <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2 max-h-56 overflow-auto p-2 border rounded-md">
+                              {linkedProductVariants.map((v: any) => {
+                                const label = Object.entries(v.option_values || {}).map(([k, val]) => `${toDisplay(k)}: ${toDisplay(val as any)}`).join(' • ');
+                                const checked = selectedVariantIds.includes(v.id);
+                                return (
+                                  <label key={v.id} className="flex items-center gap-2 text-sm">
+                                    <Checkbox
+                                      checked={checked}
+                                      onCheckedChange={(ch) => {
+                                        setSelectedVariantIds(prev => ch ? [...prev, v.id] : prev.filter(id => id !== v.id));
+                                      }}
+                                    />
+                                    <span className="truncate">{label || (v.sku || 'Variant')}</span>
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
@@ -1739,6 +2079,89 @@ const AdminOffers: React.FC = () => {
                           bucket="product-images"
                         />
                       </div>
+
+                      {/* نطاقات الفيرنتس لعروض اشتري واحصل */}
+                      {form.linked_product_id && Array.isArray(buyProductVariants) && buyProductVariants.length > 0 && (
+                        <div className="">
+                          <Label className="text-sm font-medium text-purple-700 mb-2 block">
+                            {t('buyVariantScope') || 'تطبيق شرط الشراء على'}
+                          </Label>
+                          <RadioGroup
+                            value={buyVariantScope}
+                            onValueChange={(val) => setBuyVariantScope(val as any)}
+                            className="flex flex-col gap-2"
+                          >
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem id="buy_scope_all_edit" value="all" />
+                              <Label htmlFor="buy_scope_all_edit" className="text-sm">{t('allVariants') || 'كل الفيرنتس'}</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem id="buy_scope_specific_edit" value="specific" />
+                              <Label htmlFor="buy_scope_specific_edit" className="text-sm">{t('specificVariants') || 'فيرنتس محددة'}</Label>
+                            </div>
+                          </RadioGroup>
+                          {buyVariantScope === 'specific' && (
+                            <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2 max-h-56 overflow-auto p-2 border rounded-md">
+                              {buyProductVariants.map((v: any) => {
+                                const label = Object.entries(v.option_values || {}).map(([k, val]) => `${toDisplay(k)}: ${toDisplay(val as any)}`).join(' • ');
+                                const checked = selectedBuyVariantIds.includes(v.id);
+                                return (
+                                  <label key={v.id} className="flex items-center gap-2 text-sm">
+                                    <Checkbox
+                                      checked={checked}
+                                      onCheckedChange={(ch) => {
+                                        setSelectedBuyVariantIds(prev => ch ? [...prev, v.id] : prev.filter(id => id !== v.id));
+                                      }}
+                                    />
+                                    <span className="truncate">{label || (v.sku || 'Variant')}</span>
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {form.get_product_id && Array.isArray(getProductVariants) && getProductVariants.length > 0 && (
+                        <div className="">
+                          <Label className="text-sm font-medium text-purple-700 mb-2 block">
+                            {t('getVariantScope') || 'تطبيق الحصول/الخصم على'}
+                          </Label>
+                          <RadioGroup
+                            value={getVariantScope}
+                            onValueChange={(val) => setGetVariantScope(val as any)}
+                            className="flex flex-col gap-2"
+                          >
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem id="get_scope_all_edit" value="all" />
+                              <Label htmlFor="get_scope_all_edit" className="text-sm">{t('allVariants') || 'كل الفيرنتس'}</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem id="get_scope_specific_edit" value="specific" />
+                              <Label htmlFor="get_scope_specific_edit" className="text-sm">{t('specificVariants') || 'فيرنتس محددة'}</Label>
+                            </div>
+                          </RadioGroup>
+                          {getVariantScope === 'specific' && (
+                            <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2 max-h-56 overflow-auto p-2 border rounded-md">
+                              {getProductVariants.map((v: any) => {
+                                const label = Object.entries(v.option_values || {}).map(([k, val]) => `${toDisplay(k)}: ${toDisplay(val as any)}`).join(' • ');
+                                const checked = selectedGetVariantIds.includes(v.id);
+                                return (
+                                  <label key={v.id} className="flex items-center gap-2 text-sm">
+                                    <Checkbox
+                                      checked={checked}
+                                      onCheckedChange={(ch) => {
+                                        setSelectedGetVariantIds(prev => ch ? [...prev, v.id] : prev.filter(id => id !== v.id));
+                                      }}
+                                    />
+                                    <span className="truncate">{label || (v.sku || 'Variant')}</span>
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

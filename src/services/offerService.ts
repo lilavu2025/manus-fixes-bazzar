@@ -10,13 +10,17 @@ export interface CartItem {
   id: string;
   product: Product;
   quantity: number;
+  // Optional variant identifier to enable variant-scoped offers
+  variantId?: string;
+  // Optional selected variant attributes (option name -> value)
+  variantAttributes?: Record<string, string>;
 }
 
 export interface AppliedOffer {
   offer: Offer;
   discountAmount: number;
   affectedProducts: string[];
-  freeProducts?: { productId: string; quantity: number }[];
+  freeProducts?: { productId: string; quantity: number; variantId?: string; variantAttributes?: Record<string, string> }[];
 }
 
 export interface OfferApplicationResult {
@@ -124,15 +128,48 @@ export class OfferService {
           const freeProductIds = application.freeProducts.map(fp => fp.productId);
           const freeProductsData = await this.getProducts(freeProductIds);
 
-          for (const freeProduct of application.freeProducts) {
+          // Resolve a variant if possible and attach to both freeItems and applied_offers.freeProducts
+          for (let i = 0; i < application.freeProducts.length; i++) {
+            const freeProduct = application.freeProducts[i];
             const productData = freeProductsData.find(p => p.id === freeProduct.productId);
-            if (productData) {
-              freeItems.push({
-                id: `free_${offer.id}_${freeProduct.productId}`,
-                product: productData,
-                quantity: freeProduct.quantity
-              });
+            if (!productData) continue;
+
+            let variantId: string | undefined = freeProduct.variantId;
+            let variantAttributes: Record<string, string> | undefined = freeProduct.variantAttributes;
+
+            try {
+              const { data: variants, error } = await supabase
+                .rpc('get_product_variants' as any, { p_product_id: freeProduct.productId });
+              if (!error && Array.isArray(variants) && variants.length > 0) {
+                let chosen = variants[0] as any;
+                if (variantId) {
+                  const match = variants.find((v: any) => String(v.id) === String(variantId));
+                  if (match) chosen = match;
+                }
+                variantId = String(chosen.id);
+                if (chosen?.option_values && typeof chosen.option_values === 'object') {
+                  variantAttributes = chosen.option_values as Record<string, string>;
+                }
+              }
+            } catch {
+              // ignore variant fetch errors
             }
+
+            // enrich applied offer entry as well
+            application.freeProducts[i] = {
+              ...freeProduct,
+              variantId,
+              variantAttributes,
+            };
+
+            // push to freeItems list for order.free_items payload
+            freeItems.push({
+              id: `free_${offer.id}_${freeProduct.productId}`,
+              product: productData,
+              quantity: freeProduct.quantity,
+              variantId,
+              variantAttributes,
+            });
           }
         }
       }
@@ -187,14 +224,28 @@ export class OfferService {
       return result;
     }
 
-    // البحث عن المنتج المطلوب شراؤه في السلة
-    const linkedItem = cartItems.find(item => item.product.id === linkedProductId);
-    if (!linkedItem || linkedItem.quantity < buyQuantity) {
+    // تحليل شروط النطاق للفيرنتس (اختياري)
+    let tc: any = null;
+    if (typeof (offer as any).terms_and_conditions === 'string' && (offer as any).terms_and_conditions.trim()) {
+      try { tc = JSON.parse((offer as any).terms_and_conditions); } catch {}
+    }
+
+    // تصفية عناصر الشراء بحسب نطاق الفيرنتس إن وجد
+    const buyItems = cartItems.filter(item => item.product.id === linkedProductId).filter(item => {
+      if (!tc || !tc.buy_variant_scope || tc.buy_variant_scope === 'all') return true;
+      if (tc.buy_variant_scope === 'specific') {
+        return !!item.variantId && Array.isArray(tc.buy_variant_ids) && tc.buy_variant_ids.includes(item.variantId);
+      }
+      return true;
+    });
+
+    const totalBuyQty = buyItems.reduce((sum, it) => sum + it.quantity, 0);
+    if (totalBuyQty < buyQuantity) {
       return result;
     }
 
-    // حساب عدد المرات التي يمكن تطبيق العرض فيها
-    const applicableTimes = Math.floor(linkedItem.quantity / buyQuantity);
+    // حساب عدد المرات التي يمكن تطبيق العرض فيها (بناءً على مجموع الكمية المؤهلة)
+    const applicableTimes = Math.floor(totalBuyQty / buyQuantity);
     result.affectedProducts.push(linkedProductId);
 
     if (getDiscountType === "free") {
@@ -202,7 +253,12 @@ export class OfferService {
       const getProducts = await this.getProducts([getProductId]);
       const getProduct = getProducts[0];
       if (getProduct) {
-        result.freeProducts = [{ productId: getProductId, quantity: applicableTimes }];
+        // Try to respect variant scope if specified
+        let chosenVariantId: string | undefined = undefined;
+        if (tc && tc.get_variant_scope === 'specific' && Array.isArray((tc as any).get_variant_ids) && (tc as any).get_variant_ids.length > 0) {
+          chosenVariantId = String((tc as any).get_variant_ids[0]);
+        }
+        result.freeProducts = [{ productId: getProductId, quantity: applicableTimes, variantId: chosenVariantId }];
       }
       return result;
     }
@@ -212,8 +268,16 @@ export class OfferService {
     const getProduct = getProducts[0];
     if (!getProduct) return result;
 
-    const targetItem = cartItems.find(item => item.product.id === getProductId);
-    if (!targetItem) return result;
+    // تصفية عناصر الحصول بحسب نطاق الفيرنتس إن وجد
+    const getItems = cartItems.filter(item => item.product.id === getProductId).filter(item => {
+      if (!tc || !tc.get_variant_scope || tc.get_variant_scope === 'all') return true;
+      if (tc.get_variant_scope === 'specific') {
+        return !!item.variantId && Array.isArray(tc.get_variant_ids) && tc.get_variant_ids.includes(item.variantId);
+      }
+      return true;
+    });
+    const totalGetQty = getItems.reduce((sum, it) => sum + it.quantity, 0);
+    if (totalGetQty <= 0) return result;
 
     const productPrice = getDisplayPrice(getProduct, userType);
     let discountPerProduct = 0;
@@ -224,7 +288,7 @@ export class OfferService {
       discountPerProduct = Math.min(getDiscountValue, productPrice);
     }
 
-    const discountableQuantity = Math.min(targetItem.quantity, applicableTimes);
+  const discountableQuantity = Math.min(totalGetQty, applicableTimes);
     result.discountAmount = discountPerProduct * discountableQuantity;
     result.affectedProducts.push(getProductId);
 
@@ -245,8 +309,33 @@ export class OfferService {
       affectedProducts: []
     };
 
-    // تطبيق الخصم على جميع المنتجات في السلة
+    const isProductSpecific = (offer as any).offer_type === "product_discount";
+    // Optional: parse terms_and_conditions JSON for variant scope
+    let tc: { variant_scope?: 'all' | 'specific'; variant_ids?: string[] } | null = null;
+    if (isProductSpecific && typeof offer.terms_and_conditions === 'string' && offer.terms_and_conditions.trim()) {
+      try {
+        tc = JSON.parse(offer.terms_and_conditions) as any;
+      } catch {
+        tc = null;
+      }
+    }
+
+    // تطبيق الخصم
     for (const item of cartItems) {
+      // Filter applicability
+      if (isProductSpecific) {
+        const linkedProductId = (offer as any).linked_product_id;
+        if (!linkedProductId || item.product.id !== linkedProductId) {
+          continue; // only applies to the linked product
+        }
+        if (tc && tc.variant_scope === 'specific') {
+          // If specific variants are selected, require a matching variantId
+          if (!item.variantId || !Array.isArray(tc.variant_ids) || !tc.variant_ids.includes(item.variantId)) {
+            continue;
+          }
+        }
+      }
+
       const productPrice = getDisplayPrice(item.product, userType);
       let discountPerItem = 0;
 
@@ -258,7 +347,9 @@ export class OfferService {
 
       if (discountPerItem > 0) {
         result.discountAmount += discountPerItem * item.quantity;
-        result.affectedProducts.push(item.product.id);
+        if (!result.affectedProducts.includes(item.product.id)) {
+          result.affectedProducts.push(item.product.id);
+        }
       }
     }
 
@@ -289,20 +380,7 @@ export class OfferService {
         console.error("Error recording offer usage:", usageError);
         return;
       }
-
-      // ملاحظة: تحديث counters بهذه الطريقة بدائي — يفضّل triggers أو upserts تراكمية
-      const { error: updateError } = await supabase
-        .from("offers")
-        .update({
-          usage_count: 1,
-          total_discount_given: discountAmount,
-          total_orders: 1
-        })
-        .eq("id", offerId);
-
-      if (updateError) {
-        console.error("Error updating offer stats:", updateError);
-      }
+  // ملاحظة: سيتم حساب إحصائيات العرض عبر offer_usage أو عبر view/trigger في قاعدة البيانات.
     } catch (error) {
       console.error("Error in recordOfferUsage:", error);
     }
@@ -431,6 +509,10 @@ export class OfferService {
 
       return active.filter(offer => {
         if (offer.offer_type === "discount") return true;
+        if (offer.offer_type === "product_discount") {
+          const linkedProductId = (offer as any).linked_product_id;
+          return productId === linkedProductId;
+        }
         
         // عروض اشتري واحصل تطبق على المنتجات المرتبطة
         if (offer.offer_type === "buy_get") {

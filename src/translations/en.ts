@@ -1397,4 +1397,18 @@ export const enTranslations = {
   enterHebrewName: "Please enter option name (Hebrew)",
   valueHebrewPlaceholder: "e.g.: אדום, גדול",
   valueEnglishPlaceholder: "e.g.: Red, Large",
+  regenerateSkus: "Regenerate SKUs",
+  skusRegenerated: "SKUs Regenerated",
+  fullUsage: "Full Usage",
+  optionNameOnly: "Option Name Only",
+  previouslyUsedOptions: "Previously Used Options",
+  addOption: "Add Option",
+  optionValuePlaceholder: "e.g.: Small, Medium, Large",
+  addValue: "Add Value",
+  getVariantScope: "Get Variant Scope",
+  specificVariants: "Specific Variants",
+  allVariants: "All Variants",
+  youSaved: "You saved",
+  
+
 };

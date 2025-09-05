@@ -190,7 +190,7 @@ const PaginatedProductsTable: React.FC<PaginatedProductsTableProps> = ({
                       <>
                         {t("salesCount")}: {getSalesData(product).sales}
                         {getSalesData(product).free > 0 && (
-                          <span className="text-green-600"> (+{getSalesData(product).free} مجاني)</span>
+                          <span className="text-green-600"> (+{getSalesData(product).free} {t("free") || "مجاني"})</span>
                         )}
                       </>
                     )}

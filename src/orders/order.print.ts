@@ -2,20 +2,10 @@ import config from "@/configs/activeConfig";
 import type { Order } from "./order.types";
 import { getOrderDisplayTotal } from "./order.displayTotal";
 import { getDisplayPrice } from "@/utils/priceUtils";
+import { renderVariantChipsHtml } from "@/utils/variantDisplay";
 import type { OrderItem } from "./order.types";
 
-function renderVariantInfoHtml(variant: any): string {
-  if (!variant) return "";
-  try {
-    const obj = typeof variant === 'string' ? JSON.parse(variant) : variant;
-    if (!obj || typeof obj !== 'object') return "";
-    const chips = Object.entries(obj).map(([k, v]) => `
-      <span style="display:inline-block;background:#eef2ff;color:#1e40af;border:1px solid #c7d2fe;border-radius:9999px;padding:2px 8px;margin:2px;font-size:11px;">
-        ${k}: ${String(v)}
-      </span>`).join("");
-    return chips ? `<div style="margin-top:4px;">${chips}</div>` : "";
-  } catch { return ""; }
-}
+const renderVariantInfoHtml = renderVariantChipsHtml;
 
 export async function orderPrint(
   order: Order,
@@ -148,7 +138,7 @@ export async function orderPrint(
             </div>`
           : `${originalTotal.toFixed(2)} ₪`;
         
-        const variantHtml = renderVariantInfoHtml((item as any).variant_attributes);
+  const variantHtml = renderVariantInfoHtml((item as any).variant_attributes, currentLang);
         return `
       <tr>
         <td>
@@ -156,7 +146,6 @@ export async function orderPrint(
             <strong>${productName}</strong>
           </div>
           ${variantHtml}
-          ${productDescription ? `<div style="font-size: 12px; color: #666; line-height: 1.3;">${productDescription}</div>` : ''}
         </td>
         <td>${item.quantity}</td>
         <td>${priceDisplay}</td>
@@ -170,76 +159,60 @@ export async function orderPrint(
   // إضافة المنتجات المجانية
   const freeItemsRows = (() => {
     try {
-      let allFreeItems: any[] = [];
-      
-      // الحصول على المنتجات المجانية من العروض المطبقة أولاً
+      // 1) من applied_offers
+      const fromOffers: any[] = [];
       if (order.applied_offers) {
-        const appliedOffers = JSON.parse(order.applied_offers);
-        appliedOffers.forEach((offer: any) => {
-          if (offer.freeProducts && Array.isArray(offer.freeProducts)) {
-            allFreeItems = [...allFreeItems, ...offer.freeProducts];
+        try {
+          const appliedOffers = JSON.parse(order.applied_offers);
+          appliedOffers.forEach((offer: any) => {
+            if (Array.isArray(offer.freeProducts)) fromOffers.push(...offer.freeProducts);
+            if (Array.isArray(offer.freeItems)) fromOffers.push(...offer.freeItems);
+          });
+        } catch {}
+      }
+
+      // 2) من order.free_items
+      const fromOrder: any[] = (() => {
+        if (!order.free_items) return [];
+        try {
+          const val = typeof order.free_items === 'string' ? JSON.parse(order.free_items) : order.free_items;
+          return Array.isArray(val) ? val : [];
+        } catch { return []; }
+      })();
+
+      // 3) دمج مع تفضيل variantAttributes
+      const map = new Map<string, any>();
+      const makeKey = (it: any) => {
+        const pid = String(it.productId || it.product_id || it.id || '').trim();
+        const vid = String(it.variantId || (it.variant_id ?? '') || '').trim();
+        return `${pid}|${vid}`;
+      };
+      const merge = (target: any, src: any) => {
+        const result: any = { ...target };
+        for (const k of Object.keys(src || {})) {
+          if (result[k] == null || result[k] === '') result[k] = src[k];
+        }
+        if (!result.variantAttributes && src.variantAttributes) result.variantAttributes = src.variantAttributes;
+        if (!result.variant_attributes && src.variant_attributes) result.variant_attributes = src.variant_attributes;
+        if (!result.variantId && src.variantId) result.variantId = src.variantId;
+        return result;
+      };
+      const pushOrMerge = (arr: any[]) => {
+        for (const it of arr) {
+          const key = makeKey(it);
+          if (!key.startsWith('|')) {
+            if (map.has(key)) map.set(key, merge(map.get(key), it));
+            else map.set(key, { ...it });
           }
-          if (offer.freeItems && Array.isArray(offer.freeItems)) {
-            allFreeItems = [...allFreeItems, ...offer.freeItems];
-          }
-        });
-      }
-      
-      // إذا لم توجد منتجات مجانية في العروض، ابحث في order.free_items
-      if (allFreeItems.length === 0 && order.free_items) {
-        const freeItems = typeof order.free_items === 'string' ? JSON.parse(order.free_items) : order.free_items;
-        if (Array.isArray(freeItems) && freeItems.length > 0) {
-          allFreeItems = [...freeItems];
         }
-      }
-      
-      // إزالة المكررات والعناصر بدون أسماء صحيحة
-      const uniqueFreeItems = allFreeItems.reduce((acc: any[], current: any) => {
-        const currentProductId = String(current.productId || current.product_id || current.id || '').trim();
-        
-        // تجاهل العناصر بدون معرف منتج
-        if (!currentProductId) return acc;
-        
-        // البحث عن المنتج في قاعدة البيانات للتأكد من وجود اسم
-        const product = products?.find((p) => 
-          p.id === current.productId || 
-          p.id === current.product_id || 
-          p.id === current.id ||
-          String(p.id) === String(current.productId) ||
-          String(p.id) === String(current.product_id) ||
-          String(p.id) === String(current.id)
-        );
-        
-        // الحصول على اسم المنتج
-        let productName = '';
-        if (product) {
-          productName = product[`name_${currentLang}`] || product.name_ar || product.name_en || product.name_he || '';
-        }
-        if (!productName) {
-          productName = current.name_ar || current.name_en || current.name_he || current.name || current.productName || '';
-        }
-        
-        // تجاهل العناصر بدون اسم صحيح (أي التي ستصبح "منتج مجاني")
-        if (!productName || productName.trim() === '') {
-          return acc;
-        }
-        
-        const existing = acc.find(item => {
-          const existingProductId = String(item.productId || item.product_id || item.id || '').trim();
-          return existingProductId === currentProductId;
-        });
-        
-        if (!existing) {
-          acc.push(current);
-        }
-        return acc;
-      }, []);
-      
-      if (uniqueFreeItems.length === 0) {
-        return "";
-      }
-      
-      return uniqueFreeItems.map((item: any) => {
+      };
+      pushOrMerge(fromOffers);
+      pushOrMerge(fromOrder);
+
+      const mergedFreeItems = Array.from(map.values());
+      if (mergedFreeItems.length === 0) return "";
+
+      return mergedFreeItems.map((item: any) => {
         // البحث عن المنتج في قاعدة البيانات للحصول على الاسم والسعر
         const product = products?.find((p) => 
           p.id === item.productId || 
@@ -303,13 +276,15 @@ export async function orderPrint(
         }
         
         const quantity = item.quantity || 1;
-        
-        return `
+
+        const freeVariantHtml = renderVariantInfoHtml((item as any).variantAttributes || (item as any).variant_attributes, currentLang);
+    return `
           <tr style="background-color: #f0f9ff;">
             <td>
               <div style="margin-bottom: 4px;">
                 <strong>🎁 ${productName}</strong>
               </div>
+      ${freeVariantHtml}
               <div style="font-size: 12px; color: #16a34a;">🎁 ${t("freeItem") || "منتج مجاني"}</div>
             </td>
             <td>${quantity}</td>
@@ -424,10 +399,12 @@ export async function orderPrint(
           </div>
 
           <div class="info">
-            <div>${t("orderNumber")}: ${order.order_number}</div>
-            <div>${t("date")}: ${new Date(order.created_at).toLocaleDateString("en-GB")}</div>
-            <div>${t("customer")}: ${profile.full_name || "-"}</div>
-            <div>${t("phone")}: ${profile.phone || "-"}</div>
+            <div style="display: flex; flex-wrap: wrap; gap: 6px 24px;">
+              <div style="width: calc(50% - 12px); box-sizing: border-box;">${t("orderNumber")}: ${order.order_number}</div>
+              <div style="width: calc(50% - 12px); box-sizing: border-box;">${t("date")}: ${new Date(order.created_at).toLocaleDateString("en-GB")}</div>
+              <div style="width: calc(50% - 12px); box-sizing: border-box;">${t("customer")}: ${profile.full_name || "-"}</div>
+              <div style="width: calc(50% - 12px); box-sizing: border-box;">${t("phone")}: ${profile.phone || "-"}</div>
+            </div>
             ${order.notes ? `<div><strong>${t("notes") || "ملاحظات"}:</strong><div class="notes">${order.notes}</div></div>` : ""}
             
             ${order.applied_offers ? (() => {
@@ -457,8 +434,8 @@ export async function orderPrint(
                           })()}</div>
                           ${offer.description ? `<div style="font-size: 12px; color: #6b7280; margin-top: 2px;">${offer.description}</div>` : ""}
                           <div style="margin-top: 4px;">
-                            ${offer.discountAmount > 0 ? `<span style="background: #fee2e2; color: #dc2626; padding: 2px 6px; border-radius: 3px; font-size: 11px; margin-right: 4px;">💰 خصم: ${offer.discountAmount.toFixed(2)} ₪</span>` : ""}
-                            ${((offer.freeProducts && offer.freeProducts.length > 0) || (offer.freeItems && offer.freeItems.length > 0)) ? `<span style="background: #dbeafe; color: #2563eb; padding: 2px 6px; border-radius: 3px; font-size: 11px;">🎁 عناصر مجانية: ${(offer.freeProducts || offer.freeItems || []).length}</span>` : ""}
+                            ${offer.discountAmount > 0 ? `<span style="background: #fee2e2; color: #dc2626; padding: 2px 6px; border-radius: 3px; font-size: 11px; margin-right: 4px;">💰 ${t("discount") || "خصم"}: ${offer.discountAmount.toFixed(2)} ₪</span>` : ""}
+                            ${((offer.freeProducts && offer.freeProducts.length > 0) || (offer.freeItems && offer.freeItems.length > 0)) ? `<span style="background: #dbeafe; color: #2563eb; padding: 2px 6px; border-radius: 3px; font-size: 11px;">🎁 ${t("freeItems") || "منتجات مجانية"}: ${(offer.freeProducts || offer.freeItems || []).length}</span>` : ""}
                           </div>
                         </div>
                       `).join("")}

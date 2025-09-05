@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/useAuth";
 import { useLanguage } from "@/utils/languageContextUtils";
+import { getLocalizedName, getLocalizedDescription } from "@/utils/getLocalizedName";
 import { useCart } from "@/hooks/useCart";
 import { supabase } from "@/integrations/supabase/client";
 import { AddressService } from "@/services/supabaseService";
@@ -39,7 +40,7 @@ const Checkout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, profile } = useAuth();
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, language } = useLanguage();
   const {
     state,
     cartItems = state.items,
@@ -117,9 +118,10 @@ const Checkout: React.FC = () => {
       try {
         // تحويل العناصر إلى تنسيق يمكن للعروض فهمه
         const cartItemsForOffers = itemsToCheckout.map(item => ({
-          id: `cart_${item.product.id}`,
+          id: `cart_${item.product.id}${(item as any).variantId ? '_' + (item as any).variantId : ''}`,
           product: item.product,
-          quantity: item.quantity
+          quantity: item.quantity,
+          variantId: (item as any).variantId
         }));
 
         const originalTotalCalc = cartItemsForOffers.reduce(
@@ -671,14 +673,14 @@ const Checkout: React.FC = () => {
                         style={{ backgroundImage: `url(${item.product.image})` }}
                       />
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-medium text-sm truncate">
-                          {item.product.name}
+                        <h4 className="font-bold text-sm truncate">
+                          {getLocalizedName(item.product as any, language) || item.product.name}
                         </h4>
                         {/* عرض معلومات الفيرنت إذا كان موجوداً */}
-                        {renderVariantInfo((item as any).variantAttributes, "text-gray-600")}
+                        {renderVariantInfo((item as any).variantAttributes, "text-gray-600", language)}
                         {/* Product description */}
                         <p className="text-gray-500 text-xs truncate mt-0.5">
-                          {item.product.description || item.product.descriptionEn || item.product.descriptionHe}
+                          {getLocalizedDescription(item.product as any, language) || item.product.description || item.product.descriptionEn || item.product.descriptionHe}
                         </p>
                         <div>
                           <div >
@@ -828,8 +830,9 @@ const Checkout: React.FC = () => {
                         />
                         <div className="flex-1 min-w-0">
                           <div className="text-sm font-medium text-green-800">
-                            {freeItem.product.name} x{freeItem.quantity}
+                            {getLocalizedName(freeItem.product as any, language) || freeItem.product.name} x{freeItem.quantity}
                           </div>
+                          {freeItem.variantAttributes && renderVariantInfo(freeItem.variantAttributes, 'text-green-700', language)}
                           <div className="text-xs text-green-600">
                             {t("fromOffer") || "من العرض"} - {t("freeItem") || "عنصر مجاني"}
                           </div>
