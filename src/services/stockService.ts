@@ -146,7 +146,7 @@ export async function processOffersStockDeduction(orderId: string, appliedOffers
   console.log('📊 البيانات الواردة:', { appliedOffers, freeItems });
 
   try {
-    let processedFreeItems: FreeItem[] = [];
+  let processedFreeItems: Array<FreeItem & { variant_id?: string | null }> = [];
 
     // استخراج المنتجات المجانية من العروض المطبقة أولاً
     if (appliedOffers) {
@@ -165,7 +165,8 @@ export async function processOffersStockDeduction(orderId: string, appliedOffers
                   name_ar: freeProduct.name_ar || '',
                   name_en: freeProduct.name_en || '',
                   name_he: freeProduct.name_he || '',
-                  value: freeProduct.value || 0
+                  value: freeProduct.value || 0,
+                  variant_id: freeProduct.variantId || freeProduct.variant_id || null,
                 });
               });
             }
@@ -178,7 +179,8 @@ export async function processOffersStockDeduction(orderId: string, appliedOffers
                   name_ar: freeItem.name_ar || '',
                   name_en: freeItem.name_en || '',
                   name_he: freeItem.name_he || '',
-                  value: freeItem.value || 0
+          value: freeItem.value || 0,
+          variant_id: freeItem.variantId || freeItem.variant_id || null,
                 });
               });
             }
@@ -197,7 +199,8 @@ export async function processOffersStockDeduction(orderId: string, appliedOffers
         if (Array.isArray(parsedFreeItems)) {
           processedFreeItems = parsedFreeItems.map((x: any) => ({
             product_id: x?.productId ?? x?.product_id,
-            quantity: x?.quantity ?? 1
+            quantity: x?.quantity ?? 1,
+            variant_id: x?.variantId ?? x?.variant_id ?? null,
           }));
         }
       } catch (error) {
@@ -205,29 +208,76 @@ export async function processOffersStockDeduction(orderId: string, appliedOffers
       }
     }
 
-    // تفريد ودمج الكميات قبل الخصم
-    const agg = new Map<string, number>();
+    // تفريد ودمج الكميات قبل الخصم — تقسيم حسب الفيرنت/المنتج
+    const variantAgg = new Map<string, number>();
+    const productAgg = new Map<string, number>();
     for (const it of processedFreeItems) {
-      const pid = String(it.product_id || '').trim();
       const q = Number(it.quantity || 0);
-      if (!pid || !q) continue;
-      agg.set(pid, (agg.get(pid) || 0) + q);
-    }
-    const uniqueFreeItems = Array.from(agg.entries()).map(([product_id, quantity]) => ({ product_id, quantity }));
-
-    console.log(`📦 إجمالي المنتجات المجانية للخصم (بعد التفريد): ${uniqueFreeItems.length}`);
-    console.log('📊 قائمة المنتجات المجانية:', uniqueFreeItems);
-
-    if (uniqueFreeItems.length > 0) {
-      const stockResult = await deductFreeItemsFromStock(uniqueFreeItems, orderId);
-      if (!stockResult.success) {
-        console.warn('⚠️ بعض العناصر المجانية لم يتم خصمها من المخزون', stockResult);
+      const vid = String(it.variant_id || '').trim();
+      const pid = String(it.product_id || '').trim();
+      if (!q) continue;
+      if (vid) {
+        variantAgg.set(vid, (variantAgg.get(vid) || 0) + q);
+      } else if (pid) {
+        productAgg.set(pid, (productAgg.get(pid) || 0) + q);
       }
-      return stockResult;
     }
 
-    console.log('ℹ️ لا توجد عناصر مجانية للخصم');
-    return { success: true, message: 'لا توجد عناصر مجانية للخصم' };
+    console.log(`📦 إجمالي العناصر المجانية بحسب الفيرنت: ${variantAgg.size}, وبحسب المنتج دون فيرنت: ${productAgg.size}`);
+
+    const results: any = { success: true, variantResults: [], productResults: [] };
+
+    // أ) خصم الفيرنتس المجانية
+    if (variantAgg.size > 0) {
+      let ok = 0; let fail = 0; const rows: any[] = [];
+      for (const [variantId, totalQty] of variantAgg.entries()) {
+        try {
+          const { error: rpcError } = await supabase.rpc('decrease_variant_stock' as any, {
+            variant_id: variantId,
+            quantity: totalQty,
+          });
+          if (rpcError) {
+            console.warn(`⚠️ decrease_variant_stock RPC فشل للفيرنت (مجاني) ${variantId}، سنحاول التحديث المباشر.`, rpcError?.message || rpcError);
+            const { data: variant, error: fetchErr } = await supabase
+              .from('product_variants')
+              .select('stock_quantity')
+              .eq('id', variantId)
+              .single();
+            if (fetchErr) throw fetchErr;
+            const current = Number(variant?.stock_quantity || 0);
+            const newStock = Math.max(0, current - Number(totalQty || 0));
+            const { error: directUpdErr } = await supabase
+              .from('product_variants')
+              .update({ stock_quantity: newStock })
+              .eq('id', variantId);
+            if (directUpdErr) throw directUpdErr;
+          }
+          ok++; rows.push({ variantId, deducted: totalQty });
+        } catch (e: any) {
+          console.error(`❌ فشل خصم مخزون الفيرنت (مجاني) ${variantId}:`, e?.message || e);
+          fail++; rows.push({ variantId, error: e?.message || String(e) });
+        }
+      }
+      results.variantResults = { ok, fail, rows };
+      // مزامنة مخزون المنتج الأب للفيرنتس
+      await refreshParentProductStockForVariants(Array.from(variantAgg.keys()));
+      if (fail > 0) results.success = false;
+    }
+
+    // ب) خصم المنتجات المجانية بدون فيرنت (كما السابق)
+    if (productAgg.size > 0) {
+      const uniqueFreeItems = Array.from(productAgg.entries()).map(([product_id, quantity]) => ({ product_id, quantity }));
+      const stockResult = await deductFreeItemsFromStock(uniqueFreeItems, orderId);
+      results.productResults = stockResult;
+      if (!stockResult.success) results.success = false;
+    }
+
+    if (variantAgg.size === 0 && productAgg.size === 0) {
+      console.log('ℹ️ لا توجد عناصر مجانية للخصم');
+      return { success: true, message: 'لا توجد عناصر مجانية للخصم' };
+    }
+
+    return results;
 
   } catch (error) {
     console.error('❌ خطأ في معالجة خصم العروض من المخزون:', error);
@@ -245,11 +295,15 @@ export async function deductVariantItemsStockForOrder(orderId: string) {
 
     // 0) محاولة الخصم عبر دالة آمنة على الخادم (تتجاوز RLS)
     let rpcApplied = false;
+    let rpcRows: any[] | null = null;
     try {
       const { data: applyData, error: applyErr } = await supabase
         .rpc('apply_order_variant_deduction' as any, { p_order_id: orderId });
       if (!applyErr) {
-        console.log('🛡️ تم خصم مخزون الفيرنتس عبر الدالة الآمنة:', applyData);
+        // قد ترجع الدالة صفوفًا أو لا (لا يعني عدم وجود خطأ أنها نفذت شيئًا)
+        rpcRows = Array.isArray(applyData) ? applyData : null;
+        console.log('🛡️ محاولة خصم عبر الدالة الآمنة - rows:', rpcRows?.length ?? 0);
+        // سنعد rpcApplied مبدئيًا true، لكن سنؤكد لاحقًا بعد الفحص أن جميع العناصر تم تعليمها
         rpcApplied = true;
       } else {
         console.warn('⚠️ فشل apply_order_variant_deduction، سنتابع بالخطة الحالية:', applyErr?.message || applyErr);
@@ -270,8 +324,9 @@ export async function deductVariantItemsStockForOrder(orderId: string) {
     ) as Array<{ id: string; variant_id: string; quantity: number }>;
     const allVariantIds = Array.from(new Set((items || []).map((it: any) => it.variant_id).filter(Boolean))) as string[];
 
-    // إذا نجح مسار ال-RPC، لا نكرر الخصم؛ فقط نزامن مخزون المنتج الأب من الفيرنتس ونخرج
-    if (rpcApplied) {
+    // إذا نجح مسار ال-RPC بالفعل ولم يتبق عناصر بحاجة للخصم، لا نكرر الخصم؛ فقط نزامن ونخرج
+    if (rpcApplied && target.length === 0) {
+      console.log('✅ تأكيد: لا توجد عناصر بحاجة للخصم بعد استدعاء الدالة الآمنة. سيتم الاكتفاء بالمزامنة.');
       await refreshParentProductStockForVariants(allVariantIds);
       return { success: true, processed: 'rpc', variants: allVariantIds.length } as any;
     }
@@ -292,7 +347,7 @@ export async function deductVariantItemsStockForOrder(orderId: string) {
 
   console.log('📦 التجميع حسب الفيرنت:', Array.from(byVariant.entries()).map(([vid, v]) => ({ variantId: vid, totalQty: v.totalQty, rows: v.rowIds.length })));
 
-    // 3) خصم لكل فيرنت
+  // 3) خصم لكل فيرنت (خطة بديلة إذا لم تؤكد الدالة الآمنة الخصم)
     let ok = 0; let fail = 0; const results: any[] = [];
     for (const [variantId, { totalQty, rowIds }] of byVariant.entries()) {
       try {
@@ -522,8 +577,8 @@ export async function updateFreeProductsStockOnEdit(
     }
 
     // استخراج المنتجات المجانية القديمة والجديدة
-    const oldFreeProducts = extractFreeProductsFromOrderData(oldOrder?.applied_offers, oldOrder?.free_items);
-    const newFreeProducts = extractFreeProductsFromOrderData(newAppliedOffers, newFreeItems);
+  const oldFreeProducts = extractFreeProductsFromOrderData(oldOrder?.applied_offers, oldOrder?.free_items);
+  const newFreeProducts = extractFreeProductsFromOrderData(newAppliedOffers, newFreeItems);
 
     // حساب الفروقات
     const changes = calculateFreeProductChanges(oldFreeProducts, newFreeProducts);
@@ -534,13 +589,55 @@ export async function updateFreeProductsStockOnEdit(
     for (const change of changes) {
       if (change.quantityDiff > 0) {
         // خصم إضافي
-        const res = await updateProductStock(change.productId, change.quantityDiff, `edit:${orderId}`);
-        results.push({ ...res, operation: 'deduct', productId: change.productId });
+        if (change.variantId) {
+          // خصم من الفيرنت مباشرة
+          try {
+            const { error: rpcError } = await supabase.rpc('decrease_variant_stock' as any, { variant_id: change.variantId, quantity: change.quantityDiff });
+            if (rpcError) {
+              console.warn(`⚠️ RPC decrease_variant_stock فشل للفيرنت ${change.variantId}, سنحاول التحديث المباشر.`, rpcError?.message || rpcError);
+              const { data: variant, error: vErr } = await supabase.from('product_variants').select('stock_quantity').eq('id', change.variantId).single();
+              if (vErr) throw vErr;
+              const current = Number(variant?.stock_quantity || 0);
+              const newStock = Math.max(0, current - Number(change.quantityDiff || 0));
+              const { error: updErr } = await supabase.from('product_variants').update({ stock_quantity: newStock }).eq('id', change.variantId);
+              if (updErr) throw updErr;
+            }
+            results.push({ success: true, operation: 'deduct', variantId: change.variantId, quantity: change.quantityDiff });
+          } catch (e: any) {
+            results.push({ success: false, error: e?.message || String(e), variantId: change.variantId });
+          }
+        } else {
+          const res = await updateProductStock(change.productId, change.quantityDiff, `edit:${orderId}`);
+          results.push({ ...res, operation: 'deduct', productId: change.productId });
+        }
       } else if (change.quantityDiff < 0) {
         // إرجاع
         const restoreQty = Math.abs(change.quantityDiff);
-        const res = await restoreProductStock(change.productId, restoreQty, `edit:${orderId}`);
-        results.push({ ...res, operation: 'restore', productId: change.productId });
+        if (change.variantId) {
+          try {
+            // إرجاع مخزون الفيرنت
+            const { data: variant, error: vErr } = await supabase
+              .from('product_variants')
+              .select('stock_quantity')
+              .eq('id', change.variantId)
+              .single();
+            if (vErr) throw vErr;
+            const current = Number(variant?.stock_quantity || 0);
+            const newStock = current + Number(restoreQty || 0);
+            const { error: rpcError } = await supabase.rpc('update_variant_stock' as any, { variant_id: change.variantId, stock_quantity: newStock });
+            if (rpcError) {
+              console.warn(`⚠️ RPC update_variant_stock فشل للفيرنت ${change.variantId}, سنحاول التحديث المباشر.`, rpcError?.message || rpcError);
+              const { error: updErr } = await supabase.from('product_variants').update({ stock_quantity: newStock }).eq('id', change.variantId);
+              if (updErr) throw updErr;
+            }
+            results.push({ success: true, operation: 'restore', variantId: change.variantId, quantity: restoreQty });
+          } catch (e: any) {
+            results.push({ success: false, error: e?.message || String(e), variantId: change.variantId });
+          }
+        } else {
+          const res = await restoreProductStock(change.productId, restoreQty, `edit:${orderId}`);
+          results.push({ ...res, operation: 'restore', productId: change.productId });
+        }
       }
     }
 
@@ -560,62 +657,74 @@ export async function updateFreeProductsStockOnEdit(
 }
 
 /**
- * استخراج المنتجات المجانية من بيانات الطلبية
+ * استخراج المنتجات المجانية من بيانات الطلبية (مع دعم variant_id إن وجد)
  */
 function extractFreeProductsFromOrderData(appliedOffers?: any, freeItems?: any) {
-  const products = new Map<string, number>();
+  type Key = string; // productId|variantId (variant-aware key)
+  const products = new Map<Key, { productId: string; variantId?: string | null; quantity: number }>();
   const safeParse = (raw: any) => { try { return typeof raw === 'string' ? JSON.parse(raw) : raw; } catch { return null; } };
 
-  // من applied_offers
+  const push = (pid?: any, qty?: any, vid?: any) => {
+    const productId = String(pid || '').trim();
+    const variantId = vid ? String(vid).trim() : undefined;
+    const q = Number(qty || 0);
+    if (!productId || q <= 0) return;
+    const key = variantId ? `${productId}__${variantId}` : productId;
+    const prev = products.get(key) || { productId, variantId, quantity: 0 };
+    prev.quantity += q;
+    products.set(key, prev);
+  };
+
+  // من applied_offers أولاً
   const offers = safeParse(appliedOffers);
   if (Array.isArray(offers)) {
     for (const offer of offers) {
       if (Array.isArray(offer?.freeProducts)) {
         for (const fp of offer.freeProducts) {
-          const pid = fp?.productId ?? fp?.product_id;
-          const q = fp?.quantity ?? 1;
-          if (pid) products.set(String(pid), (products.get(String(pid)) || 0) + Number(q || 0));
+          push(fp?.productId ?? fp?.product_id, fp?.quantity ?? 1, fp?.variantId ?? fp?.variant_id);
         }
       }
       if (Array.isArray(offer?.freeItems)) {
         for (const fi of offer.freeItems) {
-          const pid = fi?.productId ?? fi?.product_id;
-          const q = fi?.quantity ?? 1;
-          if (pid) products.set(String(pid), (products.get(String(pid)) || 0) + Number(q || 0));
+          push(fi?.productId ?? fi?.product_id, fi?.quantity ?? 1, fi?.variantId ?? fi?.variant_id);
         }
       }
     }
   }
 
-  // من free_items
-  const free = safeParse(freeItems);
-  if (Array.isArray(free)) {
-    for (const it of free) {
-      const pid = it?.productId ?? it?.product_id;
-      const q = it?.quantity ?? 1;
-      if (pid) products.set(String(pid), (products.get(String(pid)) || 0) + Number(q || 0));
+  // fallback: من free_items فقط إذا لم نجد في applied_offers
+  if (products.size === 0) {
+    const free = safeParse(freeItems);
+    if (Array.isArray(free)) {
+      for (const it of free) {
+        push(it?.productId ?? it?.product_id, it?.quantity ?? 1, it?.variantId ?? it?.variant_id);
+      }
     }
   }
 
-  return Array.from(products.entries()).map(([productId, quantity]) => ({ productId, quantity }));
+  return Array.from(products.values());
 }
 
 /**
  * حساب التغييرات المطلوبة في المخزون
  */
 function calculateFreeProductChanges(
-  oldProducts: { productId: string; quantity: number }[],
-  newProducts: { productId: string; quantity: number }[]
+  oldProducts: { productId: string; variantId?: string | null; quantity: number }[],
+  newProducts: { productId: string; variantId?: string | null; quantity: number }[]
 ) {
-  const changes: Array<{ productId: string; oldQuantity: number; newQuantity: number; quantityDiff: number; }> = [];
-  const oldMap = new Map(oldProducts.map(p => [p.productId, p.quantity]));
-  const newMap = new Map(newProducts.map(p => [p.productId, p.quantity]));
+  const changes: Array<{ productId: string; variantId?: string | null; oldQuantity: number; newQuantity: number; quantityDiff: number; }> = [];
+  const keyOf = (p: { productId: string; variantId?: string | null }) => (p.variantId ? `${p.productId}__${p.variantId}` : p.productId);
+  const oldMap = new Map(oldProducts.map(p => [keyOf(p), p.quantity]));
+  const newMap = new Map(newProducts.map(p => [keyOf(p), p.quantity]));
   const allIds = new Set([...oldMap.keys(), ...newMap.keys()]);
-  for (const id of allIds) {
-    const oldQ = oldMap.get(id) || 0;
-    const newQ = newMap.get(id) || 0;
+  for (const key of allIds) {
+    const oldQ = oldMap.get(key) || 0;
+    const newQ = newMap.get(key) || 0;
     const diff = newQ - oldQ;
-    if (diff !== 0) changes.push({ productId: id, oldQuantity: oldQ, newQuantity: newQ, quantityDiff: diff });
+    if (diff !== 0) {
+      const [productId, variantId] = key.includes('__') ? key.split('__') : [key, undefined];
+      changes.push({ productId, variantId, oldQuantity: oldQ, newQuantity: newQ, quantityDiff: diff });
+    }
   }
   return changes;
 }
@@ -683,78 +792,125 @@ export async function restoreFreeProductsStock(orderId: string) {
       return { success: false, error: orderError.message };
     }
 
-    // دمج وتفريد كل المصادر
-    const agg = new Map<string, number>();
+    // دمج وتفريد كل المصادر — تفصيل حسب الفيرنت/المنتج
+    const variantAgg = new Map<string, number>();
+    const productAgg = new Map<string, number>();
     const safeParse = (raw: any) => { try { return typeof raw === 'string' ? JSON.parse(raw) : raw; } catch { return null; } };
-    const push = (pid?: any, q?: any) => {
-      const id = String(pid || '').trim();
+    const push = (pid?: any, q?: any, vid?: any) => {
+      const productId = String(pid || '').trim();
       const qty = Number(q || 0);
-      if (!id || qty <= 0 || id === 'undefined') return;
-      agg.set(id, (agg.get(id) || 0) + qty);
+      const variantId = vid ? String(vid).trim() : '';
+      if (qty <= 0) return;
+      if (variantId) {
+        variantAgg.set(variantId, (variantAgg.get(variantId) || 0) + qty);
+      } else if (productId) {
+        productAgg.set(productId, (productAgg.get(productId) || 0) + qty);
+      }
     };
 
-    // من free_items
-    const freeItems = safeParse(order?.free_items);
-    if (Array.isArray(freeItems)) {
-      for (const it of freeItems) push(it?.productId ?? it?.product_id, it?.quantity ?? 1);
-    }
-
-    // من applied_offers (freeProducts + freeItems)
+    // من applied_offers أولاً (freeProducts + freeItems)
     const offers = safeParse(order?.applied_offers);
     if (Array.isArray(offers)) {
       for (const off of offers) {
         if (Array.isArray(off?.freeProducts)) {
-          for (const fp of off.freeProducts) push(fp?.productId ?? fp?.product_id, fp?.quantity ?? 1);
+          for (const fp of off.freeProducts) push(fp?.productId ?? fp?.product_id, fp?.quantity ?? 1, fp?.variantId ?? fp?.variant_id);
         }
         if (Array.isArray(off?.freeItems)) {
-          for (const fi of off.freeItems) push(fi?.productId ?? fi?.product_id, fi?.quantity ?? 1);
+          for (const fi of off.freeItems) push(fi?.productId ?? fi?.product_id, fi?.quantity ?? 1, fi?.variantId ?? fi?.variant_id);
         }
       }
     }
 
-    const freeProductsToRestore = Array.from(agg.entries()).map(([product_id, quantity]) => ({ product_id, quantity }));
-    if (freeProductsToRestore.length === 0) {
+    // fallback: من free_items فقط إذا لم نجد شيء عبر applied_offers
+    if (variantAgg.size === 0 && productAgg.size === 0) {
+      const freeItems = safeParse(order?.free_items);
+      if (Array.isArray(freeItems)) {
+        for (const it of freeItems) push(it?.productId ?? it?.product_id, it?.quantity ?? 1, it?.variantId ?? it?.variant_id);
+      }
+    }
+
+    // لا يوجد أي عناصر مجانية
+    if (variantAgg.size === 0 && productAgg.size === 0) {
       console.log('ℹ️ لا توجد منتجات مجانية لإرجاعها (بعد التفريد)');
       return { success: true, message: 'لا توجد منتجات مجانية لإرجاعها' };
     }
 
-    // إرجاع المخزون مرة واحدة لكل منتج
-    const results: any[] = [];
-    for (const item of freeProductsToRestore) {
-      const { data: product, error: fetchError } = await supabase
-        .from('products')
-        .select('stock_quantity, name_ar')
-        .eq('id', item.product_id)
-        .single();
+    const results: any = { success: true, variantResults: [], productResults: [] };
 
-      if (fetchError) {
-        console.error(`❌ خطأ في جلب المنتج ${item.product_id}:`, fetchError);
-        results.push({ success: false, error: fetchError.message, product_id: item.product_id });
-        continue;
+    // 1) إرجاع الفيرنتس
+    if (variantAgg.size > 0) {
+      let ok = 0; let fail = 0; const rows: any[] = [];
+      for (const [variantId, qty] of variantAgg.entries()) {
+        try {
+          const { data: variant, error: varErr } = await supabase
+            .from('product_variants')
+            .select('stock_quantity')
+            .eq('id', variantId)
+            .single();
+          if (varErr) throw varErr;
+          const current = Number(variant?.stock_quantity || 0);
+          const newStock = current + Number(qty || 0);
+          const { error: rpcError } = await supabase.rpc('update_variant_stock' as any, { variant_id: variantId, stock_quantity: newStock });
+          if (rpcError) {
+            console.warn(`⚠️ update_variant_stock RPC فشل للفيرنت ${variantId}، سنحاول التحديث المباشر.`, rpcError?.message || rpcError);
+            const { error: directUpdErr } = await supabase
+              .from('product_variants')
+              .update({ stock_quantity: newStock })
+              .eq('id', variantId);
+            if (directUpdErr) throw directUpdErr;
+          }
+          ok++; rows.push({ variantId, restored: qty });
+        } catch (e: any) {
+          console.error(`❌ فشل إرجاع مخزون الفيرنت ${variantId}:`, e?.message || e);
+          fail++; rows.push({ variantId, error: e?.message || String(e) });
+        }
       }
-
-      const currentStock = product?.stock_quantity || 0;
-      const newStock = currentStock + Number(item.quantity || 0);
-
-      const { error: updateError } = await supabase
-        .from('products')
-        .update({ stock_quantity: newStock, in_stock: newStock > 0 })
-        .eq('id', item.product_id);
-
-      if (updateError) {
-        console.error(`❌ خطأ في تحديث مخزون ${item.product_id}:`, updateError);
-        results.push({ success: false, error: updateError.message, product_id: item.product_id });
-      } else {
-        console.log(`✅ تم إرجاع مخزون ${product?.name_ar} بنجاح - من ${currentStock} إلى ${newStock}`);
-        results.push({ success: true, product_id: item.product_id, oldStock: currentStock, newStock });
-      }
+      results.variantResults = { ok, fail, rows };
+      await refreshParentProductStockForVariants(Array.from(variantAgg.keys()));
+      if (fail > 0) results.success = false;
     }
 
-    const successCount = results.filter(r => r.success).length;
-    const failCount = results.length - successCount;
-    console.log(`📊 نتائج إرجاع المنتجات المجانية (بعد التفريد): ${successCount} نجح، ${failCount} فشل`);
+    // 2) إرجاع المنتجات غير المعرّفة بفيرنت
+    if (productAgg.size > 0) {
+      const freeProductsToRestore = Array.from(productAgg.entries()).map(([product_id, quantity]) => ({ product_id, quantity }));
+      const productResults: any[] = [];
+      for (const item of freeProductsToRestore) {
+        const { data: product, error: fetchError } = await supabase
+          .from('products')
+          .select('stock_quantity, name_ar')
+          .eq('id', item.product_id)
+          .single();
 
-    return { success: failCount === 0, results };
+        if (fetchError) {
+          console.error(`❌ خطأ في جلب المنتج ${item.product_id}:`, fetchError);
+          productResults.push({ success: false, error: fetchError.message, product_id: item.product_id });
+          continue;
+        }
+
+        const currentStock = product?.stock_quantity || 0;
+        const newStock = currentStock + Number(item.quantity || 0);
+
+        const { error: updateError } = await supabase
+          .from('products')
+          .update({ stock_quantity: newStock, in_stock: newStock > 0 })
+          .eq('id', item.product_id);
+
+        if (updateError) {
+          console.error(`❌ خطأ في تحديث مخزون ${item.product_id}:`, updateError);
+          productResults.push({ success: false, error: updateError.message, product_id: item.product_id });
+        } else {
+          console.log(`✅ تم إرجاع مخزون ${product?.name_ar} بنجاح - من ${currentStock} إلى ${newStock}`);
+          productResults.push({ success: true, product_id: item.product_id, oldStock: currentStock, newStock });
+        }
+      }
+      const successCount = productResults.filter(r => r.success).length;
+      const failCount = productResults.length - successCount;
+      console.log(`📊 نتائج إرجاع المنتجات المجانية بدون فيرنت: ${successCount} نجح، ${failCount} فشل`);
+      results.productResults = productResults;
+      if (failCount > 0) results.success = false;
+    }
+
+    return results;
 
   } catch (error) {
     console.error('❌ خطأ في إرجاع المنتجات المجانية للمخزون:', error);
