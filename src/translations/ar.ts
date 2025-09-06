@@ -1420,5 +1420,6 @@ export const arTranslations = {
   specificVariants: "فيرنتس محددة",
   allVariants: "جميع الفيرنتس",
   youSaved: "لقد وفرت",
+  buyVariantScope: "تطبيق شرط الشراء على"
 
 };

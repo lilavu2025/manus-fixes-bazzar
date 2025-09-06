@@ -1358,5 +1358,6 @@ export const heTranslations = {
   specificVariants: "וריאציות ספציפיות",
   allVariants: "כל הווריאציות",
   youSaved: "אתה חוסך",
+  buyVariantScope: "קנה טווח וריאנט",
 
 };
