@@ -1,5 +1,5 @@
 import React, { useEffect, useContext, useState, useRef, useCallback } from "react";
-import { renderVariantInfo } from "@/utils/variantUtils";
+import { renderVariantInfo, toDisplayVariantText } from "@/utils/variantUtils";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Plus, Trash2, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,7 @@ import { OfferService } from "@/services/offerService";
 
 /* ===================== Helpers (مطابقة لصفحة التعديل) ===================== */
 
-type FreeRef = { productId: string; quantity: number };
+type FreeRef = { productId: string; quantity: number; variantId?: string | null; variantAttributes?: any };
 
 const qty = (n: any) => Math.max(0, Number(n || 0));
 
@@ -39,11 +39,22 @@ function normalizeFreeRefs(raw: any): FreeRef[] {
   for (const r of arr) {
     const pid = r?.productId || r?.product_id || r?.product?.id || r?.productId?.id || null;
     const q = Number(r?.quantity || r?.qty || 1);
-    if (pid) out.push({ productId: String(pid), quantity: q > 0 ? q : 1 });
+    const variantId = r?.variantId ?? r?.variant_id ?? null;
+    const variantAttributes = r?.variantAttributes ?? r?.variant_attributes ?? null;
+    if (pid) out.push({ productId: String(pid), quantity: q > 0 ? q : 1, variantId, variantAttributes });
   }
-  const map = new Map<string, number>();
-  for (const x of out) map.set(x.productId, (map.get(x.productId) || 0) + x.quantity);
-  return Array.from(map.entries()).map(([productId, quantity]) => ({ productId, quantity }));
+  // dedupe by (productId + variantId)
+  const map = new Map<string, { quantity: number; variantId?: string | null; variantAttributes?: any }>();
+  for (const x of out) {
+    const key = x.variantId ? `${x.productId}__${x.variantId}` : x.productId;
+    const prev = map.get(key);
+    if (!prev) map.set(key, { quantity: x.quantity, variantId: x.variantId ?? null, variantAttributes: x.variantAttributes ?? null });
+    else map.set(key, { quantity: prev.quantity + x.quantity, variantId: prev.variantId ?? x.variantId ?? null, variantAttributes: prev.variantAttributes ?? x.variantAttributes ?? null });
+  }
+  return Array.from(map.entries()).map(([key, v]) => {
+    const [productId, variantId] = key.includes("__") ? key.split("__") : [key, null];
+    return { productId, quantity: v.quantity, variantId: variantId || v.variantId || null, variantAttributes: v.variantAttributes ?? null };
+  });
 }
 
 function productOf(products: any[], pid: string) {
@@ -65,6 +76,15 @@ function normalizeVariantAttributes(raw: any): Record<string, any> | null {
   }
   if (typeof obj !== "object" || Array.isArray(obj)) return null;
   return obj as Record<string, any>;
+}
+
+// Normalize a variant value to string for stable comparison
+function normalizeVariantValue(v: any): string {
+  if (v == null) return "";
+  if (typeof v === 'object') {
+    try { return JSON.stringify(v); } catch { return String(v); }
+  }
+  return String(v);
 }
 
 // Stable signature for variant identity
@@ -98,6 +118,31 @@ function mergeSimilarLines(items: any[]) {
   return Array.from(map.values()).filter(x => qty(x.quantity) > 0);
 }
 
+// احسب سعر وحدة الفيرنت المحدد (إن وجد) مع مراعاة نوع المستخدم
+function computeVariantSpecificPrice(product: any, variantInfo: { variantId?: string | null; variantAttributes?: Record<string, any> | null } | undefined, userType?: string) {
+  if (!product) return 0;
+  const variants = Array.isArray(product?.variants) ? product.variants : [];
+  let matchedVar: any | undefined;
+  const vid = variantInfo?.variantId;
+  const vattrs = normalizeVariantAttributes(variantInfo?.variantAttributes);
+  if (vid) {
+    matchedVar = variants.find((v: any) => String(v?.id) === String(vid));
+  }
+  if (!matchedVar && vattrs) {
+    matchedVar = variants.find((v: any) => {
+      const ov = v?.option_values || {};
+      return Array.isArray(product?.options) && product.options.every((o: any) => normalizeVariantValue(ov[o.name]) === normalizeVariantValue((vattrs as any)[o.name]));
+    });
+  }
+  if (matchedVar) {
+    const w = Number(matchedVar?.wholesale_price || 0);
+    const p = Number(matchedVar?.price || 0);
+    if ((userType === 'wholesale' || userType === 'admin') && w > 0) return w;
+    return p;
+  }
+  return getDisplayPrice(product, userType);
+}
+
 // يحوّل كميّة من نفس المنتج إلى "مجاني" حسب expectedQty
 function ensureFreeQty(
   items: any[],
@@ -105,7 +150,8 @@ function ensureFreeQty(
   pid: string,
   expectedQty: number,
   offerInfo?: { id?: string; title?: string },
-  userType?: string
+  userType?: string,
+  variantInfo?: { variantId?: string; variantAttributes?: Record<string, any> }
 ) {
   let list = [...items];
   const freeIdx = list.findIndex(it => it.product_id === pid && (it as any).is_free);
@@ -125,9 +171,18 @@ function ensureFreeQty(
       if (take <= 0) continue;
       list[i] = { ...list[i], quantity: qty(list[i].quantity) - take };
       if (freeIdx !== -1) {
-        list[freeIdx] = { ...list[freeIdx], quantity: qty(list[freeIdx].quantity) + take };
+        // زد الكمية ولا تُغيّر الفيرنتس إن كانت محددة سابقاً من المستخدم
+        const existingVid = (list[freeIdx] as any)?.variant_id ?? null;
+        const existingVAttr = (list[freeIdx] as any)?.variant_attributes ?? null;
+        list[freeIdx] = {
+          ...list[freeIdx],
+          quantity: qty(list[freeIdx].quantity) + take,
+          ...(existingVid ? { variant_id: existingVid } : (variantInfo?.variantId ? { variant_id: variantInfo.variantId } : {})),
+          ...(existingVAttr ? { variant_attributes: existingVAttr } : (variantInfo?.variantAttributes ? { variant_attributes: variantInfo.variantAttributes } : {})),
+        };
       } else {
         const p = productOf(products, pid);
+        const origUnit = computeVariantSpecificPrice(p, variantInfo, userType);
         list.push({
           id: `free_${offerInfo?.id || "off"}_${pid}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           product_id: pid,
@@ -135,15 +190,18 @@ function ensureFreeQty(
           product_name: p?.name_ar || p?.name_en || "",
           price: 0,
           is_free: true,
-          original_price: basePrice(products, pid, userType),
+          original_price: origUnit,
           offer_id: offerInfo?.id,
           offer_name: offerInfo?.title,
+          ...(variantInfo?.variantId ? { variant_id: variantInfo.variantId } : {}),
+          ...(variantInfo?.variantAttributes ? { variant_attributes: variantInfo.variantAttributes } : {}),
         } as any);
       }
       toTake -= take;
     }
-    if (toTake > 0) {
+  if (toTake > 0) {
       const p = productOf(products, pid);
+      const origUnit = computeVariantSpecificPrice(p, variantInfo, userType);
       list.push({
         id: `free_${offerInfo?.id || "off"}_${pid}_extra_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         product_id: pid,
@@ -151,9 +209,11 @@ function ensureFreeQty(
         product_name: p?.name_ar || p?.name_en || "",
         price: 0,
         is_free: true,
-        original_price: basePrice(products, pid, userType),
+        original_price: origUnit,
         offer_id: offerInfo?.id,
         offer_name: offerInfo?.title,
+        ...(variantInfo?.variantId ? { variant_id: variantInfo.variantId } : {}),
+        ...(variantInfo?.variantAttributes ? { variant_attributes: variantInfo.variantAttributes } : {}),
       } as any);
     }
   }
@@ -167,8 +227,11 @@ function ensureFreeQty(
 
       if (giveBack > 0) {
         const p = productOf(products, pid);
-        const price = basePrice(products, pid, userType);
-        const existPaid = list.findIndex(it => it.product_id === pid && !(it as any).is_free && !(it as any).offer_applied);
+        const existingVid = (list[freeIdx] as any)?.variant_id ?? variantInfo?.variantId ?? null;
+        const existingVAttr = (list[freeIdx] as any)?.variant_attributes ?? variantInfo?.variantAttributes ?? null;
+        const price = computeVariantSpecificPrice(p, { variantId: existingVid, variantAttributes: existingVAttr }, userType);
+        const freeLineSig = lineKeySignature({ product_id: pid, variant_id: existingVid, variant_attributes: existingVAttr });
+        const existPaid = list.findIndex(it => it.product_id === pid && !(it as any).is_free && !(it as any).offer_applied && lineKeySignature(it) === freeLineSig.replace("free|", "norm|"));
         if (existPaid !== -1) {
           list[existPaid] = { ...list[existPaid], quantity: qty(list[existPaid].quantity) + giveBack, price, original_price: price };
         } else {
@@ -179,6 +242,8 @@ function ensureFreeQty(
             product_name: p?.name_ar || p?.name_en || "",
             price,
             original_price: price,
+            ...(existingVid ? { variant_id: existingVid } : {}),
+            ...(existingVAttr ? { variant_attributes: existingVAttr } : {}),
           } as any);
         }
       }
@@ -348,19 +413,38 @@ async function reconcileAllOffersLive(
   const freeItems = result?.freeItems || [];
   const totalDiscount = Number(result?.totalDiscount || 0);
 
-  const freeMap = new Map<string, number>();
-  for (const f of freeItems) {
-    const pid = String(f?.product?.id);
+  // طبّق المنتجات المجانية بحسب الاستجابة (مع معلومات الفيرنتس إن توفّرت)
+  const freebies = Array.isArray(freeItems) ? freeItems : [];
+  const freebiesByPid = new Map<string, { total: number; any: boolean; variantId?: string; variantAttributes?: Record<string, any> }>();
+  for (const f of freebies) {
+    const pid = String((f as any)?.product?.id);
     if (!pid) continue;
-    freeMap.set(pid, (freeMap.get(pid) || 0) + qty(f.quantity));
+    const cur = freebiesByPid.get(pid) || { total: 0, any: true };
+    cur.total += qty((f as any).quantity);
+    if ((f as any).variantId || (f as any).variantAttributes) {
+      // اختر أول معلومات فيرنتس نراها كافتراضي
+      if (!cur.variantId && (f as any).variantId) cur.variantId = String((f as any).variantId);
+      if (!cur.variantAttributes && (f as any).variantAttributes) cur.variantAttributes = (f as any).variantAttributes;
+      cur.any = false;
+    }
+    freebiesByPid.set(pid, cur);
   }
-  for (const [pid, q] of freeMap) {
+  for (const [pid, info] of freebiesByPid.entries()) {
     const off = appliedOffers.find((a: any) => (a?.offer?.get_product_id === pid) && ((a?.offer?.get_discount_type) === "free"))?.offer;
-    list = ensureFreeQty(list, products, pid, q, { id: off?.id, title: off?.title_ar || off?.title_en }, userType);
+    list = ensureFreeQty(
+      list,
+      products,
+      pid,
+      info.total,
+      { id: off?.id, title: off?.title_ar || off?.title_en },
+      userType,
+      { variantId: info.variantId, variantAttributes: info.variantAttributes }
+    );
   }
+  // إزالة أي عناصر مجانية لم تعد مطلوبة لهذا المنتج
   for (const it of list.filter(x => (x as any).is_free)) {
     const pid = String(it.product_id);
-    if (!freeMap.has(pid)) {
+    if (!freebiesByPid.has(pid)) {
       list = ensureFreeQty(list, products, pid, 0, undefined, userType);
     }
   }
@@ -446,7 +530,17 @@ async function reconcileAllOffersLive(
     }
   }
 
-  return { items: mergeSimilarLines(list), appliedOffers, freeRefs: normalizeFreeRefs(freeItems), totalDiscount };
+  // ابنِ freeRefs بكافة تفاصيل الفيرنتس إن توفرت
+  const freeRefsDetailed: FreeRef[] = normalizeFreeRefs(
+    freebies.map((f: any) => ({
+      productId: f?.product?.id,
+      quantity: f?.quantity,
+      variantId: f?.variantId ?? null,
+      variantAttributes: f?.variantAttributes ?? null,
+    }))
+  );
+
+  return { items: mergeSimilarLines(list), appliedOffers, freeRefs: freeRefsDetailed, totalDiscount };
 }
 
 // ملاحظة: لا حاجة لتطبيع اسم العرض هنا.
@@ -509,7 +603,7 @@ const OrderAddDialog: React.FC<OrderAddDialogProps> = ({
     const va = (item as any)?.variant_attributes || {};
     const matchedVar = variants.find((v: any) => {
       const ov = v?.option_values || {};
-      return Array.isArray(product.options) && product.options.every((o: any) => String(ov[o.name] || '') === String(va[o.name] || ''));
+      return Array.isArray(product.options) && product.options.every((o: any) => normalizeVariantValue(ov[o.name]) === normalizeVariantValue(va[o.name]));
     });
     if (matchedVar) {
       const w = Number(matchedVar?.wholesale_price || 0);
@@ -570,8 +664,8 @@ const OrderAddDialog: React.FC<OrderAddDialogProps> = ({
         if ((item as any).is_free) {
           return { ...item, price: 0, original_price: base };
         }
-        const savedPrice = typeof item.price === 'number' ? item.price : base;
-        return { ...item, price: savedPrice, original_price: base };
+  // عنصر عادي: حدّث السعر ليتماشى مع نوع المستخدم (لا تعتمد على السعر المحفوظ)
+  return { ...item, price: base, original_price: base };
       });
       return { ...prev, items };
     });
@@ -715,8 +809,25 @@ const OrderAddDialog: React.FC<OrderAddDialogProps> = ({
             onSubmit={async e => {
               e.preventDefault();
               const userType = getUserType();
-              const { items, appliedOffers, freeRefs, totalDiscount } = await reconcileAllOffersLive(orderForm.items, products, userType, { autoApplySimpleDiscounts: true });
+              const { items, appliedOffers, totalDiscount } = await reconcileAllOffersLive(orderForm.items, products, userType, { autoApplySimpleDiscounts: true });
               const normalizedItems = normalizeItemsForSave(items);
+              // استخرج المنتجات المجانية من العناصر الحالية لضمان حفظ تغييرات الفيرنتس اليدوية
+              const freeRefs = (() => {
+                const dedupe = new Map<string, { productId: string; quantity: number; variantId?: string | null; variantAttributes?: any }>();
+                for (const it of normalizedItems) {
+                  if ((it as any).is_free) {
+                    const key = (it as any).variant_id ? `${it.product_id}__${(it as any).variant_id}` : String(it.product_id);
+                    const prev = dedupe.get(key);
+                    const q = Number(it.quantity || 0);
+                    if (!prev) {
+                      dedupe.set(key, { productId: String(it.product_id), quantity: q, variantId: (it as any).variant_id ?? null, variantAttributes: (it as any).variant_attributes ?? null });
+                    } else {
+                      prev.quantity += q;
+                    }
+                  }
+                }
+                return Array.from(dedupe.values());
+              })();
 
               // حدّث الـ form (للاستعراض) ومرّر النسخة الموثوقة مباشرة لـ handleAddOrder لتفادي سباق الحالة
               setOrderForm(f => ({
@@ -992,61 +1103,6 @@ const OrderAddDialog: React.FC<OrderAddDialogProps> = ({
                             />
                           )}
                         </div>
-                        {/* اختيار الفيرنتس للمنتجات التي تحتوي خيارات */}
-                        {(() => {
-                          const p = products.find((pp: any) => pp.id === item.product_id);
-                          const isFreeOrDiscounted = (item as any).is_free || (item as any).offer_applied;
-                          if (!p || !p.has_variants || !Array.isArray(p.options) || p.options.length === 0 || isFreeOrDiscounted) return null;
-                          const va = (item as any).variant_attributes || {};
-                          return (
-                            <div className="flex-1 min-w-[260px] -mt-1 space-y-2">
-                              {p.options.map((opt: any) => (
-                                <div key={opt.id} className="flex items-center gap-2">
-                                  <Label className="text-xs text-gray-600 min-w-[70px]">{opt.name}</Label>
-                                  <Select
-                                    value={va?.[opt.name] || ""}
-                                    onValueChange={(value) => {
-                                      setOrderForm(f => {
-                                        const userType = getUserType();
-                                        const updated = f.items.map((itm, idx) => {
-                                          if (idx !== index) return itm;
-                                          const currentVA = { ...(itm as any).variant_attributes, [opt.name]: value };
-                                          const variants = Array.isArray(p.variants) ? p.variants : [];
-                                          const matchedVar = variants.find((v: any) => {
-                                            const ov = v?.option_values || {};
-                                            return p.options.every((o: any) => String(ov[o.name] || '') === String(currentVA[o.name] || ''));
-                                          });
-                                          const nextPrice = matchedVar
-                                            ? ((userType === 'wholesale' || userType === 'admin') && typeof matchedVar.wholesale_price === 'number' && matchedVar.wholesale_price > 0
-                                                ? matchedVar.wholesale_price
-                                                : matchedVar.price)
-                                            : (typeof (itm as any).original_price === 'number' ? (itm as any).original_price : getDisplayPrice(p, userType));
-                                          return {
-                                            ...itm,
-                                            variant_attributes: currentVA,
-                                            variant_id: matchedVar ? matchedVar.id : null,
-                                            ...( !(itm as any).is_free && !(itm as any).offer_applied ? { price: nextPrice, original_price: nextPrice } : {}),
-                                          };
-                                        });
-                                        return { ...f, items: updated };
-                                      });
-                                    }}
-                                  >
-                                    <SelectTrigger className="h-9 w-[180px]"><SelectValue placeholder={t('select') || 'اختر'} /></SelectTrigger>
-                                    <SelectContent>
-                                      {Array.isArray(opt.option_values) && opt.option_values.map((val: string) => (
-                                        <SelectItem key={val} value={val}>{val}</SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                              ))}
-                              {(item as any)?.variant_attributes ? (
-                                <div className="-mt-1">{renderVariantInfo((item as any).variant_attributes)}</div>
-                              ) : null}
-                            </div>
-                          );
-                        })()}
                         <div className="w-24">
                           <Label className="text-xs text-gray-600 mb-1 block">{t("quantity") || "الكمية"} <span className="text-red-500">*</span></Label>
                           <Input
@@ -1135,6 +1191,78 @@ const OrderAddDialog: React.FC<OrderAddDialogProps> = ({
                           )}
                         </div>
                       </div>
+
+                      {/* الفيرنتس كسطر كامل أسفل اسم المنتج + الكمية + السعر */}
+                      {(() => {
+                        const p = products.find((pp: any) => pp.id === item.product_id);
+                        if (!p || !p.has_variants || !Array.isArray(p.options) || p.options.length === 0) return null;
+                        const isDiscountedOnly = (item as any).offer_applied && !(item as any).is_free;
+                        const isFreeLocal = !!(item as any).is_free;
+                        // للبند المخفض: عرض معلومات الفيرنتس فقط
+                        if (isDiscountedOnly) {
+                          return (
+                            <div className="mt-3">
+                              {(item as any)?.variant_attributes ? (
+                                <div className="text-xs text-blue-700">{renderVariantInfo((item as any).variant_attributes)}</div>
+                              ) : null}
+                            </div>
+                          );
+                        }
+                        const va = (item as any).variant_attributes || {};
+                        return (
+                          <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {p.options.map((opt: any) => (
+                              <div key={opt.id} className="flex items-center gap-2 whitespace-nowrap">
+                                <Label className="text-xs text-gray-600 inline-flex items-center shrink-0">{toDisplayVariantText(opt.name, language as any)}:</Label>
+                                <Select
+                                  value={(function(){ const cur = (va?.[opt.name]); if (cur == null) return ""; try { return JSON.stringify(cur); } catch { return String(cur); } })()}
+                                  onValueChange={(value) => {
+                                    setOrderForm(f => {
+                                      const userType = getUserType();
+                                      const updated = f.items.map((itm, idx) => {
+                                        if (idx !== index) return itm;
+                                        let decoded: any = null;
+                                        try { decoded = JSON.parse(value); } catch { decoded = value; }
+                                        const currentVA = { ...(itm as any).variant_attributes, [opt.name]: decoded };
+                                        const variants = Array.isArray(p.variants) ? p.variants : [];
+                                        const matchedVar = variants.find((v: any) => {
+                                          const ov = v?.option_values || {};
+                                          return p.options.every((o: any) => normalizeVariantValue(ov[o.name]) === normalizeVariantValue(currentVA[o.name]));
+                                        });
+                                        const nextPrice = matchedVar
+                                          ? ((userType === 'wholesale' || userType === 'admin') && typeof matchedVar.wholesale_price === 'number' && matchedVar.wholesale_price > 0
+                                              ? matchedVar.wholesale_price
+                                              : matchedVar.price)
+                                          : (typeof (itm as any).original_price === 'number' ? (itm as any).original_price : getDisplayPrice(p, userType));
+                                        return {
+                                          ...itm,
+                                          variant_attributes: currentVA,
+                                          variant_id: matchedVar ? matchedVar.id : null,
+                                          // حافظ على السعر 0 للمجاني، ولا تحدّث السعر للبنود المخفضة
+                                          ...( !isFreeLocal && !(itm as any).offer_applied ? { price: nextPrice, original_price: nextPrice } : {}),
+                                        };
+                                      });
+                                      return { ...f, items: updated };
+                                    });
+                                  }}
+                                >
+                                  <SelectTrigger className="h-9 w-[180px] sm:w-[220px]"><SelectValue placeholder={t('select') || 'اختر'} /></SelectTrigger>
+                                  <SelectContent>
+                                    {Array.isArray(opt.option_values) && opt.option_values.map((val: any, i: number) => {
+                                      let token = "";
+                                      try { token = JSON.stringify(val); } catch { token = String(val); }
+                                      const label = toDisplayVariantText(val, language as any);
+                                      return (
+                                        <SelectItem key={`${opt.id}_${i}`} value={token}>{label}</SelectItem>
+                                      );
+                                    })}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })()}
 
                       {(item as any).offer_applied && (
                         <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-sm">

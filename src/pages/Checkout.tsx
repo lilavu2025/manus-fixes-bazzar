@@ -23,7 +23,7 @@ import { getDisplayPrice } from "@/utils/priceUtils";
 import AddressSelector, { Address as UserAddress } from "@/components/addresses/AddressSelector";
 import { saveAddressIfNotExists } from "@/components/addresses/saveAddressIfNotExists";
 import { OfferService } from "@/services/offerService";
-import { deductOrderItemsFromStock, processOffersStockDeduction } from "@/services/stockService";
+import { deductOrderItemsFromStock, processOffersStockDeduction, deductVariantItemsStockForOrder } from "@/services/stockService";
 import ProductPriceWithOffers from "@/components/ProductPriceWithOffers";
 import { Badge } from "@/components/ui/badge";
 import { Gift, Tag } from "lucide-react";
@@ -269,6 +269,13 @@ const Checkout: React.FC = () => {
       if (itemsError) {
         console.error("خطأ في إنشاء عناصر الطلب:", itemsError);
         throw itemsError;
+      }
+
+      // خصم مخزون الفيرنتس لعناصر الطلب غير المجانية مرة واحدة
+      try {
+        await deductVariantItemsStockForOrder(order.id);
+      } catch (e) {
+        console.warn("⚠️ تحذير: مشكلة في خصم مخزون الفيرنتس:", e);
       }
 
       // خصم المنتجات المجانية من المخزون (إن وجدت)
