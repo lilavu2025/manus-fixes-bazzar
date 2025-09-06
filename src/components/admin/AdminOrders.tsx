@@ -58,10 +58,10 @@ function normalizeJsonField(raw: any) {
 }
 
 // Normalize free refs to the canonical shape: { productId, quantity }
-function normalizeFreeRefs(raw: any): { productId: string; quantity: number }[] {
+function normalizeFreeRefs(raw: any): { productId: string; quantity: number; variantId?: string | null; variantAttributes?: any }[] {
   const arr = normalizeJsonField(raw);
   if (!Array.isArray(arr)) return [];
-  const out: { productId: string; quantity: number }[] = [];
+  const out: { productId: string; quantity: number; variantId?: string | null; variantAttributes?: any }[] = [];
   for (const r of arr) {
     const pid =
       r?.productId ||
@@ -70,12 +70,22 @@ function normalizeFreeRefs(raw: any): { productId: string; quantity: number }[] 
       r?.productId?.id ||
       null;
     const qty = Number(r?.quantity || r?.qty || 1);
-    if (pid) out.push({ productId: String(pid), quantity: qty > 0 ? qty : 1 });
+    const variantId = r?.variantId ?? r?.variant_id ?? null;
+    const variantAttributes = r?.variantAttributes ?? r?.variant_attributes ?? null;
+    if (pid) out.push({ productId: String(pid), quantity: qty > 0 ? qty : 1, variantId, variantAttributes });
   }
   // dedupe by productId, keep max quantity
-  const map = new Map<string, number>();
-  for (const x of out) map.set(x.productId, Math.max(map.get(x.productId) || 0, x.quantity));
-  return Array.from(map.entries()).map(([productId, quantity]) => ({ productId, quantity }));
+  const map = new Map<string, { quantity: number; variantId?: string | null; variantAttributes?: any }>();
+  for (const x of out) {
+    const key = x.variantId ? `${x.productId}__${x.variantId}` : x.productId;
+    const prev = map.get(key);
+    if (!prev) map.set(key, { quantity: x.quantity, variantId: x.variantId ?? null, variantAttributes: x.variantAttributes ?? null });
+    else map.set(key, { quantity: Math.max(prev.quantity, x.quantity), variantId: prev.variantId ?? x.variantId ?? null, variantAttributes: prev.variantAttributes ?? x.variantAttributes ?? null });
+  }
+  return Array.from(map.entries()).map(([key, v]) => {
+    const [productId, variantId] = key.includes("__") ? key.split("__") : [key, null];
+    return { productId, quantity: v.quantity, variantId: variantId || v.variantId || null, variantAttributes: v.variantAttributes ?? null };
+  });
 }
 
 // Build a canonical freeRefs from either free_items or applied_offers.freeProducts
@@ -84,7 +94,15 @@ function getCanonicalFreeRefs(free_items_raw: any, applied_offers_raw: any) {
   if (fromFree.length > 0) return fromFree;
   const applied = normalizeJsonField(applied_offers_raw);
   const allFreeFromApplied = Array.isArray(applied)
-    ? applied.flatMap((a: any) => Array.isArray(a?.freeProducts) ? a.freeProducts : [])
+    ? applied.flatMap((a: any) => {
+        const arr = Array.isArray(a?.freeProducts) ? a.freeProducts : [];
+        return arr.map((r: any) => ({
+          productId: r?.productId ?? r?.product_id,
+          quantity: r?.quantity ?? r?.qty ?? 1,
+          variantId: r?.variantId ?? r?.variant_id ?? null,
+          variantAttributes: r?.variantAttributes ?? r?.variant_attributes ?? null,
+        }));
+      })
     : [];
   return normalizeFreeRefs(allFreeFromApplied);
 }
@@ -92,7 +110,7 @@ function getCanonicalFreeRefs(free_items_raw: any, applied_offers_raw: any) {
 // Ensure free items exist in items[] based on canonical freeRefs
 function injectFreeItemsIfMissing(
   items: any[],
-  freeRefs: { productId: string; quantity: number }[],
+  freeRefs: { productId: string; quantity: number; variantId?: string | null; variantAttributes?: any }[],
   products: any[],
   userType: 'retail' | 'wholesale' | 'admin' = 'retail'
 ) {
@@ -121,6 +139,8 @@ function injectFreeItemsIfMissing(
       is_free: true,
       product_name: prod.name_ar || prod.name_en || prod.id,
       original_price: getOriginalPrice(prod),
+  ...(ref.variantId ? { variant_id: ref.variantId } : {}),
+  ...(ref.variantAttributes ? { variant_attributes: ref.variantAttributes } : {}),
     });
   }
   return additions.length ? [...items, ...additions] : items;
@@ -132,9 +152,9 @@ function summarizeOffersForSave(items: any[]) {
     offer: any;
     discountAmount: number;
     affectedProducts: string[];
-    freeProducts: { productId: string; quantity: number }[];
+    freeProducts: { productId: string; quantity: number; variantId?: string | null; variantAttributes?: any }[];
   }> = {};
-  const freeItemsOut: { productId: string; quantity: number }[] = [];
+  const freeItemsOut: { productId: string; quantity: number; variantId?: string | null; variantAttributes?: any }[] = [];
 
   for (const it of items || []) {
     const offerId = it?.offer_id || it?.offer?.id;
@@ -163,18 +183,26 @@ function summarizeOffersForSave(items: any[]) {
       const pid = String(it.product_id || "");
       const qty = Number(it.quantity || 1);
       if (pid) {
-        freeItemsOut.push({ productId: pid, quantity: qty > 0 ? qty : 1 });
+        freeItemsOut.push({ productId: pid, quantity: qty > 0 ? qty : 1, variantId: (it as any)?.variant_id ?? null, variantAttributes: (it as any)?.variant_attributes ?? null });
         if (offerId) {
-          appliedMap[offerId].freeProducts.push({ productId: pid, quantity: qty > 0 ? qty : 1 });
+          appliedMap[offerId].freeProducts.push({ productId: pid, quantity: qty > 0 ? qty : 1, variantId: (it as any)?.variant_id ?? null, variantAttributes: (it as any)?.variant_attributes ?? null });
         }
       }
     }
   }
 
   // dedupe freeItemsOut
-  const freeMap = new Map<string, number>();
-  for (const f of freeItemsOut) freeMap.set(f.productId, Math.max(freeMap.get(f.productId) || 0, f.quantity));
-  const canonicalFree = Array.from(freeMap.entries()).map(([productId, quantity]) => ({ productId, quantity }));
+  const freeMap = new Map<string, { quantity: number; variantId?: string | null; variantAttributes?: any }>();
+  for (const f of freeItemsOut) {
+    const key = f.variantId ? `${f.productId}__${f.variantId}` : f.productId;
+    const prev = freeMap.get(key);
+    if (!prev) freeMap.set(key, { quantity: f.quantity, variantId: f.variantId ?? null, variantAttributes: f.variantAttributes ?? null });
+    else freeMap.set(key, { quantity: Math.max(prev.quantity, f.quantity), variantId: prev.variantId ?? f.variantId ?? null, variantAttributes: prev.variantAttributes ?? f.variantAttributes ?? null });
+  }
+  const canonicalFree = Array.from(freeMap.entries()).map(([key, v]) => {
+    const [productId, variantId] = key.includes("__") ? key.split("__") : [key, null];
+    return { productId, quantity: v.quantity, variantId: variantId || v.variantId || null, variantAttributes: v.variantAttributes ?? null };
+  });
 
   return { applied_offers: Object.values(appliedMap), free_items: canonicalFree };
 }
@@ -326,7 +354,8 @@ const AdminOrders: React.FC = () => {
         free_items: JSON.stringify(free_items || []),
       };
 
-      const orderItems = orderForm.items
+  // Build order items from the baseItems we are saving (payload-normalized) to avoid state race
+  const orderItems = baseItems
         .filter((it: any) => !it?.is_free)
         .map((item) => ({
           product_id: item.product_id,

@@ -3,6 +3,7 @@ import React, { useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/utils/languageContextUtils";
+import { renderVariantInfo, toDisplayVariantText } from "@/utils/variantUtils";
 
 /** نفس النوع اللي عندك */
 interface Change {
@@ -51,11 +52,11 @@ function sortObjectKeys<T extends Record<string, any>>(obj: T): T {
     .reduce((acc: any, k) => { acc[k] = obj[k]; return acc; }, {});
 }
 
-function stringifyVariant(attrs?: Record<string, string> | null): string {
+function stringifyVariant(attrs?: Record<string, any> | null, language: 'ar' | 'en' | 'he' = 'ar'): string {
   if (!attrs || Object.keys(attrs).length === 0) return "(بدون مواصفات)";
   const sorted = sortObjectKeys(attrs);
   return Object.entries(sorted)
-    .map(([k, v]) => `${k}: ${v}`)
+    .map(([k, v]) => `${toDisplayVariantText(k, language)}: ${toDisplayVariantText(v, language)}`)
     .join(', ');
 }
 
@@ -67,7 +68,7 @@ function getVariantKey(item: any): string {
   return 'base';
 }
 
-function buildVariantDiffChanges(itemsBefore?: any[], itemsAfter?: any[], products?: any[]): Change[] {
+function buildVariantDiffChanges(itemsBefore?: any[], itemsAfter?: any[], products?: any[], language: 'ar' | 'en' | 'he' = 'ar'): Change[] {
   const before = Array.isArray(itemsBefore) ? itemsBefore : [];
   const after  = Array.isArray(itemsAfter)  ? itemsAfter  : [];
 
@@ -105,9 +106,9 @@ function buildVariantDiffChanges(itemsBefore?: any[], itemsAfter?: any[], produc
         const aAttrs = normalizeVariantAttrs(a?.variant_attributes) || normalizeVariantAttrs(a?.variantAttributes);
         const bAttrs = normalizeVariantAttrs(b?.variant_attributes) || normalizeVariantAttrs(b?.variantAttributes);
         out.push({
-          label: `${pname(pid)} • Variant`,
-          oldValue: stringifyVariant(aAttrs),
-          newValue: stringifyVariant(bAttrs),
+          label: `${pname(pid)} • ${toDisplayVariantText({ ar: 'المواصفات', en: 'Variant', he: 'וריאנט' }, language)}`,
+          oldValue: stringifyVariant(aAttrs, language),
+          newValue: stringifyVariant(bAttrs, language),
         });
       }
       continue;
@@ -127,9 +128,9 @@ function buildVariantDiffChanges(itemsBefore?: any[], itemsAfter?: any[], produc
       const aAttrs = normalizeVariantAttrs(prevIt?.variant_attributes) || normalizeVariantAttrs(prevIt?.variantAttributes);
       const bAttrs = normalizeVariantAttrs(nowIt?.variant_attributes)  || normalizeVariantAttrs(nowIt?.variantAttributes);
       out.push({
-        label: `${pname(pid)} • Variant`,
-        oldValue: stringifyVariant(aAttrs),
-        newValue: stringifyVariant(bAttrs),
+        label: `${pname(pid)} • ${toDisplayVariantText({ ar: 'المواصفات', en: 'Variant', he: 'וריאנט' }, language)}`,
+        oldValue: stringifyVariant(aAttrs, language),
+        newValue: stringifyVariant(bAttrs, language),
       });
     }
   }
@@ -197,7 +198,7 @@ const ConfirmEditOrderDialog: React.FC<ConfirmEditOrderDialogProps> = ({
   products,
   discountFromOffers,
 }) => {
-  const { t, isRTL } = useLanguage();
+  const { t, isRTL, language } = useLanguage();
 
   // ===== Canonicalize free items prev/now =====
   // لو ما اجت props، طلعها من appliedOffers/prevAppliedOffers أو من itemsBefore/itemsAfter
@@ -265,7 +266,7 @@ const ConfirmEditOrderDialog: React.FC<ConfirmEditOrderDialogProps> = ({
   };
 
   // ===== Combine incoming changes with computed variant changes (avoid duplicates loosely) =====
-  const variantChanges = useMemo(() => buildVariantDiffChanges(itemsBefore, itemsAfter, products), [itemsBefore, itemsAfter, products]);
+  const variantChanges = useMemo(() => buildVariantDiffChanges(itemsBefore, itemsAfter, products, language as any), [itemsBefore, itemsAfter, products, language]);
   const allChanges = useMemo(() => {
     // naive de-dup: combine and remove exact same label+old+new
     const seen = new Set<string>();
@@ -309,12 +310,22 @@ const ConfirmEditOrderDialog: React.FC<ConfirmEditOrderDialogProps> = ({
                   const prevQty = prevMap.get(pid)?.quantity ?? 0;
                   const nowQty  = nowMap.get(pid)?.quantity ?? 0;
                   const changed = prevQty !== nowQty;
+                  // حاول إيجاد سطر العنصر من before/after لعرض خصائص الفيرينت (اختياري)
+                  const findOne = (arr?: any[]) => (Array.isArray(arr) ? arr.find((it) => String(it?.product_id) === String(pid) && ((it?.is_free) || Number(it?.price) === 0)) : null);
+                  const beforeItem = findOne(itemsBefore);
+                  const afterItem  = findOne(itemsAfter);
+                  const variantAttrs = (afterItem?.variant_attributes ?? beforeItem?.variant_attributes) || null;
                   return (
                     <tr
                       key={pid}
                       className={`bg-green-50 ${changed ? "ring-1 ring-green-300" : ""}`}
                     >
-                      <td className="p-2 border">🎁 {productName(products, pid)}</td>
+                      <td className="p-2 border">
+                        🎁 {productName(products, pid)}
+                        {variantAttrs ? (
+                          <div className="mt-1">{renderVariantInfo(variantAttrs, "text-green-700 text-[11px]")}</div>
+                        ) : null}
+                      </td>
                       <td className="p-2 border">{prevQty}</td>
                       <td className="p-2 border">
                         <span className={changed ? "font-semibold" : ""}>{nowQty}</span>

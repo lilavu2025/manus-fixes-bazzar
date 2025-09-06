@@ -54,11 +54,9 @@ export const renderVariantInfo = (
     const lang = language ?? getCurrentLanguage();
     const isRTL = typeof document !== 'undefined' && document?.dir === 'rtl';
     return (
-      <div className={`text-xs ${className || 'text-blue-600'} mt-1`} dir={isRTL ? 'rtl' : 'ltr'}>
+      <div className={`text-xs ${className || 'text-blue-600'} mt-1 flex flex-wrap items-center gap-2`} dir={isRTL ? 'rtl' : 'ltr'}>
         {Object.entries(attributes).map(([key, value]) => (
-          <span key={key} className={`${isRTL ? 'ml-2' : 'mr-2'} bg-blue-100 px-1 rounded`}>
-            {toDisplayVariantText(key, lang)}: {toDisplayVariantText(value, lang)}
-          </span>
+          <span key={key} className={`bg-blue-100 px-1 rounded`}> {toDisplayVariantText(key, lang)}: {toDisplayVariantText(value, lang)}</span>
         ))}
       </div>
     );
