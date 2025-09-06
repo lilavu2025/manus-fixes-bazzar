@@ -541,6 +541,12 @@ export async function updateOrderStatus(
       .update(updateObj)
       .eq("id", orderId);
     if (error) throw error;
+  // بث حدث كتحديث فوري للإدمن (fallback عند غياب replication) مع إعادة استخدام القناة
+  (supabase.getChannels?.().find((ch: any) => ch?.topic === 'realtime:orders-feed') || supabase.channel('orders-feed')).send({
+      type: 'broadcast',
+      event: 'order_updated',
+      payload: { id: orderId, status: newStatus }
+    }).catch(() => {});
 
     // عند الإلغاء: إرجاع المنتجات المجانية فقط مرة واحدة
     if (newStatus === "cancelled") {
@@ -682,10 +688,13 @@ export async function updateTopOrderedProducts() {
     }
 
     // إعادة تعيين غير المتميّز (احتياطي، نفس القيمة false)
-    const topProductIds = sorted.slice(0, 10).map(([id]) => id);
-    const resetNonTopResult = await supabase.from('products')
+  const topProductIds = sorted.slice(0, 10).map(([id]) => id);
+  // ملاحظة: لقيم UUID لا نضع اقتباسات داخل in(...) وإلا ستفشل بصيغة UUID
+  const resetNonTopResult = topProductIds.length > 0
+    ? await supabase.from('products')
       .update({ top_ordered: false })
-      .not('id', 'in', `(${topProductIds.map(id => `'${id}'`).join(',')})`);
+      .not('id', 'in', `(${topProductIds.join(',')})`)
+    : { error: null } as any;
 
     if (resetNonTopResult.error) {
       console.warn('⚠️ تحذير: فشل إعادة تعيين المنتجات غير المتميزة:', resetNonTopResult.error);
@@ -713,6 +722,12 @@ export async function addOrder(
       .select()
       .single();
     if (orderError) throw orderError;
+  // بث حدث إنشاء (مع إعادة استخدام القناة)
+  (supabase.getChannels?.().find((ch: any) => ch?.topic === 'realtime:orders-feed') || supabase.channel('orders-feed')).send({
+      type: 'broadcast',
+      event: 'order_created',
+      payload: { id: order?.id }
+    }).catch(() => {});
 
     // 2) إدخال العناصر
     const itemsToInsert = orderItems.map((item) => ({
@@ -780,6 +795,12 @@ export async function editOrder(
       .update(updateObj)
       .eq("id", editOrderId);
     if (error) throw error;
+  // بث حدث تحديث (مع إعادة استخدام القناة)
+  (supabase.getChannels?.().find((ch: any) => ch?.topic === 'realtime:orders-feed') || supabase.channel('orders-feed')).send({
+      type: 'broadcast',
+      event: 'order_updated',
+      payload: { id: editOrderId }
+    }).catch(() => {});
 
     // 3) قبل حذف العناصر القديمة: إرجاع مخزون الفيرنتس القديم (إن كان قد خُصِم)
     // ملاحظة: هذه العملية تعتمد على order_items.stock_deducted=true
@@ -851,6 +872,12 @@ export async function deleteOrder(orderId: string) {
     // ثم حذف الطلب نفسه
     const { error } = await supabase.from("orders").delete().eq("id", orderId);
     if (error) throw error;
+  // بث حدث حذف (مع إعادة استخدام القناة)
+  (supabase.getChannels?.().find((ch: any) => ch?.topic === 'realtime:orders-feed') || supabase.channel('orders-feed')).send({
+      type: 'broadcast',
+      event: 'order_deleted',
+      payload: { id: orderId }
+    }).catch(() => {});
 
     // تحديث عدد المبيعات بعد حذف الطلبية
     console.log("🔄 تحديث إحصائيات المبيعات بعد حذف الطلبية...");

@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/useAuth";
 import { useEnhancedToast } from "@/hooks/useEnhancedToast";
 import { getLocalizedName } from "@/utils/getLocalizedName";
 import { getDisplayPrice } from "@/utils/priceUtils";
+import { computeVariantSpecificPrice } from "@/utils/variantPrice";
 import type { Product as ProductFull } from '@/types/product';
 import QuantitySelector from "@/components/QuantitySelector";
 import useOffers from "@/hooks/useOffers";
@@ -411,11 +412,21 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
                           return total + offer.discountAmount;
                         } else {
                           // عرض عادي - نحسب نسبة المنتج من إجمالي العرض
-                          const productValue = getDisplayPrice(item.product, profile?.user_type) * item.quantity;
+                          const productForVal: any = {
+                            ...item.product,
+                            ...(item as any).variantId ? { variant_id: (item as any).variantId } : {},
+                            ...(item as any).variantAttributes ? { variant_attributes: (item as any).variantAttributes } : {},
+                          };
+                          const productValue = getDisplayPrice(productForVal as any, profile?.user_type) * item.quantity;
                           const totalOfferedProductsValue = offer.affectedProducts.reduce((sum, productId) => {
                             const cartItem = cartItems.find(ci => ci.product.id === productId);
                             if (cartItem) {
-                              return sum + (getDisplayPrice(cartItem.product, profile?.user_type) * cartItem.quantity);
+                              const cartItemForVal: any = {
+                                ...cartItem.product,
+                                ...(cartItem as any).variantId ? { variant_id: (cartItem as any).variantId } : {},
+                                ...(cartItem as any).variantAttributes ? { variant_attributes: (cartItem as any).variantAttributes } : {},
+                              };
+                              return sum + (getDisplayPrice(cartItemForVal as any, profile?.user_type) * cartItem.quantity);
                             }
                             return sum;
                           }, 0);
@@ -466,12 +477,19 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
                             
                             {/* عرض السعر مع الخصم */}
                             <ProductPriceWithOffers 
-                              product={item.product}
+                              product={{
+                                ...item.product,
+                                ...(item as any).variantId ? { variant_id: (item as any).variantId } : {},
+                                ...(item as any).variantAttributes ? { variant_attributes: (item as any).variantAttributes } : {},
+                                // قد تكون variants مضافة من CartContext إذا كان مصدرها من قاعدة البيانات
+                              } as any}
                               appliedDiscount={productDiscount}
                               quantity={item.quantity}
                               className="text-sm"
                               reverseLayout={isRTL}
                               showSavings={productDiscount > 0}
+                              variantId={(item as any).variantId}
+                              variantAttributes={(item as any).variantAttributes}
                             />
                             
                             {/* عرض العروض المطبقة على هذا المنتج */}
@@ -719,10 +737,17 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
                       key={freeItem.id}
                       className={`flex ${isRTL ? "flex-row-reverse" : "flex-row"} gap-4 p-4 bg-green-50 rounded-lg shadow-md animate-fade-in relative border-2 border-green-200`}
                     >
-                      <div 
-                        className="w-16 h-16 sm:w-20 sm:h-20 bg-center bg-contain bg-no-repeat rounded-lg flex-shrink-0 border border-green-300"
-                        style={{ backgroundImage: `url(${freeItem.product.image})` }}
-                      />
+                      {(() => {
+                        const va: any = (freeItem as any).variantAttributes || {};
+                        const variantImg: string | undefined = va?.image;
+                        const imgUrl = (variantImg && String(variantImg).trim() !== "") ? variantImg : freeItem.product.image;
+                        return (
+                          <div 
+                            className="w-16 h-16 sm:w-20 sm:h-20 bg-center bg-contain bg-no-repeat rounded-lg flex-shrink-0 border border-green-300"
+                            style={{ backgroundImage: `url(${imgUrl})` }}
+                          />
+                        );
+                      })()}
 
                       <div className={`flex-1 flex flex-col justify-between ${isRTL ? "items-end" : "items-start"}`}>
                         <div>
@@ -749,7 +774,27 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
                             {t("quantity")}: {freeItem.quantity}
                           </p>
                           <p className="text-green-600 font-bold text-sm">
-                            {t("freeItem")} ({getDisplayPrice(freeItem.product, profile?.user_type).toFixed(2)} {t("currency")} {t("value")})
+                            {(() => {
+                              const freeItemForVal: any = {
+                                ...freeItem.product,
+                                ...(freeItem as any).variantId ? { variant_id: (freeItem as any).variantId } : {},
+                                ...(freeItem as any).variantAttributes ? { variant_attributes: (freeItem as any).variantAttributes } : {},
+                              };
+                              const originalNum = computeVariantSpecificPrice(
+                                freeItemForVal as any,
+                                {
+                                  variantId: (freeItem as any).variantId,
+                                  variantAttributes: (freeItem as any).variantAttributes,
+                                } as any,
+                                profile?.user_type
+                              );
+                              const original = originalNum.toFixed(2);
+                              return (
+                                <>
+                                  {t("freeItem")} ({original} {t("currency")} {t("value")})
+                                </>
+                              );
+                            })()}
                           </p>
                         </div>
                       </div>

@@ -3,6 +3,7 @@ import type { Order } from "./order.types";
 import { getOrderDisplayTotal } from "./order.displayTotal";
 import html2pdf from "html2pdf.js";
 import { getDisplayPrice } from "@/utils/priceUtils";
+import { computeVariantSpecificPrice } from "@/utils/variantPrice";
 import { renderVariantChipsHtml } from "@/utils/variantDisplay";
 import type { OrderItem } from "./order.types";
 
@@ -45,9 +46,9 @@ export async function downloadInvoicePdf(
           "";
       }
 
-      // السعر المناسب
+      // السعر المناسب مع دعم الفيرنت
       const originalPrice = product
-        ? getDisplayPrice(
+        ? computeVariantSpecificPrice(
             {
               id: product.id || "",
               name: product.name_ar || "",
@@ -56,7 +57,7 @@ export async function downloadInvoicePdf(
               description: product.description_ar || "",
               descriptionEn: product.description_en || "",
               descriptionHe: product.description_he || "",
-              price: item.price,
+              price: product.price,
               originalPrice: product.original_price,
               wholesalePrice: product.wholesale_price,
               image: product.image || "",
@@ -72,6 +73,13 @@ export async function downloadInvoicePdf(
               stock_quantity: product.stock_quantity,
               active: product.active,
               created_at: product.created_at,
+              variants: (product as any).product_variants || (product as any).variants || [],
+              options: (product as any).product_options || (product as any).options || [],
+            },
+            {
+              variantId: (item as any).variant_id ?? (item as any).variantId ?? null,
+              variantAttributes:
+                (item as any).variant_attributes ?? (item as any).variantAttributes ?? null,
             },
             (profile as any)?.user_type
           )
@@ -92,11 +100,60 @@ export async function downloadInvoicePdf(
             hasDiscount = true;
             const totalAffectedValue = offer.affectedProducts.reduce(
               (sum: number, productId: string) => {
-                const affectedItem = order.items?.find(
+                // جمع قيمة كل العناصر المطابقة لذلك المنتج (قد تكون فيرنتات مختلفة)
+                const affectedItems = (order.items || []).filter(
                   (oi: any) => oi.product_id === productId
                 );
-                if (affectedItem) {
-                  return sum + originalPrice * affectedItem.quantity;
+                if (affectedItems.length > 0) {
+                  return (
+                    sum +
+                    affectedItems.reduce((acc: number, ai: any) => {
+                      const prod = products?.find((p) => p.id === ai.product_id);
+                      const unit = prod
+                        ? computeVariantSpecificPrice(
+                            {
+                              id: prod.id || "",
+                              name: prod.name_ar || "",
+                              nameEn: prod.name_en || "",
+                              nameHe: prod.name_he || "",
+                              description: prod.description_ar || "",
+                              descriptionEn: prod.description_en || "",
+                              descriptionHe: prod.description_he || "",
+                              price: prod.price,
+                              originalPrice: prod.original_price,
+                              wholesalePrice: prod.wholesale_price,
+                              image: prod.image || "",
+                              images: prod.images || [],
+                              category: "",
+                              inStock:
+                                typeof prod.in_stock === "boolean" ? prod.in_stock : true,
+                              rating: prod.rating || 0,
+                              reviews: 0,
+                              discount: prod.discount,
+                              featured: prod.featured,
+                              tags: prod.tags || [],
+                              stock_quantity: prod.stock_quantity,
+                              active: prod.active,
+                              created_at: prod.created_at,
+                              variants:
+                                (prod as any).product_variants || (prod as any).variants || [],
+                              options:
+                                (prod as any).product_options || (prod as any).options || [],
+                            },
+                            {
+                              variantId:
+                                (ai as any).variant_id ?? (ai as any).variantId ?? null,
+                              variantAttributes:
+                                (ai as any).variant_attributes ??
+                                (ai as any).variantAttributes ??
+                                null,
+                            },
+                            (profile as any)?.user_type
+                          )
+                        : ai.price || 0;
+                      return acc + unit * (ai.quantity || 0);
+                    }, 0)
+                  );
                 }
                 return sum;
               },
@@ -268,7 +325,7 @@ export async function downloadInvoicePdf(
 
           let originalPrice = 0;
           if (product) {
-            originalPrice = getDisplayPrice(
+            originalPrice = computeVariantSpecificPrice(
               {
                 id: product.id || "",
                 name: product.name_ar || "",
@@ -293,6 +350,16 @@ export async function downloadInvoicePdf(
                 stock_quantity: product.stock_quantity,
                 active: product.active,
                 created_at: product.created_at,
+                variants:
+                  (product as any).product_variants || (product as any).variants || [],
+                options:
+                  (product as any).product_options || (product as any).options || [],
+              },
+              {
+                variantId:
+                  (item as any).variantId ?? (item as any).variant_id ?? null,
+                variantAttributes:
+                  (item as any).variantAttributes ?? (item as any).variant_attributes ?? null,
               },
               (profile as any)?.user_type
             );

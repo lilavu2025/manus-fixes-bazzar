@@ -137,7 +137,8 @@ export class OfferService {
             let variantId: string | undefined = freeProduct.variantId;
             let variantAttributes: Record<string, string> | undefined = freeProduct.variantAttributes;
 
-            try {
+      let chosenVariantData: any | undefined;
+      try {
               const { data: variants, error } = await supabase
                 .rpc('get_product_variants' as any, { p_product_id: freeProduct.productId });
               if (!error && Array.isArray(variants) && variants.length > 0) {
@@ -147,6 +148,7 @@ export class OfferService {
                   if (match) chosen = match;
                 }
                 variantId = String(chosen.id);
+        chosenVariantData = chosen;
                 if (chosen?.option_values && typeof chosen.option_values === 'object') {
                   variantAttributes = chosen.option_values as Record<string, string>;
                 }
@@ -163,9 +165,13 @@ export class OfferService {
             };
 
             // push to freeItems list for order.free_items payload
+            const productForFreeItem: any = chosenVariantData
+              ? { ...(productData as any), variants: [chosenVariantData] }
+              : productData;
+
             freeItems.push({
               id: `free_${offer.id}_${freeProduct.productId}`,
-              product: productData,
+              product: productForFreeItem as any,
               quantity: freeProduct.quantity,
               variantId,
               variantAttributes,

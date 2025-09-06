@@ -47,6 +47,7 @@ const AdminProducts: React.FC = () => {
     error: productsError,
     setProducts,
     refetch,
+    refetchSilent,
   } = useProductsRealtime();
   // خرائط المنتجات مع دعم بيانات الفيرنتس القادمة من products_with_variants
   const products: ProductWithOptionalFields[] = Array.isArray(productsRaw)
@@ -258,7 +259,7 @@ const AdminProducts: React.FC = () => {
 
   // استدعاء refetch بعد نجاح التعديل
   const onSuccess = () => {
-    refetch();
+    refetchSilent();
   };
 
   return (
@@ -571,6 +572,8 @@ const AdminProducts: React.FC = () => {
                 variants
               });
               enhancedToast.success(t("variantsSaved"));
+              // تحديث صامت لقائمة المنتجات بدون إظهار حالة تحميل
+              await refetchSilent();
               setShowVariantsDialog(false);
               setSelectedProductForVariants(null);
             } catch (error) {
