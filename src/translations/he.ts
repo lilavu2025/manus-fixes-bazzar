@@ -1277,6 +1277,13 @@ export const heTranslations = {
   statisticsPeriod: "תקופת סטטיסטיקות",
   freeProductsDiscount: "הנחת מוצרים חינמיים",
 
+  // Incentives / Product Card texts
+  "incentive.specialAvailable": "מבצע מיוחד זמין!",
+  "incentive.got": "קיבלת",
+  "incentive.add_prefix": "הוסף",
+  "incentive.and_get": "וקבל",
+  "incentive.autoAdded": "נוסף אוטומטית לעגלה",
+
   // Product Variants
   hasVariants: "יש וריאציות",
   variants: "וריאציות",
@@ -1369,5 +1376,11 @@ export const heTranslations = {
   unknownProduct: "מוצר לא ידוע",
   manualDiscount: "הנחה ידנית",
   noPhone: "אין מספר טלפון",
+
+  closeToOffer: "אתה קרוב למבצע!",
+  addPrefix: "כדי לקבל",
+  offerApplied: "ההטבה הופעלה!",
+  "incentive.buying" : "ברכישה של",
+  "incentive.of_this_product": "מהמוצר הזה",
 
 };

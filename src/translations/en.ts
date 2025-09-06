@@ -1328,6 +1328,13 @@ export const enTranslations = {
   statisticsPeriod: "Statistics Period",
   freeProductsDiscount: "Free Products Discount",
 
+  // Incentives / Product Card texts
+  "incentive.specialAvailable": "Special offer available!",
+  "incentive.got": "You've got",
+  "incentive.add_prefix": "Add",
+  "incentive.and_get": "and get",
+  "incentive.autoAdded": "Automatically added to cart",
+
   // Product Variants
   hasVariants: "Has Variants",
   variants: "Variants",
@@ -1420,5 +1427,11 @@ export const enTranslations = {
   manualDiscount: "Manual discount",
   completeDirectPurchase: "Complete Direct Purchase",
   noPhone: "No phone number",
+
+  closeToOffer: "you are close to unlocking this offer!",
+  addPrefix: "to get",
+  offerApplied: "Offer applied!",
+  "incentive.buying" : "on purchase of",
+  "incentive.of_this_product": "of this product",
 
 };

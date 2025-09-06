@@ -1334,6 +1334,13 @@ export const arTranslations = {
 
   freeProductsDiscount: "خصم المنتجات المجانية",
 
+  // Incentives / Product Card texts
+  "incentive.specialAvailable": "!عرض خاص متاح",
+  "incentive.got": "حصلت على",
+  "incentive.add_prefix": "أضف",
+  "incentive.and_get": "واحصل على",
+  "incentive.autoAdded": "يتم إضافته تلقائياً إلى السلة",
+
   // Product Variants
   hasVariants: "يحتوي على فيرنتس",
   variants: "الفيرنتس",
@@ -1431,5 +1438,11 @@ export const arTranslations = {
   unknownProduct: "منتج غير معروف",
   manualDiscount: "خصم يدوي",
   noPhone: "لا يوجد رقم هاتف",
+
+   closeToOffer: "أنت قريب من العرض!",
+   addPrefix: "للحصول على",
+   offerApplied: "تم تطبيق العرض!",
+   "incentive.buying" : "بشراء",
+   "incentive.of_this_product": "من هذا المنتج",
 
 };
