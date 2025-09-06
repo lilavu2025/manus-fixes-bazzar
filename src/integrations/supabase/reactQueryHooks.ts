@@ -324,7 +324,10 @@ export function useUpdateOrderStatus() {
     mutationFn: ({ orderId, newStatus, userMeta }: { orderId: string; newStatus: string; userMeta?: { full_name?: string; email?: string } }) =>
       senders.updateOrderStatus(orderId, newStatus, userMeta),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['orders'] });
+  // حدّث قائمة الأدمن الرئيسية
+  queryClient.invalidateQueries({ queryKey: ['admin-orders-with-details'] });
+  // وللتوافق إن وُجدت مفاتيح قديمة
+  queryClient.invalidateQueries({ queryKey: ['orders'] });
     },
   });
 }
@@ -336,7 +339,8 @@ export function useAddOrder() {
     mutationFn: ({ orderInsertObj, orderItems }: { orderInsertObj: TablesInsert<'orders'>; orderItems: Omit<TablesInsert<'order_items'>, 'order_id'>[] }) =>
       senders.addOrder(orderInsertObj, orderItems),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['orders'] });
+  queryClient.invalidateQueries({ queryKey: ['admin-orders-with-details'] });
+  queryClient.invalidateQueries({ queryKey: ['orders'] });
     },
   });
 }
@@ -348,7 +352,8 @@ export function useEditOrder() {
     mutationFn: ({ editOrderId, updateObj, orderItems }: { editOrderId: string; updateObj: TablesUpdate<'orders'>; orderItems: Omit<TablesInsert<'order_items'>, 'order_id'>[] }) =>
       senders.editOrder(editOrderId, updateObj, orderItems),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['orders'] });
+  queryClient.invalidateQueries({ queryKey: ['admin-orders-with-details'] });
+  queryClient.invalidateQueries({ queryKey: ['orders'] });
     },
   });
 }
@@ -359,7 +364,8 @@ export function useDeleteOrder() {
   return useMutation({
     mutationFn: (orderId: string) => senders.deleteOrder(orderId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['orders'] });
+  queryClient.invalidateQueries({ queryKey: ['admin-orders-with-details'] });
+  queryClient.invalidateQueries({ queryKey: ['orders'] });
     },
   });
 }
@@ -434,7 +440,9 @@ export function useCategoriesWithAllProductsCountQuery(options?: { enabled?: boo
 import type { UseQueryOptions } from '@tanstack/react-query';
 import type { OrdersWithDetails } from './dataFetchers';
 
-export function useOrdersWithDetailsQuery(options?: UseQueryOptions<OrdersWithDetails[], Error>) {
+export function useOrdersWithDetailsQuery(
+  options?: Omit<UseQueryOptions<OrdersWithDetails[], Error>, 'queryKey' | 'queryFn'>
+) {
   return useQuery({
     queryKey: ['admin-orders-with-details'],
     queryFn: fetchers.fetchOrdersWithDetails,

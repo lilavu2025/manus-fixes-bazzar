@@ -27,9 +27,10 @@ const ProductCardIncentives = ({ productId }: ProductCardIncentivesProps) => {
   const { t, language } = useLanguage();
   const { profile } = useAuth();
   const { cartItems, addToCart } = useCart();
-  const { activeOffers } = useOffers();
+  const { activeOffers, loading: offersLoading } = useOffers();
   
   const [availableOffers, setAvailableOffers] = useState<IncentiveOffer[]>([]);
+  const [computing, setComputing] = useState<boolean>(false);
   const [productsCache, setProductsCache] = useState<Map<string, Product>>(new Map());
 
   // تحسين الأداء: تخزين المنتجات مؤقتاً
@@ -78,74 +79,118 @@ const ProductCardIncentives = ({ productId }: ProductCardIncentivesProps) => {
     return null;
   };
 
+  // جلب عدة منتجات مع احترام الكاش
+  const getProductsFromCache = async (productIds: string[]): Promise<Map<string, Product>> => {
+    const result = new Map<string, Product>();
+    const missing: string[] = [];
+
+    for (const id of productIds) {
+      const cached = productsCache.get(id);
+      if (cached) result.set(id, cached);
+      else missing.push(id);
+    }
+
+    if (missing.length) {
+      try {
+        const { data: productsData } = await supabase
+          .from('products')
+          .select('*')
+          .in('id', missing);
+
+        const newCache = new Map(productsCache);
+        (productsData || []).forEach((p: any) => {
+          const product: Product = {
+            id: p.id,
+            name: p.name_ar || p.name_en || '',
+            nameEn: p.name_en || '',
+            nameHe: p.name_he || '',
+            description: p.description_ar || p.description_en || '',
+            descriptionEn: p.description_en || '',
+            descriptionHe: p.description_he || '',
+            price: p.price || 0,
+            wholesalePrice: p.wholesale_price || 0,
+            originalPrice: p.price || 0,
+            image: p.image || '',
+            inStock: p.in_stock || false,
+            category: p.category_id || '',
+            featured: p.featured || false,
+            active: p.active || false,
+            discount: p.discount || 0,
+            rating: p.rating || 0,
+            reviews: 0,
+            stock_quantity: p.stock_quantity || 0
+          };
+          newCache.set(p.id, product);
+          if (productIds.includes(p.id)) result.set(p.id, product);
+        });
+        setProductsCache(newCache);
+      } catch (error) {
+        console.error('Error batch fetching products:', error);
+      }
+    }
+
+    return result;
+  };
+
   // العثور على التحفيزات المرتبطة بالمنتج الحالي
   useEffect(() => {
     const findProductIncentives = async () => {
       try {
+        setComputing(true);
         const incentives: IncentiveOffer[] = [];
 
-        for (const offer of activeOffers) {
-          if (offer.offer_type === 'buy_get') {
-            // استخدام الكاش لتحسين الأداء
-            const getProduct = await getProductFromCache(offer.get_product_id);
-            const linkedProduct = await getProductFromCache(offer.linked_product_id);
+        // رشح العروض ذات الصلة بهذا المنتج فقط
+        const relevantOffers = activeOffers.filter(offer => (
+          offer.offer_type === 'buy_get' && (offer.get_product_id === productId || offer.linked_product_id === productId)
+        ));
 
-            if (!getProduct || !linkedProduct) continue;
+        // نحتاج بيانات المنتجات المستهدفة فقط (get_product_id)
+        const targetIds = Array.from(new Set(relevantOffers.map(o => o.get_product_id)));
+        const productsMap = await getProductsFromCache(targetIds);
 
-            // التحقق إذا كان المنتج الحالي هو المنتج المستهدف
-            if (offer.get_product_id === productId) {
-              // التحقق من وجود المنتج المؤهل في السلة
-              const qualifyingItem = cartItems.find(item => item.product.id === offer.linked_product_id);
-              if (qualifyingItem && qualifyingItem.quantity >= offer.buy_quantity) {
-                // التحقق من عدم وجود المنتج المستهدف في السلة
-                const targetInCart = cartItems.find(item => item.product.id === productId);
-                if (!targetInCart) {
-                  incentives.push({
-                    type: 'add_target_product',
-                    offer,
-                    targetProduct: getProduct
-                  });
-                }
+        for (const offer of relevantOffers) {
+          const getProduct = productsMap.get(offer.get_product_id);
+          if (!getProduct) continue;
+
+          // إذا كان المنتج الحالي هو المنتج المستهدف
+          if (offer.get_product_id === productId) {
+            const qualifyingItem = cartItems.find(item => item.product.id === offer.linked_product_id);
+            if (qualifyingItem && qualifyingItem.quantity >= offer.buy_quantity) {
+              const targetInCart = cartItems.find(item => item.product.id === productId);
+              if (!targetInCart) {
+                incentives.push({ type: 'add_target_product', offer, targetProduct: getProduct });
               }
             }
+          }
 
-            // التحقق إذا كان المنتج الحالي هو المنتج المؤهل
-            if (offer.linked_product_id === productId) {
-              const cartItem = cartItems.find(item => item.product.id === productId);
-              const currentQuantity = cartItem?.quantity || 0;
-              const requiredQuantity = offer.buy_quantity;
-              
-              if (currentQuantity < requiredQuantity) {
-                const missingQuantity = requiredQuantity - currentQuantity;
-                
+          // إذا كان المنتج الحالي هو المنتج المؤهل
+          if (offer.linked_product_id === productId) {
+            const cartItem = cartItems.find(item => item.product.id === productId);
+            const currentQuantity = cartItem?.quantity || 0;
+            const requiredQuantity = offer.buy_quantity;
+
+            if (currentQuantity < requiredQuantity) {
+              const missingQuantity = requiredQuantity - currentQuantity;
+              incentives.push({
+                type: 'increase_quantity',
+                offer,
+                targetProduct: getProduct,
+                qualifyingQuantity: currentQuantity,
+                requiredQuantity,
+                missingQuantity
+              });
+            } else if (currentQuantity >= requiredQuantity) {
+              const targetInCart = cartItems.find(item => item.product.id === offer.get_product_id);
+              if (!targetInCart) {
+                incentives.push({ type: 'add_target_product', offer, targetProduct: getProduct });
+              } else {
                 incentives.push({
-                  type: 'increase_quantity',
+                  type: 'offer_applied',
                   offer,
                   targetProduct: getProduct,
                   qualifyingQuantity: currentQuantity,
-                  requiredQuantity,
-                  missingQuantity
+                  requiredQuantity
                 });
-              } else if (currentQuantity >= requiredQuantity) {
-                // تحقق الشرط - التحقق من وجود المنتج المستهدف في السلة
-                const targetInCart = cartItems.find(item => item.product.id === offer.get_product_id);
-                if (!targetInCart) {
-                  // إظهار عرض إضافة المنتج المستهدف
-                  incentives.push({
-                    type: 'add_target_product',
-                    offer,
-                    targetProduct: getProduct
-                  });
-                } else {
-                  // العرض مطبق - إظهار العرض المحقق
-                  incentives.push({
-                    type: 'offer_applied',
-                    offer,
-                    targetProduct: getProduct,
-                    qualifyingQuantity: currentQuantity,
-                    requiredQuantity
-                  });
-                }
               }
             }
           }
@@ -155,11 +200,16 @@ const ProductCardIncentives = ({ productId }: ProductCardIncentivesProps) => {
       } catch (error) {
         console.error('Error finding product incentives:', error);
         setAvailableOffers([]);
+      } finally {
+        setComputing(false);
       }
     };
 
     if (productId && cartItems && activeOffers.length > 0) {
       findProductIncentives();
+    } else {
+      // إذا لا توجد عروض نشطة أو لم تجهز المدخلات، لا ننتظر بدون داعٍ
+      setComputing(false);
     }
   }, [productId, cartItems, activeOffers]);
 
@@ -191,6 +241,22 @@ const ProductCardIncentives = ({ productId }: ProductCardIncentivesProps) => {
       console.error('خطأ في زيادة الكمية:', error);
     }
   };
+
+  // إظهار هيكل مؤقت فوراً أثناء تحميل العروض/الحساب
+  if (offersLoading || computing) {
+    return (
+      <div className="p-2 rounded-lg border animate-pulse bg-gray-50 border-gray-200">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-gray-200 rounded-md" />
+          <div className="flex-1 min-w-0 space-y-2">
+            <div className="h-3 bg-gray-200 rounded w-3/4" />
+            <div className="h-3 bg-gray-200 rounded w-1/2" />
+          </div>
+          <div className="h-6 w-12 bg-gray-200 rounded" />
+        </div>
+      </div>
+    );
+  }
 
   if (!availableOffers.length) return null;
 

@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -51,6 +51,34 @@ const ProductVariantsManager: React.FC<ProductVariantsManagerProps> = ({
   
   const [options, setOptions] = useState<ProductOption[]>(initialOptions);
   const [variants, setVariants] = useState<ProductVariant[]>(initialVariants);
+  // Track if user has modified local state to avoid overwriting with late incoming props
+  const [dirty, setDirty] = useState(false);
+  // Ensure local state hydrates from props on first open and when product changes
+  const prevProductIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!open) return;
+    const productChanged = prevProductIdRef.current !== productId;
+    if (productChanged) {
+      // New product: reset local state and dirty flag
+      setDirty(false);
+      setOptions(initialOptions || []);
+      setVariants(initialVariants || []);
+      prevProductIdRef.current = productId;
+      return;
+    }
+    // Keep syncing incoming data into local state until the user makes edits
+    if (!dirty) {
+      setOptions(initialOptions || []);
+      setVariants(initialVariants || []);
+    }
+  }, [open, productId, initialOptions, initialVariants, dirty]);
+
+  // When dialog closes, clear dirty so next open re-syncs cleanly
+  useEffect(() => {
+    if (!open) {
+      setDirty(false);
+    }
+  }, [open]);
   // دعم إدخال متعدد اللغات لاسم الخيار والقيم (نخزن كسلاسل JSON في قاعدة البيانات)
   const [newOptionName, setNewOptionName] = useState<{ ar?: string; en?: string; he?: string }>({ ar: '', en: '', he: '' });
   const [newOptionValues, setNewOptionValues] = useState<Array<{ ar?: string; en?: string; he?: string }>>([{ ar: '', en: '', he: '' }]);
@@ -175,7 +203,8 @@ const ProductVariantsManager: React.FC<ProductVariantsManagerProps> = ({
         }
         return opt;
       });
-      setOptions(updatedOptions);
+  setOptions(updatedOptions);
+  setDirty(true);
       toast.success(t('valuesAddedToExistingOption') || 'تم إضافة القيم للخيار الموجود');
     } else if (editingOption) {
       // تحديث خيار موجود
@@ -184,7 +213,8 @@ const ProductVariantsManager: React.FC<ProductVariantsManagerProps> = ({
           ? { ...opt, name: JSON.stringify({ ar: (newOptionName.ar||'').trim(), en: (newOptionName.en||'').trim(), he: (newOptionName.he||'').trim() }), option_values: values }
           : opt
       );
-      setOptions(updatedOptions);
+  setOptions(updatedOptions);
+  setDirty(true);
       toast.success(t('optionUpdated') || 'تم تحديث الخيار');
     } else {
       // إضافة خيار جديد
@@ -196,7 +226,11 @@ const ProductVariantsManager: React.FC<ProductVariantsManagerProps> = ({
         option_position: options.length,
         created_at: new Date().toISOString()
       };
-      setOptions(prev => [...prev, newOption]);
+      setOptions(prev => {
+        const next = [...prev, newOption];
+        return next;
+      });
+      setDirty(true);
       toast.success(t('optionAdded') || 'تم إضافة الخيار');
     }
 
@@ -262,7 +296,8 @@ const ProductVariantsManager: React.FC<ProductVariantsManagerProps> = ({
       return variant;
     });
 
-    setVariants(updatedVariants);
+  setVariants(updatedVariants);
+  setDirty(true);
     setBulkEditMode(false);
     setSelectedVariants(new Set());
     setBulkEditData({
@@ -277,14 +312,15 @@ const ProductVariantsManager: React.FC<ProductVariantsManagerProps> = ({
 
   // حذف خيار
   const deleteOption = useCallback((optionId: string) => {
-    setOptions(prev => prev.filter(opt => opt.id !== optionId));
+  setOptions(prev => prev.filter(opt => opt.id !== optionId));
     // حذف الفيرنتس المرتبطة بهذا الخيار
-    setVariants(prev => prev.filter(variant => 
+  setVariants(prev => prev.filter(variant => 
       !Object.keys(variant.option_values).some(key => {
         const option = options.find(opt => opt.name === key);
         return option?.id === optionId;
       })
     ));
+  setDirty(true);
     toast.success(t('optionDeleted') || 'تم حذف الخيار');
   }, [options, t]);
 
@@ -326,30 +362,34 @@ const ProductVariantsManager: React.FC<ProductVariantsManagerProps> = ({
       created_at: new Date().toISOString()
     }));
 
-    setVariants(newVariants);
+  setVariants(newVariants);
+  setDirty(true);
     setGeneratingVariants(false);
     toast.success(t('variantsGenerated') || 'تم توليد الفيرنتس');
   }, [options, productId, t]);
 
   // إعادة توليد أكواد SKU للفيرنتس الحالية بناءً على القيم متعددة اللغات (لتنظيف أي JSON قد يظهر داخل SKU)
   const regenerateSkus = useCallback(() => {
-    setVariants(prev => prev.map(v => ({
+  setVariants(prev => prev.map(v => ({
       ...v,
       sku: skuFromCombo(v.option_values || {} as Record<string, string>)
     })));
+  setDirty(true);
     toast.success(t('skusRegenerated') || 'تم إعادة توليد أكواد SKU');
   }, [t]);
 
   // تحديث فيرنت
   const updateVariant = useCallback((variantId: string, updates: Partial<ProductVariant>) => {
-    setVariants(prev => prev.map(variant => 
+  setVariants(prev => prev.map(variant => 
       variant.id === variantId ? { ...variant, ...updates } : variant
     ));
+  setDirty(true);
   }, []);
 
   // حذف فيرنت
   const deleteVariant = useCallback((variantId: string) => {
-    setVariants(prev => prev.filter(variant => variant.id !== variantId));
+  setVariants(prev => prev.filter(variant => variant.id !== variantId));
+  setDirty(true);
     toast.success(t('variantDeleted') || 'تم حذف الفيرنت');
   }, [t]);
 
