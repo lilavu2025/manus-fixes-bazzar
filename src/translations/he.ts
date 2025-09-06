@@ -1360,4 +1360,14 @@ export const heTranslations = {
   youSaved: "אתה חוסך",
   buyVariantScope: "קנה טווח וריאנט",
 
+  // מפתחות חסרים לכיסוי מלא
+  phoneMustBe10Digits: "מספר הטלפון חייב להיות 10 ספרות",
+  phoneMustStartWith05: "מספר הטלפון חייב להתחיל ב-05",
+  phoneOnlyNumbers: "מספר הטלפון חייב להכיל ספרות בלבד",
+  searchInput: "שדה חיפוש",
+  viewYourOrders: "צפה בהזמנות שלך",
+  unknownProduct: "מוצר לא ידוע",
+  manualDiscount: "הנחה ידנית",
+  noPhone: "אין מספר טלפון",
+
 };

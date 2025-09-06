@@ -1409,6 +1409,16 @@ export const enTranslations = {
   specificVariants: "Specific Variants",
   allVariants: "All Variants",
   youSaved: "You saved",
-  
+
+  // Added missing keys for full translation coverage
+  phoneMustBe10Digits: "Phone number must be 10 digits",
+  phoneMustStartWith05: "Phone number must start with 05",
+  phoneOnlyNumbers: "Phone number must contain digits only",
+  searchInput: "Search input",
+  viewYourOrders: "View your orders",
+  unknownProduct: "Unknown product",
+  manualDiscount: "Manual discount",
+  completeDirectPurchase: "Complete Direct Purchase",
+  noPhone: "No phone number",
 
 };

@@ -1420,6 +1420,16 @@ export const arTranslations = {
   specificVariants: "فيرنتس محددة",
   allVariants: "جميع الفيرنتس",
   youSaved: "لقد وفرت",
-  buyVariantScope: "تطبيق شرط الشراء على"
+  buyVariantScope: "تطبيق شرط الشراء على",
+
+  // مفاتيح مفقودة لإكمال الترجمة
+  phoneMustBe10Digits: "رقم الهاتف يجب أن يكون 10 أرقام",
+  phoneMustStartWith05: "رقم الهاتف يجب أن يبدأ بـ 05",
+  phoneOnlyNumbers: "رقم الهاتف يجب أن يحتوي على أرقام فقط",
+  searchInput: "حقل البحث",
+  viewYourOrders: "عرض طلباتك",
+  unknownProduct: "منتج غير معروف",
+  manualDiscount: "خصم يدوي",
+  noPhone: "لا يوجد رقم هاتف",
 
 };
