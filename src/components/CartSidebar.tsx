@@ -411,11 +411,21 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
                           return total + offer.discountAmount;
                         } else {
                           // عرض عادي - نحسب نسبة المنتج من إجمالي العرض
-                          const productValue = getDisplayPrice(item.product, profile?.user_type) * item.quantity;
+                          const productForVal: any = {
+                            ...item.product,
+                            ...(item as any).variantId ? { variant_id: (item as any).variantId } : {},
+                            ...(item as any).variantAttributes ? { variant_attributes: (item as any).variantAttributes } : {},
+                          };
+                          const productValue = getDisplayPrice(productForVal as any, profile?.user_type) * item.quantity;
                           const totalOfferedProductsValue = offer.affectedProducts.reduce((sum, productId) => {
                             const cartItem = cartItems.find(ci => ci.product.id === productId);
                             if (cartItem) {
-                              return sum + (getDisplayPrice(cartItem.product, profile?.user_type) * cartItem.quantity);
+                              const cartItemForVal: any = {
+                                ...cartItem.product,
+                                ...(cartItem as any).variantId ? { variant_id: (cartItem as any).variantId } : {},
+                                ...(cartItem as any).variantAttributes ? { variant_attributes: (cartItem as any).variantAttributes } : {},
+                              };
+                              return sum + (getDisplayPrice(cartItemForVal as any, profile?.user_type) * cartItem.quantity);
                             }
                             return sum;
                           }, 0);
@@ -466,12 +476,19 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
                             
                             {/* عرض السعر مع الخصم */}
                             <ProductPriceWithOffers 
-                              product={item.product}
+                              product={{
+                                ...item.product,
+                                ...(item as any).variantId ? { variant_id: (item as any).variantId } : {},
+                                ...(item as any).variantAttributes ? { variant_attributes: (item as any).variantAttributes } : {},
+                                // قد تكون variants مضافة من CartContext إذا كان مصدرها من قاعدة البيانات
+                              } as any}
                               appliedDiscount={productDiscount}
                               quantity={item.quantity}
                               className="text-sm"
                               reverseLayout={isRTL}
                               showSavings={productDiscount > 0}
+                              variantId={(item as any).variantId}
+                              variantAttributes={(item as any).variantAttributes}
                             />
                             
                             {/* عرض العروض المطبقة على هذا المنتج */}

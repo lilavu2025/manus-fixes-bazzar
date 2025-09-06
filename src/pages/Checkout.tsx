@@ -20,6 +20,7 @@ import { ShoppingCart, CreditCard, Banknote, ArrowLeft } from "lucide-react";
 import { Product } from "@/types";
 import { compressText, decompressText } from "@/utils/commonUtils";
 import { getDisplayPrice } from "@/utils/priceUtils";
+import { computeVariantSpecificPrice } from "@/utils/variantPrice";
 import AddressSelector, { Address as UserAddress } from "@/components/addresses/AddressSelector";
 import { saveAddressIfNotExists } from "@/components/addresses/saveAddressIfNotExists";
 import { OfferService } from "@/services/offerService";
@@ -34,6 +35,8 @@ interface DirectBuyState {
   product?: Product;
   quantity?: number;
   skipCart?: boolean; // إضافة خاصية skipCart
+  variantId?: string;
+  variantAttributes?: any;
 }
 
 const Checkout: React.FC = () => {
@@ -121,14 +124,19 @@ const Checkout: React.FC = () => {
           id: `cart_${item.product.id}${(item as any).variantId ? '_' + (item as any).variantId : ''}`,
           product: item.product,
           quantity: item.quantity,
-          variantId: (item as any).variantId
+          variantId: (item as any).variantId,
+          variantAttributes: (item as any).variantAttributes,
         }));
 
         const originalTotalCalc = cartItemsForOffers.reduce(
-          (sum: number, item) => sum + (getDisplayPrice(
-            normalizeProductForDisplay(item.product),
-            profile?.user_type
-          ) * item.quantity), 0
+          (sum: number, item) => {
+            const unit = computeVariantSpecificPrice(
+              normalizeProductForDisplay(item.product) as any,
+              { variantId: (item as any).variantId ?? null, variantAttributes: (item as any).variantAttributes ?? null },
+              profile?.user_type,
+            );
+            return sum + (unit * item.quantity);
+          }, 0
         );
         setOriginalTotal(originalTotalCalc);
 
@@ -150,8 +158,9 @@ const Checkout: React.FC = () => {
   // حساب السعر الإجمالي
   const calculateTotal = () => {
     const baseTotal = (isDirectBuy && directProduct) || skipCart
-      ? getDisplayPrice(
-          normalizeProductForDisplay(directProduct),
+      ? computeVariantSpecificPrice(
+          normalizeProductForDisplay(directProduct as Product) as any,
+          { variantId: (directBuyState as any)?.variantId ?? null, variantAttributes: (directBuyState as any)?.variantAttributes ?? null },
           profile?.user_type,
         ) * directQuantity
       : getTotalPrice();
@@ -256,7 +265,11 @@ const Checkout: React.FC = () => {
         order_id: order.id,
         product_id: item.product.id,
         quantity: item.quantity,
-        price: getDisplayPrice(item.product, profile?.user_type),
+        price: computeVariantSpecificPrice(
+          normalizeProductForDisplay(item.product) as any,
+          { variantId: (item as any).variantId ?? null, variantAttributes: (item as any).variantAttributes ?? null },
+          profile?.user_type,
+        ),
         // حفظ تفاصيل الفيرنت في عناصر الطلب إن وجدت
         variant_id: (item as any).variantId ?? null,
         variant_attributes: (item as any).variantAttributes ?? null,
@@ -669,6 +682,17 @@ const Checkout: React.FC = () => {
                     stock_quantity: item.product.stock_quantity,
                     active: item.product.active,
                     created_at: item.product.created_at,
+                    // مرر بيانات الفيرنتس/الخيارات إن وجدت لضمان تسعير صحيح
+                    variants: Array.isArray((item.product as any)?.variants)
+                      ? (item.product as any).variants
+                      : (Array.isArray((item.product as any)?.product_variants)
+                        ? (item.product as any).product_variants
+                        : []),
+                    options: Array.isArray((item.product as any)?.options)
+                      ? (item.product as any).options
+                      : (Array.isArray((item.product as any)?.product_options)
+                        ? (item.product as any).product_options
+                        : []),
                   };
                   return (
                     <div
@@ -693,6 +717,8 @@ const Checkout: React.FC = () => {
                           <div >
                             <ProductPriceWithOffers 
                               product={productForPrice}
+                              variantId={(item as any).variantId}
+                              variantAttributes={(item as any).variantAttributes}
                               quantity={item.quantity}
                               appliedDiscount={
                                 appliedOffers
@@ -719,17 +745,21 @@ const Checkout: React.FC = () => {
                                       return total + offer.discountAmount;
                                     } else {
                                       // عرض عادي - نحسب نسبة المنتج من إجمالي العرض
-                                      const productValue = getDisplayPrice(productForPrice, profile?.user_type) * item.quantity;
+                                      const productValue = computeVariantSpecificPrice(
+                                        productForPrice as any,
+                                        { variantId: (item as any).variantId ?? null, variantAttributes: (item as any).variantAttributes ?? null },
+                                        profile?.user_type,
+                                      ) * item.quantity;
                                       const totalOfferedProductsValue = offer.affectedProducts.reduce((sum, productId) => {
                                         const checkoutItem = itemsToCheckout.find(ci => ci.product.id === productId);
                                         if (checkoutItem) {
-                                          const itemProductForPrice = {
-                                            ...checkoutItem.product,
-                                            price: checkoutItem.product.price,
-                                            originalPrice: checkoutItem.product.originalPrice,
-                                            wholesalePrice: checkoutItem.product.wholesalePrice,
-                                          };
-                                          return sum + (getDisplayPrice(itemProductForPrice, profile?.user_type) * checkoutItem.quantity);
+                                          const itemProductForPrice = normalizeProductForDisplay(checkoutItem.product) as any;
+                                          const unit = computeVariantSpecificPrice(
+                                            itemProductForPrice,
+                                            { variantId: (checkoutItem as any).variantId ?? null, variantAttributes: (checkoutItem as any).variantAttributes ?? null },
+                                            profile?.user_type,
+                                          );
+                                          return sum + (unit * checkoutItem.quantity);
                                         }
                                         return sum;
                                       }, 0);
@@ -920,6 +950,17 @@ function normalizeProductForDisplay(
 ): import("@/types/product").Product {
   return {
     ...product,
+    // مرر بيانات الفيرنتس/الخيارات عبر الحقول القياسية
+    variants: Array.isArray((product as any)?.variants)
+      ? (product as any).variants
+      : (Array.isArray((product as any)?.product_variants)
+        ? (product as any).product_variants
+        : []),
+    options: Array.isArray((product as any)?.options)
+      ? (product as any).options
+      : (Array.isArray((product as any)?.product_options)
+        ? (product as any).product_options
+        : []),
     nameHe: (product as { nameHe?: string }).nameHe ?? "",
     descriptionHe: (product as { descriptionHe?: string }).descriptionHe ?? "",
     // fallback for any other required fields if needed

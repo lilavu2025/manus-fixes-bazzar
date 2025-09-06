@@ -2,6 +2,7 @@ import React from "react";
 import { useLanguage } from "@/utils/languageContextUtils";
 import { useAuth } from "@/contexts/useAuth";
 import { getDisplayPrice } from "@/utils/priceUtils";
+import { computeVariantSpecificPrice } from "@/utils/variantPrice";
 import type { Product } from "@/types/product";
 
 interface ProductPriceWithOffersProps {
@@ -12,6 +13,9 @@ interface ProductPriceWithOffersProps {
   quantity?: number;
   reverseLayout?: boolean;
   showSavings?: boolean; // للتحكم في عرض التوفير
+  // اختياري: تمرير معلومات الفيرنت بشكل صريح عند الحاجة
+  variantId?: string | null;
+  variantAttributes?: Record<string, any> | null;
 }
 
 const ProductPriceWithOffers: React.FC<ProductPriceWithOffersProps> = ({
@@ -21,12 +25,39 @@ const ProductPriceWithOffers: React.FC<ProductPriceWithOffersProps> = ({
   showOriginalPrice = true,
   quantity = 1,
   reverseLayout = false,
-  showSavings = false
+  showSavings = false,
+  variantId,
+  variantAttributes,
 }) => {
   const { t, isRTL, language } = useLanguage();
   const { profile } = useAuth();
 
-  const unitPrice = getDisplayPrice(product, profile?.user_type);
+  // تأكد من توفر مصفوفات variants/options حتى لو أتت بأسماء product_variants/product_options
+  const normalizedProduct = React.useMemo(() => {
+    const p: any = product as any;
+    return {
+      ...p,
+      variants: Array.isArray(p?.variants) ? p.variants : (Array.isArray(p?.product_variants) ? p.product_variants : []),
+      options: Array.isArray(p?.options) ? p.options : (Array.isArray(p?.product_options) ? p.product_options : []),
+    } as any;
+  }, [product]);
+
+  // حاول حساب السعر المعتمد على الفيرنت إن توفرت بيانات الفيرنت ضمن المنتج
+  const unitPrice = (() => {
+    // دعم تمثيلات مختلفة لبيانات الفيرنت: كخصائص أعلى المنتج أو عبر props
+    const variantInfo = {
+      variantId: variantId ?? (product as any)?.variant_id ?? undefined,
+      variantAttributes: variantAttributes ?? (product as any)?.variant_attributes ?? undefined,
+    } as any;
+
+    // إذا كان هناك variants على المنتج أو توفرت معلومات الفيرنت، استخدم الحاسبة الموحدة
+    if ((Array.isArray((normalizedProduct as any)?.variants) && (normalizedProduct as any).variants.length > 0) ||
+        (variantInfo.variantId || variantInfo.variantAttributes)) {
+      return computeVariantSpecificPrice(normalizedProduct as any, variantInfo, profile?.user_type);
+    }
+    // خلاف ذلك استخدم سعر العرض العام حسب نوع المستخدم
+    return getDisplayPrice(normalizedProduct as any, profile?.user_type);
+  })();
   const totalOriginalPrice = unitPrice * quantity;
   const discountedPrice = Math.max(0, totalOriginalPrice - appliedDiscount);
   const hasDiscount = appliedDiscount > 0;

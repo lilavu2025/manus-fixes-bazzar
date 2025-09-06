@@ -10,6 +10,7 @@ import type {
   CartAction,
 } from "./CartContext.types";
 import { getDisplayPrice } from "@/utils/priceUtils";
+import { computeVariantSpecificPrice } from "@/utils/variantPrice";
 import type { Product as ProductFull } from "@/types/product";
 import { setCookie, getCookie, deleteCookie } from "@/utils/commonUtils";
 import {
@@ -216,7 +217,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
     if (isLoggedIn && dbCartData && !hasLoadedFromDB) {
       console.log("Loading cart from database...");
       // تحويل البيانات من قاعدة البيانات إلى تنسيق CartItem
-      const cartItems: CartItem[] = dbCartData.map((dbItem: any) => ({
+    const cartItems: CartItem[] = dbCartData.map((dbItem: any) => ({
         id: dbItem.variant_id ? `${dbItem.product_id}_${dbItem.variant_id}` : dbItem.product_id,
         product: {
           id: dbItem.product.id,
@@ -241,6 +242,9 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
           stock_quantity: dbItem.product.stock_quantity,
           active: dbItem.product.active,
           created_at: dbItem.product.created_at,
+      // تمرير خيارات وفيرنتس المنتج إن كانت متاحة من الجلب
+      options: dbItem.product.product_options || dbItem.product.options || [],
+      variants: dbItem.product.product_variants || dbItem.product.variants || [],
         },
         quantity: dbItem.quantity,
         variantId: dbItem.variant_id,
@@ -257,7 +261,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
   useEffect(() => {
     if (isLoggedIn && dbCartData && hasLoadedFromDB) {
       console.log("Reloading cart from database due to data change...");
-      const cartItems: CartItem[] = dbCartData.map((dbItem: any) => ({
+    const cartItems: CartItem[] = dbCartData.map((dbItem: any) => ({
         id: dbItem.variant_id ? `${dbItem.product_id}_${dbItem.variant_id}` : dbItem.product_id,
         product: {
           id: dbItem.product.id,
@@ -282,6 +286,8 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
           stock_quantity: dbItem.product.stock_quantity,
           active: dbItem.product.active,
           created_at: dbItem.product.created_at,
+      options: dbItem.product.product_options || dbItem.product.options || [],
+      variants: dbItem.product.product_variants || dbItem.product.variants || [],
         },
         quantity: dbItem.quantity,
         variantId: dbItem.variant_id,
@@ -595,11 +601,16 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({
 
   // Helper: حساب المجموع الكلي للسلة حسب نوع المستخدم
   const getTotalPrice = () => {
-    return (state.items as unknown as CartItemFull[]).reduce(
-      (sum, item) =>
-        sum + getDisplayPrice(item.product, profile?.user_type) * item.quantity,
-      0,
-    );
+    return (state.items as unknown as (CartItemFull & { variantId?: string; variantAttributes?: Record<string, any> })[])
+      .reduce((sum, item) => {
+        const productAny: any = item.product as any;
+        const hasVariants = Array.isArray(productAny?.variants) && productAny.variants.length > 0;
+        const variantInfo = { variantId: (item as any).variantId, variantAttributes: (item as any).variantAttributes };
+        const unit = (hasVariants || variantInfo.variantId || variantInfo.variantAttributes)
+          ? computeVariantSpecificPrice(productAny, variantInfo, profile?.user_type)
+          : getDisplayPrice(item.product, profile?.user_type);
+        return sum + unit * item.quantity;
+      }, 0);
   };
 
   // Aliases for compatibility with old code
