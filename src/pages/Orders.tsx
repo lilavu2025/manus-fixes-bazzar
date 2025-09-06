@@ -44,6 +44,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { getDisplayPrice } from "@/utils/priceUtils";
+import { computeVariantSpecificPrice } from "@/utils/variantPrice";
 import { mapOrderFromDb } from "../utils/orderUtils";
 import type { OrdersWithDetails } from "@/integrations/supabase/dataFetchers";
 import { decompressText } from "@/utils/commonUtils";
@@ -573,12 +574,18 @@ const Orders: React.FC = () => {
                                   {(() => {
                                     const savedPrice = Number(item.price) || 0;
                                     
-                                    // الحصول على السعر الحقيقي للمنتج من قاعدة البيانات
+                                    // الحصول على السعر الحقيقي (variant-aware) حسب نوع العميل
                                     const product = products.find((p) => p.id === item.product_id);
                                     let actualProductPrice = 0;
                                     if (product) {
-                                      // مراعاة نوع العميل (retail/wholesale) باستخدام getDisplayPrice
-                                      actualProductPrice = getDisplayPrice(product as any, profile?.user_type);
+                                      actualProductPrice = computeVariantSpecificPrice(
+                                        product as any,
+                                        {
+                                          variantId: (item as any).variant_id ?? (item as any).variantId,
+                                          variantAttributes: (item as any).variant_attributes ?? (item as any).variantAttributes,
+                                        },
+                                        profile?.user_type,
+                                      );
                                     }
                                     
                                     // إذا كان السعر المحفوظ أقل من السعر الفعلي، يعني هناك خصم
@@ -658,12 +665,18 @@ const Orders: React.FC = () => {
                                     const savedPrice = Number(item.price) || 0;
                                     const quantity = item.quantity || 0;
                                     
-                                    // الحصول على السعر الحقيقي للمنتج من قاعدة البيانات
+                                    // الحصول على السعر الحقيقي (variant-aware) حسب نوع العميل
                                     const product = products.find((p) => p.id === item.product_id);
                                     let actualProductPrice = 0;
                                     if (product) {
-                                      // مراعاة نوع العميل (retail/wholesale) باستخدام getDisplayPrice
-                                      actualProductPrice = getDisplayPrice(product as any, profile?.user_type);
+                                      actualProductPrice = computeVariantSpecificPrice(
+                                        product as any,
+                                        {
+                                          variantId: (item as any).variant_id ?? (item as any).variantId,
+                                          variantAttributes: (item as any).variant_attributes ?? (item as any).variantAttributes,
+                                        },
+                                        profile?.user_type,
+                                      );
                                     }
                                     
                                     // إذا كان السعر المحفوظ أقل من السعر الفعلي، يعني هناك خصم
@@ -829,33 +842,14 @@ const Orders: React.FC = () => {
                               
                               const quantity = item.quantity || 1;
                               
-                              // الحصول على السعر الأصلي
+                              // الحصول على السعر الأصلي مع مراعاة الفيرنتس ونوع العميل
                               let originalPrice = 0;
                               if (product) {
-                                originalPrice = getDisplayPrice(
+                                originalPrice = computeVariantSpecificPrice(
+                                  product as any,
                                   {
-                                    id: product.id || "",
-                                    name: product.name_ar || "",
-                                    nameEn: product.name_en || "",
-                                    nameHe: product.name_he || "",
-                                    description: product.description_ar || "",
-                                    descriptionEn: product.description_en || "",
-                                    descriptionHe: product.description_he || "",
-                                    price: product.price || 0,
-                                    originalPrice: product.original_price,
-                                    wholesalePrice: product.wholesale_price,
-                                    image: product.image || "",
-                                    images: product.images || [],
-                                    category: "",
-                                    inStock: typeof product.in_stock === "boolean" ? product.in_stock : true,
-                                    rating: product.rating || 0,
-                                    reviews: 0,
-                                    discount: product.discount,
-                                    featured: product.featured,
-                                    tags: product.tags || [],
-                                    stock_quantity: product.stock_quantity,
-                                    active: product.active,
-                                    created_at: product.created_at,
+                                    variantId: (item as any).variant_id ?? (item as any).variantId,
+                                    variantAttributes: (item as any).variant_attributes ?? (item as any).variantAttributes,
                                   },
                                   profile?.user_type,
                                 );
@@ -875,6 +869,11 @@ const Orders: React.FC = () => {
                                         <span className="font-medium text-green-800 flex items-center gap-1">
                                           🎁 {productName}
                                         </span>
+                                        {/* عرض فيرنِتس العنصر المجاني إن وجدت */}
+                                        {(() => {
+                                          const vAttrs = item?.variantAttributes ?? item?.variant_attributes ?? item?.variant;
+                                          return vAttrs ? renderVariantInfo(vAttrs, 'text-green-700', language) : null;
+                                        })()}
                                         <span className="text-xs text-green-600 mt-0.5">
                                           {t("freeItem") || "منتج مجاني"} - {t("fromOffer") || "من العرض"}
                                         </span>

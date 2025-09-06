@@ -14,6 +14,7 @@ import { mapOrderFromDb } from "@/utils/orderUtils";
 import type { OrdersWithDetails } from "@/integrations/supabase/dataFetchers";
 import { decompressText } from "@/utils/commonUtils";
 import { getDisplayPrice } from "@/utils/priceUtils";
+import { computeVariantSpecificPrice } from "@/utils/variantPrice";
 import { renderVariantInfo } from "@/utils/variantUtils";
 import { useProductsRealtime } from '@/hooks/useProductsRealtime';
 import { useAuth } from "@/contexts/useAuth";
@@ -256,31 +257,10 @@ const OrderDetailsDialog: React.FC<OrderDetailsDialogProps> = ({
                         // الحصول على السعر الأصلي للمنتج حسب نوع العميل
                         let actualProductPrice = 0;
                         if (item.products && products) {
-                          actualProductPrice = getDisplayPrice(
-                            {
-                              id: item.products.id || "",
-                              name: item.products.name_ar || "",
-                              nameEn: item.products.name_en || "",
-                              nameHe: item.products.name_he || "",
-                              description: item.products.description_ar || "",
-                              descriptionEn: item.products.description_en || "",
-                              descriptionHe: item.products.description_he || "",
-                              price: item.products.price || 0,
-                              originalPrice: item.products.original_price,
-                              wholesalePrice: item.products.wholesale_price,
-                              image: item.products.image || "",
-                              images: item.products.images || [],
-                              category: "",
-                              inStock: typeof item.products.in_stock === "boolean" ? item.products.in_stock : true,
-                              rating: item.products.rating || 0,
-                              reviews: 0,
-                              discount: item.products.discount,
-                              featured: item.products.featured,
-                              tags: item.products.tags || [],
-                              stock_quantity: item.products.stock_quantity,
-                              active: item.products.active,
-                              created_at: item.products.created_at,
-                            },
+                          actualProductPrice = computeVariantSpecificPrice(
+                            item.products as any,
+                            { variantId: (item as any).variant_id ?? (item as any).variantId,
+                              variantAttributes: (item as any).variant_attributes ?? (item as any).variantAttributes },
                             profile?.user_type,
                           );
                         } else {
@@ -468,31 +448,10 @@ const OrderDetailsDialog: React.FC<OrderDetailsDialogProps> = ({
                           // الحصول على السعر الأصلي
                           let originalPrice = 0;
                           if (product) {
-                            originalPrice = getDisplayPrice(
-                              {
-                                id: product.id || "",
-                                name: product.name_ar || "",
-                                nameEn: product.name_en || "",
-                                nameHe: product.name_he || "",
-                                description: product.description_ar || "",
-                                descriptionEn: product.description_en || "",
-                                descriptionHe: product.description_he || "",
-                                price: product.price || 0,
-                                originalPrice: product.original_price,
-                                wholesalePrice: product.wholesale_price,
-                                image: product.image || "",
-                                images: product.images || [],
-                                category: "",
-                                inStock: typeof product.in_stock === "boolean" ? product.in_stock : true,
-                                rating: product.rating || 0,
-                                reviews: 0,
-                                discount: product.discount,
-                                featured: product.featured,
-                                tags: product.tags || [],
-                                stock_quantity: product.stock_quantity,
-                                active: product.active,
-                                created_at: product.created_at,
-                              },
+                            originalPrice = computeVariantSpecificPrice(
+                              product as any,
+                              { variantId: (freeItem as any).variant_id ?? (freeItem as any).variantId,
+                                variantAttributes: (freeItem as any).variant_attributes ?? (freeItem as any).variantAttributes },
                               profile?.user_type,
                             );
                           } else {
@@ -519,6 +478,15 @@ const OrderDetailsDialog: React.FC<OrderDetailsDialogProps> = ({
                                     <h4 className="font-semibold text-sm text-green-800 mb-0.5">
                                       🎁 {productName}
                                     </h4>
+                                    {/* عرض فيرنِتس العنصر المجاني إن وجدت */}
+                                    {(() => {
+                                      const vAttrs = freeItem?.variantAttributes ?? freeItem?.variant_attributes ?? freeItem?.variant;
+                                      return vAttrs ? (
+                                        <div className="flex justify-center">
+                                          {renderVariantInfo(vAttrs, 'text-green-700', language)}
+                                        </div>
+                                      ) : null;
+                                    })()}
                                     <p className="text-xs text-green-700">
                                       {t("freeItem") || "منتج مجاني"} - {t("fromOffer") || "من العرض"}
                                     </p>

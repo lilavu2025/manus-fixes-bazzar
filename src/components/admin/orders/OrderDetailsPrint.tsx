@@ -2,6 +2,7 @@ import React, { useContext, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Copy, MapPin, Package, UserPlus } from "lucide-react";
 import { getDisplayPrice } from "@/utils/priceUtils";
+import { computeVariantSpecificPrice } from "@/utils/variantPrice";
 import { safeDecompressNotes } from "@/orders/order.utils";
 import { getPaymentMethodText } from "@/orders/order.utils";
 import type { Order, OrderItem } from "@/orders/order.types";
@@ -354,9 +355,13 @@ const OrderDetailsPrint: React.FC<OrderDetailsPrintProps> = ({ order, t, profile
                           const product = products.find((p) => p.id === item.product_id);
                           let actualProductPrice = 0;
                           if (product) {
-                            // مراعاة نوع العميل (retail/wholesale) باستخدام getDisplayPrice
                             const userType = (order.profiles as any)?.user_type || 'retail';
-                            actualProductPrice = getDisplayPrice(product as any, userType);
+                            actualProductPrice = computeVariantSpecificPrice(
+                              product as any,
+                              { variantId: (item as any).variant_id ?? (item as any).variantId,
+                                variantAttributes: (item as any).variant_attributes ?? (item as any).variantAttributes },
+                              userType,
+                            );
                           }
                           
                           // إذا كان السعر المحفوظ أقل من السعر الفعلي، يعني هناك خصم
@@ -440,9 +445,13 @@ const OrderDetailsPrint: React.FC<OrderDetailsPrintProps> = ({ order, t, profile
                           const product = products.find((p) => p.id === item.product_id);
                           let actualProductPrice = 0;
                           if (product) {
-                            // مراعاة نوع العميل (retail/wholesale) باستخدام getDisplayPrice
                             const userType = (order.profiles as any)?.user_type || 'retail';
-                            actualProductPrice = getDisplayPrice(product as any, userType);
+                            actualProductPrice = computeVariantSpecificPrice(
+                              product as any,
+                              { variantId: (item as any).variant_id ?? (item as any).variantId,
+                                variantAttributes: (item as any).variant_attributes ?? (item as any).variantAttributes },
+                              userType,
+                            );
                           }
                           
                           // إذا كان السعر المحفوظ أقل من السعر الفعلي، يعني هناك خصم
@@ -622,33 +631,11 @@ const OrderDetailsPrint: React.FC<OrderDetailsPrintProps> = ({ order, t, profile
                     // الحصول على السعر الأصلي من قاعدة البيانات أو من بيانات العنصر
                     let originalPrice = 0;
                     if (product) {
-                      // استخدام السعر المناسب حسب نوع المستخدم
-                      originalPrice = getDisplayPrice(
-                        {
-                          id: product.id || "",
-                          name: product.name_ar || "",
-                          nameEn: product.name_en || "",
-                          nameHe: product.name_he || "",
-                          description: product.description_ar || "",
-                          descriptionEn: product.description_en || "",
-                          descriptionHe: product.description_he || "",
-                          price: product.price || 0,
-                          originalPrice: product.original_price,
-                          wholesalePrice: product.wholesale_price,
-                          image: product.image || "",
-                          images: product.images || [],
-                          category: "",
-                          inStock: typeof product.in_stock === "boolean" ? product.in_stock : true,
-                          rating: product.rating || 0,
-                          reviews: 0,
-                          discount: product.discount,
-                          featured: product.featured,
-                          tags: product.tags || [],
-                          stock_quantity: product.stock_quantity,
-                          active: product.active,
-                          created_at: product.created_at,
-                        },
-                        profile?.user_type,
+                      originalPrice = computeVariantSpecificPrice(
+                        product as any,
+                        { variantId: (item as any).variant_id ?? (item as any).variantId,
+                          variantAttributes: (item as any).variant_attributes ?? (item as any).variantAttributes },
+                        (order.profiles as any)?.user_type || 'retail',
                       );
                     } else {
                       // إذا لم نجد المنتج في قاعدة البيانات، نحاول من بيانات العنصر

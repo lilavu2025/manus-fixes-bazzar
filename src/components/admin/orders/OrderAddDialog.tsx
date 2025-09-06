@@ -118,6 +118,31 @@ function mergeSimilarLines(items: any[]) {
   return Array.from(map.values()).filter(x => qty(x.quantity) > 0);
 }
 
+// احسب سعر وحدة الفيرنت المحدد (إن وجد) مع مراعاة نوع المستخدم
+function computeVariantSpecificPrice(product: any, variantInfo: { variantId?: string | null; variantAttributes?: Record<string, any> | null } | undefined, userType?: string) {
+  if (!product) return 0;
+  const variants = Array.isArray(product?.variants) ? product.variants : [];
+  let matchedVar: any | undefined;
+  const vid = variantInfo?.variantId;
+  const vattrs = normalizeVariantAttributes(variantInfo?.variantAttributes);
+  if (vid) {
+    matchedVar = variants.find((v: any) => String(v?.id) === String(vid));
+  }
+  if (!matchedVar && vattrs) {
+    matchedVar = variants.find((v: any) => {
+      const ov = v?.option_values || {};
+      return Array.isArray(product?.options) && product.options.every((o: any) => normalizeVariantValue(ov[o.name]) === normalizeVariantValue((vattrs as any)[o.name]));
+    });
+  }
+  if (matchedVar) {
+    const w = Number(matchedVar?.wholesale_price || 0);
+    const p = Number(matchedVar?.price || 0);
+    if ((userType === 'wholesale' || userType === 'admin') && w > 0) return w;
+    return p;
+  }
+  return getDisplayPrice(product, userType);
+}
+
 // يحوّل كميّة من نفس المنتج إلى "مجاني" حسب expectedQty
 function ensureFreeQty(
   items: any[],
@@ -157,6 +182,7 @@ function ensureFreeQty(
         };
       } else {
         const p = productOf(products, pid);
+        const origUnit = computeVariantSpecificPrice(p, variantInfo, userType);
         list.push({
           id: `free_${offerInfo?.id || "off"}_${pid}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           product_id: pid,
@@ -164,7 +190,7 @@ function ensureFreeQty(
           product_name: p?.name_ar || p?.name_en || "",
           price: 0,
           is_free: true,
-          original_price: basePrice(products, pid, userType),
+          original_price: origUnit,
           offer_id: offerInfo?.id,
           offer_name: offerInfo?.title,
           ...(variantInfo?.variantId ? { variant_id: variantInfo.variantId } : {}),
@@ -175,6 +201,7 @@ function ensureFreeQty(
     }
   if (toTake > 0) {
       const p = productOf(products, pid);
+      const origUnit = computeVariantSpecificPrice(p, variantInfo, userType);
       list.push({
         id: `free_${offerInfo?.id || "off"}_${pid}_extra_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         product_id: pid,
@@ -182,7 +209,7 @@ function ensureFreeQty(
         product_name: p?.name_ar || p?.name_en || "",
         price: 0,
         is_free: true,
-        original_price: basePrice(products, pid, userType),
+        original_price: origUnit,
         offer_id: offerInfo?.id,
         offer_name: offerInfo?.title,
         ...(variantInfo?.variantId ? { variant_id: variantInfo.variantId } : {}),
@@ -200,8 +227,11 @@ function ensureFreeQty(
 
       if (giveBack > 0) {
         const p = productOf(products, pid);
-        const price = basePrice(products, pid, userType);
-        const existPaid = list.findIndex(it => it.product_id === pid && !(it as any).is_free && !(it as any).offer_applied);
+        const existingVid = (list[freeIdx] as any)?.variant_id ?? variantInfo?.variantId ?? null;
+        const existingVAttr = (list[freeIdx] as any)?.variant_attributes ?? variantInfo?.variantAttributes ?? null;
+        const price = computeVariantSpecificPrice(p, { variantId: existingVid, variantAttributes: existingVAttr }, userType);
+        const freeLineSig = lineKeySignature({ product_id: pid, variant_id: existingVid, variant_attributes: existingVAttr });
+        const existPaid = list.findIndex(it => it.product_id === pid && !(it as any).is_free && !(it as any).offer_applied && lineKeySignature(it) === freeLineSig.replace("free|", "norm|"));
         if (existPaid !== -1) {
           list[existPaid] = { ...list[existPaid], quantity: qty(list[existPaid].quantity) + giveBack, price, original_price: price };
         } else {
@@ -212,6 +242,8 @@ function ensureFreeQty(
             product_name: p?.name_ar || p?.name_en || "",
             price,
             original_price: price,
+            ...(existingVid ? { variant_id: existingVid } : {}),
+            ...(existingVAttr ? { variant_attributes: existingVAttr } : {}),
           } as any);
         }
       }
@@ -632,8 +664,8 @@ const OrderAddDialog: React.FC<OrderAddDialogProps> = ({
         if ((item as any).is_free) {
           return { ...item, price: 0, original_price: base };
         }
-        const savedPrice = typeof item.price === 'number' ? item.price : base;
-        return { ...item, price: savedPrice, original_price: base };
+  // عنصر عادي: حدّث السعر ليتماشى مع نوع المستخدم (لا تعتمد على السعر المحفوظ)
+  return { ...item, price: base, original_price: base };
       });
       return { ...prev, items };
     });

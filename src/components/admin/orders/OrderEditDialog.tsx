@@ -156,6 +156,31 @@ function computeVariantAwareUnitPrice(product: any, item: any, userType: string)
   return getDisplayPrice(product, userType);
 }
 
+// Compute price for a specific variant selection (by id or attributes) with user type awareness
+function computeVariantSpecificPrice(product: any, variantInfo: { variantId?: string | null; variantAttributes?: Record<string, any> | null } | undefined, userType?: string) {
+  if (!product) return 0;
+  const variants = Array.isArray(product?.variants) ? product.variants : [];
+  let matchedVar: any | undefined;
+  const vid = variantInfo?.variantId;
+  const vattrs = normalizeVariantAttributes(variantInfo?.variantAttributes);
+  if (vid) {
+    matchedVar = variants.find((v: any) => String(v?.id) === String(vid));
+  }
+  if (!matchedVar && vattrs) {
+    matchedVar = variants.find((v: any) => {
+      const ov = v?.option_values || {};
+      return Array.isArray(product?.options) && product.options.every((o: any) => normalizeVariantValue(ov[o.name]) === normalizeVariantValue((vattrs as any)[o.name]));
+    });
+  }
+  if (matchedVar) {
+    const w = Number(matchedVar?.wholesale_price || 0);
+    const p = Number(matchedVar?.price || 0);
+    if ((userType === 'wholesale' || userType === 'admin') && w > 0) return w;
+    return p;
+  }
+  return getDisplayPrice(product, userType);
+}
+
 /* ===== تغييرات التأكيد (إرجاع لائحة التغييرات للمودال) ===== */
 
 function buildChangesForConfirm(originalOrder: any, edited: NewOrderForm, products: any[], userType?: string) {
@@ -384,6 +409,7 @@ function ensureFreeQty(
         };
       } else {
         const p = productOf(products, pid);
+        const origUnit = computeVariantSpecificPrice(p, variantInfo, userType);
         list.push({
           id: `free_${offerInfo?.id || "off"}_${pid}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           product_id: pid,
@@ -391,7 +417,7 @@ function ensureFreeQty(
           product_name: p?.name_ar || p?.name_en || "",
           price: 0,
           is_free: true,
-          original_price: basePrice(products, pid, userType),
+          original_price: origUnit,
           offer_id: offerInfo?.id,
           offer_name: offerInfo?.title,
           ...(variantInfo?.variantId ? { variant_id: variantInfo.variantId } : {}),
@@ -403,6 +429,7 @@ function ensureFreeQty(
     // لو لسه باقي كميّة مجانية ومفيش مدفوع، ضيف سطر مجاني جديد (عادي)
   if (toTake > 0) {
       const p = productOf(products, pid);
+      const origUnit = computeVariantSpecificPrice(p, variantInfo, userType);
       list.push({
         id: `free_${offerInfo?.id || "off"}_${pid}_extra_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         product_id: pid,
@@ -410,7 +437,7 @@ function ensureFreeQty(
         product_name: p?.name_ar || p?.name_en || "",
         price: 0,
         is_free: true,
-        original_price: basePrice(products, pid, userType),
+        original_price: origUnit,
         offer_id: offerInfo?.id,
         offer_name: offerInfo?.title,
         ...(variantInfo?.variantId ? { variant_id: variantInfo.variantId } : {}),
@@ -431,9 +458,12 @@ function ensureFreeQty(
       // رجّع للكرت كمدفوع
       if (giveBack > 0) {
         const p = productOf(products, pid);
-        const price = basePrice(products, pid, userType);
-        // ابحث عن خط مدفوع موجود
-        const existPaid = list.findIndex(it => it.product_id === pid && !(it as any).is_free && !(it as any).offer_applied);
+        const existingVid = (list[freeIdx] as any)?.variant_id ?? variantInfo?.variantId ?? null;
+        const existingVAttr = (list[freeIdx] as any)?.variant_attributes ?? variantInfo?.variantAttributes ?? null;
+        const price = computeVariantSpecificPrice(p, { variantId: existingVid, variantAttributes: existingVAttr }, userType);
+        // ابحث عن خط مدفوع موجود يحمل نفس توقيع الفيرنت
+        const freeSig = lineKeySignature({ product_id: pid, variant_id: existingVid, variant_attributes: existingVAttr });
+        const existPaid = list.findIndex(it => it.product_id === pid && !(it as any).is_free && !(it as any).offer_applied && variantSignatureFromItem(it) === variantSignatureFromItem({ variant_id: existingVid, variant_attributes: existingVAttr }));
         if (existPaid !== -1) {
           list[existPaid] = { ...list[existPaid], quantity: qty(list[existPaid].quantity) + giveBack, price, original_price: price };
         } else {
@@ -444,6 +474,8 @@ function ensureFreeQty(
             product_name: p?.name_ar || p?.name_en || "",
             price,
             original_price: price,
+            ...(existingVid ? { variant_id: existingVid } : {}),
+            ...(existingVAttr ? { variant_attributes: existingVAttr } : {}),
           } as any);
         }
       }
