@@ -268,9 +268,9 @@ const ProductCardIncentives = ({ productId }: ProductCardIncentivesProps) => {
         
         let discountText = "";
         if (offer.get_discount_type === "percentage") {
-          discountText = `خصم ${offer.get_discount_value}%`;
+          discountText = `${t("discount") || "خصم"} ${offer.get_discount_value}%`;
         } else if (offer.get_discount_type === "fixed") {
-          discountText = `خصم ${offer.get_discount_value} ${t("currency")}`;
+          discountText = `${t("discount") || "خصم"} ${offer.get_discount_value} ${t("currency")}`;
         } else if (offer.get_discount_type === "free") {
           discountText = t("freeItem") || "مجاني";
         }
@@ -281,7 +281,7 @@ const ProductCardIncentives = ({ productId }: ProductCardIncentivesProps) => {
             <div key={`incentive-${index}`} className="p-2 bg-orange-50 rounded-lg border border-orange-200">
               <div className="flex items-center gap-1 mb-1">
                 <Gift className="h-3 w-3 text-orange-600" />
-                <span className="text-xs font-semibold text-orange-700">🎁 عرض خاص متاح!</span>
+                <span className="text-xs font-semibold text-orange-700">{t('incentive.specialAvailable')}</span>
               </div>
               
               <div className="flex items-center gap-2">
@@ -293,9 +293,9 @@ const ProductCardIncentives = ({ productId }: ProductCardIncentivesProps) => {
                 <div className="flex-1 min-w-0">
                   <p className="text-xs text-orange-700 mb-1 leading-tight">
                     {offer.get_discount_type === "free" ? (
-                      <>حصلت على <span className="font-semibold">{getLocalizedName(targetProduct, language)}</span> {discountText}!</>
+                      <>{t('incentive.got')} <span className="font-semibold">{getLocalizedName(targetProduct, language)}</span> {discountText}!</>
                     ) : (
-                      <>أضف <span className="font-semibold">{getLocalizedName(targetProduct, language)}</span> واحصل على {discountText}</>
+                      <>{t('incentive.add_prefix')} <span className="font-semibold">{getLocalizedName(targetProduct, language)}</span> {t('incentive.and_get')} {discountText}</>
                     )}
                   </p>
                   
@@ -314,7 +314,7 @@ const ProductCardIncentives = ({ productId }: ProductCardIncentivesProps) => {
                       </>
                     )}
                     {offer.get_discount_type === "free" && (
-                      <span className="text-xs text-green-600 font-bold">مجاني!</span>
+                      <span className="text-xs text-green-600 font-bold">{t("free")}!</span>
                     )}
                   </div>
                   
@@ -337,7 +337,7 @@ const ProductCardIncentives = ({ productId }: ProductCardIncentivesProps) => {
                   {/* رسالة للمنتج المجاني */}
                   {offer.get_discount_type === "free" && (
                     <div className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded border text-center">
-                      ✨ يُضاف تلقائياً
+                      {t('incentive.autoAdded')}
                     </div>
                   )}
                 </div>
@@ -357,7 +357,7 @@ const ProductCardIncentives = ({ productId }: ProductCardIncentivesProps) => {
                 <div className="w-3 h-3 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
                   <span className="text-white text-xs font-bold">!</span>
                 </div>
-                <span className="text-xs font-semibold text-blue-700">⚡ أنت قريب من العرض!</span>
+                <span className="text-xs font-semibold text-blue-700">⚡ {t('closeToOffer')}</span>
               </div>
               
               <div className="flex items-center gap-2">
@@ -375,7 +375,7 @@ const ProductCardIncentives = ({ productId }: ProductCardIncentivesProps) => {
                       />
                     </div>
                     <p className="text-xs text-blue-700 leading-tight">
-                      {currentQuantity}/{requiredQuantity} - أضف {missingQuantity} للحصول على <span className="font-semibold">{getLocalizedName(targetProduct, language)} {discountText}</span>
+                      {currentQuantity}/{requiredQuantity} - {t('incentive.add_prefix')} {missingQuantity} {t('addPrefix')} <span className="font-semibold">{getLocalizedName(targetProduct, language)} {discountText}</span>
                     </p>
                   </div>
                 </div>
@@ -405,7 +405,7 @@ const ProductCardIncentives = ({ productId }: ProductCardIncentivesProps) => {
             <div key={`applied-offer-${index}`} className="p-2 bg-green-50 rounded-lg border border-green-200">
               <div className="flex items-center gap-1 mb-1">
                 <CheckCircle className="h-3 w-3 text-green-600" />
-                <span className="text-xs font-semibold text-green-700">✅ تم تطبيق العرض!</span>
+                <span className="text-xs font-semibold text-green-700">✅ {t('offerApplied')}</span>
               </div>
               
               <div className="flex items-center gap-2">
@@ -416,9 +416,9 @@ const ProductCardIncentives = ({ productId }: ProductCardIncentivesProps) => {
                 
                 <div className="flex-1 min-w-0">
                   <p className="text-xs text-green-700 leading-tight">
-                    حصلت على <span className="font-semibold">{getLocalizedName(targetProduct, language)} {discountText}</span> 
+                    {t('incentive.got')} <span className="font-semibold">{getLocalizedName(targetProduct, language)} {discountText}</span> 
                     <br />
-                    <span className="text-xs text-green-600">بشراء {currentQuantity} من هذا المنتج</span>
+                    <span className="text-xs text-green-600">{t('incentive.buying')} {currentQuantity} {t('incentive.of_this_product')}</span>
                   </p>
                 </div>
               </div>

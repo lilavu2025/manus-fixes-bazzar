@@ -1334,6 +1334,13 @@ export const arTranslations = {
 
   freeProductsDiscount: "خصم المنتجات المجانية",
 
+  // Incentives / Product Card texts
+  "incentive.specialAvailable": "!عرض خاص متاح",
+  "incentive.got": "حصلت على",
+  "incentive.add_prefix": "أضف",
+  "incentive.and_get": "واحصل على",
+  "incentive.autoAdded": "يتم إضافته تلقائياً إلى السلة",
+
   // Product Variants
   hasVariants: "يحتوي على فيرنتس",
   variants: "الفيرنتس",
@@ -1420,6 +1427,22 @@ export const arTranslations = {
   specificVariants: "فيرنتس محددة",
   allVariants: "جميع الفيرنتس",
   youSaved: "لقد وفرت",
-  buyVariantScope: "تطبيق شرط الشراء على"
+  buyVariantScope: "تطبيق شرط الشراء على",
+
+  // مفاتيح مفقودة لإكمال الترجمة
+  phoneMustBe10Digits: "رقم الهاتف يجب أن يكون 10 أرقام",
+  phoneMustStartWith05: "رقم الهاتف يجب أن يبدأ بـ 05",
+  phoneOnlyNumbers: "رقم الهاتف يجب أن يحتوي على أرقام فقط",
+  searchInput: "حقل البحث",
+  viewYourOrders: "عرض طلباتك",
+  unknownProduct: "منتج غير معروف",
+  manualDiscount: "خصم يدوي",
+  noPhone: "لا يوجد رقم هاتف",
+
+   closeToOffer: "أنت قريب من العرض!",
+   addPrefix: "للحصول على",
+   offerApplied: "تم تطبيق العرض!",
+   "incentive.buying" : "بشراء",
+   "incentive.of_this_product": "من هذا المنتج",
 
 };

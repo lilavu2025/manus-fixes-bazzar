@@ -533,13 +533,13 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
                                   
                                   if (item.product.id === linkedProductId) {
                                     // المنتج المحقق للشروط
-                                    offerText = `${t("buyGetOffer")}: اشتري ${buyQuantity}`;
+                                    offerText = `${t("buyGetOffer")}: ${t("buy")} ${buyQuantity}`;
                                   } else if (item.product.id === getProductId) {
                                     // المنتج المستهدف للخصم
                                     if (getDiscountType === "percentage") {
-                                      offerText = `${t("buyGetOffer")}: خصم ${getDiscountValue}%`;
+                                      offerText = `${t("buyGetOffer")}: ${t("discount") || "خصم"} ${getDiscountValue}%`;
                                     } else if (getDiscountType === "fixed") {
-                                      offerText = `${t("buyGetOffer")}: خصم ${getDiscountValue} ${t("currency")}`;
+                                      offerText = `${t("buyGetOffer")}: ${t("discount") || "خصم"} ${getDiscountValue} ${t("currency")}`;
                                     }
                                   }
                                 }
@@ -597,9 +597,9 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
                               
                               let discountText = "";
                               if (offer.get_discount_type === "percentage") {
-                                discountText = `خصم ${offer.get_discount_value}%`;
+                                discountText = `${t("discount") || "خصم"} ${offer.get_discount_value}%`;
                               } else if (offer.get_discount_type === "fixed") {
-                                discountText = `خصم ${offer.get_discount_value} ${t("currency")}`;
+                                discountText = `${t("discount") || "خصم"} ${offer.get_discount_value} ${t("currency")}`;
                               } else if (offer.get_discount_type === "free") {
                                 discountText = t("freeItem");
                               }
@@ -610,7 +610,7 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
                                   <div key={`incentive-${index}`} className="mt-3 p-3 bg-orange-50 rounded-lg border border-orange-200">
                                     <div className="flex items-center gap-2 mb-2">
                                       <Gift className="h-4 w-4 text-orange-600" />
-                                      <span className="text-xs font-semibold text-orange-700">🎁 عرض خاص متاح!</span>
+                                      <span className="text-xs font-semibold text-orange-700">{t('incentive.specialAvailable')}</span>
                                     </div>
                                     
                                     <div className="flex items-center gap-3">
@@ -621,7 +621,7 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
                                       
                                       <div className="flex-1">
                                         <p className="text-xs text-orange-700 mb-1">
-                                          أضف <span className="font-semibold">{getLocalizedName(targetProduct, language)}</span> واحصل على {discountText}
+                                          {t('incentive.add_prefix')} <span className="font-semibold">{getLocalizedName(targetProduct, language)}</span> {t('incentive.and_get')} {discountText}
                                         </p>
                                         
                                         <div className="flex items-center gap-2">
@@ -639,7 +639,7 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
                                             </>
                                           )}
                                           {offer.get_discount_type === "free" && (
-                                            <span className="text-xs text-green-600 font-bold">مجاني!</span>
+                                            <span className="text-xs text-green-600 font-bold">{t("free")}!</span>
                                           )}
                                         </div>
                                       </div>
@@ -659,7 +659,7 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
                                       {/* رسالة للمنتج المجاني */}
                                       {offer.get_discount_type === "free" && (
                                         <div className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded border">
-                                          ✨ يُضاف تلقائياً
+                                          {t('incentive.autoAdded')}
                                         </div>
                                       )}
                                     </div>
@@ -678,7 +678,7 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
                                       <div className="w-4 h-4 bg-blue-600 rounded-full flex items-center justify-center">
                                         <span className="text-white text-xs font-bold">!</span>
                                       </div>
-                                      <span className="text-xs font-semibold text-blue-700">⚡ أنت قريب من العرض!</span>
+                                      <span className="text-xs font-semibold text-blue-700">⚡ {t('closeToOffer')}</span>
                                     </div>
                                     
                                     <div className="flex items-center gap-3">
@@ -696,7 +696,7 @@ const CartSidebar: React.FC<CartSidebarProps> = ({ isOpen, onClose }) => {
                                             />
                                           </div>
                                           <p className="text-xs text-blue-700">
-                                            {currentQuantity}/{requiredQuantity} - أضف {missingQuantity} للحصول على <span className="font-semibold">{getLocalizedName(targetProduct, language)} {discountText}</span>
+                                            {currentQuantity}/{requiredQuantity} - {t('incentive.add_prefix')} {missingQuantity} {t('addPrefix')} <span className="font-semibold">{getLocalizedName(targetProduct, language)} {discountText}</span>
                                           </p>
                                         </div>
                                       </div>

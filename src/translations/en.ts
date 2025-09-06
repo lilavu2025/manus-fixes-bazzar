@@ -1328,6 +1328,13 @@ export const enTranslations = {
   statisticsPeriod: "Statistics Period",
   freeProductsDiscount: "Free Products Discount",
 
+  // Incentives / Product Card texts
+  "incentive.specialAvailable": "Special offer available!",
+  "incentive.got": "You've got",
+  "incentive.add_prefix": "Add",
+  "incentive.and_get": "and get",
+  "incentive.autoAdded": "Automatically added to cart",
+
   // Product Variants
   hasVariants: "Has Variants",
   variants: "Variants",
@@ -1409,6 +1416,22 @@ export const enTranslations = {
   specificVariants: "Specific Variants",
   allVariants: "All Variants",
   youSaved: "You saved",
-  
+
+  // Added missing keys for full translation coverage
+  phoneMustBe10Digits: "Phone number must be 10 digits",
+  phoneMustStartWith05: "Phone number must start with 05",
+  phoneOnlyNumbers: "Phone number must contain digits only",
+  searchInput: "Search input",
+  viewYourOrders: "View your orders",
+  unknownProduct: "Unknown product",
+  manualDiscount: "Manual discount",
+  completeDirectPurchase: "Complete Direct Purchase",
+  noPhone: "No phone number",
+
+  closeToOffer: "you are close to unlocking this offer!",
+  addPrefix: "to get",
+  offerApplied: "Offer applied!",
+  "incentive.buying" : "on purchase of",
+  "incentive.of_this_product": "of this product",
 
 };
