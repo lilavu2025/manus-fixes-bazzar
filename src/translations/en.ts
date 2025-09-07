@@ -1433,5 +1433,6 @@ export const enTranslations = {
   offerApplied: "Offer applied!",
   "incentive.buying" : "on purchase of",
   "incentive.of_this_product": "of this product",
+  getOffer: "Get the Offer",
 
 };

@@ -1382,5 +1382,6 @@ export const heTranslations = {
   offerApplied: "ההטבה הופעלה!",
   "incentive.buying" : "ברכישה של",
   "incentive.of_this_product": "מהמוצר הזה",
+  getOffer: "קבל את ההטבה",
 
 };

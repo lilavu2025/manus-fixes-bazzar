@@ -1445,4 +1445,6 @@ export const arTranslations = {
    "incentive.buying" : "بشراء",
    "incentive.of_this_product": "من هذا المنتج",
 
+   getOffer: "احصل على العرض",
+
 };
