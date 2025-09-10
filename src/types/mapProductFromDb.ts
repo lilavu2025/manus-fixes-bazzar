@@ -5,6 +5,24 @@ import type { ProductRow } from '@/integrations/supabase/dataFetchers';
  * Maps a ProductRow (from Supabase) to the app's Product type.
  */
 export function mapProductFromDb(row: ProductRow): Product {
+  // prefer variant-level stock when variants are attached (products_with_variants)
+  const maybeVariants = (row as any)?.variants;
+  let derivedInStock = typeof row.in_stock === 'boolean' ? row.in_stock : (row.stock_quantity ?? 0) > 0;
+  let derivedStockQuantity = typeof row.stock_quantity === 'number' ? row.stock_quantity : 0;
+
+  if (Array.isArray(maybeVariants) && maybeVariants.length > 0) {
+    // sum variant stock quantities (safely) and mark inStock if any variant available
+    derivedStockQuantity = maybeVariants.reduce((sum: number, v: any) => {
+      const q = typeof v.stock_quantity === 'number' ? v.stock_quantity : (v.stockQuantity ?? 0);
+      return sum + (typeof q === 'number' ? q : 0);
+    }, 0);
+    derivedInStock = maybeVariants.some((v: any) => {
+      if (typeof v.in_stock === 'boolean') return v.in_stock;
+      const q = typeof v.stock_quantity === 'number' ? v.stock_quantity : (v.stockQuantity ?? 0);
+      return (typeof q === 'number' ? q : 0) > 0;
+    });
+  }
+
   return {
     id: row.id ?? '',
     name: row.name_ar ?? '',
@@ -19,8 +37,8 @@ export function mapProductFromDb(row: ProductRow): Product {
     image: row.image ?? '',
     images: row.images ?? [],
     category: row.category_id ?? '',
-    inStock: typeof row.in_stock === 'boolean' ? row.in_stock : (row.stock_quantity ?? 0) > 0,
-    stock_quantity: typeof row.stock_quantity === 'number' ? row.stock_quantity : 0,
+  inStock: derivedInStock,
+  stock_quantity: derivedStockQuantity,
     rating: row.rating ?? 0,
     reviews: row.reviews_count ?? 0,
     discount: row.discount ?? undefined,
